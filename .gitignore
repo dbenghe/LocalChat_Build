@@ -1,0 +1,25 @@
+# Build outputs, portable runtimes and private local data
+/.tools/
+/build/
+/dist/
+*.class
+*.jar
+*.zip
+*.log
+**/__pycache__/
+**/runtime/
+**/setari.properties
+**/conversatii/
+**/reguli.md
+**/octop_mcp_trace.jsonl
+# Separate existing PDFControl package and production-specific documentation.
+# It remains available locally and is packaged during build, never uploaded implicitly.
+/pdfcontrol/
+/packaging/skills/
+/PROCEDURA_PROIECTE_MBS.md
+/CHATURI_PROIECTE_DIN_CODEX.md
+/SKILL_MBS_PDFCONTROL.md
+/LocalChat — documentație și sugestii de optimizare.md
+
+# Pinned small UI dependency, shipped with the portable app.
+!/lib/flatlaf-3.7.2.jar

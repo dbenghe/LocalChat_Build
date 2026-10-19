@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "pdfcontrol": {
+      "command": "${app}\\pdfcontrol\\runtime\\python\\python.exe",
+      "args": ["-I", "-u", "${app}\\pdfcontrol\\octop_mcp.py"],
+      "env": {
+        "PDFCONTROL_PACKAGE": "${app}\\pdfcontrol",
+        "PDFCONTROL_PROJECTS_ROOT": "${downloads}\\PRODUCTIE"
+      }
+    }
+  },
+  "commandEnv": {
+    "PDFCONTROL_DIR": "${app}\\pdfcontrol",
+    "PDFCONTROL_PYTHON": "${app}\\pdfcontrol\\runtime\\python\\python.exe",
+    "PDFCONTROL_PRODUCTIE_ROOT": "${downloads}\\PRODUCTIE",
+    "PDFCONTROL_PROJECTS_ROOT": "${downloads}\\PRODUCTIE"
+  },
+  "pdfPython": "${app}\\pdfcontrol\\runtime\\python\\python.exe",
+  "pathAliases": {
+    "C:\\PDFCONTROL": "${app}\\pdfcontrol"
+  }
+}
