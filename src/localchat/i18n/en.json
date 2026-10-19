@@ -196,7 +196,7 @@
   "Detaliat · 8192 tokeni": "Detailed · 8192 tokens",
   "Buget de răspuns, nu nivel de inteligență sau garanție de acuratețe.": "Response budget, not an intelligence level or accuracy guarantee.",
   "Verifică contextul modelului": "Check model context",
-  "Maxim model: {0} · Încărcat: {1} · Limită utilizată: {2}": "Model maximum: {0} · Loaded: {1} · Applied limit: {2}",
+  "Maxim model: {0} · Încărcat: {1} · Limită utilizată: {2}": "Declared maximum: {0} · Instance: {1} · Local budget: {2}",
   "necunoscut": "unknown",
   "Verifică metadatele serverului. Nu deducem limita din numele modelului.": "Check server metadata. The limit is not inferred from the model name.",
   "Metadate memorate: {0}": "Cached metadata: {0}",
@@ -237,5 +237,18 @@
   "În lucru": "Running",
   "În așteptare": "Pending",
   "Anulat": "Cancelled",
-  "Eroare": "Error"
+  "Eroare": "Error",
+  "Salvează furnizorul…": "Save provider…",
+  "Aplică buget recomandat": "Apply suggested budget",
+  "Nume furnizor": "Provider name",
+  "Furnizor salvat: {0}": "Provider saved: {0}",
+  "Nu pot salva furnizorul: {0}": "Cannot save provider: {0}",
+  "Numele furnizorului trebuie să aibă 1–80 de caractere.": "Provider name must contain 1–80 characters.",
+  "Adresa API trebuie să fie HTTP/HTTPS, fără cheie în URL.": "API address must use HTTP/HTTPS, with no key in the URL.",
+  "API-ul nu comunică limita de context · Buget local: {0}": "API does not report context limit · Local budget: {0}",
+  "Metadate indisponibile: {0} · Buget local: {1}": "Metadata unavailable: {0} · Local budget: {1}",
+  "Maxim API: {0} · Instanță: {1} · Intrare API: {2} · Buget: {3}": "API maximum: {0} · Instance: {1} · API input: {2} · Budget: {3}",
+  "Buget local aplicat: {0}. Limita API rămâne neconfirmată.": "Local budget applied: {0}. API limit remains unconfirmed.",
+  "API Anthropic (Claude și compatibile)": "Anthropic API (Claude and compatible services)",
+  "Buget local de 180000 tokeni, sub limita de intrare de aproximativ 200K publicată de GonkaRouter. Nu este context confirmat de API. Sursă: https://gonkarouter.io/pricing": "Local budget of 180000 tokens, below the approximate 200K input limit published by GonkaRouter. Not API-confirmed context. Source: https://gonkarouter.io/pricing"
 }

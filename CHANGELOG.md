@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.7.0 — 2026-10-20
+
+- Added named provider profiles with separate URLs, protocols, credentials, cached model lists and defaults; conversation state stores only the profile ID, never credentials.
+- Enabled read-only metadata inspection for every protocol, including Anthropic-compatible gateways; remote providers use their standard models catalog.
+- Distinguished declared context, loaded instance context, API input caps and local working budgets. Missing context fields and authentication errors are now explicit.
+- Added an optional conservative GonkaRouter working budget of 180000 tokens, based on the published approximate 200K input cap; it is not presented as API-confirmed context.
+- Preserve manual budgets when a catalog omits context; prevent late model lists from overwriting another provider selection.
+- Use the saved provider name or gateway host in new reply labels instead of calling every Anthropic-format model Claude.
+- Added HTTP and UI tests for named providers, credential isolation, chat resume, restart and external metadata, with six-language/theme rendering.
+
 ## 1.6.0 — 2026-10-20
 
 - Verify installed engine contents against the tested snapshot regardless of legacy file dates.

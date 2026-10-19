@@ -196,7 +196,7 @@
   "Detaliat · 8192 tokeni": "Uitgebreid · 8192 tokens",
   "Buget de răspuns, nu nivel de inteligență sau garanție de acuratețe.": "Antwoordbudget, geen intelligentieniveau of garantie op juistheid.",
   "Verifică contextul modelului": "Modelcontext controleren",
-  "Maxim model: {0} · Încărcat: {1} · Limită utilizată: {2}": "Modelmaximum: {0} · Geladen: {1} · Gebruikte limiet: {2}",
+  "Maxim model: {0} · Încărcat: {1} · Limită utilizată: {2}": "Opgegeven maximum: {0} · Instantie: {1} · Lokaal budget: {2}",
   "necunoscut": "onbekend",
   "Verifică metadatele serverului. Nu deducem limita din numele modelului.": "Controleer servermetadata. De limiet wordt niet uit de modelnaam afgeleid.",
   "Metadate memorate: {0}": "Opgeslagen metadata: {0}",
@@ -237,5 +237,18 @@
   "În lucru": "Bezig",
   "În așteptare": "In wachtrij",
   "Anulat": "Geannuleerd",
-  "Eroare": "Fout"
+  "Eroare": "Fout",
+  "Salvează furnizorul…": "Provider opslaan…",
+  "Aplică buget recomandat": "Aanbevolen budget toepassen",
+  "Nume furnizor": "Providernaam",
+  "Furnizor salvat: {0}": "Provider opgeslagen: {0}",
+  "Nu pot salva furnizorul: {0}": "Provider kan niet worden opgeslagen: {0}",
+  "Numele furnizorului trebuie să aibă 1–80 de caractere.": "De providernaam moet 1–80 tekens bevatten.",
+  "Adresa API trebuie să fie HTTP/HTTPS, fără cheie în URL.": "Het API-adres moet HTTP/HTTPS gebruiken, zonder sleutel in de URL.",
+  "API-ul nu comunică limita de context · Buget local: {0}": "API meldt geen contextlimiet · Lokaal budget: {0}",
+  "Metadate indisponibile: {0} · Buget local: {1}": "Metadata niet beschikbaar: {0} · Lokaal budget: {1}",
+  "Maxim API: {0} · Instanță: {1} · Intrare API: {2} · Buget: {3}": "API-maximum: {0} · Instantie: {1} · API-invoer: {2} · Budget: {3}",
+  "Buget local aplicat: {0}. Limita API rămâne neconfirmată.": "Lokaal budget toegepast: {0}. API-limiet blijft onbevestigd.",
+  "API Anthropic (Claude și compatibile)": "Anthropic-API (Claude en compatibele diensten)",
+  "Buget local de 180000 tokeni, sub limita de intrare de aproximativ 200K publicată de GonkaRouter. Nu este context confirmat de API. Sursă: https://gonkarouter.io/pricing": "Lokaal budget van 180000 tokens, onder de circa 200K invoerlimiet van GonkaRouter. Geen door de API bevestigd context. Bron: https://gonkarouter.io/pricing"
 }

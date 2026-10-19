@@ -95,7 +95,7 @@ public final class LocalChat extends JFrame {
     private volatile String downloadsDir = System.getProperty("user.home") + File.separator + "Downloads";
     private volatile Object toolsConfig = Json.obj();
 
-    private final JComboBox<Provider> providerBox = new JComboBox<>(Provider.values());
+    private final JComboBox<Object> providerBox = new JComboBox<>(Provider.values());
     private final JComboBox<String> modelBox = new JComboBox<>();
     private final JButton loadModelsButton = ui(new JButton(), "Încarcă modele");
     private final JPasswordField keyField = new JPasswordField(26);
@@ -143,6 +143,11 @@ public final class LocalChat extends JFrame {
     private boolean restoringSelections;
     private String theme = "light";
     private Provider shownProvider;
+    private Object shownSelection;
+    private boolean selectingSavedProvider;
+    private final JButton saveProviderButton=ui(new JButton(),"Salvează furnizorul…");
+    private final JButton applyBudgetButton=ui(new JButton(),"Aplică buget recomandat");
+    private final Map<String,String> metadataErrors=new HashMap<>();
     private boolean busy;
     private Turn current;
     private Path conversationFile;
@@ -235,16 +240,17 @@ public final class LocalChat extends JFrame {
         responseProfile.setFont(responseProfile.getFont().deriveFont(12f));responseProfile.setPreferredSize(new Dimension(180,26));
         controls.add(contextRing,BorderLayout.WEST);controls.add(selectors);selectors.add(bottomModel);selectors.add(responseProfile);selectors.add(bottomMode);selectors.add(bottomApproval);
         footer.add(controls);footer.add(statusBar,BorderLayout.SOUTH);south.add(footer,BorderLayout.SOUTH);
-        JPanel metadata=new JPanel(new BorderLayout(4,2));metadata.add(modelMetadata);metadata.add(inspectModel,BorderLayout.EAST);controls.setPreferredSize(new Dimension(700,28));
+        modelMetadata.setFont(modelMetadata.getFont().deriveFont(11f));inspectModel.setFont(inspectModel.getFont().deriveFont(11f));applyBudgetButton.setFont(applyBudgetButton.getFont().deriveFont(11f));
+        JPanel metadata=new JPanel(new BorderLayout(4,2));metadata.add(modelMetadata);JPanel metadataActions=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT,4,0));metadataActions.add(applyBudgetButton);metadataActions.add(inspectModel);metadata.add(metadataActions,BorderLayout.EAST);controls.setPreferredSize(new Dimension(700,28));
         JPanel north=new JPanel(new BorderLayout());north.add(root.getComponent(0));north.add(metadata,BorderLayout.SOUTH);root.add(north,BorderLayout.NORTH);
         contextRing.addActionListener(e->JOptionPane.showMessageDialog(this,workspace.context.getString()+"\n"+workspace.details.getText()+"\n"+t("Estimare pentru cererea următoare, nu consum facturat."),t("Consum și context"),JOptionPane.INFORMATION_MESSAGE));
         bottomModel.addActionListener(e->{javax.swing.JPopupMenu menu=new javax.swing.JPopupMenu();for(int i=0;i<modelBox.getItemCount();i++){String id=modelBox.getItemAt(i);JMenuItem choice=new JMenuItem(id);choice.addActionListener(x->{modelBox.setSelectedItem(id);saveConfig();refreshDashboard();});menu.add(choice);}menu.show(bottomModel,0,bottomModel.getHeight());});
         bottomApproval.addActionListener(e->{javax.swing.JPopupMenu menu=new javax.swing.JPopupMenu();for(int i=0;i<permissionBox.getItemCount();i++){final int index=i;JMenuItem choice=new JMenuItem(permissionBox.getItemAt(i));choice.addActionListener(x->{alwaysAllowed.clear();permissionBox.setSelectedIndex(index);saveConfig();refreshDashboard();});menu.add(choice);}menu.show(bottomApproval,0,bottomApproval.getHeight());});
         bottomMode.addActionListener(e->{if(!busy){toolsBox.setSelected(!toolsBox.isSelected());permissionBox.setEnabled(toolsBox.isSelected());saveConfig();refreshDashboard();}});
-        inspectModel.addActionListener(e->inspectModel());
+        inspectModel.addActionListener(e->inspectModel());applyBudgetButton.addActionListener(e->applyRecommendedBudget());saveProviderButton.addActionListener(e->saveProviderDialog());
         responseProfile.addActionListener(e->{if(!changingAppearance && !restoringSelections && shownProvider!=null){sessionState.responseProfile=responseProfile.getSelectedIndex();saveConfig();saveConversation();}});
         workspace.limit.addChangeListener(e->{
-            if(!updatingLimit && shownProvider!=null){config.setProperty(contextProfile(),workspace.limit.getValue().toString());saveConfig();refreshDashboard();}
+            if(!updatingLimit && shownProvider!=null){config.setProperty(contextProfile(),workspace.limit.getValue().toString());config.setProperty(contextProfile()+".limitSource","manual");saveConfig();refreshDashboard();}
         });
         workspace.autoCompact.addActionListener(e->saveAutoSettings());
         workspace.autoThreshold.addChangeListener(e->saveAutoSettings());
@@ -316,9 +322,9 @@ public final class LocalChat extends JFrame {
             saveConfig();
         });
         providerBox.addActionListener(e -> {
-            Provider p = (Provider) providerBox.getSelectedItem();
-            if (p == shownProvider) return;
-            stashProvider(shownProvider);
+            Object p = providerBox.getSelectedItem();
+            if (java.util.Objects.equals(p,shownSelection)) return;
+            if(!selectingSavedProvider)stashProvider(shownProvider);
             showProvider(p);
         });
 
@@ -387,7 +393,7 @@ public final class LocalChat extends JFrame {
         cell(p, c, 0, 0, 5, 1, appearance);
 
         cell(p, c, 0, 1, 1, 0, ui(new JLabel(), "Furnizor:"));
-        cell(p, c, 1, 1, 1, 0.5, providerBox);
+        JPanel providerControls=new JPanel(new BorderLayout(4,0));providerControls.add(providerBox);providerControls.add(saveProviderButton,BorderLayout.EAST);cell(p,c,1,1,1,0.5,providerControls);
         cell(p, c, 2, 1, 1, 0, ui(new JLabel(), "Model:"));
         cell(p, c, 3, 1, 1, 0.5, modelBox);
         cell(p, c, 4, 1, 1, 0, loadModelsButton);
@@ -499,7 +505,7 @@ public final class LocalChat extends JFrame {
                 : t("Lasă gol ca să se folosească variabila de mediu {0}", shownProvider.keyEnvVar));
             providerBox.setRenderer(new javax.swing.DefaultListCellRenderer() {
                 public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean selected, boolean focus) {
-                    return super.getListCellRendererComponent(list, value == Provider.CUSTOM ? t(Provider.CUSTOM.label) : value, index, selected, focus);
+                    return super.getListCellRendererComponent(list, value instanceof Provider ? t(((Provider)value).label) : value, index, selected, focus);
                 }
             });
             String[][] defaults = {
@@ -625,7 +631,8 @@ public final class LocalChat extends JFrame {
             Conversations.Saved chosen=Conversations.load(selected.file());
             saveConfig();
             restoringSelections=true;history.clear();history.addAll(chosen.messages());conversationFile=chosen.file();sessionState=chosen.state();
-            if(!sessionState.provider.isBlank())try{providerBox.setSelectedItem(Provider.valueOf(sessionState.provider));}catch(IllegalArgumentException ignored){}
+            if(!sessionState.provider.isBlank())try{providerBox.setSelectedItem(SavedProviders.resolve(config,sessionState.providerPreset,Provider.valueOf(sessionState.provider)));}catch(IllegalArgumentException ignored){}
+            if(!sessionState.providerPreset.isBlank() && !(shownSelection instanceof SavedProviders.Entry))keyField.setText("");
             if(!sessionState.model.isBlank())modelBox.setSelectedItem(sessionState.model);
             if(!sessionState.baseUrl.isBlank())urlField.setText(sessionState.baseUrl);
             if(sessionState.systemPrompt!=null)systemField.setText(sessionState.systemPrompt);
@@ -681,8 +688,25 @@ public final class LocalChat extends JFrame {
         },folder->{workDirField.setText(folder.toString());saveConfig();},()->{setBusy(false);refreshDashboard();}).setVisible(true);
     }
 
+    private void saveProviderDialog() {
+        if(busy)return;String name=JOptionPane.showInputDialog(this,t("Nume furnizor"),shownSelection instanceof SavedProviders.Entry e?e.name():SavedProviders.label(shownSelection,currentUrl()));
+        if(name==null)return;try{saveNamedProvider(name);setStatus("Furnizor salvat: {0}",false,name);}catch(RuntimeException error){setStatus("Nu pot salva furnizorul: {0}",true,describe(error));}
+    }
+    private void saveNamedProvider(String name) {
+        String oldPrefix=SavedProviders.prefix(shownSelection);
+        var saved=SavedProviders.save(config,name,shownProvider,currentUrl(),currentKey(shownProvider),currentModel());
+        String models=currentUrl().equals(config.getProperty(oldPrefix+".url",""))?config.getProperty(oldPrefix+".models","[]"):Json.write(currentModel().isBlank()?List.of():List.of(currentModel()));config.setProperty(saved.prefix()+".models",models);
+        selectingSavedProvider=true;try{for(int i=providerBox.getItemCount()-1;i>=0;i--)if(providerBox.getItemAt(i) instanceof SavedProviders.Entry entry && entry.id().equals(saved.id()))providerBox.removeItemAt(i);
+        providerBox.addItem(saved);providerBox.setSelectedItem(saved);}finally{selectingSavedProvider=false;}saveConfig();refreshDashboard();
+    }
+    private void applyRecommendedBudget() {
+        if(busy)return;long budget=ModelInfo.recommendedBudget(currentUrl());if(budget<=0)return;
+        String profile=contextProfile();String raw=config.getProperty(profile+".metadata","");if(!raw.isBlank())try{ModelInfo.Info info=ModelInfo.Info.from(Json.parse(raw));for(long cap:new long[]{info.maximum(),info.loaded(),info.inputLimit()})if(cap>0)budget=Math.min(budget,cap);}catch(RuntimeException ignored){}
+        workspace.limit.setValue((int)budget);config.setProperty(profile+".limitSource","recommended");saveConfig();saveConversation();refreshDashboard();setStatus("Buget local aplicat: {0}. Limita API rămâne neconfirmată.",false,budget);
+    }
+
     private void saveDefaults() {
-        config.setProperty("default.provider",shownProvider.name());config.setProperty("default.model",currentModel());
+        config.setProperty("default.provider",shownProvider.name());config.setProperty("default.providerPreset",SavedProviders.id(shownSelection));config.setProperty("default.model",currentModel());
         config.setProperty("default.url",currentUrl());config.setProperty("default.workdir",workDirField.getText().trim());
         config.setProperty("default.system",systemField.getText());config.setProperty("default.stream",Boolean.toString(streamBox.isSelected()));config.setProperty("default.tools",Boolean.toString(toolsBox.isSelected()));
         config.setProperty("default.permission",Integer.toString(permissionBox.getSelectedIndex()));config.setProperty("default.responseProfile",Integer.toString(responseProfile.getSelectedIndex()));
@@ -729,7 +753,7 @@ public final class LocalChat extends JFrame {
         JOptionPane.showMessageDialog(this,t("Viteză: profil Rapid, chat simplu când nu ai nevoie de fișiere, context încărcat mai mic în LM Studio.\nEchilibru: profil Echilibrat și autocompactare la 70%.\nAcuratețe: profil Detaliat, verificarea documentelor cu PDFControl și confirmarea informațiilor lipsă. Un buget mai mare nu garantează corectitudinea.\nMaximul modelului și contextul încărcat pot fi diferite. Verifică metadatele după schimbări în LM Studio."),t("Recomandări pentru viteză și acuratețe"),JOptionPane.INFORMATION_MESSAGE);
     }
     private void autoInspectModel() {
-        if(shownProvider!=Provider.CUSTOM || currentModel().isBlank() || currentUrl().isBlank())return;
+        if(shownProvider==null || currentModel().isBlank() || currentUrl().isBlank())return;
         String profile=contextProfile();long now=System.currentTimeMillis();
         if(!profile.equals(pendingMetadataProfile)){pendingMetadataProfile=profile;metadataProfileSince=now;return;}
         if(now-metadataProfileSince<750 || inspectingModel || now-metadataAttempts.getOrDefault(profile,0L)<60000)return;
@@ -737,18 +761,19 @@ public final class LocalChat extends JFrame {
     }
     private void inspectModel() {inspectModel(false);}
     private void inspectModel(boolean quiet) {
-        if(inspectingModel || shownProvider!=Provider.CUSTOM){if(!quiet)setStatus("Metadatele sunt disponibile pentru servere LM Studio compatibile.",false);return;}
-        String profile=contextProfile(),url=currentUrl(),model=currentModel(),key=currentKey(shownProvider);
+        if(inspectingModel || shownProvider==null || currentModel().isBlank())return;
+        String profile=contextProfile(),url=currentUrl(),model=currentModel(),key=currentKey(shownProvider);Provider metadataProtocol=shownProvider;
         metadataAttempts.put(profile,System.currentTimeMillis());inspectingModel=true;inspectModel.setEnabled(false);
         Thread worker=new Thread(()->{try{
-            ModelInfo.Info info=ModelInfo.fetch(url,key,model);
+            ModelInfo.Info info=ModelInfo.fetch(url,key,model,metadataProtocol);
             SwingUtilities.invokeLater(()->{if(!profile.equals(contextProfile()))return;
-                boolean hadMetadata=config.containsKey(profile+".metadata");config.setProperty(profile+".metadata",Json.write(info.json()));
-                if(hadMetadata && info.loaded()==0){config.setProperty(profile,"0");contextProfile="";}
-                if(info.loaded()>0 && info.loaded()<=2000000){config.setProperty(profile,Long.toString(info.loaded()));contextProfile="";}
+                config.setProperty(profile+".metadata",Json.write(info.json()));metadataErrors.remove(profile);
+                String limitSource=config.getProperty(profile+".limitSource","");
+                if(info.loaded()==0 && limitSource.equals("server")){config.setProperty(profile,"0");contextProfile="";}
+                if(info.loaded()>0 && info.loaded()<=2000000 && !Set.of("manual","recommended").contains(limitSource)){config.setProperty(profile,Long.toString(info.loaded()));config.setProperty(profile+".limitSource","server");contextProfile="";}
                 saveConfig();refreshDashboard();if(!quiet)setStatus("Metadate verificate. Limita încărcată este folosită când este disponibilă.",false);
             });
-        }catch(Exception error){SwingUtilities.invokeLater(()->{if(!quiet && profile.equals(contextProfile()))setStatus("Contextul real nu poate fi verificat: {0}",true,describe(error));});}
+        }catch(Exception error){SwingUtilities.invokeLater(()->{if(profile.equals(contextProfile())){metadataErrors.put(profile,describe(error));refreshDashboard();if(!quiet)setStatus("Contextul real nu poate fi verificat: {0}",true,describe(error));}});}
         finally{SwingUtilities.invokeLater(()->{inspectingModel=false;inspectModel.setEnabled(!busy);});}},"model-metadata");worker.setDaemon(true);worker.start();
     }
 
@@ -764,7 +789,7 @@ public final class LocalChat extends JFrame {
     }
 
     private String contextProfile() {
-        String source=shownProvider.id()+"|"+currentUrl()+"|"+currentModel();
+        String source=SavedProviders.prefix(shownSelection)+"|"+currentUrl()+"|"+currentModel();
         try {return "context.limit."+java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(source.getBytes(StandardCharsets.UTF_8)));}
         catch(java.security.NoSuchAlgorithmException e){throw new IllegalStateException(e);}
     }
@@ -823,6 +848,10 @@ public final class LocalChat extends JFrame {
         ModelInfo.Info info=new ModelInfo.Info(0,0,"");
         if(!metadata.isBlank())try{info=ModelInfo.Info.from(Json.parse(metadata));}catch(RuntimeException ignored){}
         modelMetadata.setText(t("Maxim model: {0} · Încărcat: {1} · Limită utilizată: {2}",info.maximum()>0?info.maximum():t("necunoscut"),info.loaded()>0?info.loaded():t("necunoscut"),configured>0?configured:t("necunoscut")));
+        if(!metadata.isBlank() && info.maximum()==0 && info.loaded()==0 && info.inputLimit()==0)modelMetadata.setText(t("API-ul nu comunică limita de context · Buget local: {0}",configured>0?configured:t("necunoscut")));
+        else if(info.inputLimit()>0)modelMetadata.setText(t("Maxim API: {0} · Instanță: {1} · Intrare API: {2} · Buget: {3}",info.maximum()>0?info.maximum():t("necunoscut"),info.loaded()>0?info.loaded():t("necunoscut"),info.inputLimit(),configured>0?configured:t("necunoscut")));
+        String metadataError=metadataErrors.get(profile);if(metadataError!=null)modelMetadata.setText(t("Metadate indisponibile: {0} · Buget local: {1}",metadataError,configured>0?configured:t("necunoscut")));
+        applyBudgetButton.setVisible(ModelInfo.recommendedBudget(currentUrl())>0);applyBudgetButton.setEnabled(!busy);applyBudgetButton.setToolTipText(t("Buget local de 180000 tokeni, sub limita de intrare de aproximativ 200K publicată de GonkaRouter. Nu este context confirmat de API. Sursă: https://gonkarouter.io/pricing"));
         modelMetadata.setToolTipText(metadata.isBlank()?t("Verifică metadatele serverului. Nu deducem limita din numele modelului."):t("Metadate memorate: {0}",metadata));
         String title=sessionState.title.isBlank()?Conversations.title(history):sessionState.title;
         setTitle("LocalChat "+AppVersion.VALUE+" — "+(title.isBlank()?"ChatGPT · Claude · API":title));
@@ -883,7 +912,7 @@ public final class LocalChat extends JFrame {
             }
             case "/model" -> {
                 if(arg.isBlank()){notice(shownProvider.id()+":"+currentModel());break;}
-                if(arg.equalsIgnoreCase("reset")){modelBox.setSelectedItem(shownProvider.models[0]);saveConfig();refreshDashboard();break;}
+                if(arg.equalsIgnoreCase("reset")){modelBox.setSelectedItem(config.getProperty(SavedProviders.prefix(shownSelection)+".model",shownProvider.models[0]));saveConfig();refreshDashboard();break;}
                 String[] target=arg.split(":",2);
                 if(target.length!=2 || target[1].isBlank()){setStatus("Utilizare: /model openai:model, anthropic:model sau custom:model",true);break;}
                 Provider provider=null;for(Provider v:Provider.values())if(v.id().equalsIgnoreCase(target[0]))provider=v;
@@ -1033,7 +1062,7 @@ public final class LocalChat extends JFrame {
         }
         if(maximum>0 && estimated>=maximum){setStatus("Contextul estimat depășește limita. Folosește /compact sau configurează contextul corect.",true);return;}
 
-        final String label = p.shortName + " · " + model;
+        final String label = SavedProviders.label(shownSelection,url) + " · " + model;
         List<Skills.Skill> skills = useTools ? Skills.load(skillsDir) : Collections.emptyList();
         PathMap paths = pathMap();
         Tools tools = useTools ? new Tools(new Tools.Context(workDir, skillsDir, rulesFile, configFile, commandEnv(),
@@ -1225,6 +1254,7 @@ public final class LocalChat extends JFrame {
                 .append("- Skills and rules may contain paths written on another computer. On this PC they translate as follows ")
                 .append("(the tools apply this automatically): ").append(String.join("; ", paths.describe())).append(".\n\n")
                 .append("How to work:\n")
+                .append("- Keep the user-selected internal MBS project number distinct from client WERKNO/order numbers. Discover the actual server folder with directory listing/search; do not invent an exact folder path from a number or silently replace the project ID.\n")
                 .append("- For drawing/PDFCONTROL operations, use the dedicated PDFCONTROL start tools, poll job_status until terminal, and deliver existing PDF reports and marked drawings. Never substitute a text report or claim a pending/partial job is complete. The original engine determines extraction, V/W identity and visual revision differences.\n")
                 .append("- Find things out with the tools (list_dir, find_files, search_text, read_file) instead of guessing; never invent tool results.\n")
                 .append("- When the request matches a skill listed below, call read_skill first and follow it.\n")
@@ -1268,7 +1298,7 @@ public final class LocalChat extends JFrame {
         alwaysAllowed.clear();
         String defaultProvider=config.getProperty("default.provider","");
         if(!defaultProvider.isBlank()) {
-            try{providerBox.setSelectedItem(Provider.valueOf(defaultProvider));}catch(IllegalArgumentException ignored){}
+            try{providerBox.setSelectedItem(SavedProviders.resolve(config,config.getProperty("default.providerPreset",""),Provider.valueOf(defaultProvider)));}catch(IllegalArgumentException ignored){}
             modelBox.setSelectedItem(config.getProperty("default.model",currentModel()));urlField.setText(config.getProperty("default.url",currentUrl()));
             workDirField.setText(pathMap().path(config.getProperty("default.workdir",workDirField.getText())));
         }
@@ -1285,7 +1315,7 @@ public final class LocalChat extends JFrame {
             sessionState.responseProfile=responseProfile.getSelectedIndex();
             sessionState.draft=input.getText();sessionState.systemPrompt=systemField.getText();
             sessionState.toolsEnabled=toolsBox.isSelected();sessionState.streamEnabled=streamBox.isSelected();
-            if(shownProvider!=null){sessionState.provider=shownProvider.name();sessionState.model=currentModel();sessionState.baseUrl=currentUrl();}
+            if(shownProvider!=null){sessionState.provider=shownProvider.name();sessionState.providerPreset=SavedProviders.id(shownSelection);sessionState.model=currentModel();sessionState.baseUrl=currentUrl();}
             if(workspace!=null)sessionState.contextLimit=((Number)workspace.limit.getValue()).intValue();
             Conversations.save(conversationFile, workDirField.getText().trim(), history,sessionState);
             refreshSessions();workspace.select(conversationFile);return true;
@@ -1455,7 +1485,7 @@ public final class LocalChat extends JFrame {
     }
 
     private void loadModels() {
-        final Provider p = shownProvider;
+        final Provider p = shownProvider;final Object selection=shownSelection;final String prefix=SavedProviders.prefix(selection);
         final String url = currentUrl();
         final String key = currentKey(p);
         loadModelsButton.setEnabled(false);
@@ -1465,12 +1495,12 @@ public final class LocalChat extends JFrame {
                 final List<String> ids = ChatClient.listModels(p, url, key);
                 SwingUtilities.invokeLater(() -> {
                     loadModelsButton.setEnabled(true);
-                    if (shownProvider != p) return;
+                    if (!java.util.Objects.equals(shownSelection,selection) || !currentUrl().equals(url) || !currentKey(p).equals(key)) return;
                     if (ids.isEmpty()) {
                         setStatus("Serverul nu a întors niciun model.", true);
                         return;
                     }
-                    config.setProperty(p.id()+".models",Json.write(ids));
+                    config.setProperty(prefix+".models",Json.write(ids));
                     String keep = currentModel();
                     modelBox.removeAllItems();
                     for (String id : ids) modelBox.addItem(id);
@@ -1496,7 +1526,7 @@ public final class LocalChat extends JFrame {
         sendButton.setEnabled(!b);
         stopButton.setEnabled(b);
         newChatButton.setEnabled(!b);
-        providerBox.setEnabled(!b);modelBox.setEnabled(!b);urlField.setEnabled(!b);keyField.setEnabled(!b);
+        providerBox.setEnabled(!b);saveProviderButton.setEnabled(!b);applyBudgetButton.setEnabled(!b);modelBox.setEnabled(!b);urlField.setEnabled(!b);keyField.setEnabled(!b);
         toolsBox.setEnabled(!b);workDirField.setEnabled(!b);chooseDirButton.setEnabled(!b);systemField.setEnabled(!b);
         permissionBox.setEnabled(!b && toolsBox.isSelected());loadModelsButton.setEnabled(!b);
         if(workspace!=null){workspace.limit.setEnabled(!b);workspace.autoCompact.setEnabled(!b);
@@ -1575,7 +1605,8 @@ public final class LocalChat extends JFrame {
 
     private String currentKey(Provider p) {
         String typed = new String(keyField.getPassword()).trim();
-        return typed.isEmpty() ? p.envKey() : typed;
+        if(!typed.isEmpty())return typed;
+        try{return shownSelection instanceof SavedProviders.Entry || !java.util.Objects.equals(java.net.URI.create(currentUrl()).getHost(),java.net.URI.create(p.defaultUrl).getHost())?"":p.envKey();}catch(RuntimeException error){return "";}
     }
 
     private Path currentWorkDir() {
@@ -1591,23 +1622,24 @@ public final class LocalChat extends JFrame {
 
     /** Remembers what is in the fields for this provider, so switching back restores it. */
     private void stashProvider(Provider p) {
-        config.setProperty(p.id() + ".key", new String(keyField.getPassword()).trim());
-        config.setProperty(p.id() + ".model", currentModel());
-        config.setProperty(p.id() + ".url", urlField.getText().trim());
+        if(shownSelection==null)return;String prefix=SavedProviders.prefix(shownSelection);
+        config.setProperty(prefix + ".key", new String(keyField.getPassword()).trim());
+        config.setProperty(prefix + ".model", currentModel());
+        config.setProperty(prefix + ".url", urlField.getText().trim());
     }
 
-    private void showProvider(Provider p) {
-        shownProvider = p;
-        keyField.setText(config.getProperty(p.id() + ".key", ""));
+    private void showProvider(Object selection) {
+        Provider p=SavedProviders.protocol(selection);String prefix=SavedProviders.prefix(selection);shownSelection=selection;shownProvider = p;
+        keyField.setText(config.getProperty(prefix + ".key", ""));
         keyField.setToolTipText(p.keyEnvVar == null
                 ? t("Opțională pentru API-uri locale (Ollama, LM Studio)")
                 : t("Lasă gol ca să se folosească variabila de mediu {0}", p.keyEnvVar));
-        urlField.setText(config.getProperty(p.id() + ".url", p.defaultUrl));
-        String model = config.getProperty(p.id() + ".model", "");
-        if (model.isEmpty()) model = p.models[0];
+        urlField.setText(config.getProperty(prefix + ".url", p.defaultUrl));
+        String model = config.getProperty(prefix + ".model", "");
+        if (model.isEmpty() && selection instanceof Provider) model = p.models[0];
         modelBox.removeAllItems();
-        java.util.LinkedHashSet<String> models=new java.util.LinkedHashSet<>(Arrays.asList(p.models));
-        try{Object saved=Json.parse(config.getProperty(p.id()+".models","[]"));if(saved instanceof List)for(Object m:(List<?>)saved)if(m instanceof String)models.add((String)m);}catch(RuntimeException ignored){}
+        java.util.LinkedHashSet<String> models=new java.util.LinkedHashSet<>(selection instanceof Provider?Arrays.asList(p.models):Collections.emptyList());
+        try{Object saved=Json.parse(config.getProperty(prefix+".models","[]"));if(saved instanceof List)for(Object m:(List<?>)saved)if(m instanceof String)models.add((String)m);}catch(RuntimeException ignored){}
         for (String m : models) modelBox.addItem(m);
         if (!models.contains(model)) modelBox.addItem(model);
         modelBox.setSelectedItem(model);
@@ -1621,6 +1653,7 @@ public final class LocalChat extends JFrame {
                 setStatus("Nu pot citi setările: {0}", true, e.getMessage());
             }
         }
+        for(var saved:SavedProviders.list(config))providerBox.addItem(saved);
         systemField.setText(config.getProperty("system", ""));
         streamBox.setSelected(!"false".equals(config.getProperty("stream")));
         workDirField.setText(config.getProperty("workdir", ""));
@@ -1634,10 +1667,10 @@ public final class LocalChat extends JFrame {
         } catch (IllegalArgumentException ignored) {
             // unknown value in the file: keep the default
         }
-        providerBox.setSelectedItem(p);
-        showProvider(p);
+        Object selected=SavedProviders.resolve(config,config.getProperty("providerPreset",""),p);providerBox.setSelectedItem(selected);
+        showProvider(selected);
         String def=config.getProperty("default.provider","");
-        if(!def.isBlank())try{Provider d=Provider.valueOf(def);providerBox.setSelectedItem(d);showProvider(d);
+        if(!def.isBlank())try{Provider d=Provider.valueOf(def);Object preferred=SavedProviders.resolve(config,config.getProperty("default.providerPreset",""),d);providerBox.setSelectedItem(preferred);showProvider(preferred);
             modelBox.setSelectedItem(config.getProperty("default.model",currentModel()));urlField.setText(config.getProperty("default.url",currentUrl()));
             workDirField.setText(pathMap().path(config.getProperty("default.workdir",workDirField.getText())));
         }catch(IllegalArgumentException ignored){}
@@ -1648,7 +1681,7 @@ public final class LocalChat extends JFrame {
         stashProvider(shownProvider);
         config.setProperty("ui.language", I18n.language());
         config.setProperty("ui.theme", theme);
-        config.setProperty("provider", shownProvider.name());
+        config.setProperty("provider", shownProvider.name());config.setProperty("providerPreset",SavedProviders.id(shownSelection));
         config.setProperty("system", systemField.getText());
         config.setProperty("stream", String.valueOf(streamBox.isSelected()));
         config.setProperty("workdir", workDirField.getText().trim());

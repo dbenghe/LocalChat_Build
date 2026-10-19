@@ -287,3 +287,37 @@ poate primi --original pentru altă instalare. Nicio regulă sau desen privat nu
 este publicat în repository. Build.ps1 execută testele Java și testele reale MCP
 pe PDF-uri sintetice înainte de instalare. Regresiile originale suplimentare se
 execută local folosind testele din instalarea PDFCONTROL, fără a le publica.
+
+
+## Furnizori cu nume și context API (1.7.0)
+
+Alege protocolul din Furnizor (API custom pentru NVIDIA/OpenAI-compatible sau API
+Anthropic pentru un server care acceptă acel protocol), completează URL-ul, cheia
+și modelul, apoi apasă **Salvează furnizorul…** și scrie numele dorit. Noul nume
+apare direct în lista Furnizor. Poți salva mai multe conturi ale aceluiași serviciu.
+Același nume actualizează profilul existent; un nume nou creează un profil separat.
+Fiecare păstrează cheia, URL-ul, modelul și lista de modele. **Încarcă modele**
+citește catalogul profilului selectat. Setările/modelul implicit se salvează în
+continuare prin Unelte; conversațiile reluate păstrează profilul propriu.
+
+Exemple de URL-uri: https://api.gonkarouter.io/v1 și
+https://integrate.api.nvidia.com/v1 . Cheile rămân numai în setari.properties,
+nu în conversații, exporturi sau Git. Profilul fără cheie nu împrumută cheia altui
+profil. Un răspuns HTTP 401 indică autentificare nereușită; un catalog HTTP 200
+fără câmpuri de context indică metadate absente, nu o limită zero.
+
+Inspecția contextului folosește numai GET pentru toate protocoalele. Pe servere
+locale păstrează citirea nativă LM Studio, cu fallback la catalogul standard;
+serverele externe sunt citite prin <base>/models. Nu face inferență și nu încarcă
+modelul. Recunoaște câmpurile numerice context_length, max_context_length,
+context_window, max_model_len și limitele de intrare explicite. Un maxim declarat
+sau o limită de ieșire nu devine automat context încărcat. Nu deduce limite din ID.
+
+GonkaRouter și NVIDIA nu comunicau contextul în catalogul autentificat verificat
+la 20 octombrie 2026. Pentru GonkaRouter, **Aplică buget recomandat** configurează
+explicit un buget local conservator de 180000 tokeni, sub limita de intrare de
+aproximativ 200K descrisă la https://gonkarouter.io/pricing . Nu este context
+confirmat de API. Pentru alte servicii poți configura manual un buget verificat
+pentru modelul/ruta folosită. Procentajul estimat și autocompactarea se raportează
+la bugetul local; alegerea lui nu modifică serverul. Valorile introduse manual
+nu sunt șterse când catalogul nu comunică limite.

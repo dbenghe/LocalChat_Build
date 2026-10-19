@@ -403,7 +403,7 @@ public final class FeatureTest {
             });
             metadataIdle(app[0]);
             edt(()->{
-                check(server.requests.size()==4 && !(Boolean)field(app[0],"inspectingModel"),"v1/v0 failure clears in-flight flag for future retries");
+                check(server.requests.size()==5 && !(Boolean)field(app[0],"inspectingModel"),"native/catalog failure clears in-flight flag for future retries");
                 server.status=200;server.loaded=32768;call(app[0],"inspectModel",new Class<?>[]{});
             });
             metadataIdle(app[0]);

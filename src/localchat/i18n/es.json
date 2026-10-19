@@ -196,7 +196,7 @@
   "Detaliat · 8192 tokeni": "Detallado · 8192 tokens",
   "Buget de răspuns, nu nivel de inteligență sau garanție de acuratețe.": "Presupuesto de respuesta, no nivel de inteligencia ni garantía de precisión.",
   "Verifică contextul modelului": "Verificar contexto del modelo",
-  "Maxim model: {0} · Încărcat: {1} · Limită utilizată: {2}": "Máximo del modelo: {0} · Cargado: {1} · Límite usado: {2}",
+  "Maxim model: {0} · Încărcat: {1} · Limită utilizată: {2}": "Máximo declarado: {0} · Instancia: {1} · Presupuesto local: {2}",
   "necunoscut": "desconocido",
   "Verifică metadatele serverului. Nu deducem limita din numele modelului.": "Verifica los metadatos del servidor. El límite no se deduce del nombre del modelo.",
   "Metadate memorate: {0}": "Metadatos guardados: {0}",
@@ -237,5 +237,18 @@
   "În lucru": "En curso",
   "În așteptare": "Pendiente",
   "Anulat": "Cancelado",
-  "Eroare": "Error"
+  "Eroare": "Error",
+  "Salvează furnizorul…": "Guardar proveedor…",
+  "Aplică buget recomandat": "Aplicar presupuesto recomendado",
+  "Nume furnizor": "Nombre del proveedor",
+  "Furnizor salvat: {0}": "Proveedor guardado: {0}",
+  "Nu pot salva furnizorul: {0}": "No se puede guardar el proveedor: {0}",
+  "Numele furnizorului trebuie să aibă 1–80 de caractere.": "El nombre debe tener entre 1 y 80 caracteres.",
+  "Adresa API trebuie să fie HTTP/HTTPS, fără cheie în URL.": "La dirección API debe usar HTTP/HTTPS, sin clave en la URL.",
+  "API-ul nu comunică limita de context · Buget local: {0}": "La API no comunica el contexto · Presupuesto local: {0}",
+  "Metadate indisponibile: {0} · Buget local: {1}": "Metadatos no disponibles: {0} · Presupuesto local: {1}",
+  "Maxim API: {0} · Instanță: {1} · Intrare API: {2} · Buget: {3}": "Máximo API: {0} · Instancia: {1} · Entrada API: {2} · Presupuesto: {3}",
+  "Buget local aplicat: {0}. Limita API rămâne neconfirmată.": "Presupuesto local aplicado: {0}. El límite API sigue sin confirmar.",
+  "API Anthropic (Claude și compatibile)": "API Anthropic (Claude y compatibles)",
+  "Buget local de 180000 tokeni, sub limita de intrare de aproximativ 200K publicată de GonkaRouter. Nu este context confirmat de API. Sursă: https://gonkarouter.io/pricing": "Presupuesto local de 180000 tokens, inferior a la entrada aproximada de 200K publicada por GonkaRouter. No es contexto confirmado por la API. Fuente: https://gonkarouter.io/pricing"
 }

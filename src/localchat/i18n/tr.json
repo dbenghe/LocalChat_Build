@@ -196,7 +196,7 @@
   "Detaliat · 8192 tokeni": "Ayrıntılı · 8192 token",
   "Buget de răspuns, nu nivel de inteligență sau garanție de acuratețe.": "Yanıt bütçesidir; zekâ düzeyi veya doğruluk garantisi değildir.",
   "Verifică contextul modelului": "Model bağlamını denetle",
-  "Maxim model: {0} · Încărcat: {1} · Limită utilizată: {2}": "Model üst sınırı: {0} · Yüklü: {1} · Kullanılan sınır: {2}",
+  "Maxim model: {0} · Încărcat: {1} · Limită utilizată: {2}": "Bildirilen üst sınır: {0} · Örnek: {1} · Yerel bütçe: {2}",
   "necunoscut": "bilinmiyor",
   "Verifică metadatele serverului. Nu deducem limita din numele modelului.": "Sunucu meta verilerini denetleyin. Sınır model adından tahmin edilmez.",
   "Metadate memorate: {0}": "Önbellekteki meta veriler: {0}",
@@ -237,5 +237,18 @@
   "În lucru": "Çalışıyor",
   "În așteptare": "Bekliyor",
   "Anulat": "İptal edildi",
-  "Eroare": "Hata"
+  "Eroare": "Hata",
+  "Salvează furnizorul…": "Sağlayıcıyı kaydet…",
+  "Aplică buget recomandat": "Önerilen bütçeyi uygula",
+  "Nume furnizor": "Sağlayıcı adı",
+  "Furnizor salvat: {0}": "Sağlayıcı kaydedildi: {0}",
+  "Nu pot salva furnizorul: {0}": "Sağlayıcı kaydedilemiyor: {0}",
+  "Numele furnizorului trebuie să aibă 1–80 de caractere.": "Sağlayıcı adı 1–80 karakter olmalıdır.",
+  "Adresa API trebuie să fie HTTP/HTTPS, fără cheie în URL.": "API adresi HTTP/HTTPS kullanmalı; URL içinde anahtar olmamalıdır.",
+  "API-ul nu comunică limita de context · Buget local: {0}": "API bağlam sınırını bildirmiyor · Yerel bütçe: {0}",
+  "Metadate indisponibile: {0} · Buget local: {1}": "Meta veriler kullanılamıyor: {0} · Yerel bütçe: {1}",
+  "Maxim API: {0} · Instanță: {1} · Intrare API: {2} · Buget: {3}": "API üst sınırı: {0} · Örnek: {1} · API girdisi: {2} · Bütçe: {3}",
+  "Buget local aplicat: {0}. Limita API rămâne neconfirmată.": "Yerel bütçe uygulandı: {0}. API sınırı doğrulanmadı.",
+  "API Anthropic (Claude și compatibile)": "Anthropic API (Claude ve uyumlu hizmetler)",
+  "Buget local de 180000 tokeni, sub limita de intrare de aproximativ 200K publicată de GonkaRouter. Nu este context confirmat de API. Sursă: https://gonkarouter.io/pricing": "GonkaRouter tarafından yayımlanan yaklaşık 200K girdi sınırının altında 180000 token yerel bütçe. API tarafından doğrulanmış bağlam değildir. Kaynak: https://gonkarouter.io/pricing"
 }
