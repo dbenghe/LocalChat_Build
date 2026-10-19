@@ -15,3 +15,6 @@ Cerințe stabilite de utilizator la 19 octombrie 2026:
 Structură confirmată: sursele și Git sunt în C:\LocalChat_Build. Build-ul produce distribuția în C:\LocalChat, lansată prin Porneste LocalChat.bat. VERSION este sursa unică a versiunii. Nu publica distribuția sau runtime-urile în istoricul Git.
 
 Repository-ul utilizatorului este https://github.com/dbenghe/LocalChat_Build (cont personal). Nu crea și nu utiliza un repository în contul companiei. Folosește origin pentru acest repository existent.
+
+- Din 1.2.0, istoricul, modelul, ciorna, consumul și memoria compactată sunt separate per conversație. Testează izolarea la schimbare și reluare; încărcarea unui chat nu trebuie să apeleze API-ul. Arhiva originală rămâne integrală după compactare.
+- Valorile estimate de context au marcaj ~. Nu prezenta estimări ca usage facturat sau consum necunoscut ca zero. Noile texte de interfață și comenzile descrise trebuie acoperite în toate cele șase limbi.

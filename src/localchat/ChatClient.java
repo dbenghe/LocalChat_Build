@@ -132,6 +132,12 @@ final class ChatClient {
         final StringBuilder args = new StringBuilder();
     }
 
+    private int outputLimit;
+    void outputLimit(int tokens) {outputLimit=tokens;}
+    private boolean omitUsageOption;
+    private volatile TokenUsage lastUsage = TokenUsage.UNKNOWN;
+    TokenUsage usage() { return lastUsage; }
+
     private volatile HttpURLConnection active;
     private volatile boolean cancelled;
 
@@ -149,11 +155,14 @@ final class ChatClient {
     /** Sends the conversation; reply text is also pushed to the listener as it arrives. */
     Reply chat(Provider p, String baseUrl, String apiKey, String model, String system, List<Message> history,
                List<ToolSpec> tools, boolean stream, Listener listener) throws IOException {
+        lastUsage = TokenUsage.UNKNOWN;
         boolean anthropic = p.format == Provider.Format.ANTHROPIC;
         Map<String, Object> body = anthropic
                 ? anthropicBody(model, system, history, tools, stream)
                 : openAiBody(model, system, history, tools, stream);
 
+        if(outputLimit>0)body.put(p==Provider.OPENAI?"max_completion_tokens":"max_tokens",outputLimit);
+        if (stream && !anthropic && !omitUsageOption) body.put("stream_options", Json.obj("include_usage", true));
         HttpURLConnection conn = open(p, baseUrl + (anthropic ? "/messages" : "/chat/completions"), apiKey, "POST");
         active = conn;
         try {
@@ -167,6 +176,10 @@ final class ChatClient {
             return readReply(conn, anthropic, listener);
         } catch (IOException e) {
             if (cancelled) return new Reply("", Collections.emptyList());
+            if(p==Provider.CUSTOM && stream && !omitUsageOption && e.getMessage()!=null
+                    && e.getMessage().contains("400") && e.getMessage().toLowerCase(java.util.Locale.ROOT).contains("stream_options")) {
+                omitUsageOption=true;conn.disconnect();return chat(p,baseUrl,apiKey,model,system,history,tools,stream,listener);
+            }
             throw e;
         } finally {
             active = null;
@@ -304,10 +317,14 @@ final class ChatClient {
                 sawEvents = true;
                 String data = line.substring(5).trim();
                 if (data.isEmpty()) continue;
-                if (data.equals("[DONE]")) break;
+                if (data.equals("[DONE]")) {
+                    lastUsage=TokenUsage.parse(null,anthropic,lastUsage,true);break;
+                }
                 Object event = Json.parse(data);
                 String error = errorMessage(event);
                 if (error != null) throw new IOException(error);
+                boolean terminal=anthropic && "message_stop".equals(Json.str(event,"type"));
+                lastUsage=TokenUsage.parse(event,anthropic,lastUsage,terminal);
                 String delta = anthropic ? anthropicEvent(event, calls) : openAiEvent(event, calls);
                 if (delta != null && !delta.isEmpty()) {
                     text.append(delta);
@@ -319,7 +336,9 @@ final class ChatClient {
         }
         if (!sawEvents && !cancelled && plain.toString().trim().length() > 0) {
             // Streaming was off, or the server ignored it and sent one plain JSON response.
-            Reply full = fullReply(Json.parse(plain.toString()), anthropic);
+            Object parsed=Json.parse(plain.toString());
+            lastUsage=TokenUsage.parse(parsed,anthropic,TokenUsage.UNKNOWN,true);
+            Reply full = fullReply(parsed, anthropic);
             if (!full.text.isEmpty()) listener.onText(full.text);
             return full;
         }

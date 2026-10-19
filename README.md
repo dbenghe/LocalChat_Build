@@ -111,3 +111,53 @@ in pdfcontrol/ and approved skills in packaging/skills/. Source compilation and 
 
 Release workflow: implement, update VERSION and CHANGELOG, run build.bat, review staged files for private data,
 then commit and push. Never commit API keys, conversation history, runtime packages or production documents.
+
+
+## Conversații, context și rapoarte (1.2.0)
+
+Discuțiile apar în stânga imediat după prima întrebare. Apasă pe o discuție pentru a o relua;
+poți căuta, schimba titlul sau fixa o discuție. Modelul, folderul, ciorna, statisticile și memoria compactată
+se restaurează separat pentru fiecare chat. Deschiderea listei sau încărcarea unui chat nu apelează API-ul.
+Fișierele vechi din conversatii/ rămân compatibile; consumul istoric necunoscut este marcat explicit.
+
+Indicatorul de context estimează instrucțiunile de sistem, definițiile tool-urilor și conversația care va
+fi trimisă. Valorile ~ sunt estimări UTF-8, nu o tokenizare exactă. Configurează limita reală încărcată
+în LM Studio sau limita modelului API; 0 înseamnă necunoscut. Limita nu reconfigurează serverul.
+Consumul raportat de server este separat: /token afișează ultimul răspuns și totalul conversației.
+Fiecare răspuns poate include mai multe cereri datorită tool-urilor. Datele absente sau întrerupte sunt parțiale;
+tokenii de cache sunt afișați separat și nu sunt adunați de două ori în totalul de intrare OpenAI.
+
+Comenzi locale (numele rămân identice în toate limbile; descrierile sunt traduse):
+
+| Comandă | Acțiune |
+| --- | --- |
+| /help | Lista comenzilor |
+| /status | Sesiunea, modelul și folderul curent |
+| /model custom:nume | Schimbă furnizorul/modelul; acceptă openai, anthropic și custom |
+| /model reset | Modelul implicit al furnizorului |
+| /new Titlu | Discuție nouă |
+| /list text | Caută discuții și afișează ID-urile scurte |
+| /switch ID | Încarcă o discuție |
+| /resume [ID] | Reia discuția anterioară sau una indicată |
+| /title Titlu | Redenumește discuția |
+| /pin | Fixează sau desprinde discuția |
+| /history | Statistici despre mesaje și tool-uri |
+| /token | Estimarea contextului și consumul raportat |
+| /context 64000 | Setează limita contextului pentru estimare |
+| /compact | Cere modelului un rezumat al istoricului vechi |
+| /stop | Oprește generarea sau compactarea |
+| /skills | Skill-urile efectiv instalate |
+| /connectors | Starea conectorilor MCP configurați |
+
+/compact face o cerere API folosind modelul curent, iar consumul ei aparține aceluiași chat.
+Păstrează ultimele două schimburi și toate mesajele originale pe disc. Rezumatul se aplică doar dacă
+reduce contextul și nu se transferă în alt chat. Rezultatul trebuie verificat când deciziile sunt importante.
+Comenzile de inspectare și navigare nu trimit conținut modelului.
+
+Fișierele existente găsite în rezultatele tool-urilor, în folderul de lucru, apar în zona Rapoarte și fișiere.
+Poți deschide raportul, folderul lui sau salva o copie; suprascrierea unei copii existente cere confirmare.
+Nu se deschid automat căi inventate în textul modelului.
+
+Istoricul mare este rezumat în fragmente, cu un buget de ieșire și memoria intermediară rezervate în limita
+configurată. Toate cererile de compactare intră în statisticile acelui chat. Dacă o etapă eșuează, rezumatul
+activ anterior rămâne valabil. Cererile normale estimate peste limita configurată sunt oprite înainte de API.

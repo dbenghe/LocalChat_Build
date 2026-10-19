@@ -21,6 +21,8 @@ final class Agent {
         void toolStarted(ChatClient.ToolCall call);
 
         void toolFinished(ChatClient.ToolCall call, Tools.Result result);
+        default void usage(TokenUsage usage) {}
+        default void request(String system, List<ChatClient.Message> conversation, List<ChatClient.ToolSpec> tools) {}
     }
 
     private final ChatClient client = new ChatClient();
@@ -50,7 +52,10 @@ final class Agent {
                 conversation.addAll(added);
                 replyPending = true;
             }
-            ChatClient.Reply reply = client.chat(p, url, key, model, system, conversation, specs, stream, ui::text);
+            ui.request(system, conversation, specs);
+            ChatClient.Reply reply;
+            try { reply = client.chat(p, url, key, model, system, conversation, specs, stream, ui::text); }
+            finally { ui.usage(client.usage()); }
             if (cancelled) return;
             synchronized (added) {
                 if (!reply.text.isEmpty() || !reply.calls.isEmpty()) {

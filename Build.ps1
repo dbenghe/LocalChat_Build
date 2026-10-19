@@ -36,6 +36,8 @@ $taskTests = (Get-ChildItem -LiteralPath "$PSScriptRoot/tests" -Filter '*.java')
 if ($LASTEXITCODE) { throw 'Test compilation failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.UiTest
 if ($LASTEXITCODE) { throw 'Tests failed; distribution was not changed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.FeatureTest
+if ($LASTEXITCODE) { throw 'Feature tests failed; distribution was not changed' }
 $taskJar = Join-Path $taskBuild 'LocalChat.jar'
 $taskManifest = Join-Path $taskBuild 'MANIFEST.MF'
 @"
