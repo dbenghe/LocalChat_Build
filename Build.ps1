@@ -14,7 +14,11 @@ $taskJdk = if ($env:JAVA_HOME -and (Test-Path -LiteralPath "$env:JAVA_HOME/bin/j
 }
 if (!$taskJdk) { throw 'JDK 17+ required. Set JAVA_HOME or place a portable JDK in .tools.' }
 $taskLibrary = Join-Path $PSScriptRoot 'lib/flatlaf-3.7.2.jar'
-if ((Get-FileHash -LiteralPath $taskLibrary -Algorithm SHA256).Hash -ne '917AFF3963C88D797D0FD9B9CCBD70F7681C101DF9D11C59E2BC7A3A6C0FABF4') { throw 'FlatLaf checksum mismatch' }
+$taskHashStream = [IO.File]::OpenRead($taskLibrary)
+$taskSha256 = [Security.Cryptography.SHA256]::Create()
+try { $taskLibraryHash = [BitConverter]::ToString($taskSha256.ComputeHash($taskHashStream)).Replace('-', '') }
+finally { $taskSha256.Dispose(); $taskHashStream.Dispose() }
+if ($taskLibraryHash -ne '917AFF3963C88D797D0FD9B9CCBD70F7681C101DF9D11C59E2BC7A3A6C0FABF4') { throw 'FlatLaf checksum mismatch' }
 $taskBuild = Join-Path $PSScriptRoot 'build'
 # Resolve and verify before removing generated build output.
 $taskResolved = [IO.Path]::GetFullPath($taskBuild)
