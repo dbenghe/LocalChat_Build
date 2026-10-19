@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.0 — 2026-10-19
+
+- Added per-chat automatic compaction controls in all six UI languages: enable checkbox and 30–95% threshold (default 70%).
+- Requires an explicitly configured context limit; no automatic API request is made on chat load.
+- Before a user message, compacts eligible older history at the threshold and sends the unchanged pending message once after success.
+- Editing the draft or pressing Stop prevents automatic sending. Failed compaction preserves both draft and existing memory.
+- Kept original archives, token accounting and automatic preferences isolated per conversation.
+- Added a context preflight guard to subsequent tool-loop requests as well as the initial user request.
+
 ## 1.2.0 — 2026-10-19
 
 - Added a searchable session sidebar with single-click resume, custom titles and pins.

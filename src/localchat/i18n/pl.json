@@ -170,5 +170,10 @@
   "Compactare anulată.": "Kompaktowanie anulowano.",
   "Fixează": "Przypnij",
   "Compactare: fragment {0}/{1}": "Kompaktowanie: fragment {0}/{1}",
-  "Contextul estimat depășește limita. Folosește /compact sau configurează contextul corect.": "Szacowany kontekst przekracza limit. Użyj /compact lub ustaw poprawny kontekst."
+  "Contextul estimat depășește limita. Folosește /compact sau configurează contextul corect.": "Szacowany kontekst przekracza limit. Użyj /compact lub ustaw poprawny kontekst.",
+  "Compactare automată": "Automatyczne kompaktowanie",
+  "Prag context (%)": "Próg kontekstu (%)",
+  "Necesită o limită de context cunoscută. Folosește modelul curent și consumă tokeni.": "Wymaga znanego limitu kontekstu. Używa bieżącego modelu i zużywa tokeny.",
+  "Autocompactare la ~{0} tokeni, înainte de un mesaj.": "Automatyczne kompaktowanie przy ~{0} tokenów, przed wiadomością.",
+  "Memorie compactată. Mesajul a fost modificat; apasă Trimite când este gata.": "Pamięć skompaktowana. Wiadomość zmieniono; naciśnij Wyślij, gdy będzie gotowa."
 }

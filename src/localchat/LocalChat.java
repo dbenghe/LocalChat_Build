@@ -149,6 +149,7 @@ public final class LocalChat extends JFrame {
     private final javax.swing.Timer dashboardTimer=new javax.swing.Timer(1000,e->refreshDashboard());
     private String contextProfile="";
     private boolean updatingLimit;
+    private boolean updatingAuto;
     private long requestSystem,requestTools,requestConversation;
     private ChatClient compactClient;
     private volatile int compactGeneration;
@@ -212,6 +213,8 @@ public final class LocalChat extends JFrame {
         workspace.limit.addChangeListener(e->{
             if(!updatingLimit && shownProvider!=null){config.setProperty(contextProfile(),workspace.limit.getValue().toString());saveConfig();refreshDashboard();}
         });
+        workspace.autoCompact.addActionListener(e->saveAutoSettings());
+        workspace.autoThreshold.addChangeListener(e->saveAutoSettings());
         JPanel center=new JPanel(new BorderLayout());center.add(chat);center.add(south,BorderLayout.SOUTH);
         root.add(workspace,BorderLayout.WEST);root.add(center);
         reportBar.setLayout(new BorderLayout());
@@ -623,6 +626,12 @@ public final class LocalChat extends JFrame {
                 +(usage.unknown>0 || usage.historicalUnknown?" · "+t("parțial / date lipsă"):"");
     }
 
+    private void saveAutoSettings() {
+        if(updatingAuto)return;
+        sessionState.autoCompact=workspace.autoCompact.isSelected();sessionState.autoThreshold=((Number)workspace.autoThreshold.getValue()).intValue();
+        saveConversation();refreshDashboard();
+    }
+
     private void refreshDashboard() {
         if(workspace==null || shownProvider==null)return;
         String profile=contextProfile();
@@ -631,6 +640,14 @@ public final class LocalChat extends JFrame {
             try{saved=Integer.parseInt(config.getProperty(profile,"0"));}catch(NumberFormatException ignored){}
             updatingLimit=true;try{workspace.limit.setValue(Math.max(0,Math.min(2000000,saved)));}finally{updatingLimit=false;}
         }
+        updatingAuto=true;
+        try{workspace.autoCompact.setSelected(sessionState.autoCompact);workspace.autoThreshold.setValue(sessionState.autoThreshold);}
+        finally{updatingAuto=false;}
+        workspace.autoCompact.setEnabled(!busy);
+        int configured=((Number)workspace.limit.getValue()).intValue();
+        workspace.autoThreshold.setEnabled(!busy && sessionState.autoCompact && configured>0);
+        workspace.autoThreshold.setToolTipText(configured>0?t("Autocompactare la ~{0} tokeni, înainte de un mesaj.",(long)configured*sessionState.autoThreshold/100)
+                :t("Necesită o limită de context cunoscută. Folosește modelul curent și consumă tokeni."));
         long sys,tools,messages;
         if(busy && (current!=null || compactClient!=null)) {
             sys=requestSystem;tools=requestTools;messages=requestConversation+(current==null?0:ContextMemory.estimate(current.stepText.toString()));
@@ -746,7 +763,9 @@ public final class LocalChat extends JFrame {
         }catch(IOException|RuntimeException e){setStatus("Nu pot deschide {0}: {1}",true,source,describe(e));}
     }
 
-    private void compactMemory() {
+    private void compactMemory() {compactMemory(null);}
+
+    private void compactMemory(Runnable afterSuccess) {
         int cut=sessionState.memory.boundary(history);
         if(cut<=sessionState.memory.through || cut==0){setStatus("Nu există suficient istoric pentru compactare. Se păstrează ultimele două schimburi.",false);return;}
         Provider provider=shownProvider;String model=currentModel(),url=currentUrl(),key=currentKey(provider);
@@ -787,18 +806,22 @@ public final class LocalChat extends JFrame {
             SwingUtilities.invokeLater(()->{
                 if(generation!=compactGeneration)return;
                 compactClient=null;setBusy(false);sessionState.last=compactUsage;
+                boolean applied=false;
                 if(failure!=null)setStatus("Compactarea a eșuat: {0}",true,describe(failure));
                 else if(result.isBlank() || ContextMemory.estimate(result)+30>=oldTokens)
                     setStatus("Rezumatul nu reduce contextul; istoricul activ a fost păstrat.",true);
-                else{sessionState.memory.summary=result;sessionState.memory.through=cut;setStatus("Memorie compactată. Istoricul original a fost păstrat integral.",false);}
+                else{sessionState.memory.summary=result;sessionState.memory.through=cut;applied=true;setStatus("Memorie compactată. Istoricul original a fost păstrat integral.",false);}
                 saveConversation();refreshDashboard();
+                if(applied && afterSuccess!=null)afterSuccess.run();
             });
         },"compact-memory");worker.setDaemon(true);worker.start();
     }
 
     // ---- sending and the agent loop ----
 
-    private void send() {
+    private void send() {send(true);}
+
+    private void send(boolean allowAutoCompact) {
         final String text = input.getText().trim();
         if (text.isEmpty()) return;
         if(text.startsWith("/")){input.setText("");commandPopup.setVisible(false);executeCommand(text);return;}
@@ -834,6 +857,15 @@ public final class LocalChat extends JFrame {
         String estimateSystem=useTools?agentPrompt(estimateDir,installedSkills,pathMap()):systemField.getText().strip();
         long estimated=ContextMemory.estimate(estimateSystem)+ContextMemory.tools(dashboardTools())
                 +ContextMemory.messages(sessionState.memory.view(history))+ContextMemory.estimate(text)+8;
+        if(allowAutoCompact && sessionState.autoCompact && maximum>0 && estimated*100L>=(long)maximum*sessionState.autoThreshold
+                && sessionState.memory.boundary(history)>sessionState.memory.through) {
+            String pending=input.getText();
+            compactMemory(()->{
+                if(input.getText().equals(pending))send(false);
+                else setStatus("Memorie compactată. Mesajul a fost modificat; apasă Trimite când este gata.",false);
+            });
+            return;
+        }
         if(maximum>0 && estimated>=maximum){setStatus("Contextul estimat depășește limita. Folosește /compact sau configurează contextul corect.",true);return;}
 
         final String label = p.shortName + " · " + model;
@@ -858,7 +890,9 @@ public final class LocalChat extends JFrame {
         setStatus("Se generează răspunsul…", false);
 
         Agent.Ui ui = new Agent.Ui() {
-            @Override public void request(String sys,List<ChatClient.Message> conversation,List<ChatClient.ToolSpec> specs) {
+            @Override public void request(String sys,List<ChatClient.Message> conversation,List<ChatClient.ToolSpec> specs) throws IOException {
+                if(maximum>0 && ContextMemory.estimate(sys)+ContextMemory.messages(conversation)+ContextMemory.tools(specs)>=maximum)
+                    throw new IOException(t("Contextul estimat depășește limita. Folosește /compact sau configurează contextul corect."));
                 turn.started.incrementAndGet();
                 later(turn,()->{turn.requestActive=true;requestSystem=ContextMemory.estimate(sys);requestTools=ContextMemory.tools(specs);
                     requestConversation=ContextMemory.messages(conversation);refreshDashboard();});
@@ -1283,7 +1317,8 @@ public final class LocalChat extends JFrame {
         providerBox.setEnabled(!b);modelBox.setEnabled(!b);urlField.setEnabled(!b);keyField.setEnabled(!b);
         toolsBox.setEnabled(!b);workDirField.setEnabled(!b);chooseDirButton.setEnabled(!b);systemField.setEnabled(!b);
         permissionBox.setEnabled(!b && toolsBox.isSelected());loadModelsButton.setEnabled(!b);
-        if(workspace!=null)workspace.limit.setEnabled(!b);
+        if(workspace!=null){workspace.limit.setEnabled(!b);workspace.autoCompact.setEnabled(!b);
+            workspace.autoThreshold.setEnabled(!b && sessionState.autoCompact && ((Number)workspace.limit.getValue()).intValue()>0);}
     }
 
     private void setStatus(String key, boolean error, Object... args) {

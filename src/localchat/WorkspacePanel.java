@@ -14,6 +14,9 @@ final class WorkspacePanel extends JPanel {
     final DefaultListModel<Conversations.Saved> sessions=new DefaultListModel<>();
     final JList<Conversations.Saved> list=new JList<>(sessions);
     final JSpinner limit=new JSpinner(new SpinnerNumberModel(0,0,2000000,1024));
+    final JCheckBox autoCompact=new JCheckBox();
+    final JSpinner autoThreshold=new JSpinner(new SpinnerNumberModel(70,30,95,5));
+    private final JLabel thresholdLabel=new JLabel();
     final JProgressBar context=new JProgressBar(0,100);
     final JTextArea details=new JTextArea(8,20);
     private final JLabel heading=new JLabel(), limitLabel=new JLabel();
@@ -40,7 +43,10 @@ final class WorkspacePanel extends JPanel {
         search.getDocument().addDocumentListener(new DocumentListener(){public void insertUpdate(DocumentEvent e){filter();}
             public void removeUpdate(DocumentEvent e){filter();}public void changedUpdate(DocumentEvent e){filter();}});
         JPanel bottom=new JPanel(new BorderLayout(3,5));
-        JPanel config=new JPanel(new BorderLayout(3,4));config.add(limitLabel,BorderLayout.NORTH);config.add(limit);bottom.add(config,BorderLayout.NORTH);
+        JPanel config=new JPanel(new BorderLayout(3,4));config.add(limitLabel,BorderLayout.NORTH);config.add(limit);
+        JPanel auto=new JPanel(new BorderLayout(4,3));auto.add(autoCompact,BorderLayout.NORTH);
+        JPanel threshold=new JPanel(new BorderLayout(3,2));threshold.add(thresholdLabel);threshold.add(autoThreshold,BorderLayout.EAST);auto.add(threshold);
+        config.add(auto,BorderLayout.SOUTH);bottom.add(config,BorderLayout.NORTH);
         context.setStringPainted(true);bottom.add(context);
         details.setEditable(false);details.setLineWrap(true);details.setWrapStyleWord(true);details.setOpaque(false);
         bottom.add(details,BorderLayout.SOUTH);add(bottom,BorderLayout.SOUTH);
@@ -52,6 +58,10 @@ final class WorkspacePanel extends JPanel {
         fresh.setText("+");fresh.setToolTipText(I18n.text("Conversație nouă"));
         rename.setText(I18n.text("Titlu"));pin.setText(I18n.text("Fixează"));pin.setToolTipText(I18n.text("Fixează / desprinde"));
         limitLabel.setText("<html>"+I18n.text("Limită context (0 = necunoscut)"));limitLabel.setPreferredSize(new Dimension(220,32));
+        autoCompact.setText(I18n.text("Compactare automată"));
+        autoCompact.setToolTipText(I18n.text("Necesită o limită de context cunoscută. Folosește modelul curent și consumă tokeni."));
+        thresholdLabel.setText(I18n.text("Prag context (%)"));
+        autoThreshold.getAccessibleContext().setAccessibleName(I18n.text("Prag context (%)"));
         context.setToolTipText(I18n.text("Estimare pentru cererea următoare, nu consum facturat."));
     }
     void select(Path file) {

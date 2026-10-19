@@ -170,5 +170,10 @@
   "Compactare anulată.": "Sıkıştırma iptal edildi.",
   "Fixează": "Sabitle",
   "Compactare: fragment {0}/{1}": "Sıkıştırma: parça {0}/{1}",
-  "Contextul estimat depășește limita. Folosește /compact sau configurează contextul corect.": "Tahmini bağlam sınırı aşıyor. /compact kullanın veya doğru bağlamı ayarlayın."
+  "Contextul estimat depășește limita. Folosește /compact sau configurează contextul corect.": "Tahmini bağlam sınırı aşıyor. /compact kullanın veya doğru bağlamı ayarlayın.",
+  "Compactare automată": "Otomatik sıkıştırma",
+  "Prag context (%)": "Bağlam eşiği (%)",
+  "Necesită o limită de context cunoscută. Folosește modelul curent și consumă tokeni.": "Bilinen bir bağlam sınırı gerekir. Geçerli modeli kullanır ve token tüketir.",
+  "Autocompactare la ~{0} tokeni, înainte de un mesaj.": "Mesajdan önce ~{0} tokenda otomatik sıkıştır.",
+  "Memorie compactată. Mesajul a fost modificat; apasă Trimite când este gata.": "Bellek sıkıştırıldı. Mesaj değişti; hazır olduğunda Gönder düğmesine basın."
 }

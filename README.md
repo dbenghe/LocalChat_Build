@@ -161,3 +161,19 @@ Nu se deschid automat căi inventate în textul modelului.
 Istoricul mare este rezumat în fragmente, cu un buget de ieșire și memoria intermediară rezervate în limita
 configurată. Toate cererile de compactare intră în statisticile acelui chat. Dacă o etapă eșuează, rezumatul
 activ anterior rămâne valabil. Cererile normale estimate peste limita configurată sunt oprite înainte de API.
+
+
+## Compactare automată (1.3.0)
+
+În panoul din stânga setează limita reală de context, activează Compactare automată și alege pragul procentual.
+Pragul implicit este 70% (configurabil între 30% și 95%); opțiunea este dezactivată implicit și se salvează per chat.
+De exemplu, la un context configurat de 64.000, pragul de 70% înseamnă aproximativ 44.800 de tokeni.
+Limita 0/necunoscută nu declanșează autocompactarea. Configurarea limitei nu schimbă setarea din LM Studio.
+
+Verificarea se face înainte de trimiterea unui mesaj. Sunt rezumate doar schimburile vechi eligibile;
+instrucțiunile de sistem, definițiile tool-urilor și ultimele două schimburi rămân. Dacă acestea ocupă singure
+prea mult context, trebuie ajustată limita sau ales un model cu context suficient.
+După compactare, mesajul încă neschimbat se trimite o singură dată. Dacă îl editezi, apeși Stop sau rezumatul
+eșuează, nu se trimite automat. Compactarea consumă tokeni cu modelul curent, în statisticile aceluiași chat.
+Nu pornește la simpla încărcare a unei discuții și nu întrerupe o operație activă pentru a o rezuma pe ascuns.
+Cereri ulterioare dintr-o buclă de tool-uri sunt oprite dacă depășesc limita estimată, păstrând pașii executați.

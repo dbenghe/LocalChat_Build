@@ -170,5 +170,10 @@
   "Compactare anulată.": "Samenvatting geannuleerd.",
   "Fixează": "Vastzetten",
   "Compactare: fragment {0}/{1}": "Samenvatten: fragment {0}/{1}",
-  "Contextul estimat depășește limita. Folosește /compact sau configurează contextul corect.": "De geschatte context overschrijdt de limiet. Gebruik /compact of stel de juiste context in."
+  "Contextul estimat depășește limita. Folosește /compact sau configurează contextul corect.": "De geschatte context overschrijdt de limiet. Gebruik /compact of stel de juiste context in.",
+  "Compactare automată": "Automatisch samenvatten",
+  "Prag context (%)": "Contextdrempel (%)",
+  "Necesită o limită de context cunoscută. Folosește modelul curent și consumă tokeni.": "Een bekende contextlimiet is vereist. Gebruikt het huidige model en verbruikt tokens.",
+  "Autocompactare la ~{0} tokeni, înainte de un mesaj.": "Automatisch samenvatten bij ~{0} tokens, vóór een bericht.",
+  "Memorie compactată. Mesajul a fost modificat; apasă Trimite când este gata.": "Geheugen samengevat. Het bericht is gewijzigd; druk op Versturen als het klaar is."
 }

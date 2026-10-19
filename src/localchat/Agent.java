@@ -22,7 +22,7 @@ final class Agent {
 
         void toolFinished(ChatClient.ToolCall call, Tools.Result result);
         default void usage(TokenUsage usage) {}
-        default void request(String system, List<ChatClient.Message> conversation, List<ChatClient.ToolSpec> tools) {}
+        default void request(String system, List<ChatClient.Message> conversation, List<ChatClient.ToolSpec> tools) throws IOException {}
     }
 
     private final ChatClient client = new ChatClient();

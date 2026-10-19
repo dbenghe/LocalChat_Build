@@ -27,17 +27,21 @@ final class Conversations {
         boolean pinned;
         String draft="",provider="",model="",baseUrl="";
         int contextLimit=-1;
+        boolean autoCompact;
+        int autoThreshold=70;
         String systemPrompt;
         Boolean toolsEnabled,streamEnabled;
         ContextMemory memory=new ContextMemory();
         TokenUsage.Ledger usage=new TokenUsage.Ledger();
         TokenUsage.Ledger last=new TokenUsage.Ledger();
-        Object toJson() { return Json.obj("customTitle",title,"pinned",pinned,"draft",draft,"provider",provider,"model",model,"baseUrl",baseUrl,"contextLimit",contextLimit,"systemPrompt",systemPrompt,"toolsEnabled",toolsEnabled,"streamEnabled",streamEnabled,"summary",memory.summary,
+        Object toJson() { return Json.obj("customTitle",title,"pinned",pinned,"draft",draft,"provider",provider,"model",model,"baseUrl",baseUrl,"contextLimit",contextLimit,"autoCompact",autoCompact,"autoThreshold",autoThreshold,"systemPrompt",systemPrompt,"toolsEnabled",toolsEnabled,"streamEnabled",streamEnabled,"summary",memory.summary,
                 "compactedThrough",memory.through,"usage",usage.toJson(),"lastTurn",last.toJson()); }
         static State fromJson(Object o, int count) {
             State s=new State();String t=Json.str(o,"customTitle");if(t!=null)s.title=t;
             s.pinned=Boolean.TRUE.equals(Json.get(o,"pinned"));
             String draft=Json.str(o,"draft"),provider=Json.str(o,"provider"),model=Json.str(o,"model"),url=Json.str(o,"baseUrl");
+            s.autoCompact=Boolean.TRUE.equals(Json.get(o,"autoCompact"));
+            s.autoThreshold=(int)Math.max(30,Math.min(95,TokenUsage.number(o,"autoThreshold",70)));
             s.systemPrompt=Json.str(o,"systemPrompt");
             Object tools=Json.get(o,"toolsEnabled"),stream=Json.get(o,"streamEnabled");
             if(tools instanceof Boolean)s.toolsEnabled=(Boolean)tools;if(stream instanceof Boolean)s.streamEnabled=(Boolean)stream;

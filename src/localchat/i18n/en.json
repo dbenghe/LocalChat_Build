@@ -170,5 +170,10 @@
   "Compactare anulată.": "Compaction cancelled.",
   "Fixează": "Pin",
   "Compactare: fragment {0}/{1}": "Compacting: fragment {0}/{1}",
-  "Contextul estimat depășește limita. Folosește /compact sau configurează contextul corect.": "Estimated context exceeds the limit. Use /compact or configure the correct context."
+  "Contextul estimat depășește limita. Folosește /compact sau configurează contextul corect.": "Estimated context exceeds the limit. Use /compact or configure the correct context.",
+  "Compactare automată": "Automatic compaction",
+  "Prag context (%)": "Context threshold (%)",
+  "Necesită o limită de context cunoscută. Folosește modelul curent și consumă tokeni.": "Requires a known context limit. Uses the current model and consumes tokens.",
+  "Autocompactare la ~{0} tokeni, înainte de un mesaj.": "Auto-compact at ~{0} tokens, before a message.",
+  "Memorie compactată. Mesajul a fost modificat; apasă Trimite când este gata.": "Memory compacted. The message changed; press Send when ready."
 }

@@ -18,3 +18,5 @@ Repository-ul utilizatorului este https://github.com/dbenghe/LocalChat_Build (co
 
 - Din 1.2.0, istoricul, modelul, ciorna, consumul și memoria compactată sunt separate per conversație. Testează izolarea la schimbare și reluare; încărcarea unui chat nu trebuie să apeleze API-ul. Arhiva originală rămâne integrală după compactare.
 - Valorile estimate de context au marcaj ~. Nu prezenta estimări ca usage facturat sau consum necunoscut ca zero. Noile texte de interfață și comenzile descrise trebuie acoperite în toate cele șase limbi.
+
+- Din 1.3.0, autocompactarea este opțională per chat, implicit oprită, cu prag 70% configurabil 30–95%. Necesită o limită de context cunoscută; nu rulează la încărcarea discuției. Înainte de a trimite automat după compactare, verifică dacă mesajul a rămas neschimbat. Stop sau eșecul compactării păstrează ciorna și nu trimit mesajul.

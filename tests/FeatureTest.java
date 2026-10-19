@@ -29,6 +29,8 @@ public final class FeatureTest {
         final BlockingQueue<Response> replies=new LinkedBlockingQueue<>();
         final List<Object> requests=Collections.synchronizedList(new ArrayList<>());
         volatile Throwable error;
+        volatile boolean cancellationExpected;
+        volatile int delayMillis;
         Server(Response... supplied)throws Exception{
             replies.addAll(Arrays.asList(supplied));
             Thread worker=new Thread(()->{try{while(!socket.isClosed())try(Socket connection=socket.accept()){
@@ -37,8 +39,9 @@ public final class FeatureTest {
                 int length=0;for(String line:header.toString(StandardCharsets.US_ASCII).split("\r\n"))if(line.toLowerCase(Locale.ROOT).startsWith("content-length:"))length=Integer.parseInt(line.substring(15).strip());
                 requests.add(Json.parse(new String(in.readNBytes(length),StandardCharsets.UTF_8)));
                 Response r=replies.poll(5,TimeUnit.SECONDS);if(r==null)throw new AssertionError("Unexpected API call");byte[] data=r.body.getBytes(StandardCharsets.UTF_8);
+                if(delayMillis>0)Thread.sleep(delayMillis);
                 OutputStream out=connection.getOutputStream();out.write(("HTTP/1.1 "+r.status+" Test\r\nContent-Type: "+r.type+"\r\nContent-Length: "+data.length+"\r\nConnection: close\r\n\r\n").getBytes(StandardCharsets.US_ASCII));out.write(data);out.flush();
-            }}catch(SocketException e){if(!socket.isClosed())error=e;}catch(Throwable e){error=e;}},"fixture-api");worker.setDaemon(true);worker.start();
+            }}catch(SocketException e){if(!socket.isClosed() && !cancellationExpected)error=e;}catch(Throwable e){error=e;}},"fixture-api");worker.setDaemon(true);worker.start();
         }
         String url(){return "http://127.0.0.1:"+socket.getLocalPort()+"/v1";}
         public void close()throws Exception{socket.close();if(error!=null)throw new Exception(error);}
@@ -224,9 +227,71 @@ public final class FeatureTest {
         }
     }
 
+
+    @SuppressWarnings("unchecked")
+    static void automatic(Path home,int mode)throws Exception {
+        Path local=home.resolve("automatic-"+mode);Files.createDirectories(local);System.setProperty("localchat.home",local.toString());
+        String summary="Project 507123: Hoofdregel 80. Previous sources reviewed; no transfer performed.";
+        Response[] responses=mode==3 || mode==4?new Response[]{json(answer("auto reply",40,8))}
+                :mode==5?new Response[]{new Response(500,"application/json","{\"error\":{\"message\":\"auto fixture failure\"}}")}
+                :new Response[]{json(answer(summary,80,25)),json(answer("auto reply",40,8))};
+        try(Server server=new Server(responses)) {
+            if(mode==1 || mode==2)server.delayMillis=200;
+            server.cancellationExpected=mode==2;
+            LocalChat[] app={null};Path[] file={null};
+            edt(()->{
+                Constructor<LocalChat> c=LocalChat.class.getDeclaredConstructor();c.setAccessible(true);app[0]=c.newInstance();
+                ((JComboBox<Provider>)field(app[0],"providerBox")).setSelectedItem(Provider.CUSTOM);
+                ((JTextField)field(app[0],"urlField")).setText(server.url());((JComboBox<?>)field(app[0],"modelBox")).setSelectedItem("auto-model");
+                ((JCheckBox)field(app[0],"toolsBox")).setSelected(false);command(app[0],"/new Auto test");
+                List<ChatClient.Message> history=field(app[0],"history");
+                for(int i=0;i<6;i++){history.add(ChatClient.Message.user("source "+i+" "+"detail ".repeat(350)));history.add(ChatClient.Message.assistant("decision",List.of(),"fixture"));}
+                command(app[0],"/context "+(mode==3?0:8192));WorkspacePanel panel=field(app[0],"workspace");
+                check(!panel.autoCompact.isSelected(),"auto compaction is off by default");
+                if(mode!=4)panel.autoCompact.doClick();panel.autoThreshold.setValue(30);
+                file[0]=field(app[0],"conversationFile");
+                check(!panel.autoThreshold.isEnabled() || mode!=3,"unknown context does not activate threshold");
+                ((JTextArea)field(app[0],"input")).setText("pending message");call(app[0],"send",new Class<?>[]{});
+                if(mode==1)((JTextArea)field(app[0],"input")).setText("edited draft");
+                if(mode==2)command(app[0],"/stop");
+            });
+            idle(app[0]);if(mode==2)Thread.sleep(250);
+            edt(()->{
+                Conversations.State state=field(app[0],"sessionState");List<ChatClient.Message> history=field(app[0],"history");
+                if(mode==0) {
+                    check(server.requests.size()==2 && state.memory.through>0,"threshold triggers summary then one answer");
+                    check(history.size()==14 && history.get(12).content.equals("pending message"),"pending message sent exactly once after compacting");
+                    check(state.usage.requests==2 && state.usage.input==120,"automatic summary and reply usage counted together");
+                    check(Json.write(server.requests.get(1)).contains(summary) && !Json.write(server.requests.get(1)).contains("source 0"),"auto reply uses compacted context");
+                    check(state.last.requests==1 && state.last.input==40,"last response excludes prior compaction requests");
+                } else if(mode==1) {
+                    check(server.requests.size()==1 && state.memory.through>0,"edited draft permits summary but prevents automatic send");
+                    check(history.size()==12 && ((JTextArea)field(app[0],"input")).getText().equals("edited draft"),"edited draft retained");
+                } else if(mode==2) {
+                    check(server.requests.size()<=1 && state.memory.through==0,"Stop prevents auto send and applying unfinished summary");
+                    check(history.size()==12 && ((JTextArea)field(app[0],"input")).getText().equals("pending message"),"Stop preserves pending message");
+                } else if(mode==5) {
+                    check(server.requests.size()==1 && state.memory.through==0,"failed auto compaction never sends pending message");
+                    check(history.size()==12 && ((JTextArea)field(app[0],"input")).getText().equals("pending message"),"failed auto compaction retains draft and archive");
+                } else check(server.requests.size()==1 && state.memory.through==0 && history.size()==14,"disabled or unknown-limit auto mode sends normally without compacting");
+                var saved=Conversations.load(file[0]);check(saved.state().autoCompact==(mode!=4) && saved.state().autoThreshold==30,"auto preferences persisted per chat");
+                command(app[0],"/new Different chat");
+                check(!((Conversations.State)field(app[0],"sessionState")).autoCompact,"new chat has independent auto preference");
+                command(app[0],"/switch "+Conversations.shortId(file[0]));
+                WorkspacePanel panel=field(app[0],"workspace");check(panel.autoCompact.isSelected()==(mode!=4) && panel.autoThreshold.getValue().equals(30),"auto controls restored on chat switch");
+                if(mode==0){
+                    JComboBox<String> language=field(app[0],"languageBox"),theme=field(app[0],"themeBox");language.setSelectedIndex(1);theme.setSelectedIndex(1);
+                    app[0].addNotify();app[0].validate();var image=new java.awt.image.BufferedImage(app[0].getWidth(),app[0].getHeight(),java.awt.image.BufferedImage.TYPE_INT_RGB);
+                    var g=image.createGraphics();app[0].getRootPane().printAll(g);g.dispose();javax.imageio.ImageIO.write(image,"png",home.resolve("automatic-dark.png").toFile());
+                }
+                app[0].dispose();
+            });
+        }
+    }
+
     public static void main(String[] args)throws Exception{
         Path home=Path.of(System.getProperty("localchat.home")).resolve("features");Files.createDirectories(home);
-        try{protocols(home);files(home);ui(home);fragmented(home,false);fragmented(home,true);System.out.println("PASS: "+checks+" feature checks (protocols, sessions, compact memory, reports, commands)");}
+        try{protocols(home);files(home);ui(home);fragmented(home,false);fragmented(home,true);for(int mode=0;mode<6;mode++)automatic(home,mode);System.out.println("PASS: "+checks+" feature checks (protocols, sessions, compact memory, reports, commands)");}
         finally{edt(()->{for(java.awt.Window w:java.awt.Window.getWindows())w.dispose();});}
         System.exit(0);
     }
