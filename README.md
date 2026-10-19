@@ -196,8 +196,9 @@ Documentație: https://lmstudio.ai/docs/developer/rest/list . Nu încarcă model
 Maximul teoretic și contextul instanței încărcate se afișează separat. Limita încărcată detectată este folosită
 pentru estimare și autocompactare; doar maximul teoretic nu setează automat limita. Dacă sunt mai multe instanțe
 și ID-ul ales nu identifică una singură, se folosește conservator cea mai mică limită încărcată.
-Metadatele sunt memorate local per server/model. Verifică din nou după reîncărcarea modelului în LM Studio.
-La încărcarea unui chat nu există apel de metadate/API. Alte servere pot necesita configurare manuală;
+Metadatele sunt memorate local per server/model. Din 1.5.0 se citesc automat după stabilizarea selecției
+și periodic (o dată pe minut); butonul manual poate forța actualizarea. Încărcarea unui chat nu generează
+răspunsuri sau compactări. Alte servere pot necesita configurare manuală;
 aplicația nu ghicește maximul după numele modelului. Câmpul manual nu modifică serverul.
 
 Bara de jos: procent estimat și detalii la click, model, buget Rapid 1024/Echilibrat 4096/Detaliat 8192,
@@ -209,3 +210,28 @@ Doar citire blochează modificări, comenzi și memorarea regulilor chiar dacă 
 Căile istorice lipsă sub Downloads/PRODUCTIE sunt rezolvate față de folderul de lucru selectat,
 inclusiv când profilul vechi încă există. Căile care există deja au prioritate; verificările de permisiune
 rămân active. Erorile vechi rămân în istoricul original și nu sunt transformate în rezultate reușite.
+
+
+## Interfață compactă și selecții complete (1.5.0)
+
+Lista din stânga afișează titlul conversației; ID-urile rămân doar pentru comenzile /list și /switch.
+Click dreapta → Redenumește conversația permite un titlu mai scurt. Bara de jos are controale de 26px,
+iar trimiterea și oprirea folosesc pictograme. Un indicator se rotește pe durata generării, a compactării
+și a pașilor de unelte și se oprește inclusiv după anulare/eroare. Butonul folderului deschide folderul
+din câmpul Folder de lucru și își schimbă imediat numele; calea completă apare la trecerea mouse-ului.
+
+Procentul de context este o estimare: se recalculează la editarea ciornei, la fiecare fragment de răspuns
+și la actualizarea periodică de 200ms. Un procent întreg poate rămâne neschimbat pentru răspunsuri scurte.
+Citirea automată de metadate face doar GET, nu inferență și nu încărcarea modelului. Schimbarea modelului
+are debounce de minimum 750ms; încercările automate sunt limitate la una pe minut per server/model,
+inclusiv când serverul nu răspunde. Rezultatele întârziate de la alt model nu se aplică profilului curent.
+Serverele care nu raportează contextul încărcat rămân necunoscute până la configurarea manuală;
+maximul teoretic nu este prezentat ca limită efectivă a instanței.
+
+Unelte → Salvează setările și modelul implicit memorează și profilul de răspuns, promptul de sistem,
+streaming, unelte, stilul de aprobare și opțiunile/pragul autocompactării. Se restaurează la pornire și
+în chat-uri noi. Un chat reluat își păstrează propriile mesaje, ciornă, model, folder și compactare.
+
+Fișierele create cu succes de unelte și rapoartele generate de PDFControl sunt deja scrise pe disc în
+destinația operației. Salvează o copie este opțional. Un răspuns text nu devine fișier fără o cerere de
+creare a fișierului, iar confirmările operațiilor rămân cele stabilite prin modul de aprobare ales.

@@ -110,11 +110,12 @@ public final class LocalChat extends JFrame {
             t("Întreabă înainte de modificări și comenzi"), t("Permite tot, fără întrebări"), t("Doar citire")});
 
     private final JTextPane transcript = new JTextPane();
-    private final JTextArea input = new JTextArea(4, 40);
+    private final JTextArea input = new JTextArea(3, 40);
     private final JButton sendButton = ui(new JButton(), "Trimite");
     private final JButton stopButton = ui(new JButton(), "Stop");
     private final JButton newChatButton = ui(new JButton(), "Conversație nouă");
-    private final JButton downloadsButton = ui(new JButton(), "Deschide Downloads");
+    private final JButton downloadsButton = new JButton();
+    private final BusyIndicator busyIndicator=new BusyIndicator();
     private final ContextRing contextRing=new ContextRing();
     private final JButton bottomModel=new JButton(),bottomApproval=new JButton(),bottomMode=new JButton();
     private final JComboBox<String> responseProfile=new JComboBox<>(new String[]{"Rapid","Balanced","Detailed"});
@@ -138,6 +139,7 @@ public final class LocalChat extends JFrame {
     private Object[] statusArgs = new Object[0];
     private String mcpSummary;
     private boolean changingAppearance;
+    private boolean restoringSelections;
     private String theme = "light";
     private Provider shownProvider;
     private boolean busy;
@@ -151,7 +153,10 @@ public final class LocalChat extends JFrame {
     private final javax.swing.JPopupMenu commandPopup=new javax.swing.JPopupMenu();
     private List<Skills.Skill> installedSkills=Collections.emptyList();
     private List<Conversations.Saved> sessionIndex=Collections.emptyList();
-    private final javax.swing.Timer dashboardTimer=new javax.swing.Timer(1000,e->refreshDashboard());
+    private final javax.swing.Timer dashboardTimer=new javax.swing.Timer(200,e->{refreshDashboard();if(!Boolean.getBoolean("localchat.test"))autoInspectModel();});
+    private final java.util.Map<String,Long> metadataAttempts=new java.util.HashMap<>();
+    private String pendingMetadataProfile="";
+    private long metadataProfileSince;
     private String contextProfile="";
     private boolean inspectingModel;
     private boolean updatingLimit;
@@ -196,15 +201,20 @@ public final class LocalChat extends JFrame {
         chat.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
         chat.add(new JScrollPane(transcript));
 
-        JPanel buttons = new JPanel(new GridLayout(4, 1, 0, 4));
-        buttons.add(sendButton);
-        buttons.add(stopButton);
-        buttons.add(newChatButton);
-        buttons.add(downloadsButton);
+        JPanel buttons = new JPanel(new BorderLayout());
+        JPanel composeLeft=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT,5,2));
+        JPanel composeRight=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT,5,2));
+        composeLeft.add(newChatButton);composeLeft.add(downloadsButton);composeRight.add(busyIndicator);composeRight.add(stopButton);composeRight.add(sendButton);
+        buttons.add(composeLeft);buttons.add(composeRight,BorderLayout.EAST);
+        sendButton.setIcon(new UiIcon("send",20));stopButton.setIcon(new UiIcon("stop",16));newChatButton.setIcon(new UiIcon("new",15));downloadsButton.setIcon(new UiIcon("folder",15));
+        sendButton.setPreferredSize(new Dimension(34,32));stopButton.setPreferredSize(new Dimension(32,30));
+        sendButton.putClientProperty("JButton.buttonType","roundRect");
+        for(JButton button:new JButton[]{newChatButton,downloadsButton}){button.setFont(button.getFont().deriveFont(12f));button.setMargin(new Insets(3,6,3,6));button.putClientProperty("JComponent.minimumWidth",0);}
+        status.setFont(status.getFont().deriveFont(11f));toolsStatus.setFont(toolsStatus.getFont().deriveFont(11f));
         JPanel compose = new JPanel(new BorderLayout(6, 0));
         compose.setBorder(BorderFactory.createEmptyBorder(6, 8, 2, 8));
         compose.add(new JScrollPane(input));
-        compose.add(buttons, BorderLayout.EAST);
+        compose.add(buttons, BorderLayout.SOUTH);
         JPanel statusBar = new JPanel(new BorderLayout(12, 0));
         statusBar.setBorder(BorderFactory.createEmptyBorder(2, 10, 6, 10));
         statusBar.add(status);
@@ -218,17 +228,20 @@ public final class LocalChat extends JFrame {
         workspace=new WorkspacePanel(this::newChat,this::openSession,this::renameSession,this::pinSession,this::deleteSession,this::archiveSession,this::exportSession);
         JPanel footer=new JPanel(new BorderLayout());
         JPanel controls=new JPanel(new BorderLayout(5,2));
-        JPanel selectors=new JPanel(new GridLayout(1,4,5,0));
+        JPanel selectors=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT,4,0));
+        for(JButton button:new JButton[]{bottomModel,bottomMode,bottomApproval}){button.setBorderPainted(false);button.setContentAreaFilled(false);button.setMargin(new Insets(2,5,2,5));button.setFont(button.getFont().deriveFont(12f));button.putClientProperty("JComponent.minimumWidth",0);}
+        bottomModel.setPreferredSize(new Dimension(175,26));bottomMode.setPreferredSize(new Dimension(115,26));bottomApproval.setPreferredSize(new Dimension(185,26));
+        responseProfile.setFont(responseProfile.getFont().deriveFont(12f));responseProfile.setPreferredSize(new Dimension(180,26));
         controls.add(contextRing,BorderLayout.WEST);controls.add(selectors);selectors.add(bottomModel);selectors.add(responseProfile);selectors.add(bottomMode);selectors.add(bottomApproval);
         footer.add(controls);footer.add(statusBar,BorderLayout.SOUTH);south.add(footer,BorderLayout.SOUTH);
-        JPanel metadata=new JPanel(new BorderLayout(4,2));metadata.add(modelMetadata);metadata.add(inspectModel,BorderLayout.EAST);controls.setPreferredSize(new Dimension(700,40));
+        JPanel metadata=new JPanel(new BorderLayout(4,2));metadata.add(modelMetadata);metadata.add(inspectModel,BorderLayout.EAST);controls.setPreferredSize(new Dimension(700,28));
         JPanel north=new JPanel(new BorderLayout());north.add(root.getComponent(0));north.add(metadata,BorderLayout.SOUTH);root.add(north,BorderLayout.NORTH);
         contextRing.addActionListener(e->JOptionPane.showMessageDialog(this,workspace.context.getString()+"\n"+workspace.details.getText()+"\n"+t("Estimare pentru cererea următoare, nu consum facturat."),t("Consum și context"),JOptionPane.INFORMATION_MESSAGE));
         bottomModel.addActionListener(e->{javax.swing.JPopupMenu menu=new javax.swing.JPopupMenu();for(int i=0;i<modelBox.getItemCount();i++){String id=modelBox.getItemAt(i);JMenuItem choice=new JMenuItem(id);choice.addActionListener(x->{modelBox.setSelectedItem(id);saveConfig();refreshDashboard();});menu.add(choice);}menu.show(bottomModel,0,bottomModel.getHeight());});
         bottomApproval.addActionListener(e->{javax.swing.JPopupMenu menu=new javax.swing.JPopupMenu();for(int i=0;i<permissionBox.getItemCount();i++){final int index=i;JMenuItem choice=new JMenuItem(permissionBox.getItemAt(i));choice.addActionListener(x->{alwaysAllowed.clear();permissionBox.setSelectedIndex(index);saveConfig();refreshDashboard();});menu.add(choice);}menu.show(bottomApproval,0,bottomApproval.getHeight());});
         bottomMode.addActionListener(e->{if(!busy){toolsBox.setSelected(!toolsBox.isSelected());permissionBox.setEnabled(toolsBox.isSelected());saveConfig();refreshDashboard();}});
         inspectModel.addActionListener(e->inspectModel());
-        responseProfile.addActionListener(e->{if(!changingAppearance && shownProvider!=null){sessionState.responseProfile=responseProfile.getSelectedIndex();saveConfig();saveConversation();}});
+        responseProfile.addActionListener(e->{if(!changingAppearance && !restoringSelections && shownProvider!=null){sessionState.responseProfile=responseProfile.getSelectedIndex();saveConfig();saveConversation();}});
         workspace.limit.addChangeListener(e->{
             if(!updatingLimit && shownProvider!=null){config.setProperty(contextProfile(),workspace.limit.getValue().toString());saveConfig();refreshDashboard();}
         });
@@ -244,7 +257,7 @@ public final class LocalChat extends JFrame {
         reports.setRenderer(new javax.swing.DefaultListCellRenderer(){
             public Component getListCellRendererComponent(JList<?> l,Object value,int i,boolean selected,boolean focus){
                 return super.getListCellRendererComponent(l,value instanceof Path?((Path)value).getFileName().toString():value,i,selected,focus);}});
-        reportHeading.add(reports);
+        reportHeading.add(reports);reportBar.setToolTipText(t("Fișiere deja salvate pe disc. Salvarea unei copii este opțională."));
         JButton openReport=ui(new JButton(),"Deschide raportul"),folderReport=ui(new JButton(),"Deschide folderul"),saveReport=ui(new JButton(),"Salvează o copie…");
         reportActions.add(openReport);reportActions.add(folderReport);reportActions.add(saveReport);
         openReport.addActionListener(e->reportAction(0));folderReport.addActionListener(e->reportAction(1));saveReport.addActionListener(e->reportAction(2));
@@ -265,18 +278,22 @@ public final class LocalChat extends JFrame {
         sendButton.addActionListener(e -> send());
         stopButton.addActionListener(e -> stop());
         newChatButton.addActionListener(e -> newChat());
-        downloadsButton.addActionListener(e -> openDownloads());
+        downloadsButton.addActionListener(e -> {Path folder=currentWorkDir();if(folder!=null)openFolder(folder);else setStatus("Folderul de lucru nu există.",true);});
         loadModelsButton.addActionListener(e -> loadModels());
         chooseDirButton.addActionListener(e -> chooseWorkDir());
         showKey.addActionListener(e -> keyField.setEchoChar(showKey.isSelected() ? (char) 0 : echoChar));
-        toolsBox.addActionListener(e -> permissionBox.setEnabled(toolsBox.isSelected()));
+        toolsBox.addActionListener(e -> {permissionBox.setEnabled(toolsBox.isSelected());refreshDashboard();});
+        permissionBox.addActionListener(e->{if(!changingAppearance && !restoringSelections)alwaysAllowed.clear();});
 
         input.getDocument().addDocumentListener(new javax.swing.event.DocumentListener(){
-            public void insertUpdate(javax.swing.event.DocumentEvent e){suggestCommands();}
-            public void removeUpdate(javax.swing.event.DocumentEvent e){suggestCommands();}
+            public void insertUpdate(javax.swing.event.DocumentEvent e){suggestCommands();refreshDashboard();}
+            public void removeUpdate(javax.swing.event.DocumentEvent e){suggestCommands();refreshDashboard();}
             public void changedUpdate(javax.swing.event.DocumentEvent e){}
         });
-        loadConfig();
+        workDirField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener(){
+            public void insertUpdate(javax.swing.event.DocumentEvent e){refreshWorkFolder();}public void removeUpdate(javax.swing.event.DocumentEvent e){refreshWorkFolder();}public void changedUpdate(javax.swing.event.DocumentEvent e){}
+        });
+        restoringSelections=true;try{loadConfig();}finally{restoringSelections=false;}
         installedSkills=Skills.load(skillsDir);
         previousConversation=storedPrevious();
         refreshSessions();
@@ -320,7 +337,7 @@ public final class LocalChat extends JFrame {
                 if(compactClient!=null)compactClient.cancel();
                 mcp.closeAll();
             }
-            @Override public void windowClosed(WindowEvent e){dashboardTimer.stop();}
+            @Override public void windowClosed(WindowEvent e){dashboardTimer.stop();busyIndicator.active(false);}
         });
         setSize(1320, 880);
         setMinimumSize(new Dimension(1080, 650));
@@ -466,6 +483,10 @@ public final class LocalChat extends JFrame {
             themeBox.setSelectedIndex("dark".equals(theme) ? 1 : 0);
             translateControls(getContentPane());
             translateControls(getJMenuBar());
+            sendButton.setText("");sendButton.setToolTipText(t("Trimite"));sendButton.getAccessibleContext().setAccessibleName(t("Trimite"));
+            stopButton.setText("");stopButton.setToolTipText(t("Stop"));stopButton.getAccessibleContext().setAccessibleName(t("Stop"));
+            reportBar.setToolTipText(t("Fișiere deja salvate pe disc. Salvarea unei copii este opțională."));
+            busyIndicator.setToolTipText(t("Se lucrează…"));busyIndicator.getAccessibleContext().setAccessibleName(t("Se lucrează…"));refreshWorkFolder();
             systemField.setToolTipText(t("Instrucțiuni generale pentru asistent (opțional)"));
             urlField.setToolTipText(t("Adresa API-ului, de ex. http://localhost:11434/v1 pentru Ollama"));
             workDirField.setToolTipText(t("Folderul în care asistentul caută și lucrează; căile relative pornesc de aici"));
@@ -622,9 +643,30 @@ public final class LocalChat extends JFrame {
         }catch(IOException|RuntimeException e){setStatus("Nu pot deschide {0}: {1}",true,selected.file(),describe(e));}
     }
 
+    private static int preference(Properties config,String key,int fallback,int min,int max) {
+        try{return Math.max(min,Math.min(max,Integer.parseInt(config.getProperty(key,Integer.toString(fallback)))));}catch(NumberFormatException e){return fallback;}
+    }
+    private void applyDefaultSelections() {
+        if(config.containsKey("default.system"))systemField.setText(config.getProperty("default.system"));
+        streamBox.setSelected(Boolean.parseBoolean(config.getProperty("default.stream",Boolean.toString(streamBox.isSelected()))));
+        toolsBox.setSelected(Boolean.parseBoolean(config.getProperty("default.tools",Boolean.toString(toolsBox.isSelected()))));
+        permissionBox.setSelectedIndex(preference(config,"default.permission",permissionBox.getSelectedIndex(),0,2));permissionBox.setEnabled(toolsBox.isSelected());
+        responseProfile.setSelectedIndex(preference(config,"default.responseProfile",preference(config,"response.profile",1,0,2),0,2));
+        sessionState.autoCompact=Boolean.parseBoolean(config.getProperty("default.autoCompact","false"));sessionState.autoThreshold=preference(config,"default.autoThreshold",70,30,95);
+        refreshWorkFolder();
+    }
+    private void refreshWorkFolder() {
+        String raw=workDirField.getText().strip(),name=raw;
+        try{Path path=Paths.get(Tools.expand(raw)).normalize();if(path.getFileName()!=null)name=path.getFileName().toString();}catch(RuntimeException ignored){}
+        String label=t("Deschide {0}",name.isBlank()?t("Folder de lucru"):name);downloadsButton.setText(label);downloadsButton.setToolTipText(raw);downloadsButton.getAccessibleContext().setAccessibleName(label);
+        downloadsButton.setPreferredSize(new Dimension(Math.min(310,downloadsButton.getFontMetrics(downloadsButton.getFont()).stringWidth(label)+40),26));
+    }
     private void saveDefaults() {
         config.setProperty("default.provider",shownProvider.name());config.setProperty("default.model",currentModel());
         config.setProperty("default.url",currentUrl());config.setProperty("default.workdir",workDirField.getText().trim());
+        config.setProperty("default.system",systemField.getText());config.setProperty("default.stream",Boolean.toString(streamBox.isSelected()));config.setProperty("default.tools",Boolean.toString(toolsBox.isSelected()));
+        config.setProperty("default.permission",Integer.toString(permissionBox.getSelectedIndex()));config.setProperty("default.responseProfile",Integer.toString(responseProfile.getSelectedIndex()));
+        config.setProperty("default.autoCompact",Boolean.toString(sessionState.autoCompact));config.setProperty("default.autoThreshold",Integer.toString(sessionState.autoThreshold));
         if(!saveConfig() || !saveConversation())return;setStatus("Setări salvate. Modelul selectat este implicit pentru chaturile noi.",false);
     }
     private boolean selectedSession() {
@@ -666,26 +708,34 @@ public final class LocalChat extends JFrame {
     private void showRecommendations() {
         JOptionPane.showMessageDialog(this,t("Viteză: profil Rapid, chat simplu când nu ai nevoie de fișiere, context încărcat mai mic în LM Studio.\nEchilibru: profil Echilibrat și autocompactare la 70%.\nAcuratețe: profil Detaliat, verificarea documentelor cu PDFControl și confirmarea informațiilor lipsă. Un buget mai mare nu garantează corectitudinea.\nMaximul modelului și contextul încărcat pot fi diferite. Verifică metadatele după schimbări în LM Studio."),t("Recomandări pentru viteză și acuratețe"),JOptionPane.INFORMATION_MESSAGE);
     }
-    private void inspectModel() {
-        if(busy || inspectingModel || shownProvider!=Provider.CUSTOM){setStatus("Metadatele sunt disponibile pentru servere LM Studio compatibile.",false);return;}
+    private void autoInspectModel() {
+        if(shownProvider!=Provider.CUSTOM || currentModel().isBlank() || currentUrl().isBlank())return;
+        String profile=contextProfile();long now=System.currentTimeMillis();
+        if(!profile.equals(pendingMetadataProfile)){pendingMetadataProfile=profile;metadataProfileSince=now;return;}
+        if(now-metadataProfileSince<750 || inspectingModel || now-metadataAttempts.getOrDefault(profile,0L)<60000)return;
+        inspectModel(true);
+    }
+    private void inspectModel() {inspectModel(false);}
+    private void inspectModel(boolean quiet) {
+        if(inspectingModel || shownProvider!=Provider.CUSTOM){if(!quiet)setStatus("Metadatele sunt disponibile pentru servere LM Studio compatibile.",false);return;}
         String profile=contextProfile(),url=currentUrl(),model=currentModel(),key=currentKey(shownProvider);
-        inspectingModel=true;inspectModel.setEnabled(false);
+        metadataAttempts.put(profile,System.currentTimeMillis());inspectingModel=true;inspectModel.setEnabled(false);
         Thread worker=new Thread(()->{try{
             ModelInfo.Info info=ModelInfo.fetch(url,key,model);
             SwingUtilities.invokeLater(()->{if(!profile.equals(contextProfile()))return;
-                boolean hadMetadata=config.containsKey(profile+".metadata");
-                config.setProperty(profile+".metadata",Json.write(info.json()));
+                boolean hadMetadata=config.containsKey(profile+".metadata");config.setProperty(profile+".metadata",Json.write(info.json()));
                 if(hadMetadata && info.loaded()==0){config.setProperty(profile,"0");contextProfile="";}
-                // Only the loaded limit is safe for scheduling compaction; v0 theoretical max is informational.
                 if(info.loaded()>0 && info.loaded()<=2000000){config.setProperty(profile,Long.toString(info.loaded()));contextProfile="";}
-                saveConfig();refreshDashboard();setStatus("Metadate verificate. Limita încărcată este folosită când este disponibilă.",false);});
-        }catch(Exception error){SwingUtilities.invokeLater(()->setStatus("Contextul real nu poate fi verificat: {0}",true,describe(error)));}
-        finally{SwingUtilities.invokeLater(()->inspectModel.setEnabled(!busy));}},"model-metadata");worker.setDaemon(true);worker.start();
+                saveConfig();refreshDashboard();if(!quiet)setStatus("Metadate verificate. Limita încărcată este folosită când este disponibilă.",false);
+            });
+        }catch(Exception error){SwingUtilities.invokeLater(()->{if(!quiet && profile.equals(contextProfile()))setStatus("Contextul real nu poate fi verificat: {0}",true,describe(error));});}
+        finally{SwingUtilities.invokeLater(()->{inspectingModel=false;inspectModel.setEnabled(!busy);});}},"model-metadata");worker.setDaemon(true);worker.start();
     }
 
     private void renameSession() {
+        if(workspace.list.getSelectedValue()!=null && !selectedSession())return;
         if(busy){setStatus("Oprește generarea înainte de această comandă.",true);return;}
-        String title=JOptionPane.showInputDialog(this,t("Titlu conversație"),sessionState.title);
+        String title=JOptionPane.showInputDialog(this,t("Titlu conversație"),sessionState.title.isBlank()?Conversations.title(history):sessionState.title);
         if(title!=null && !title.isBlank()){sessionState.title=title.strip();ensureSession();saveConversation();refreshDashboard();}
     }
     private void pinSession() {
@@ -1002,6 +1052,7 @@ public final class LocalChat extends JFrame {
             public void text(String delta) {
                 later(turn, () -> {
                     turn.stepText.append(delta);
+                    refreshDashboard();
                     append(delta, body);
                 });
             }
@@ -1200,7 +1251,7 @@ public final class LocalChat extends JFrame {
             modelBox.setSelectedItem(config.getProperty("default.model",currentModel()));urlField.setText(config.getProperty("default.url",currentUrl()));
             workDirField.setText(pathMap().path(config.getProperty("default.workdir",workDirField.getText())));
         }
-        responseProfile.setSelectedIndex(1);
+        applyDefaultSelections();
         setStatus("Conversație nouă.", false);
         refreshDashboard();
         input.requestFocusInWindow();
@@ -1419,7 +1470,7 @@ public final class LocalChat extends JFrame {
     }
 
     private void setBusy(boolean b) {
-        busy = b;
+        busy = b;busyIndicator.active(b);
         bottomModel.setEnabled(!b);bottomApproval.setEnabled(!b);bottomMode.setEnabled(!b);responseProfile.setEnabled(!b);inspectModel.setEnabled(!b && !inspectingModel);
         sendButton.setEnabled(!b);
         stopButton.setEnabled(b);
@@ -1569,6 +1620,7 @@ public final class LocalChat extends JFrame {
             modelBox.setSelectedItem(config.getProperty("default.model",currentModel()));urlField.setText(config.getProperty("default.url",currentUrl()));
             workDirField.setText(pathMap().path(config.getProperty("default.workdir",workDirField.getText())));
         }catch(IllegalArgumentException ignored){}
+        applyDefaultSelections();
     }
 
     private boolean saveConfig() {

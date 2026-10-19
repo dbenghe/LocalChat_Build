@@ -204,5 +204,10 @@
   "Metadate verificate. Limita încărcată este folosită când este disponibilă.": "Metadate verificate. Limita încărcată este folosită când este disponibilă.",
   "Contextul real nu poate fi verificat: {0}": "Contextul real nu poate fi verificat: {0}",
   "Recomandări pentru viteză și acuratețe": "Recomandări pentru viteză și acuratețe",
-  "Viteză: profil Rapid, chat simplu când nu ai nevoie de fișiere, context încărcat mai mic în LM Studio.\nEchilibru: profil Echilibrat și autocompactare la 70%.\nAcuratețe: profil Detaliat, verificarea documentelor cu PDFControl și confirmarea informațiilor lipsă. Un buget mai mare nu garantează corectitudinea.\nMaximul modelului și contextul încărcat pot fi diferite. Verifică metadatele după schimbări în LM Studio.": "Viteză: profil Rapid, chat simplu când nu ai nevoie de fișiere, context încărcat mai mic în LM Studio.\nEchilibru: profil Echilibrat și autocompactare la 70%.\nAcuratețe: profil Detaliat, verificarea documentelor cu PDFControl și confirmarea informațiilor lipsă. Un buget mai mare nu garantează corectitudinea.\nMaximul modelului și contextul încărcat pot fi diferite. Verifică metadatele după schimbări în LM Studio."
+  "Viteză: profil Rapid, chat simplu când nu ai nevoie de fișiere, context încărcat mai mic în LM Studio.\nEchilibru: profil Echilibrat și autocompactare la 70%.\nAcuratețe: profil Detaliat, verificarea documentelor cu PDFControl și confirmarea informațiilor lipsă. Un buget mai mare nu garantează corectitudinea.\nMaximul modelului și contextul încărcat pot fi diferite. Verifică metadatele după schimbări în LM Studio.": "Viteză: profil Rapid, chat simplu când nu ai nevoie de fișiere, context încărcat mai mic în LM Studio.\nEchilibru: profil Echilibrat și autocompactare la 70%.\nAcuratețe: profil Detaliat, verificarea documentelor cu PDFControl și confirmarea informațiilor lipsă. Un buget mai mare nu garantează corectitudinea.\nMaximul modelului și contextul încărcat pot fi diferite. Verifică metadatele după schimbări în LM Studio.",
+  "Redenumește conversația…": "Redenumește conversația…",
+  "Se lucrează…": "Se lucrează…",
+  "Deschide {0}": "Deschide {0}",
+  "Folder de lucru": "Folder de lucru",
+  "Fișiere deja salvate pe disc. Salvarea unei copii este opțională.": "Fișiere deja salvate pe disc. Salvarea unei copii este opțională."
 }

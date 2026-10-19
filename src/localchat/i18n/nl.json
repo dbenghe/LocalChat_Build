@@ -204,5 +204,10 @@
   "Metadate verificate. Limita încărcată este folosită când este disponibilă.": "Metadata gecontroleerd. De geladen limiet wordt gebruikt indien beschikbaar.",
   "Contextul real nu poate fi verificat: {0}": "Werkelijke context kan niet worden gecontroleerd: {0}",
   "Recomandări pentru viteză și acuratețe": "Advies voor snelheid en nauwkeurigheid",
-  "Viteză: profil Rapid, chat simplu când nu ai nevoie de fișiere, context încărcat mai mic în LM Studio.\nEchilibru: profil Echilibrat și autocompactare la 70%.\nAcuratețe: profil Detaliat, verificarea documentelor cu PDFControl și confirmarea informațiilor lipsă. Un buget mai mare nu garantează corectitudinea.\nMaximul modelului și contextul încărcat pot fi diferite. Verifică metadatele după schimbări în LM Studio.": "Snelheid: profiel Snel, gewone chat zonder bestanden, kleinere geladen context in LM Studio.\nBalans: Gebalanceerd en automatisch samenvatten bij 70%.\nNauwkeurigheid: Uitgebreid, documenten controleren met PDFControl en ontbrekende informatie bevestigen. Een groter budget garandeert geen juistheid.\nHet modelmaximum en de geladen context kunnen verschillen. Controleer metadata na wijzigingen in LM Studio."
+  "Viteză: profil Rapid, chat simplu când nu ai nevoie de fișiere, context încărcat mai mic în LM Studio.\nEchilibru: profil Echilibrat și autocompactare la 70%.\nAcuratețe: profil Detaliat, verificarea documentelor cu PDFControl și confirmarea informațiilor lipsă. Un buget mai mare nu garantează corectitudinea.\nMaximul modelului și contextul încărcat pot fi diferite. Verifică metadatele după schimbări în LM Studio.": "Snelheid: profiel Snel, gewone chat zonder bestanden, kleinere geladen context in LM Studio.\nBalans: Gebalanceerd en automatisch samenvatten bij 70%.\nNauwkeurigheid: Uitgebreid, documenten controleren met PDFControl en ontbrekende informatie bevestigen. Een groter budget garandeert geen juistheid.\nHet modelmaximum en de geladen context kunnen verschillen. Controleer metadata na wijzigingen in LM Studio.",
+  "Redenumește conversația…": "Gesprek hernoemen…",
+  "Se lucrează…": "Bezig…",
+  "Deschide {0}": "Open {0}",
+  "Folder de lucru": "Werkmap",
+  "Fișiere deja salvate pe disc. Salvarea unei copii este opțională.": "Bestanden zijn al opgeslagen. Een kopie opslaan is optioneel."
 }

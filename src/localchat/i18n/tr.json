@@ -204,5 +204,10 @@
   "Metadate verificate. Limita încărcată este folosită când este disponibilă.": "Meta veriler denetlendi. Varsa yüklü sınır kullanılır.",
   "Contextul real nu poate fi verificat: {0}": "Gerçek bağlam doğrulanamadı: {0}",
   "Recomandări pentru viteză și acuratețe": "Hız ve doğruluk önerileri",
-  "Viteză: profil Rapid, chat simplu când nu ai nevoie de fișiere, context încărcat mai mic în LM Studio.\nEchilibru: profil Echilibrat și autocompactare la 70%.\nAcuratețe: profil Detaliat, verificarea documentelor cu PDFControl și confirmarea informațiilor lipsă. Un buget mai mare nu garantează corectitudinea.\nMaximul modelului și contextul încărcat pot fi diferite. Verifică metadatele după schimbări în LM Studio.": "Hız: Hızlı profil, dosya gerekmiyorsa basit sohbet, LM Studio’da daha küçük yüklü bağlam.\nDenge: Dengeli profil ve %70’te otomatik özetleme.\nDoğruluk: Ayrıntılı profil, PDFControl ile belge denetimi ve eksik bilgilerin doğrulanması. Daha büyük bütçe doğruluk garantisi değildir.\nModel üst sınırı ve yüklü bağlam farklı olabilir. LM Studio değişikliklerinden sonra meta verileri yenileyin."
+  "Viteză: profil Rapid, chat simplu când nu ai nevoie de fișiere, context încărcat mai mic în LM Studio.\nEchilibru: profil Echilibrat și autocompactare la 70%.\nAcuratețe: profil Detaliat, verificarea documentelor cu PDFControl și confirmarea informațiilor lipsă. Un buget mai mare nu garantează corectitudinea.\nMaximul modelului și contextul încărcat pot fi diferite. Verifică metadatele după schimbări în LM Studio.": "Hız: Hızlı profil, dosya gerekmiyorsa basit sohbet, LM Studio’da daha küçük yüklü bağlam.\nDenge: Dengeli profil ve %70’te otomatik özetleme.\nDoğruluk: Ayrıntılı profil, PDFControl ile belge denetimi ve eksik bilgilerin doğrulanması. Daha büyük bütçe doğruluk garantisi değildir.\nModel üst sınırı ve yüklü bağlam farklı olabilir. LM Studio değişikliklerinden sonra meta verileri yenileyin.",
+  "Redenumește conversația…": "Sohbeti yeniden adlandır…",
+  "Se lucrează…": "Çalışıyor…",
+  "Deschide {0}": "{0} aç",
+  "Folder de lucru": "Çalışma klasörü",
+  "Fișiere deja salvate pe disc. Salvarea unei copii este opțională.": "Dosyalar zaten diske kaydedildi. Kopya kaydetmek isteğe bağlıdır."
 }

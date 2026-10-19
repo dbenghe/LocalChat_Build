@@ -355,9 +355,124 @@ public final class FeatureTest {
         });
     }
 
+    static final class MetadataServer implements AutoCloseable {
+        final ServerSocket socket=new ServerSocket(0,10,InetAddress.getByName("127.0.0.1"));
+        final List<String> requests=Collections.synchronizedList(new ArrayList<>());
+        volatile long loaded=8192;volatile int status=200,delay;volatile Throwable error;
+        MetadataServer()throws Exception {
+            Thread thread=new Thread(()->{try{while(!socket.isClosed())try(Socket c=socket.accept()) {
+                c.setSoTimeout(4000);var reader=new BufferedReader(new InputStreamReader(c.getInputStream(),StandardCharsets.US_ASCII));requests.add(reader.readLine());String line;while((line=reader.readLine())!=null&&!line.isEmpty()){}
+                if(delay>0)Thread.sleep(delay);
+                byte[] body=Json.write(Json.obj("models",List.of(Json.obj("key","auto-model","max_context_length",65536,"loaded_instances",List.of(Json.obj("id","auto-model","config",Json.obj("context_length",loaded))))))).getBytes(StandardCharsets.UTF_8);
+                var out=c.getOutputStream();out.write(("HTTP/1.1 "+status+" Fixture\r\nContent-Length: "+body.length+"\r\nConnection: close\r\n\r\n").getBytes(StandardCharsets.US_ASCII));out.write(body);
+            }}catch(SocketException e){if(!socket.isClosed())error=e;}catch(Throwable e){error=e;}},"fixture-model-metadata");thread.setDaemon(true);thread.start();
+        }
+        String url(){return "http://127.0.0.1:"+socket.getLocalPort()+"/v1";}
+        public void close()throws Exception{socket.close();if(error!=null)throw new Exception(error);}
+    }
+    static void metadataIdle(LocalChat app)throws Exception {
+        for(int i=0;i<250;i++){boolean[] active={false};edt(()->active[0]=field(app,"inspectingModel"));if(!active[0])return;Thread.sleep(20);}throw new AssertionError("Metadata never completed");
+    }
+    static void modernUi(Path home)throws Exception {
+        System.setProperty("localchat.home",home.resolve("modern-ui").toString());Files.createDirectories(Path.of(System.getProperty("localchat.home")));
+        try(MetadataServer server=new MetadataServer()) {
+            LocalChat[] app={null};int[] angle={0};
+            edt(()->{
+                var ctor=LocalChat.class.getDeclaredConstructor();ctor.setAccessible(true);app[0]=ctor.newInstance();
+                ((JComboBox<Provider>)field(app[0],"providerBox")).setSelectedItem(Provider.CUSTOM);
+                ((JComboBox<String>)field(app[0],"modelBox")).setSelectedItem("auto-model");((JTextField)field(app[0],"urlField")).setText(server.url());
+                ((JTextField)field(app[0],"workDirField")).setText(home.toString());
+                call(app[0],"autoInspectModel",new Class<?>[]{});
+                check(server.requests.isEmpty(),"automatic metadata is debounced");
+                Field since=LocalChat.class.getDeclaredField("metadataProfileSince");since.setAccessible(true);since.setLong(app[0],System.currentTimeMillis()-1000);
+                call(app[0],"autoInspectModel",new Class<?>[]{});
+            });
+            metadataIdle(app[0]);
+            edt(()->{
+                WorkspacePanel panel=field(app[0],"workspace");check(panel.limit.getValue().equals(8192),"automatic server metadata configures loaded context");
+                check(((ContextRing)field(app[0],"contextRing")).maximum==8192,"automatic context reaches footer percent denominator");
+                check(server.requests.size()==1 && server.requests.get(0).equals("GET /api/v1/models HTTP/1.1"),"automatic context uses GET, never inference or load");
+                call(app[0],"autoInspectModel",new Class<?>[]{});check(server.requests.size()==1,"automatic metadata requests are rate-limited");
+                JTextArea draft=field(app[0],"input");ContextRing ring=field(app[0],"contextRing");long before=ring.conversation;draft.setText("live context ".repeat(1000));check(ring.conversation>before,"draft context updates immediately without waiting for timer");draft.setText("");
+                server.loaded=16384;call(app[0],"inspectModel",new Class<?>[]{});
+            });
+            metadataIdle(app[0]);
+            edt(()->{
+                check(((WorkspacePanel)field(app[0],"workspace")).limit.getValue().equals(16384) && server.requests.size()==2,"metadata can refresh again after first request completes");
+                server.status=500;call(app[0],"inspectModel",new Class<?>[]{boolean.class},true);
+            });
+            metadataIdle(app[0]);
+            edt(()->{
+                check(server.requests.size()==4 && !(Boolean)field(app[0],"inspectingModel"),"v1/v0 failure clears in-flight flag for future retries");
+                server.status=200;server.loaded=32768;call(app[0],"inspectModel",new Class<?>[]{});
+            });
+            metadataIdle(app[0]);
+            edt(()->{
+                check(((WorkspacePanel)field(app[0],"workspace")).limit.getValue().equals(32768),"metadata recovers after server failure");
+                server.delay=120;call(app[0],"inspectModel",new Class<?>[]{});
+                ((JComboBox<String>)field(app[0],"modelBox")).setSelectedItem("another-model");call(app[0],"refreshDashboard",new Class<?>[]{});
+            });
+            metadataIdle(app[0]);
+            edt(()->{
+                check(((WorkspacePanel)field(app[0],"workspace")).limit.getValue().equals(0),"late metadata never applies another model's context limit");
+                server.delay=0;((JComboBox<String>)field(app[0],"modelBox")).setSelectedItem("auto-model");call(app[0],"refreshDashboard",new Class<?>[]{});
+                ((JComboBox<String>)field(app[0],"responseProfile")).setSelectedIndex(2);((JCheckBox)field(app[0],"streamBox")).setSelected(false);((JCheckBox)field(app[0],"toolsBox")).setSelected(false);
+                ((JComboBox<String>)field(app[0],"permissionBox")).setSelectedIndex(2);((JTextField)field(app[0],"systemField")).setText("saved full defaults");
+                WorkspacePanel panel=field(app[0],"workspace");panel.autoCompact.doClick();panel.autoThreshold.setValue(55);
+                call(app[0],"saveDefaults",new Class<?>[]{});command(app[0],"/new Short title");
+                check(((JComboBox<?>)field(app[0],"responseProfile")).getSelectedIndex()==2,"new chat restores saved response profile");
+                check(!((JCheckBox)field(app[0],"streamBox")).isSelected() && !((JCheckBox)field(app[0],"toolsBox")).isSelected(),"new chat restores stream and tool mode");
+                check(panel.autoCompact.isSelected() && panel.autoThreshold.getValue().equals(55),"new chat restores explicit auto-compaction defaults");
+                var row=panel.list.getSelectedValue();var label=(JLabel)panel.list.getCellRenderer().getListCellRendererComponent(panel.list,row,0,false,false);
+                check(label.getText().equals("Short title") && !label.getText().contains(Conversations.shortId(row.file())),"sidebar shows title without internal identifier");
+                call(app[0],"setBusy",new Class<?>[]{boolean.class},true);app[0].addNotify();app[0].validate();BusyIndicator spinner=field(app[0],"busyIndicator");angle[0]=spinner.angle;
+            });
+            Thread.sleep(170);
+            edt(()->{
+                BusyIndicator spinner=field(app[0],"busyIndicator");check(spinner.animation.isRunning() && spinner.angle!=angle[0],"busy indicator visibly rotates over time");
+                call(app[0],"setBusy",new Class<?>[]{boolean.class},false);check(!spinner.active&&!spinner.animation.isRunning(),"activity stops after generation");
+                call(app[0],"saveConversation",new Class<?>[]{});app[0].dispose();check(!spinner.animation.isRunning(),"disposing chat stops animation");
+                var ctor=LocalChat.class.getDeclaredConstructor();ctor.setAccessible(true);var restored=ctor.newInstance();
+                check(((JComboBox<?>)field(restored,"responseProfile")).getSelectedIndex()==2 && ((JComboBox<?>)field(restored,"permissionBox")).getSelectedIndex()==2,"restart restores saved profile and approval style");
+                check(!((JCheckBox)field(restored,"streamBox")).isSelected() && !((JCheckBox)field(restored,"toolsBox")).isSelected(),"restart restores saved stream and tool selections");
+                check(((JTextField)field(restored,"systemField")).getText().equals("saved full defaults") && ((JTextField)field(restored,"workDirField")).getText().equals(home.toString()),"restart restores saved system prompt and working folder");
+                WorkspacePanel panel=field(restored,"workspace");check(panel.autoCompact.isSelected() && panel.autoThreshold.getValue().equals(55),"restart restores saved auto-compaction controls");
+                restored.dispose();
+            });
+        }
+    }
+
+    static void streamingActivity(Path home)throws Exception {
+        System.setProperty("localchat.home",home.resolve("live-stream").toString());Files.createDirectories(Path.of(System.getProperty("localchat.home")));
+        try(ServerSocket socket=new ServerSocket(0,2,InetAddress.getByName("127.0.0.1"))) {
+            CountDownLatch firstChunk=new CountDownLatch(1),finish=new CountDownLatch(1);AtomicReference<Throwable> error=new AtomicReference<>();
+            Thread server=new Thread(()->{try(Socket c=socket.accept()){
+                c.setSoTimeout(4000);var in=c.getInputStream();var header=new ByteArrayOutputStream();int b;while((b=in.read())>=0){header.write(b);if(header.toString(StandardCharsets.US_ASCII).endsWith("\r\n\r\n"))break;}
+                int length=0;for(String line:header.toString(StandardCharsets.US_ASCII).split("\r\n"))if(line.toLowerCase(Locale.ROOT).startsWith("content-length:"))length=Integer.parseInt(line.substring(15).strip());in.readNBytes(length);
+                String first=event(Json.obj("choices",List.of(Json.obj("delta",Json.obj("content","live-token ".repeat(600))))));
+                String last=event(Json.obj("choices",List.of(),"usage",Json.obj("prompt_tokens",10,"completion_tokens",600)))+"data: [DONE]\n\n";
+                byte[] a=first.getBytes(StandardCharsets.UTF_8),z=last.getBytes(StandardCharsets.UTF_8);var out=c.getOutputStream();
+                out.write(("HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Length: "+(a.length+z.length)+"\r\nConnection: close\r\n\r\n").getBytes(StandardCharsets.US_ASCII));out.write(a);out.flush();firstChunk.countDown();
+                if(!finish.await(5,TimeUnit.SECONDS))throw new AssertionError("Stream release timed out");out.write(z);out.flush();
+            }catch(Throwable t){error.set(t);firstChunk.countDown();}});server.setDaemon(true);server.start();
+            LocalChat[] app={null};long[] before={0};
+            try {
+                edt(()->{var ctor=LocalChat.class.getDeclaredConstructor();ctor.setAccessible(true);app[0]=ctor.newInstance();
+                    ((JComboBox<Provider>)field(app[0],"providerBox")).setSelectedItem(Provider.CUSTOM);((JComboBox<String>)field(app[0],"modelBox")).setSelectedItem("live-model");
+                    ((JTextField)field(app[0],"urlField")).setText("http://127.0.0.1:"+socket.getLocalPort()+"/v1");((JCheckBox)field(app[0],"toolsBox")).setSelected(false);
+                    command(app[0],"/context 8192");((JTextArea)field(app[0],"input")).setText("hello");before[0]=((ContextRing)field(app[0],"contextRing")).conversation;call(app[0],"send",new Class<?>[]{});
+                });
+                check(firstChunk.await(4,TimeUnit.SECONDS),"stream begins");boolean[] observed={false};
+                for(int i=0;i<150 && !observed[0];i++){edt(()->{ContextRing ring=field(app[0],"contextRing");observed[0]=ring.conversation>before[0]+100;});if(!observed[0])Thread.sleep(10);}
+                edt(()->{check(observed[0] && (Boolean)field(app[0],"busy"),"context updates during streaming before final usage arrives");check(((BusyIndicator)field(app[0],"busyIndicator")).active,"busy marker remains active while streaming");});
+            }finally{finish.countDown();}
+            idle(app[0]);edt(()->{check(!((BusyIndicator)field(app[0],"busyIndicator")).active,"stream completion clears busy marker");app[0].dispose();});server.join(4000);if(error.get()!=null)throw new Exception(error.get());
+        }
+    }
+
     public static void main(String[] args)throws Exception{
         Path home=Path.of(System.getProperty("localchat.home")).resolve("features");Files.createDirectories(home);
-        try{protocols(home);files(home);ui(home);fragmented(home,false);fragmented(home,true);for(int mode=0;mode<6;mode++)automatic(home,mode);management(home);System.out.println("PASS: "+checks+" feature checks (protocols, sessions, compact memory, reports, commands)");}
+        try{protocols(home);files(home);ui(home);fragmented(home,false);fragmented(home,true);for(int mode=0;mode<6;mode++)automatic(home,mode);management(home);modernUi(home);streamingActivity(home);System.out.println("PASS: "+checks+" feature checks (protocols, sessions, compact memory, reports, commands)");}
         finally{edt(()->{for(java.awt.Window w:java.awt.Window.getWindows())w.dispose();});}
         System.exit(0);
     }

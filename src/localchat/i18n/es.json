@@ -204,5 +204,10 @@
   "Metadate verificate. Limita încărcată este folosită când este disponibilă.": "Metadatos verificados. Se usa el límite cargado cuando está disponible.",
   "Contextul real nu poate fi verificat: {0}": "No se pudo verificar el contexto real: {0}",
   "Recomandări pentru viteză și acuratețe": "Recomendaciones de velocidad y precisión",
-  "Viteză: profil Rapid, chat simplu când nu ai nevoie de fișiere, context încărcat mai mic în LM Studio.\nEchilibru: profil Echilibrat și autocompactare la 70%.\nAcuratețe: profil Detaliat, verificarea documentelor cu PDFControl și confirmarea informațiilor lipsă. Un buget mai mare nu garantează corectitudinea.\nMaximul modelului și contextul încărcat pot fi diferite. Verifică metadatele după schimbări în LM Studio.": "Velocidad: perfil Rápido, chat simple sin archivos, contexto cargado menor en LM Studio.\nEquilibrio: perfil Equilibrado y compactación automática al 70%.\nPrecisión: perfil Detallado, verificar documentos con PDFControl y confirmar información faltante. Un presupuesto mayor no garantiza corrección.\nEl máximo del modelo y el contexto cargado pueden diferir. Actualiza metadatos tras cambios en LM Studio."
+  "Viteză: profil Rapid, chat simplu când nu ai nevoie de fișiere, context încărcat mai mic în LM Studio.\nEchilibru: profil Echilibrat și autocompactare la 70%.\nAcuratețe: profil Detaliat, verificarea documentelor cu PDFControl și confirmarea informațiilor lipsă. Un buget mai mare nu garantează corectitudinea.\nMaximul modelului și contextul încărcat pot fi diferite. Verifică metadatele după schimbări în LM Studio.": "Velocidad: perfil Rápido, chat simple sin archivos, contexto cargado menor en LM Studio.\nEquilibrio: perfil Equilibrado y compactación automática al 70%.\nPrecisión: perfil Detallado, verificar documentos con PDFControl y confirmar información faltante. Un presupuesto mayor no garantiza corrección.\nEl máximo del modelo y el contexto cargado pueden diferir. Actualiza metadatos tras cambios en LM Studio.",
+  "Redenumește conversația…": "Renombrar conversación…",
+  "Se lucrează…": "Trabajando…",
+  "Deschide {0}": "Abrir {0}",
+  "Folder de lucru": "Carpeta de trabajo",
+  "Fișiere deja salvate pe disc. Salvarea unei copii este opțională.": "Los archivos ya están guardados. Guardar una copia es opcional."
 }

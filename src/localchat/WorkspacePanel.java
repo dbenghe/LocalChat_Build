@@ -38,6 +38,7 @@ final class WorkspacePanel extends JPanel {
                 if(index<0 || !list.getCellBounds(index,index).contains(e.getPoint()))return;
                 list.setSelectedIndex(index);if(!list.getSelectedValue().file().equals(sessions.get(index).file()))return;
                 JPopupMenu menu=new JPopupMenu();
+                JMenuItem renameItem=new JMenuItem(I18n.text("Redenumește conversația…"));renameItem.addActionListener(x->title.run());menu.add(renameItem);
                 JMenuItem a=new JMenuItem(I18n.text(list.getSelectedValue().state().archived?"Restaurează conversația":"Arhivează conversația"));a.addActionListener(x->archive.run());menu.add(a);
                 JMenuItem ex=new JMenuItem(I18n.text("Exportă chat JSON…"));ex.addActionListener(x->export.run());menu.add(ex);
                 JMenuItem d=new JMenuItem(I18n.text("Șterge conversația"));d.addActionListener(x->delete.run());menu.add(d);menu.show(list,e.getX(),e.getY());}
@@ -46,7 +47,7 @@ final class WorkspacePanel extends JPanel {
         list.setCellRenderer(new DefaultListCellRenderer(){
             @Override public Component getListCellRendererComponent(JList<?> l,Object value,int index,boolean selected,boolean focus) {
                 Conversations.Saved s=(Conversations.Saved)value;
-                return super.getListCellRendererComponent(l,(s.state().pinned?"* ":"")+Conversations.shortId(s.file())+" · "+s.title(),index,selected,focus);
+                return super.getListCellRendererComponent(l,(s.state().pinned?"* ":"")+s.title(),index,selected,focus);
             }});
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         list.addListSelectionListener(e->{if(!refreshing && !e.getValueIsAdjusting() && list.getSelectedValue()!=null)open.accept(list.getSelectedValue());});

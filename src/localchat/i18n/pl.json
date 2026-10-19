@@ -204,5 +204,10 @@
   "Metadate verificate. Limita încărcată este folosită când este disponibilă.": "Metadane sprawdzone. Używany jest wczytany limit, gdy jest dostępny.",
   "Contextul real nu poate fi verificat: {0}": "Nie można zweryfikować rzeczywistego kontekstu: {0}",
   "Recomandări pentru viteză și acuratețe": "Zalecenia dotyczące szybkości i dokładności",
-  "Viteză: profil Rapid, chat simplu când nu ai nevoie de fișiere, context încărcat mai mic în LM Studio.\nEchilibru: profil Echilibrat și autocompactare la 70%.\nAcuratețe: profil Detaliat, verificarea documentelor cu PDFControl și confirmarea informațiilor lipsă. Un buget mai mare nu garantează corectitudinea.\nMaximul modelului și contextul încărcat pot fi diferite. Verifică metadatele după schimbări în LM Studio.": "Szybkość: profil Szybki, zwykły czat bez plików, mniejszy kontekst w LM Studio.\nRównowaga: profil Zrównoważony i automatyczna kompresja przy 70%.\nDokładność: profil Szczegółowy, weryfikacja dokumentów przez PDFControl i potwierdzanie brakujących informacji. Większy budżet nie gwarantuje poprawności.\nMaksimum modelu i wczytany kontekst mogą się różnić. Odśwież metadane po zmianach w LM Studio."
+  "Viteză: profil Rapid, chat simplu când nu ai nevoie de fișiere, context încărcat mai mic în LM Studio.\nEchilibru: profil Echilibrat și autocompactare la 70%.\nAcuratețe: profil Detaliat, verificarea documentelor cu PDFControl și confirmarea informațiilor lipsă. Un buget mai mare nu garantează corectitudinea.\nMaximul modelului și contextul încărcat pot fi diferite. Verifică metadatele după schimbări în LM Studio.": "Szybkość: profil Szybki, zwykły czat bez plików, mniejszy kontekst w LM Studio.\nRównowaga: profil Zrównoważony i automatyczna kompresja przy 70%.\nDokładność: profil Szczegółowy, weryfikacja dokumentów przez PDFControl i potwierdzanie brakujących informacji. Większy budżet nie gwarantuje poprawności.\nMaksimum modelu i wczytany kontekst mogą się różnić. Odśwież metadane po zmianach w LM Studio.",
+  "Redenumește conversația…": "Zmień nazwę rozmowy…",
+  "Se lucrează…": "Praca w toku…",
+  "Deschide {0}": "Otwórz {0}",
+  "Folder de lucru": "Folder roboczy",
+  "Fișiere deja salvate pe disc. Salvarea unei copii este opțională.": "Pliki są już zapisane na dysku. Zapisanie kopii jest opcjonalne."
 }

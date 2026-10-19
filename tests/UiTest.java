@@ -68,7 +68,7 @@ public final class UiTest {
             for(int mode=0;mode<2;mode++) {
                 themes.setSelectedIndex(mode);
                 check(I18n.language().equals(I18n.CODES[i]),"selected locale");
-                check(send.getText().equals(I18n.text("Trimite")),"translated send");
+                check(send.getText().isEmpty() && send.getIcon()!=null && send.getToolTipText().equals(I18n.text("Trimite")),"icon send with translated accessible tooltip");
                 check(app.getJMenuBar().getMenu(0).getItem(0).getText().equals(I18n.text("Conversație nouă")),"translated menu");
                 JLabel status=field(app,"status");
                 check(status.getText().equals(I18n.text("Rulez {0}…","read_file")),"translated dynamic status");
@@ -89,7 +89,10 @@ public final class UiTest {
                 check(!input.getForeground().equals(input.getBackground()),"text visible");
                 app.addNotify(); app.validate();
                 check(languages.getWidth()>=languages.getPreferredSize().width && themes.getWidth()>=themes.getPreferredSize().width,"appearance controls laid out");
-                check(send.getWidth()>=send.getPreferredSize().width,"send label fits");
+                check(send.getWidth()==34 && send.getHeight()==32,"compact send icon size");
+                BusyIndicator activity=field(app,"busyIndicator");check(activity.active && activity.isVisible() && activity.animation.isRunning(),"busy spinner animates while generating");
+                JButton folder=field(app,"downloadsButton");check(folder.getText().equals(I18n.text("Deschide {0}",home.getFileName())),"folder action follows selected workspace in every language");
+                check(((JButton)field(app,"newChatButton")).getIcon()!=null,"new conversation icon");
                 for(String name:new String[]{"contextRing","bottomModel","responseProfile","bottomMode","bottomApproval"}) {
                     JComponent control=field(app,name);Point point=SwingUtilities.convertPoint(control,0,0,app.getRootPane());
                     check(control.getWidth()>30 && point.x>=0 && point.x+control.getWidth()<=app.getRootPane().getWidth(),"footer visible: "+name);

@@ -204,5 +204,10 @@
   "Metadate verificate. Limita încărcată este folosită când este disponibilă.": "Metadata checked. The loaded limit is used when available.",
   "Contextul real nu poate fi verificat: {0}": "Actual context could not be verified: {0}",
   "Recomandări pentru viteză și acuratețe": "Speed and accuracy recommendations",
-  "Viteză: profil Rapid, chat simplu când nu ai nevoie de fișiere, context încărcat mai mic în LM Studio.\nEchilibru: profil Echilibrat și autocompactare la 70%.\nAcuratețe: profil Detaliat, verificarea documentelor cu PDFControl și confirmarea informațiilor lipsă. Un buget mai mare nu garantează corectitudinea.\nMaximul modelului și contextul încărcat pot fi diferite. Verifică metadatele după schimbări în LM Studio.": "Speed: Fast profile, plain chat when files are unnecessary, smaller loaded context in LM Studio.\nBalance: Balanced profile and automatic compaction at 70%.\nAccuracy: Detailed profile, verify documents with PDFControl and confirm missing information. A larger budget does not guarantee correctness.\nThe model maximum and loaded context can differ. Refresh metadata after changes in LM Studio."
+  "Viteză: profil Rapid, chat simplu când nu ai nevoie de fișiere, context încărcat mai mic în LM Studio.\nEchilibru: profil Echilibrat și autocompactare la 70%.\nAcuratețe: profil Detaliat, verificarea documentelor cu PDFControl și confirmarea informațiilor lipsă. Un buget mai mare nu garantează corectitudinea.\nMaximul modelului și contextul încărcat pot fi diferite. Verifică metadatele după schimbări în LM Studio.": "Speed: Fast profile, plain chat when files are unnecessary, smaller loaded context in LM Studio.\nBalance: Balanced profile and automatic compaction at 70%.\nAccuracy: Detailed profile, verify documents with PDFControl and confirm missing information. A larger budget does not guarantee correctness.\nThe model maximum and loaded context can differ. Refresh metadata after changes in LM Studio.",
+  "Redenumește conversația…": "Rename conversation…",
+  "Se lucrează…": "Working…",
+  "Deschide {0}": "Open {0}",
+  "Folder de lucru": "Working folder",
+  "Fișiere deja salvate pe disc. Salvarea unei copii este opțională.": "Files are already saved on disk. Saving a copy is optional."
 }

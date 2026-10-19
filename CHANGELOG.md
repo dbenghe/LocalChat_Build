@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.0 — 2026-10-19
+
+- Slimmed footer controls to 26px, added vector send/stop/new-chat/folder icons and a rotating busy indicator.
+- Added right-click rename and removed internal IDs from visible sidebar titles.
+- Replaced the compose Downloads action with the selected working folder and its name.
+- Context estimates update on draft edits and streamed deltas, with a 200ms dashboard refresh.
+- Automatically read LM Studio metadata after a stable model/server selection and once per minute; fixed a stuck in-flight flag preventing further refreshes. Stale responses cannot change another model profile.
+- Explicit settings snapshots now restore response profile, stream, tool mode, approvals, system prompt and auto-compaction alongside model/API/folder.
+- Clarified that files produced by tools are already on disk; saving an extra copy remains optional.
+- Verified all six languages, both themes, metadata retry/recovery, live streaming activity and complete settings restoration.
+
 ## 1.4.0 — 2026-10-19
 
 - Added recoverable deletion, archived/active views, context menus and JSON/ZIP chat export.
