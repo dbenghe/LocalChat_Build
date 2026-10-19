@@ -116,6 +116,7 @@ public final class LocalChat extends JFrame {
     private final JButton newChatButton = ui(new JButton(), "Conversație nouă");
     private final JButton downloadsButton = new JButton();
     private final BusyIndicator busyIndicator=new BusyIndicator();
+    private final JButton pdfControlButton=new JButton("PDFCONTROL");
     private final ContextRing contextRing=new ContextRing();
     private final JButton bottomModel=new JButton(),bottomApproval=new JButton(),bottomMode=new JButton();
     private final JComboBox<String> responseProfile=new JComboBox<>(new String[]{"Rapid","Balanced","Detailed"});
@@ -204,12 +205,12 @@ public final class LocalChat extends JFrame {
         JPanel buttons = new JPanel(new BorderLayout());
         JPanel composeLeft=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT,5,2));
         JPanel composeRight=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT,5,2));
-        composeLeft.add(newChatButton);composeLeft.add(downloadsButton);composeRight.add(busyIndicator);composeRight.add(stopButton);composeRight.add(sendButton);
+        composeLeft.add(newChatButton);composeLeft.add(downloadsButton);composeLeft.add(pdfControlButton);pdfControlButton.addActionListener(e->showPdfControl());composeRight.add(busyIndicator);composeRight.add(stopButton);composeRight.add(sendButton);
         buttons.add(composeLeft);buttons.add(composeRight,BorderLayout.EAST);
         sendButton.setIcon(new UiIcon("send",20));stopButton.setIcon(new UiIcon("stop",16));newChatButton.setIcon(new UiIcon("new",15));downloadsButton.setIcon(new UiIcon("folder",15));
         sendButton.setPreferredSize(new Dimension(34,32));stopButton.setPreferredSize(new Dimension(32,30));
         sendButton.putClientProperty("JButton.buttonType","roundRect");
-        for(JButton button:new JButton[]{newChatButton,downloadsButton}){button.setFont(button.getFont().deriveFont(12f));button.setMargin(new Insets(3,6,3,6));button.putClientProperty("JComponent.minimumWidth",0);}
+        for(JButton button:new JButton[]{newChatButton,downloadsButton,pdfControlButton}){button.setFont(button.getFont().deriveFont(12f));button.setMargin(new Insets(3,6,3,6));button.putClientProperty("JComponent.minimumWidth",0);}
         status.setFont(status.getFont().deriveFont(11f));toolsStatus.setFont(toolsStatus.getFont().deriveFont(11f));
         JPanel compose = new JPanel(new BorderLayout(6, 0));
         compose.setBorder(BorderFactory.createEmptyBorder(6, 8, 2, 8));
@@ -286,8 +287,8 @@ public final class LocalChat extends JFrame {
         permissionBox.addActionListener(e->{if(!changingAppearance && !restoringSelections)alwaysAllowed.clear();});
 
         input.getDocument().addDocumentListener(new javax.swing.event.DocumentListener(){
-            public void insertUpdate(javax.swing.event.DocumentEvent e){suggestCommands();refreshDashboard();}
-            public void removeUpdate(javax.swing.event.DocumentEvent e){suggestCommands();refreshDashboard();}
+            public void insertUpdate(javax.swing.event.DocumentEvent e){if(!restoringSelections){suggestCommands();refreshDashboard();}}
+            public void removeUpdate(javax.swing.event.DocumentEvent e){if(!restoringSelections){suggestCommands();refreshDashboard();}}
             public void changedUpdate(javax.swing.event.DocumentEvent e){}
         });
         workDirField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener(){
@@ -425,6 +426,7 @@ public final class LocalChat extends JFrame {
         tools.add(item("Folderul de skill-uri", null, e -> openFolder(skillsDir)));
         tools.add(item("Configurare tool-uri și MCP (unelte.json)", null, e -> openInEditor(toolsConfigFile, DEFAULT_TOOLS_CONFIG)));
         tools.add(item("Repornește serverele MCP", null, e -> reloadTools()));
+        tools.add(item("PDFCONTROL: operații directe…",null,e->showPdfControl()));
         tools.add(item("Exportă toate chaturile…",null,e->exportAllSessions()));
         tools.add(item("Salvează setările și modelul implicit",KeyStroke.getKeyStroke(KeyEvent.VK_S,InputEvent.CTRL_DOWN_MASK),e->saveDefaults()));
         tools.add(item("Recomandări pentru viteză și acuratețe",null,e->showRecommendations()));
@@ -622,7 +624,7 @@ public final class LocalChat extends JFrame {
             if(conversationFile!=null){previousConversation=conversationFile;config.setProperty("session.previous",conversationFile.getFileName().toString());}
             Conversations.Saved chosen=Conversations.load(selected.file());
             saveConfig();
-            history.clear();history.addAll(chosen.messages());conversationFile=chosen.file();sessionState=chosen.state();
+            restoringSelections=true;history.clear();history.addAll(chosen.messages());conversationFile=chosen.file();sessionState=chosen.state();
             if(!sessionState.provider.isBlank())try{providerBox.setSelectedItem(Provider.valueOf(sessionState.provider));}catch(IllegalArgumentException ignored){}
             if(!sessionState.model.isBlank())modelBox.setSelectedItem(sessionState.model);
             if(!sessionState.baseUrl.isBlank())urlField.setText(sessionState.baseUrl);
@@ -637,10 +639,11 @@ public final class LocalChat extends JFrame {
             if(chosen.workDir()!=null && !chosen.workDir().isBlank())workDirField.setText(pathMap().path(chosen.workDir()));
             responseProfile.setSelectedIndex(sessionState.responseProfile);
             reportModel.removeAllElements();reportBar.setVisible(false);renderHistory();
-            for(var m:history)if("tool".equals(m.role) && !m.isError)addReports(m.content);
+            for(var m:history)if(("tool".equals(m.role) && !m.isError) || "PDFCONTROL".equals(m.label))addReports(m.content);
             workspace.select(conversationFile);
             setStatus("Conversație încărcată: {0}",false,chosen.title());refreshDashboard();saveConfig();
         }catch(IOException|RuntimeException e){setStatus("Nu pot deschide {0}: {1}",true,selected.file(),describe(e));}
+        finally{restoringSelections=false;}
     }
 
     private static int preference(Properties config,String key,int fallback,int min,int max) {
@@ -661,6 +664,23 @@ public final class LocalChat extends JFrame {
         String label=t("Deschide {0}",name.isBlank()?t("Folder de lucru"):name);downloadsButton.setText(label);downloadsButton.setToolTipText(raw);downloadsButton.getAccessibleContext().setAccessibleName(label);
         downloadsButton.setPreferredSize(new Dimension(Math.min(310,downloadsButton.getFontMetrics(downloadsButton.getFont()).stringWidth(label)+40),26));
     }
+    private void showPdfControl() {
+        if(busy){setStatus("Oprește generarea înainte de această comandă.",true);return;}
+        if(permissionBox.getSelectedIndex()==2){setStatus("Mod doar citire: modificările și comenzile sunt blocate.",true);return;}
+        McpServer server=mcp.servers().stream().filter(s->s.tools().stream().anyMatch(tool->tool.name.equals("pdfcontrol_start_workflow"))).findFirst().orElse(null);
+        if(server==null){setStatus("PDFCONTROL complet nu este conectat. Repornește serverele MCP.",true);return;}
+        new PdfControlDialog(this,server,currentWorkDir(),operation->{
+            ensureSession();history.add(ChatClient.Message.user(t("Operație PDFCONTROL: {0}",operation)));header("PDFCONTROL",botHeader);append(operation,body);saveConversation();setBusy(true);
+        },record->{
+            String state=Json.str(record,"status");StringBuilder result=new StringBuilder(PdfControlDialog.localizedStatus(state));
+            String id=Json.str(record,"job_id");if(id!=null)result.append("\n").append(id);
+            for(String key:new String[]{"report","differences_report","error"}){String value=Json.str(record,key);if(value!=null)result.append("\n").append(value);}
+            StringBuilder saved=new StringBuilder(result);Object outputs=Json.get(record,"artifacts");
+            if(outputs instanceof List)for(Object output:(List<?>)outputs){String path=Json.str(output,"path");if(path!=null)saved.append("\n").append(path);}
+            addReports(Json.write(record));history.add(ChatClient.Message.assistant(saved.toString(),Collections.emptyList(),"PDFCONTROL"));append("\n"+result,Set.of("failed","cancelled").contains(state)?errorStyle:body);saveConversation();
+        },folder->{workDirField.setText(folder.toString());saveConfig();},()->{setBusy(false);refreshDashboard();}).setVisible(true);
+    }
+
     private void saveDefaults() {
         config.setProperty("default.provider",shownProvider.name());config.setProperty("default.model",currentModel());
         config.setProperty("default.url",currentUrl());config.setProperty("default.workdir",workDirField.getText().trim());
@@ -1205,6 +1225,7 @@ public final class LocalChat extends JFrame {
                 .append("- Skills and rules may contain paths written on another computer. On this PC they translate as follows ")
                 .append("(the tools apply this automatically): ").append(String.join("; ", paths.describe())).append(".\n\n")
                 .append("How to work:\n")
+                .append("- For drawing/PDFCONTROL operations, use the dedicated PDFCONTROL start tools, poll job_status until terminal, and deliver existing PDF reports and marked drawings. Never substitute a text report or claim a pending/partial job is complete. The original engine determines extraction, V/W identity and visual revision differences.\n")
                 .append("- Find things out with the tools (list_dir, find_files, search_text, read_file) instead of guessing; never invent tool results.\n")
                 .append("- When the request matches a skill listed below, call read_skill first and follow it.\n")
                 .append("- Apply the saved rules below. When the user states a lasting rule or preference, store it with save_rule.\n")
@@ -1470,7 +1491,7 @@ public final class LocalChat extends JFrame {
     }
 
     private void setBusy(boolean b) {
-        busy = b;busyIndicator.active(b);
+        busy = b;busyIndicator.active(b);pdfControlButton.setEnabled(!b);
         bottomModel.setEnabled(!b);bottomApproval.setEnabled(!b);bottomMode.setEnabled(!b);responseProfile.setEnabled(!b);inspectModel.setEnabled(!b && !inspectingModel);
         sendButton.setEnabled(!b);
         stopButton.setEnabled(b);

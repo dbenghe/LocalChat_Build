@@ -19,6 +19,10 @@ $taskSha256 = [Security.Cryptography.SHA256]::Create()
 try { $taskLibraryHash = [BitConverter]::ToString($taskSha256.ComputeHash($taskHashStream)).Replace('-', '') }
 finally { $taskSha256.Dispose(); $taskHashStream.Dispose() }
 if ($taskLibraryHash -ne '917AFF3963C88D797D0FD9B9CCBD70F7681C101DF9D11C59E2BC7A3A6C0FABF4') { throw 'FlatLaf checksum mismatch' }
+$taskPdfPython = Join-Path $PSScriptRoot 'pdfcontrol/runtime/python/python.exe'
+if (!(Test-Path -LiteralPath $taskPdfPython)) { throw 'PDFCONTROL runtime missing. Restore the local engine/runtime in pdfcontrol.' }
+& $taskPdfPython -I "$PSScriptRoot/integration/sync_engine.py" --package "$PSScriptRoot/pdfcontrol"
+if ($LASTEXITCODE) { throw 'PDFCONTROL engine synchronization failed' }
 $taskBuild = Join-Path $PSScriptRoot 'build'
 # Resolve and verify before removing generated build output.
 $taskResolved = [IO.Path]::GetFullPath($taskBuild)
@@ -38,6 +42,10 @@ if ($LASTEXITCODE) { throw 'Test compilation failed' }
 if ($LASTEXITCODE) { throw 'Tests failed; distribution was not changed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.FeatureTest
 if ($LASTEXITCODE) { throw 'Feature tests failed; distribution was not changed' }
+& $taskPdfPython -I "$PSScriptRoot/integration/test_pdfcontrol_bridge.py" --package "$PSScriptRoot/pdfcontrol" --output "$taskBuild/pdfcontrol-tests"
+if ($LASTEXITCODE) { throw 'PDFCONTROL workflow tests failed; distribution was not changed' }
+& "$taskJdk/bin/java.exe" "-Dpdfcontrol.package=$PSScriptRoot/pdfcontrol" "-Dpdfcontrol.projects=$taskBuild/pdfcontrol-tests/PROJECTS" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.PdfControlTest
+if ($LASTEXITCODE) { throw 'Direct PDFCONTROL UI/MCP tests failed; distribution was not changed' }
 $taskJar = Join-Path $taskBuild 'LocalChat.jar'
 $taskManifest = Join-Path $taskBuild 'MANIFEST.MF'
 @"
@@ -60,6 +68,9 @@ Copy-Item -LiteralPath $taskJar -Destination (Join-Path $DistributionPath 'Local
 Copy-Item -LiteralPath "$PSScriptRoot/packaging/Porneste LocalChat.bat" -Destination $DistributionPath -Force
 Copy-Item -LiteralPath "$PSScriptRoot/README.md" -Destination (Join-Path $DistributionPath 'CITESTE.md') -Force
 Copy-Item -LiteralPath "$PSScriptRoot/VERSION","$PSScriptRoot/CHANGELOG.md" -Destination $DistributionPath -Force
+Copy-Item -LiteralPath "$PSScriptRoot/integration/pdfcontrol_bridge.py" -Destination "$PSScriptRoot/pdfcontrol/octop_mcp.py" -Force
+New-Item -ItemType Directory -Path "$DistributionPath/skills/pdfcontrol-octop" -Force | Out-Null
+Copy-Item -LiteralPath "$PSScriptRoot/integration/PDFCONTROL_SKILL.md" -Destination "$DistributionPath/skills/pdfcontrol-octop/SKILL.md" -Force
 if (!(Test-Path -LiteralPath (Join-Path $DistributionPath 'unelte.json'))) {
     Copy-Item -LiteralPath "$PSScriptRoot/packaging/unelte.json" -Destination $DistributionPath
 }
@@ -70,6 +81,23 @@ if (Test-Path -LiteralPath "$PSScriptRoot/packaging/skills") {
 if (Test-Path -LiteralPath "$PSScriptRoot/pdfcontrol/octop_mcp.py") {
     & robocopy.exe "$PSScriptRoot/pdfcontrol" "$DistributionPath/pdfcontrol" /E /XO /NFL /NDL /NJH /NJS /NP /XD .git .github __pycache__ test-tmp checked PDF_NOU OUD NIEUW pdfcompare _meetscripts Octop-PDFCONTROL pdfcontrol-octop /XF test_*.py *.backup-* octop_mcp_trace.jsonl installatie.log .gitignore skill-octop.zip | Out-Null
     if ($LASTEXITCODE -ge 8) { throw 'PDFControl copy failed' }
+}
+# Engine content must match the tested snapshot even when legacy file dates are older.
+function Get-EngineDigest([string]$Path) {
+    $taskDigestStream = [IO.File]::OpenRead($Path)
+    $taskDigestAlgorithm = [Security.Cryptography.SHA256]::Create()
+    try { return [BitConverter]::ToString($taskDigestAlgorithm.ComputeHash($taskDigestStream)).Replace('-', '') }
+    finally { $taskDigestAlgorithm.Dispose(); $taskDigestStream.Dispose() }
+}
+$taskEngineManifest = Get-Content -LiteralPath "$PSScriptRoot/pdfcontrol/localchat_engine_manifest.json" -Raw | ConvertFrom-Json
+$taskEngineFiles = @($taskEngineManifest.sha256.PSObject.Properties.Name) + @('localchat_engine_manifest.json','octop_mcp.py','bureaus.json','bureaus_prive.json','mbs_artikelnamen.json','mbs_catalogus.json','kennisbank.json','lower_right_ignored_labels.json')
+foreach ($taskEngineName in $taskEngineFiles) {
+    $taskEngineSource = Join-Path "$PSScriptRoot/pdfcontrol" $taskEngineName
+    if (Test-Path -LiteralPath $taskEngineSource) {
+        $taskEngineTarget = Join-Path "$DistributionPath/pdfcontrol" $taskEngineName
+        Copy-Item -LiteralPath $taskEngineSource -Destination $taskEngineTarget -Force
+        if ((Get-EngineDigest $taskEngineSource) -ne (Get-EngineDigest $taskEngineTarget)) { throw "Installed PDFCONTROL differs: $taskEngineName" }
+    }
 }
 if (!(Test-Path -LiteralPath "$DistributionPath/runtime/bin/javaw.exe")) {
     if (Test-Path -LiteralPath "$DistributionPath/runtime") { throw 'Incomplete runtime; restore it before building' }

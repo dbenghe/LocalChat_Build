@@ -235,3 +235,55 @@ streaming, unelte, stilul de aprobare și opțiunile/pragul autocompactării. Se
 Fișierele create cu succes de unelte și rapoartele generate de PDFControl sunt deja scrise pe disc în
 destinația operației. Salvează o copie este opțional. Un răspuns text nu devine fișier fără o cerere de
 creare a fișierului, iar confirmările operațiilor rămân cele stabilite prin modul de aprobare ales.
+
+
+## PDFCONTROL complet (1.6.0)
+
+Selectează folderul proiectului, apoi apasă **PDFCONTROL** lângă editor sau
+**Unelte → PDFCONTROL: operații directe…**. Panoul folosește motorul original,
+fără o cerere către model, și este tradus în toate cele șase limbi. Selectează:
+
+- Verifică desenele: controlul original, desene marcate și RAPPORT.pdf.
+- Extrage desenele: separarea planșelor dintr-un PDF și identificarea V/W.
+- Verifică/completează perechile V/W: copiază numai armarea confirmată de referința reală.
+- Compară revizii: selectează întâi PDF-urile vechi, apoi cele noi; primești PDF-urile
+  Vergelijking_OUD_NIEUW și Verschillen_OUD_NIEUW, cu marcajele motorului original.
+- Flux complet: extragere, perechi, control și raport PDF cu anexele disponibile.
+- Regenerează raportul: indică ID-ul unei lucrări terminate pentru un raport nou.
+
+Fișierele trebuie să fie sub proiectul de șase cifre din rădăcina PRODUCTIE configurată
+în conector. Sursele sunt copiate într-o lucrare izolată și verificate prin SHA256.
+Rezultatele se salvează automat în proiect/Controle/Octop-PDFCONTROL/<job_id>/;
+butonul Deschide raportul și lista de rapoarte din chat deschid fișierele existente.
+Nu este necesară salvarea manuală a rezultatelor. Panoul oferă progres și anulare.
+
+În chat poți cere, de exemplu:
+
+> Pentru proiectul 507XXX, execută fluxul complet PDFCONTROL pentru PDF-urile din
+> subfolderul Desene. Inventariază întâi fișierele. Urmărește jobul până la final
+> și oferă RAPPORT.pdf și desenele marcate; fără raport text în locul PDF-ului.
+
+> Compară cu PDFCONTROL proiectul 507XXX: vechile PDF-uri din Revizia_A cu cele
+> noi din Revizia_B. Oferă PDF-urile comparației și diferențelor cu marcaje vizibile.
+
+Înlocuiește 507XXX cu numărul real. Modelul trebuie să suporte apeluri de unelte;
+panoul direct rămâne disponibil independent de capabilitățile acestuia.
+Joburile se urmăresc prin pdfcontrol_job_status, iar artefactele sunt paginate.
+Istoricul conversației păstrează legăturile către rezultatele operațiilor directe.
+
+Perechile neconfirmate și identitățile ambigue sunt semnalate pentru verificare,
+nu completate prin presupuneri. Un job terminat confirmă execuția, nu aprobarea
+tehnică sau transferul pe server. Raportul original păstrează filtrarea anexelor
+și plafonul motorului (150 de planșe); include implicit planșele cu probleme.
+Sursele nu sunt modificate, iar configurația internă și regulile motorului nu
+sunt reconstruite de model. Anularea păstrează rezultatele deja produse.
+
+### Build cu motorul privat
+
+Sursele integrării sunt în integration/. Motorul și runtime-ul existente trebuie
+restaurate separat în pdfcontrol/ (excluse din Git). integration/sync_engine.py
+sincronizează modulele originale din C:/PDFCONTROL și verifică manifestul SHA256;
+poate primi --original pentru altă instalare. Nicio regulă sau desen privat nu
+este publicat în repository. Build.ps1 execută testele Java și testele reale MCP
+pe PDF-uri sintetice înainte de instalare. Regresiile originale suplimentare se
+execută local folosind testele din instalarea PDFCONTROL, fără a le publica.

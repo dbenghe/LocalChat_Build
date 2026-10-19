@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.6.0 — 2026-10-20
+
+- Verify installed engine contents against the tested snapshot regardless of legacy file dates.
+- Connected extraction, confirmed V/W pairing, checking, visual revision comparisons and report regeneration to the original PDFCONTROL engine.
+- Restored original PDF reports with available annotated drawing annexes; reports are actual files, not chat substitutes.
+- Added a direct PDFCONTROL panel in six languages and both themes, with progress, cancellation and opening saved PDFs; no model request required.
+- Added isolated jobs, source integrity manifests, explicit partial results and bounded paginated status responses.
+- Detect workers that exited unexpectedly and retry atomic status writes on Windows sharing conflicts.
+- Added real-engine MCP and Java panel tests on synthetic drawings, alongside existing UI/session tests.
+- Made chat selection restoration transactional to prevent intermediate controls from saving incomplete state.
+
 ## 1.5.0 — 2026-10-19
 
 - Slimmed footer controls to 26px, added vector send/stop/new-chat/folder icons and a rotating busy indicator.

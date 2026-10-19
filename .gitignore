@@ -23,3 +23,6 @@
 
 # Pinned small UI dependency, shipped with the portable app.
 !/lib/flatlaf-3.7.2.jar
+
+# Isolated integration fixtures and generated PDFs
+/bridge-test*/

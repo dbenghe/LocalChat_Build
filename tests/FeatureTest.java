@@ -278,7 +278,7 @@ public final class FeatureTest {
                 command(app[0],"/new Different chat");
                 check(!((Conversations.State)field(app[0],"sessionState")).autoCompact,"new chat has independent auto preference");
                 command(app[0],"/switch "+Conversations.shortId(file[0]));
-                WorkspacePanel panel=field(app[0],"workspace");check(panel.autoCompact.isSelected()==(mode!=4) && panel.autoThreshold.getValue().equals(30),"auto controls restored on chat switch");
+                WorkspacePanel panel=field(app[0],"workspace");check(panel.autoCompact.isSelected()==(mode!=4) && panel.autoThreshold.getValue().equals(30),"auto controls restored on chat switch; mode="+mode+" selected="+panel.autoCompact.isSelected()+" threshold="+panel.autoThreshold.getValue()+" status="+((JLabel)field(app[0],"status")).getText());
                 if(mode==0){
                     JComboBox<String> language=field(app[0],"languageBox"),theme=field(app[0],"themeBox");language.setSelectedIndex(1);theme.setSelectedIndex(1);
                     app[0].addNotify();app[0].validate();var image=new java.awt.image.BufferedImage(app[0].getWidth(),app[0].getHeight(),java.awt.image.BufferedImage.TYPE_INT_RGB);
