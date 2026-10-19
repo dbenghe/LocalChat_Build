@@ -177,3 +177,35 @@ După compactare, mesajul încă neschimbat se trimite o singură dată. Dacă �
 eșuează, nu se trimite automat. Compactarea consumă tokeni cu modelul curent, în statisticile aceluiași chat.
 Nu pornește la simpla încărcare a unei discuții și nu întrerupe o operație activă pentru a o rezuma pe ascuns.
 Cereri ulterioare dintr-o buclă de tool-uri sunt oprite dacă depășesc limita estimată, păstrând pașii executați.
+
+
+## Gestionare și context (1.4.0)
+
+Butonul − șterge conversația după confirmare, mutând fișierul în conversatii/deleted pentru recuperare manuală.
+Click dreapta pe un chat: Arhivează/Restaurează, Exportă chat JSON, Șterge. Bifa Arhivate schimbă lista afișată.
+Unelte → Exportă toate chaturile creează un ZIP cu JSON pentru fiecare chat activ sau arhivat, fără cele șterse.
+Exporturile includ istoricul integral, ciorna și rezumatul. Nu includ cheile din setari.properties.
+Pentru recuperare, copiază fișierul JSON în conversatii și repornește aplicația.
+
+Unelte → Salvează setările și modelul implicit (Ctrl+S) păstrează local cheia/API-ul, lista de modele,
+folderul ales și modelul implicit. La pornire sau într-un chat nou se folosește acest model; reluarea unui chat
+restaurează modelul acelui chat. Cheile rămân în fișierul local setari.properties și nu se includ în Git.
+
+Verifică contextul modelului citește /api/v1/models din LM Studio, cu fallback la /api/v0/models.
+Documentație: https://lmstudio.ai/docs/developer/rest/list . Nu încarcă modelul și nu trimite mesaje.
+Maximul teoretic și contextul instanței încărcate se afișează separat. Limita încărcată detectată este folosită
+pentru estimare și autocompactare; doar maximul teoretic nu setează automat limita. Dacă sunt mai multe instanțe
+și ID-ul ales nu identifică una singură, se folosește conservator cea mai mică limită încărcată.
+Metadatele sunt memorate local per server/model. Verifică din nou după reîncărcarea modelului în LM Studio.
+La încărcarea unui chat nu există apel de metadate/API. Alte servere pot necesita configurare manuală;
+aplicația nu ghicește maximul după numele modelului. Câmpul manual nu modifică serverul.
+
+Bara de jos: procent estimat și detalii la click, model, buget Rapid 1024/Echilibrat 4096/Detaliat 8192,
+chat simplu/cu unelte, aprobări. Aceste profiluri limitează ieșirea, nu activează un nivel de reasoning.
+Bugetul este redus la spațiul estimat rămas în context. Modelul poate răspunde mai scurt decât bugetul.
+Doar citire blochează modificări, comenzi și memorarea regulilor chiar dacă există aprobări anterioare.
+Întreabă păstrează confirmările, Permite tot autorizează tool-urile fără întrebări; selecția este explicită.
+
+Căile istorice lipsă sub Downloads/PRODUCTIE sunt rezolvate față de folderul de lucru selectat,
+inclusiv când profilul vechi încă există. Căile care există deja au prioritate; verificările de permisiune
+rămân active. Erorile vechi rămân în istoricul original și nu sunt transformate în rezultate reușite.

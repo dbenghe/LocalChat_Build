@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.4.0 — 2026-10-19
+
+- Added recoverable deletion, archived/active views, context menus and JSON/ZIP chat export.
+- Added explicit settings/default model saving, cached model lists and portable historical project path correction.
+- Added native LM Studio metadata inspection with separate theoretical maximum and loaded context; unknown stays unknown and chat loading remains offline.
+- Added bottom context ring and model, reply-budget, tool-mode and permission selectors. Reply budgets are not reasoning levels.
+- Added enforced read-only mode, including saved rules, writes and commands.
+- Translated every new control into all six languages and extended offline integration tests.
+
 ## 1.3.0 — 2026-10-19
 
 - Added per-chat automatic compaction controls in all six UI languages: enable checkbox and 30–95% threshold (default 70%).

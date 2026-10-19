@@ -21,6 +21,8 @@ final class PathMap {
     private final Map<String, String> aliases = new LinkedHashMap<>();
     private final String home;
     private final String downloads;
+    private String workspace;
+    PathMap workspace(String value) {workspace=value;return this;}
 
     PathMap(Map<String, String> aliases, String home, String downloads) {
         // Longest source first, so C:\X\Y wins over C:\X.
@@ -41,6 +43,10 @@ final class PathMap {
         String s = m.find() ? m.group(1).toUpperCase(Locale.ROOT) + ":" + raw.substring(m.end()) : raw;
         for (Map.Entry<String, String> a : aliases.entrySet()) {
             if (startsWithFolder(s, a.getKey()) && !new File(a.getKey()).exists()) return a.getValue() + s.substring(a.getKey().length());
+        }
+        if(workspace!=null && !new File(s).exists()) {
+            String portable=workspacePath(s,workspace);
+            if(!portable.equals(s))return portable;
         }
         Matcher u = USER.matcher(s);
         if (u.lookingAt()) return otherUser(u, s);
@@ -76,6 +82,7 @@ final class PathMap {
     /** The translations that apply on this PC, to tell the model up front. */
     List<String> describe() {
         List<String> out = new ArrayList<>();
+        if(workspace!=null && !workspace.isBlank())out.add("Selected working folder (prefer relative paths): "+workspace+"; missing historical Downloads project paths resolve here when the folder suffix matches; existing explicit paths keep priority");
         for (Map.Entry<String, String> a : aliases.entrySet()) {
             if (!new File(a.getKey()).exists()) out.add(a.getKey() + " → " + a.getValue());
         }
@@ -86,12 +93,25 @@ final class PathMap {
 
     private String otherUser(Matcher u, String s) {
         String profile = u.group(1) + ":\\Users\\" + u.group(2);
-        if (new File(profile).exists() || isSpecial(u.group(2))) return s;
+        if (new File(s).exists() || isSpecial(u.group(2)) || profile.equalsIgnoreCase(home)) return s;
         String rest = s.substring(u.end());
         if (rest.regionMatches(true, 0, "\\Downloads", 0, 10) || rest.regionMatches(true, 0, "/Downloads", 0, 10)) {
             if (rest.length() == 10 || rest.charAt(10) == '\\' || rest.charAt(10) == '/') return downloads + rest.substring(10);
         }
-        return home + rest;
+        return new File(profile).exists() ? s : home + rest;
+    }
+
+    /** Match the selected folder at a Downloads boundary, never an arbitrary disk suffix. */
+    static String workspacePath(String raw,String selected) {
+        String normalized=raw.replace('/', '\\'), root=selected.replace('/', '\\');
+        String marker="\\Downloads\\";int a=normalized.toLowerCase(Locale.ROOT).indexOf(marker.toLowerCase(Locale.ROOT));
+        int b=root.toLowerCase(Locale.ROOT).indexOf(marker.toLowerCase(Locale.ROOT));
+        if(a<0 || b<0)return raw;
+        String suffix=root.substring(b+marker.length());
+        if(suffix.isEmpty())return raw;
+        String historical=normalized.substring(a+marker.length());
+        if(startsWithFolder(historical,suffix))return root+historical.substring(suffix.length());
+        return raw;
     }
 
     private static boolean isSpecial(String user) {

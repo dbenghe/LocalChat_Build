@@ -165,7 +165,7 @@ public final class FeatureTest {
                 LocalChat app=ref[0];var state=(Conversations.State)field(app,"sessionState");
                 check(state.usage.requests==2 && state.usage.input==120 && state.usage.output==33,"per-chat usage aggregates summary and reply");
                 check(state.last.requests==1 && state.last.input==40,"last-turn usage is separate");
-                String sent=Json.write(server.requests.get(1));check(sent.contains(summary) && !sent.contains("OLD-TURN-0"),"next request uses compacted view");
+                check(TokenUsage.number(server.requests.get(1),"max_tokens",0)>0 && TokenUsage.number(server.requests.get(1),"max_tokens",0)<=4096,"selected reply budget reaches the actual API request");String sent=Json.write(server.requests.get(1));check(sent.contains(summary) && !sent.contains("OLD-TURN-0"),"next request uses compacted view");
                 check(Conversations.load(alpha[0]).messages().size()==originalCount[0]+2,"full archive continues after compacting");
                 call(app,"addReports",new Class<?>[]{String.class},Json.write(Json.obj("report",home.resolve("project/raport română.pdf").toString())));
                 check(((JPanel)field(app,"reportBar")).isVisible(),"existing report available in chat");
@@ -289,9 +289,75 @@ public final class FeatureTest {
         }
     }
 
+    static void management(Path home)throws Exception {
+        Path dir=home.resolve("management");Files.createDirectories(dir);
+        var state=new Conversations.State();state.archived=true;state.responseProfile=2;state.memory.summary="verified summary";state.memory.through=2;state.draft="unsent";
+        Path a=Conversations.newFile(dir);Conversations.save(a,home.toString(),List.of(ChatClient.Message.user("first"),ChatClient.Message.assistant("answer",List.of(),"model")),state);
+        var loaded=Conversations.load(a);check(loaded.state().archived && loaded.state().responseProfile==2 && loaded.messages().size()==2,"archive/profile backward-compatible roundtrip");
+        Path zip=home.resolve("all-chats.zip");Conversations.export(Conversations.list(dir),zip);
+        try(var in=new java.util.zip.ZipInputStream(Files.newInputStream(zip))) {
+            check(in.getNextEntry().getName().equals(a.getFileName().toString()),"all-chat export preserves unique filenames");
+            Object json=Json.parse(new String(in.readAllBytes(),StandardCharsets.UTF_8));
+            check(Json.str(json,"state","draft").equals("unsent") && Json.str(json,"state","summary").equals("verified summary"),"JSON export contains draft and compact memory");
+            check(((List<?>)Json.get(json,"messages")).size()==2 && Json.get(json,"key")==null,"JSON export retains complete original transcript without settings keys");
+        }
+        var snapshot=Conversations.list(dir);Path deleted=Conversations.trash(a);
+        byte[] previousExport=Files.readAllBytes(zip);boolean failed=false;try{Conversations.export(snapshot,zip);}catch(IOException expected){failed=true;}
+        check(failed && Arrays.equals(previousExport,Files.readAllBytes(zip)),"failed export preserves previous export file");check(!Files.exists(a)&&Files.exists(deleted)&&Conversations.list(dir).isEmpty(),"reversible deletion is excluded from listings and exports");
+        Mcp mcp=new Mcp();Tools tools=new Tools(new Tools.Context(home,home.resolve("skills"),home.resolve("read-only-rules.md"),home.resolve("setari.properties"),Map.of(),null,mcp,PathMap.none(),true,EnumSet.allOf(Tools.Access.class),(x,y)->{throw new AssertionError("Read only must not prompt for writes");}),List.of()).readOnly(true);
+        check(!tools.execute(new ChatClient.ToolCall("r","list_dir",Json.obj("path",home.toString()))).isError,"read only permits reading selected folder");
+        check(tools.execute(new ChatClient.ToolCall("w","write_file",Json.obj("path",home.resolve("blocked.txt").toString(),"content","bad"))).isError && !Files.exists(home.resolve("blocked.txt")),"read only overrides full-access and session grants");
+        check(tools.execute(new ChatClient.ToolCall("s","save_rule",Json.obj("rule","blocked"))).isError && !Files.exists(home.resolve("read-only-rules.md")),"read only blocks saved rules too");
+        check(tools.execute(new ChatClient.ToolCall("c","run_command",Json.obj("command","echo bad"))).isError,"read only blocks command execution");
+        check(PathMap.workspacePath("C:\\Users\\Old\\Downloads\\PRODUCTIE\\507774\\test.pdf","D:\\Users\\New\\Downloads\\PRODUCTIE").equals("D:\\Users\\New\\Downloads\\PRODUCTIE\\507774\\test.pdf"),"historical project suffix maps to selected workspace");
+        check(PathMap.workspacePath("C:\\Users\\Old\\Downloads\\PRODUCTIE-OTHER\\test.pdf","D:\\Users\\New\\Downloads\\PRODUCTIE").startsWith("C:"),"mapping observes folder boundary");
+        check(new PathMap(Map.of(),home.toString(),home.toString()).workspace(home.toString()).path(deleted.toString()).equals(deleted.toString()),"existing explicit file paths win over translations");
+        Path portableRoot=home.resolve("Downloads/PRODUCTIE");Files.createDirectories(portableRoot);
+        String historical=System.getProperty("user.home")+"\\Downloads\\PRODUCTIE\\missing-historical-507774";
+        PathMap portable=new PathMap(Map.of(),home.toString(),home.resolve("Downloads").toString()).workspace(portableRoot.toString());
+        check(portable.path(historical).equals(portableRoot+"\\missing-historical-507774"),"missing old project path maps even when original Windows profile exists");
+        Object metadata=Json.parse("{\"models\":[{\"key\":\"test-model\",\"max_context_length\":131072,\"loaded_instances\":[{\"id\":\"instance-a\",\"config\":{\"context_length\":32768}},{\"id\":\"instance-b\",\"config\":{\"context_length\":8192}}]}]}");
+        var info=ModelInfo.parse(metadata,"test-model","fixture");check(info.maximum()==131072&&info.loaded()==8192,"metadata distinguishes theoretical max from conservative loaded limit");
+        check(ModelInfo.parse(metadata,"instance-a","fixture").loaded()==32768,"metadata matches exact instance identifier");
+        check(ModelInfo.parse(metadata,"other-model","fixture").maximum()==0,"no heuristic model limit guessing");
+        check(ModelInfo.parse(Json.parse("{\"data\":[{\"id\":\"test-model\",\"max_context_length\":65536}]}"),"test-model","v0").loaded()==0,"v0 maximum is not a loaded context");
+        // Real HTTP fixture for metadata GET: no inference or model-load request is allowed.
+        try(ServerSocket socket=new ServerSocket(0,2,InetAddress.getByName("127.0.0.1"))) {
+            AtomicReference<String> received=new AtomicReference<>();
+            Thread server=new Thread(()->{try(Socket c=socket.accept()){
+                c.setSoTimeout(3000);BufferedReader reader=new BufferedReader(new InputStreamReader(c.getInputStream(),StandardCharsets.US_ASCII));received.set(reader.readLine());String line;while((line=reader.readLine())!=null&&!line.isEmpty()){}
+                byte[] data=Json.write(metadata).getBytes(StandardCharsets.UTF_8);var out=c.getOutputStream();out.write(("HTTP/1.1 200 OK\r\nContent-Length: "+data.length+"\r\nConnection: close\r\n\r\n").getBytes(StandardCharsets.US_ASCII));out.write(data);
+            }catch(IOException e){throw new RuntimeException(e);}});server.start();
+            var fetched=ModelInfo.fetch("http://127.0.0.1:"+socket.getLocalPort()+"/v1","fixture-key","instance-a");server.join(4000);
+            check(fetched.loaded()==32768 && received.get().equals("GET /api/v1/models HTTP/1.1"),"metadata uses read-only native endpoint without chat request");
+        }
+        final LocalChat[] app={null};edt(()->{
+            var ctor=LocalChat.class.getDeclaredConstructor();ctor.setAccessible(true);app[0]=ctor.newInstance();
+            JComboBox<Provider> provider=field(app[0],"providerBox");provider.setSelectedItem(Provider.CUSTOM);
+            JComboBox<String> model=field(app[0],"modelBox");model.setSelectedItem("default-fixture-model");
+            ((JTextField)field(app[0],"urlField")).setText("http://127.0.0.1:1/v1");((JTextField)field(app[0],"workDirField")).setText(home.toString());
+            ((JPasswordField)field(app[0],"keyField")).setText("fixture-key-not-real");
+            call(app[0],"saveDefaults",new Class<?>[]{});command(app[0],"/new One");
+            WorkspacePanel panel=field(app[0],"workspace");
+            ((JComboBox<?>)field(app[0],"responseProfile")).setSelectedIndex(2);
+            Path first=field(app[0],"conversationFile");command(app[0],"/new Two");
+            check(((JComboBox<?>)field(app[0],"modelBox")).getSelectedItem().equals("default-fixture-model"),"new chat restores explicitly saved default model");
+            check(((JComboBox<?>)field(app[0],"responseProfile")).getSelectedIndex()==1,"new chat has separate response profile");
+            command(app[0],"/switch "+Conversations.shortId(first));
+            check(((JComboBox<?>)field(app[0],"responseProfile")).getSelectedIndex()==2,"resumed chat restores response profile without API call");
+            call(app[0],"archiveSession",new Class<?>[]{});check(Conversations.load(first).state().archived,"archive action persists state");
+            for(int i=0;i<panel.sessions.size();i++)check(!panel.sessions.get(i).state().archived,"archived chats excluded from active view");
+            panel.archived.doClick();check(panel.sessions.size()==1&&panel.sessions.get(0).file().equals(first),"archived view shows saved archive");
+            call(app[0],"openSession",new Class<?>[]{Conversations.Saved.class},Conversations.load(first));call(app[0],"archiveSession",new Class<?>[]{});
+            check(!Conversations.load(first).state().archived,"restore action retains transcript");
+            app[0].dispose();var restarted=ctor.newInstance();check(((JComboBox<?>)field(restarted,"modelBox")).getSelectedItem().equals("default-fixture-model"),"saved default restored at application startup");
+            check(new String(((JPasswordField)field(restarted,"keyField")).getPassword()).equals("fixture-key-not-real"),"API configuration persists locally");restarted.dispose();
+        });
+    }
+
     public static void main(String[] args)throws Exception{
         Path home=Path.of(System.getProperty("localchat.home")).resolve("features");Files.createDirectories(home);
-        try{protocols(home);files(home);ui(home);fragmented(home,false);fragmented(home,true);for(int mode=0;mode<6;mode++)automatic(home,mode);System.out.println("PASS: "+checks+" feature checks (protocols, sessions, compact memory, reports, commands)");}
+        try{protocols(home);files(home);ui(home);fragmented(home,false);fragmented(home,true);for(int mode=0;mode<6;mode++)automatic(home,mode);management(home);System.out.println("PASS: "+checks+" feature checks (protocols, sessions, compact memory, reports, commands)");}
         finally{edt(()->{for(java.awt.Window w:java.awt.Window.getWindows())w.dispose();});}
         System.exit(0);
     }

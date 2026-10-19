@@ -24,9 +24,10 @@ final class Conversations {
 
     static final class State {
         String title="";
-        boolean pinned;
+        boolean pinned, archived;
         String draft="",provider="",model="",baseUrl="";
         int contextLimit=-1;
+        int responseProfile=1;
         boolean autoCompact;
         int autoThreshold=70;
         String systemPrompt;
@@ -34,12 +35,13 @@ final class Conversations {
         ContextMemory memory=new ContextMemory();
         TokenUsage.Ledger usage=new TokenUsage.Ledger();
         TokenUsage.Ledger last=new TokenUsage.Ledger();
-        Object toJson() { return Json.obj("customTitle",title,"pinned",pinned,"draft",draft,"provider",provider,"model",model,"baseUrl",baseUrl,"contextLimit",contextLimit,"autoCompact",autoCompact,"autoThreshold",autoThreshold,"systemPrompt",systemPrompt,"toolsEnabled",toolsEnabled,"streamEnabled",streamEnabled,"summary",memory.summary,
+        Object toJson() { return Json.obj("customTitle",title,"pinned",pinned,"archived",archived,"draft",draft,"provider",provider,"model",model,"baseUrl",baseUrl,"contextLimit",contextLimit,"autoCompact",autoCompact,"autoThreshold",autoThreshold,"responseProfile",responseProfile,"systemPrompt",systemPrompt,"toolsEnabled",toolsEnabled,"streamEnabled",streamEnabled,"summary",memory.summary,
                 "compactedThrough",memory.through,"usage",usage.toJson(),"lastTurn",last.toJson()); }
         static State fromJson(Object o, int count) {
             State s=new State();String t=Json.str(o,"customTitle");if(t!=null)s.title=t;
-            s.pinned=Boolean.TRUE.equals(Json.get(o,"pinned"));
+            s.pinned=Boolean.TRUE.equals(Json.get(o,"pinned"));s.archived=Boolean.TRUE.equals(Json.get(o,"archived"));
             String draft=Json.str(o,"draft"),provider=Json.str(o,"provider"),model=Json.str(o,"model"),url=Json.str(o,"baseUrl");
+            s.responseProfile=(int)Math.max(0,Math.min(2,TokenUsage.number(o,"responseProfile",1)));
             s.autoCompact=Boolean.TRUE.equals(Json.get(o,"autoCompact"));
             s.autoThreshold=(int)Math.max(30,Math.min(95,TokenUsage.number(o,"autoThreshold",70)));
             s.systemPrompt=Json.str(o,"systemPrompt");
@@ -85,6 +87,28 @@ final class Conversations {
             try { Files.move(temp,file,java.nio.file.StandardCopyOption.REPLACE_EXISTING,java.nio.file.StandardCopyOption.ATOMIC_MOVE); }
             catch(java.nio.file.AtomicMoveNotSupportedException e){Files.move(temp,file,java.nio.file.StandardCopyOption.REPLACE_EXISTING);}
         } finally {Files.deleteIfExists(temp);}
+    }
+
+    /** Reversible deletion. Removed chats are excluded from all normal lists and exports. */
+    static Path trash(Path file) throws IOException {
+        Path folder=file.getParent().resolve("deleted");Files.createDirectories(folder);
+        return Files.move(file,folder.resolve(java.util.UUID.randomUUID()+"_"+file.getFileName()));
+    }
+    static void export(List<Saved> chats, Path destination) throws IOException {
+        // Serialize only known conversation fields: settings/API keys are never included.
+        Path temp=Files.createTempFile(destination.toAbsolutePath().getParent(),"chats-",".tmp");
+        try {
+        try(var zip=new java.util.zip.ZipOutputStream(Files.newOutputStream(temp))) {
+            for(Saved saved:chats) {
+                Saved fresh=load(saved.file());
+                List<Object> messages=new ArrayList<>();for(var m:fresh.messages())messages.add(m.toJson());
+                zip.putNextEntry(new java.util.zip.ZipEntry(fresh.file().getFileName().toString()));
+                zip.write(Json.write(Json.obj("title",fresh.title(),"workDir",fresh.workDir(),"messages",messages,"state",fresh.state().toJson())).getBytes(StandardCharsets.UTF_8));zip.closeEntry();
+            }
+        }
+        try{Files.move(temp,destination,java.nio.file.StandardCopyOption.REPLACE_EXISTING,java.nio.file.StandardCopyOption.ATOMIC_MOVE);}
+        catch(java.nio.file.AtomicMoveNotSupportedException e){Files.move(temp,destination,java.nio.file.StandardCopyOption.REPLACE_EXISTING);}
+        }finally{Files.deleteIfExists(temp);}
     }
 
     static Saved load(Path file) throws IOException {

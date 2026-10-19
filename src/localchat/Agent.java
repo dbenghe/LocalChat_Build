@@ -35,6 +35,8 @@ final class Agent {
         this.tools = tools;
     }
 
+    void outputLimit(int tokens) {client.outputLimit(tokens);}
+
     void cancel() {
         cancelled = true;
         client.cancel();

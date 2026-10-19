@@ -111,6 +111,8 @@ final class Tools {
     private final List<String> notes = new ArrayList<>(); // told to the model with the current call's result
     private volatile Process running;
     private volatile boolean cancelled;
+    private boolean readOnly;
+    Tools readOnly(boolean value){readOnly=value;return this;}
 
     Tools(Context ctx, List<Skills.Skill> skills) {
         this.ctx = ctx;
@@ -301,6 +303,7 @@ final class Tools {
 
     private void allow(Access access, String title, String details) throws ToolError {
         if (cancelled) throw new ToolError("Oprit de utilizator.");
+        if(readOnly && access!=Access.READ)throw new ToolError(I18n.text("Mod doar citire: modificările și comenzile sunt blocate."));
         if (ctx.autoApprove() || ctx.alwaysAllowed().contains(access)) return;
         Decision d = ctx.permission().ask(title, details);
         if (d == Decision.ALWAYS) ctx.alwaysAllowed().add(access);
@@ -687,7 +690,8 @@ final class Tools {
 
     // ---- rules and MCP ----
 
-    private String saveRule(String rule) throws IOException {
+    private String saveRule(String rule) throws IOException, ToolError {
+        if(readOnly)throw new ToolError(I18n.text("Mod doar citire: modificările și comenzile sunt blocate."));
         Path f = ctx.rulesFile();
         String existing = Files.exists(f) ? Files.readString(f, StandardCharsets.UTF_8) : "# Reguli salvate\n\n";
         String sep = existing.isEmpty() || existing.endsWith("\n") ? "" : "\n";

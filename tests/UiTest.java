@@ -90,6 +90,11 @@ public final class UiTest {
                 app.addNotify(); app.validate();
                 check(languages.getWidth()>=languages.getPreferredSize().width && themes.getWidth()>=themes.getPreferredSize().width,"appearance controls laid out");
                 check(send.getWidth()>=send.getPreferredSize().width,"send label fits");
+                for(String name:new String[]{"contextRing","bottomModel","responseProfile","bottomMode","bottomApproval"}) {
+                    JComponent control=field(app,name);Point point=SwingUtilities.convertPoint(control,0,0,app.getRootPane());
+                    check(control.getWidth()>30 && point.x>=0 && point.x+control.getWidth()<=app.getRootPane().getWidth(),"footer visible: "+name);
+                    check(name.equals("contextRing") || !control.isEnabled(),"footer respects busy state: "+name);
+                }
                 BufferedImage image=new BufferedImage(app.getWidth(),app.getHeight(),BufferedImage.TYPE_INT_RGB);
                 Graphics2D graphics=image.createGraphics();app.getRootPane().printAll(graphics);graphics.dispose();
                 check(image.getRGB(20,40) != Color.BLACK.getRGB(),"render contains UI");

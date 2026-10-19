@@ -14,21 +14,35 @@ final class WorkspacePanel extends JPanel {
     final DefaultListModel<Conversations.Saved> sessions=new DefaultListModel<>();
     final JList<Conversations.Saved> list=new JList<>(sessions);
     final JSpinner limit=new JSpinner(new SpinnerNumberModel(0,0,2000000,1024));
+    final JCheckBox archived=new JCheckBox();
     final JCheckBox autoCompact=new JCheckBox();
     final JSpinner autoThreshold=new JSpinner(new SpinnerNumberModel(70,30,95,5));
     private final JLabel thresholdLabel=new JLabel();
     final JProgressBar context=new JProgressBar(0,100);
     final JTextArea details=new JTextArea(8,20);
     private final JLabel heading=new JLabel(), limitLabel=new JLabel();
-    private final JButton fresh=new JButton(),rename=new JButton(),pin=new JButton();
+    private final JButton fresh=new JButton(),rename=new JButton(),pin=new JButton(),remove=new JButton();
     private List<Conversations.Saved> all=List.of();
     private boolean refreshing;
-    WorkspacePanel(Runnable newChat,Consumer<Conversations.Saved> open,Runnable title,Runnable togglePin) {
+    WorkspacePanel(Runnable newChat,Consumer<Conversations.Saved> open,Runnable title,Runnable togglePin) {this(newChat,open,title,togglePin,()->{},()->{},()->{});}
+    WorkspacePanel(Runnable newChat,Consumer<Conversations.Saved> open,Runnable title,Runnable togglePin,Runnable delete,Runnable archive,Runnable export) {
         super(new BorderLayout(5,7));setPreferredSize(new Dimension(255,400));
         setBorder(BorderFactory.createEmptyBorder(8,8,8,3));
         JPanel top=new JPanel(new BorderLayout(4,5));top.add(heading,BorderLayout.NORTH);top.add(search);
-        JPanel actions=new JPanel(new GridLayout(1,3,3,0));actions.add(fresh);actions.add(rename);actions.add(pin);top.add(actions,BorderLayout.SOUTH);
-        add(top,BorderLayout.NORTH); add(new JScrollPane(list));
+        JPanel actions=new JPanel(new GridLayout(2,2,3,3));actions.add(fresh);actions.add(remove);actions.add(rename);actions.add(pin);top.add(actions,BorderLayout.SOUTH);
+        JPanel header=new JPanel(new BorderLayout(2,3));header.add(top);header.add(archived,BorderLayout.SOUTH);
+        add(header,BorderLayout.NORTH); add(new JScrollPane(list));
+        archived.addActionListener(e->filter());remove.addActionListener(e->delete.run());
+        list.addMouseListener(new MouseAdapter(){
+            private void popup(MouseEvent e){if(!e.isPopupTrigger())return;int index=list.locationToIndex(e.getPoint());
+                if(index<0 || !list.getCellBounds(index,index).contains(e.getPoint()))return;
+                list.setSelectedIndex(index);if(!list.getSelectedValue().file().equals(sessions.get(index).file()))return;
+                JPopupMenu menu=new JPopupMenu();
+                JMenuItem a=new JMenuItem(I18n.text(list.getSelectedValue().state().archived?"Restaurează conversația":"Arhivează conversația"));a.addActionListener(x->archive.run());menu.add(a);
+                JMenuItem ex=new JMenuItem(I18n.text("Exportă chat JSON…"));ex.addActionListener(x->export.run());menu.add(ex);
+                JMenuItem d=new JMenuItem(I18n.text("Șterge conversația"));d.addActionListener(x->delete.run());menu.add(d);menu.show(list,e.getX(),e.getY());}
+            public void mousePressed(MouseEvent e){popup(e);}public void mouseReleased(MouseEvent e){popup(e);}
+        });
         list.setCellRenderer(new DefaultListCellRenderer(){
             @Override public Component getListCellRendererComponent(JList<?> l,Object value,int index,boolean selected,boolean focus) {
                 Conversations.Saved s=(Conversations.Saved)value;
@@ -56,6 +70,7 @@ final class WorkspacePanel extends JPanel {
         heading.setText(I18n.text("Conversații"));search.putClientProperty("JTextField.placeholderText",I18n.text("Caută conversații"));search.setToolTipText(I18n.text("Caută conversații"));
         search.getAccessibleContext().setAccessibleName(I18n.text("Caută conversații"));
         fresh.setText("+");fresh.setToolTipText(I18n.text("Conversație nouă"));
+        remove.setText("−");remove.setToolTipText(I18n.text("Șterge conversația"));archived.setText(I18n.text("Arhivate"));
         rename.setText(I18n.text("Titlu"));pin.setText(I18n.text("Fixează"));pin.setToolTipText(I18n.text("Fixează / desprinde"));
         limitLabel.setText("<html>"+I18n.text("Limită context (0 = necunoscut)"));limitLabel.setPreferredSize(new Dimension(220,32));
         autoCompact.setText(I18n.text("Compactare automată"));
@@ -76,7 +91,7 @@ final class WorkspacePanel extends JPanel {
         refreshing=true;
         try {
             sessions.clear();
-            for(var s:all)if((s.title()+" "+Conversations.shortId(s.file())).toLowerCase(Locale.ROOT).contains(q)) {
+            for(var s:all)if(s.state().archived==archived.isSelected() && (s.title()+" "+Conversations.shortId(s.file())).toLowerCase(Locale.ROOT).contains(q)) {
                 sessions.addElement(s);
                 if(selected!=null && selected.file().equals(s.file()))list.setSelectedIndex(sessions.size()-1);
             }
