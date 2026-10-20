@@ -487,3 +487,23 @@ integrala in chat. Dark si Light aplica fundal, text si selectie cu contrast.
 
 Lista contine functii implementate in LocalChat. Functii specifice altor
 aplicatii, precum animale de companie sau obiective programate, nu sunt simulate.
+
+## Chat fara diacritice si buget pentru modele noi (1.10.1)
+
+In limba Romana, inclusiv raspunsurile modelelor si conversatiile vechi se
+afiseaza fara diacritice. Arborii de directoare folosesc caractere obisnuite,
+de exemplu +-- in loc de colturi si linii Unicode care pot aparea ca patratele.
+Originalul este pastrat: JSON-ul conversatiei si mesajele trimise modelului nu
+sunt convertite, iar fisierele si caile folosite de unelte raman intacte.
+Click dreapta in chat permite copierea afisarii simplificate sau a textului
+original al selectiei. Pentru o cale de fisier cu diacritice, foloseste
+Copiaza textul original. Schimbarea limbii reface afisarea din original, fara API.
+
+Cand un model nou nu are metadate sau context documentat, aplicatia foloseste
+un buget local initial de lucru de 32768 pentru procent si protectia contextului.
+Interfata arata explicit ca limita reala API este necunoscuta. Bugetul local nu
+configureaza serverul si nu garanteaza limita acceptata de cont; il poti ajusta.
+Datele cunoscute ulterior inlocuiesc bugetul de lucru, iar bugetele manuale
+pozitive raman separate per model. /context 0 dezactiveaza explicit folosirea
+unei limite locale cunoscute, caz in care procentul ramane necunoscut.
+Aceasta regula inlocuieste mentinerea automata la zero pentru modelele fara date.

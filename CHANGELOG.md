@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.10.1 — 2026-10-20
+
+- Corectie de afisare in chat: raspunsurile modelelor, istoricul vechi, mesajele utilizatorului si previzualizarile uneltelor folosesc litere normale in interfata romana. Liniile de arbori Unicode se afiseaza ca +-- si |, pentru compatibilitate cu fonturile Windows.
+- Conversia este strict vizuala, inclusiv in timpul streamingului. Originalul se pastreaza in memorie, in istoricul JSON si in cererile catre model; caile reale si documentele nu sunt modificate. Click dreapta ofera Copiaza textul afisat si Copiaza textul original. Schimbarea limbii reface afisarea fara API si fara pierderea textului.
+- Schimbarea modelului nu mai lasa procentul necunoscut doar pentru ca API-ul omite metadatele. Modelele fara date primesc un buget local de lucru de 32768, etichetat cu limita reala API necunoscuta; acesta nu este un maxim dedus al modelului. Metadatele descoperite ulterior inlocuiesc bugetul de lucru. Valorile manuale pozitive sunt pastrate, iar /context 0 ramane o alegere explicita pentru limita necunoscuta.
+- NVIDIA Nemotron 3.5 Lightning are acum informatiile documentare verificate: 1M publicat, distinct de limita rutei API; buget local initial 131072. Sursa: https://build.nvidia.com/nvidia/nemotron-3.5-lightning-30b-a3b/modelcard .
+- Textele noi sunt traduse in sase limbi. Teste pentru streaming, arborele PDFCONTROL_Rapoarte, selectii/copiere originala, fisiere salvate, schimbarea limbii/temei si trecerea intre modele documentate/nedocumentate.
+
 ## 1.10.0 — 2026-10-20
 
 - Verificarea contextului ruleaza inaintea fiecarei cereri catre model, inclusiv dupa citiri PDF si alte rezultate de unelte. Planificarea include intrebarea, sistemul, definitiile uneltelor, rezerva raspunsului si o marja de siguranta.

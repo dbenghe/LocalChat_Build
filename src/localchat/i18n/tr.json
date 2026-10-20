@@ -304,5 +304,8 @@
   "Intrebarea si definitiile uneltelor depasesc spatiul disponibil. Scurteaza mesajul sau alege un context mai mare.": "Soru ve araç tanımları kullanılabilir alanı aşıyor. İletiyi kısaltın veya daha büyük bağlam seçin.",
   "Mesajul a fost modificat in timpul compactarii. Verifica ciorna inainte de trimitere.": "İleti sıkıştırma sırasında değiştirildi. Göndermeden önce taslağı kontrol edin.",
   "Configureaza autocompactarea": "Otomatik sıkıştırmayı ayarla",
-  "Utilizare: /autocompact on, off sau prag 30-95. Setarea este separata per conversatie.": "Kullanım: /autocompact on, off veya 30-95 eşiği. Ayar her konuşma için ayrıdır."
+  "Utilizare: /autocompact on, off sau prag 30-95. Setarea este separata per conversatie.": "Kullanım: /autocompact on, off veya 30-95 eşiği. Ayar her konuşma için ayrıdır.",
+  "Buget local de lucru: {0} · Limita reala API: necunoscuta": "Yerel çalışma bütçesi: {0} · Gerçek API sınırı: bilinmiyor",
+  "Copiaza textul afisat": "Görüntülenen metni kopyala",
+  "Copiaza textul original": "Özgün metni kopyala"
 }

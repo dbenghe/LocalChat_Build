@@ -52,6 +52,8 @@ if ($LASTEXITCODE) { throw 'Attachment/drop/session tests failed; distribution w
 if ($LASTEXITCODE) { throw 'Context budget/automatic tool-loop compaction tests failed; distribution was not changed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/commandpalettetest-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.CommandPaletteTest
 if ($LASTEXITCODE) { throw 'Themed slash command palette tests failed; distribution was not changed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/chat-display-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ChatDisplayTest
+if ($LASTEXITCODE) { throw 'Plain chat display/original data tests failed; distribution was not changed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_pdfcontrol_bridge.py" --package "$PSScriptRoot/pdfcontrol" --output "$taskBuild/pdfcontrol-tests"
 if ($LASTEXITCODE) { throw 'PDFCONTROL workflow tests failed; distribution was not changed' }
 & "$taskJdk/bin/java.exe" "-Dpdfcontrol.package=$PSScriptRoot/pdfcontrol" "-Dpdfcontrol.projects=$taskBuild/pdfcontrol-tests/PROJECTS" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.PdfControlTest

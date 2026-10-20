@@ -304,5 +304,8 @@
   "Intrebarea si definitiile uneltelor depasesc spatiul disponibil. Scurteaza mesajul sau alege un context mai mare.": "De vraag en tooldefinities overschrijden de beschikbare ruimte. Verkort het bericht of kies een grotere context.",
   "Mesajul a fost modificat in timpul compactarii. Verifica ciorna inainte de trimitere.": "Het bericht is gewijzigd tijdens het samenvatten. Controleer het concept vóór verzending.",
   "Configureaza autocompactarea": "Automatisch samenvatten instellen",
-  "Utilizare: /autocompact on, off sau prag 30-95. Setarea este separata per conversatie.": "Gebruik: /autocompact on, off of een drempel van 30-95. De instelling geldt per gesprek."
+  "Utilizare: /autocompact on, off sau prag 30-95. Setarea este separata per conversatie.": "Gebruik: /autocompact on, off of een drempel van 30-95. De instelling geldt per gesprek.",
+  "Buget local de lucru: {0} · Limita reala API: necunoscuta": "Lokaal werkbudget: {0} · Werkelijke API-limiet: onbekend",
+  "Copiaza textul afisat": "Weergegeven tekst kopiëren",
+  "Copiaza textul original": "Oorspronkelijke tekst kopiëren"
 }

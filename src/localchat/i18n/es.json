@@ -304,5 +304,8 @@
   "Intrebarea si definitiile uneltelor depasesc spatiul disponibil. Scurteaza mesajul sau alege un context mai mare.": "La pregunta y las definiciones de herramientas superan el espacio disponible. Acorta el mensaje o elige un contexto mayor.",
   "Mesajul a fost modificat in timpul compactarii. Verifica ciorna inainte de trimitere.": "El mensaje cambió durante la compactación. Revisa el borrador antes de enviar.",
   "Configureaza autocompactarea": "Configurar compactación automática",
-  "Utilizare: /autocompact on, off sau prag 30-95. Setarea este separata per conversatie.": "Uso: /autocompact on, off o umbral 30-95. El ajuste es independiente por conversación."
+  "Utilizare: /autocompact on, off sau prag 30-95. Setarea este separata per conversatie.": "Uso: /autocompact on, off o umbral 30-95. El ajuste es independiente por conversación.",
+  "Buget local de lucru: {0} · Limita reala API: necunoscuta": "Presupuesto local: {0} · Límite real de API: desconocido",
+  "Copiaza textul afisat": "Copiar texto mostrado",
+  "Copiaza textul original": "Copiar texto original"
 }

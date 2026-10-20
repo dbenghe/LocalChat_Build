@@ -128,6 +128,10 @@ public final class LocalChat extends JFrame {
     private String catalogFactsKey="";
     private List<ModelCatalog.Entry> catalogFacts=List.of();
     private final JButton inspectModel=ui(new JButton(),"Verifica contextul modelului");
+    private final javax.swing.text.DefaultStyledDocument originalTranscript=new javax.swing.text.DefaultStyledDocument();
+    private boolean updatingTranscript;
+    private final javax.swing.JPopupMenu transcriptPopup=new javax.swing.JPopupMenu();
+    private final JMenuItem copyDisplayed=ui(new JMenuItem(),"Copiaza textul afisat"),copyOriginal=ui(new JMenuItem(),"Copiaza textul original");
     private final JLabel status = new JLabel(" ");
     private final JLabel toolsStatus = new JLabel(" ");
 
@@ -206,6 +210,12 @@ public final class LocalChat extends JFrame {
     private LocalChat() {
         super("LocalChat " + AppVersion.VALUE + " — ChatGPT · Claude · API");
         transcript.setEditable(false);
+        transcript.getDocument().addDocumentListener(new javax.swing.event.DocumentListener(){
+            public void insertUpdate(javax.swing.event.DocumentEvent e){}public void changedUpdate(javax.swing.event.DocumentEvent e){}
+            public void removeUpdate(javax.swing.event.DocumentEvent e){if(!updatingTranscript)try{originalTranscript.remove(0,originalTranscript.getLength());}catch(BadLocationException ignored){}}
+        });
+        transcriptPopup.add(copyDisplayed);transcriptPopup.add(copyOriginal);transcript.setComponentPopupMenu(transcriptPopup);
+        copyDisplayed.addActionListener(e->transcript.copy());copyOriginal.addActionListener(e->{String text=originalSelection();if(!text.isEmpty())java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new java.awt.datatransfer.StringSelection(text),null);});
         transcript.setMargin(new Insets(10, 12, 10, 12));
         input.setLineWrap(true);
         input.setWrapStyleWord(true);
@@ -546,6 +556,7 @@ public final class LocalChat extends JFrame {
                 toolsStatus.setText(t("Tool-uri: {0} interne · MCP: {1}", Tools.BUILTIN.size(), mcpSummary.isEmpty() ? t("niciunul") : mcpSummary));
                 toolsStatus.setToolTipText(t("Configurare: {0}", toolsConfigFile));
             } else if (!Boolean.getBoolean("localchat.test")) toolsStatus.setText(t("Pornesc tool-urile…"));
+            copyDisplayed.setText(t("Copiaza textul afisat"));copyOriginal.setText(t("Copiaza textul original"));refreshTranscriptDisplay();
             if(workspace!=null){workspace.translate();refreshDashboard();}
             revalidate();
             repaint();
@@ -589,7 +600,7 @@ public final class LocalChat extends JFrame {
         keyField.setEchoChar(showKey.isSelected() ? (char)0 : echoChar);
         colorControls(getContentPane(), panel, fg, accent);
         colorControls(getJMenuBar(), panel, fg, accent);
-        commandPopup.theme(dark);
+        commandPopup.theme(dark);SwingUtilities.updateComponentTreeUI(transcriptPopup);colorControls(transcriptPopup,panel,fg,accent);
         getContentPane().setBackground(bg);
         transcript.setBackground(panel);
         input.setBackground(panel);
@@ -879,6 +890,7 @@ public final class LocalChat extends JFrame {
         if(info.maximum()==0 && currentCatalogEntry().documentedMaximum()>0)modelMetadata.setText(t("Model (documentatie): {0} · API: necunoscut · Buget local: {1}",currentCatalogEntry().documentedLabel(),configured>0?configured:t("necunoscut")));
         String metadataError=metadataErrors.get(profile);if(metadataError!=null)modelMetadata.setText(t("Metadate indisponibile: {0} · Buget local: {1}",metadataError,configured>0?configured:t("necunoscut")));
         if(config.getProperty(profile+".limitSource","").equals("automatic"))modelMetadata.setText(modelMetadata.getText()+t(" · buget recomandat automat"));
+        if(config.getProperty(profile+".limitSource","").equals("fallback"))modelMetadata.setText(t("Buget local de lucru: {0} · Limita reala API: necunoscuta",configured));
         applyBudgetButton.setVisible(recommendedModelBudget()>0);applyBudgetButton.setEnabled(!busy);applyBudgetButton.setToolTipText(ModelInfo.recommendedBudget(currentUrl())>0?t("Buget local de 180000 tokeni, sub limita de intrare de aproximativ 200K publicata de GonkaRouter. Nu este context confirmat de API. Sursa: https://gonkarouter.io/pricing"):t("Buget local recomandat: {0}. Bazat pe documentatia modelului, nu pe o limita confirmata a serverului. {1}",recommendedModelBudget(),currentCatalogEntry().source()));
         modelMetadata.setToolTipText(metadata.isBlank()?t("Verifica metadatele serverului. Nu deducem limita din numele modelului."):t("Metadate memorate: {0}",metadata));
         String title=sessionState.title.isBlank()?Conversations.title(history):sessionState.title;
@@ -1636,12 +1648,14 @@ public final class LocalChat extends JFrame {
     private void initializeContextBudget(String profile){
         if(restoringSelections || busy)return;
         int configured=((Number)workspace.limit.getValue()).intValue();
-        boolean automatic=config.getProperty(profile+".limitSource","").equals("automatic");
+        String source=config.getProperty(profile+".limitSource","");
+        if(source.equals("manual") && configured==0)return;
+        boolean automatic=Set.of("automatic","fallback").contains(source);
         if(configured>0 && !automatic)return;
-        long budget=recommendedModelBudget();
-        if(budget<=0 || budget==configured)return;
+        long budget=recommendedModelBudget();String targetSource=budget>0?"automatic":"fallback";if(budget<=0)budget=32768;
+        if(budget==configured && targetSource.equals(source))return;
         updatingLimit=true;try{workspace.limit.setValue((int)budget);}finally{updatingLimit=false;}
-        config.setProperty(profile,Long.toString(budget));config.setProperty(profile+".limitSource","automatic");saveConfig();
+        config.setProperty(profile,Long.toString(budget));config.setProperty(profile+".limitSource",targetSource);saveConfig();
     }
     private void installModelRenderer(){modelBox.setRenderer(new javax.swing.DefaultListCellRenderer(){
         public Component getListCellRendererComponent(JList<?> list,Object value,int index,boolean selected,boolean focus){putClientProperty("html.disable",true);super.getListCellRendererComponent(list,value, index,selected,focus);if(shownSelection==null||value==null)return this;String id=value.toString();ModelCatalog.Entry entry=catalogEntries().stream().filter(e->e.id().equals(id)).findFirst().orElseGet(()->ModelCatalog.entry(Json.obj("id",id),currentUrl()));var result=currentModelCache().get(id);setIcon(new ModelCatalog.CapabilityIcon(entry,result));setText((result.fresh()&&result.state().equals("responded")?"✓ ":result.fresh()&&result.state().equals("unavailable")?"× ":"? ")+id);if(!selected&&result.fresh()&&result.state().equals("unavailable"))setForeground(Color.GRAY);else if(!selected&&result.fresh()&&result.state().equals("responded"))setForeground(new Color(0x28A078));setToolTipText(ModelCatalog.facts(entry,result));return this;}
@@ -1733,13 +1747,32 @@ public final class LocalChat extends JFrame {
     private void append(String text, AttributeSet style) {
         Document doc = transcript.getDocument();
         try {
-            doc.insertString(doc.getLength(), text, style);
+            originalTranscript.insertString(originalTranscript.getLength(),text,style);
+            doc.insertString(doc.getLength(), ChatDisplay.text(text), style);
         } catch (BadLocationException ignored) {
             // cannot happen: inserting at the end
         }
         transcript.setCaretPosition(doc.getLength());
     }
 
+    private String originalSelection(){
+        syncOriginalTranscript();int start=transcript.getSelectionStart(),end=transcript.getSelectionEnd();
+        try{return originalTranscript.getText(start,end-start);}catch(BadLocationException ignored){return "";}
+    }
+    private void syncOriginalTranscript(){
+        if(originalTranscript.getLength()==transcript.getDocument().getLength())return;
+        try{originalTranscript.remove(0,originalTranscript.getLength());var document=transcript.getStyledDocument();
+            for(int offset=0;offset<document.getLength();){var element=document.getCharacterElement(offset);int end=Math.min(element.getEndOffset(),document.getLength());originalTranscript.insertString(offset,document.getText(offset,end-offset),element.getAttributes());offset=end;}
+        }catch(BadLocationException ignored){}
+    }
+    private void refreshTranscriptDisplay(){
+        syncOriginalTranscript();int start=transcript.getSelectionStart(),end=transcript.getSelectionEnd();updatingTranscript=true;
+        try{var document=transcript.getStyledDocument();document.remove(0,document.getLength());
+            Map<String,SimpleAttributeSet> roles=Map.of("userHeader",userHeader,"botHeader",botHeader,"body",body,"errorStyle",errorStyle,"toolStyle",toolStyle,"toolErrorStyle",toolErrorStyle);
+            for(int offset=0;offset<originalTranscript.getLength();){var element=originalTranscript.getCharacterElement(offset);int last=Math.min(element.getEndOffset(),originalTranscript.getLength());AttributeSet attributes=element.getAttributes();Object role=attributes.getAttribute(StyleConstants.NameAttribute);if(role!=null && roles.containsKey(role.toString()))attributes=roles.get(role.toString());document.insertString(offset,ChatDisplay.text(originalTranscript.getText(offset,last-offset)),attributes);offset=last;}
+            transcript.select(Math.min(start,document.getLength()),Math.min(end,document.getLength()));
+        }catch(BadLocationException ignored){}finally{updatingTranscript=false;}
+    }
     private static String describeCall(ChatClient.ToolCall call) {
         StringBuilder b = new StringBuilder(call.name).append('(');
         boolean first = true;

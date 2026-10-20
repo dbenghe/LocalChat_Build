@@ -67,7 +67,15 @@ public final class ModelCatalogTest {
         ProviderTest.set(app,Provider.CUSTOM,"https://integrate.api.nvidia.com/v1","deepseek-ai/deepseek-v4.1-flash","fixture-not-real");
         FeatureTest.call(app,"refreshDashboard",new Class<?>[]{});check(ring.maximum==42000,"switching models restores independent manual budget");
         ProviderTest.set(app,Provider.CUSTOM,"https://example.test/v1","unknown-model","fixture-not-real");
-        FeatureTest.call(app,"refreshDashboard",new Class<?>[]{});check(ring.maximum==0&&ring.getText().equals("~?"),"unknown model context not invented");
+        FeatureTest.call(app,"refreshDashboard",new Class<?>[]{});check(ring.maximum==32768&&!ring.getText().equals("~?"),"unknown model receives explicit local working budget without inventing API limit");
+        String unknown=(String)FeatureTest.call(app,"contextProfile",new Class<?>[]{});check(config.getProperty(unknown+".limitSource").equals("fallback"),"unknown API budget has fallback provenance");
+        check(((JLabel)FeatureTest.field(app,"modelMetadata")).getText().contains("Limita reala API: necunoscuta"),"actual unknown API limit remains clearly labeled");
+        workspace.limit.setValue(0);FeatureTest.call(app,"refreshDashboard",new Class<?>[]{});check(ring.maximum==0&&ring.getText().equals("~?"),"explicit manual zero remains an opt-out");
+        ProviderTest.set(app,Provider.CUSTOM,"https://integrate.api.nvidia.com/v1","nvidia/nemotron-3.5-lightning-30b-a3b","fixture-not-real");FeatureTest.call(app,"refreshDashboard",new Class<?>[]{});check(ring.maximum==131072,"Nemotron Lightning screenshot regression receives documented working budget");check(((JLabel)FeatureTest.field(app,"modelMetadata")).getText().contains("1M"),"Lightning published context distinguished from local budget");
+        ProviderTest.set(app,Provider.CUSTOM,"https://unknown.fixture/v1","future-model-one","fixture-not-real");FeatureTest.call(app,"refreshDashboard",new Class<?>[]{});workspace.limit.setValue(12000);
+        ProviderTest.set(app,Provider.CUSTOM,"https://unknown.fixture/v1","future-model-two","fixture-not-real");FeatureTest.call(app,"refreshDashboard",new Class<?>[]{});check(ring.maximum==32768,"switching to undocumented future model keeps percentage available");
+        String future=(String)FeatureTest.call(app,"contextProfile",new Class<?>[]{});config.setProperty(future+".metadata",Json.write(new ModelInfo.Info(4096,0,0,"fixture API").json()));FeatureTest.call(app,"refreshDashboard",new Class<?>[]{});check(ring.maximum==4096&&config.getProperty(future+".limitSource").equals("automatic"),"later real metadata replaces fallback with smaller known budget");
+        ProviderTest.set(app,Provider.CUSTOM,"https://unknown.fixture/v1","future-model-one","fixture-not-real");FeatureTest.call(app,"refreshDashboard",new Class<?>[]{});check(ring.maximum==12000,"manual model-specific budget survives fallback transitions");
         for(String lang:I18n.CODES){I18n.setLanguage(lang);ring.update(0,0,1000,131072);String before=ring.getText();ring.update(0,0,1014,131072);check(!ring.getText().equals(before),"small sub-percent changes visible in "+lang);workspace.meter(0,0,1014,131072,"");check(workspace.context.getString().contains(ring.getText().substring(1)),"sidebar and footer percentage agree in "+lang);}
         app.dispose();
     });}

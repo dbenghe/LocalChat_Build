@@ -416,7 +416,8 @@ public final class FeatureTest {
             });
             metadataIdle(app[0]);
             edt(()->{
-                check(((WorkspacePanel)field(app[0],"workspace")).limit.getValue().equals(0),"late metadata never applies another model's context limit");
+                String changedProfile=(String)call(app[0],"contextProfile",new Class<?>[]{});Properties changedConfig=field(app[0],"config");
+                check(((WorkspacePanel)field(app[0],"workspace")).limit.getValue().equals(32768) && changedConfig.getProperty(changedProfile+".limitSource","").equals("fallback") && !changedConfig.containsKey(changedProfile+".metadata"),"late metadata never becomes another model's context; local working fallback is separate");
                 server.delay=0;((JComboBox<String>)field(app[0],"modelBox")).setSelectedItem("auto-model");call(app[0],"refreshDashboard",new Class<?>[]{});
                 ((JComboBox<String>)field(app[0],"responseProfile")).setSelectedIndex(2);((JCheckBox)field(app[0],"streamBox")).setSelected(false);((JCheckBox)field(app[0],"toolsBox")).setSelected(false);
                 ((JComboBox<String>)field(app[0],"permissionBox")).setSelectedIndex(2);((JTextField)field(app[0],"systemField")).setText("saved full defaults");

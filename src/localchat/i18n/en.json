@@ -304,5 +304,8 @@
   "Intrebarea si definitiile uneltelor depasesc spatiul disponibil. Scurteaza mesajul sau alege un context mai mare.": "The question and tool definitions exceed the available space. Shorten the message or select a larger context.",
   "Mesajul a fost modificat in timpul compactarii. Verifica ciorna inainte de trimitere.": "The message changed during compaction. Check the draft before sending.",
   "Configureaza autocompactarea": "Configure automatic compaction",
-  "Utilizare: /autocompact on, off sau prag 30-95. Setarea este separata per conversatie.": "Usage: /autocompact on, off or threshold 30-95. The setting is separate per conversation."
+  "Utilizare: /autocompact on, off sau prag 30-95. Setarea este separata per conversatie.": "Usage: /autocompact on, off or threshold 30-95. The setting is separate per conversation.",
+  "Buget local de lucru: {0} · Limita reala API: necunoscuta": "Local working budget: {0} · Actual API limit: unknown",
+  "Copiaza textul afisat": "Copy displayed text",
+  "Copiaza textul original": "Copy original text"
 }

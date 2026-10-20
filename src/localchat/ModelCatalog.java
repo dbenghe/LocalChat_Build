@@ -26,6 +26,7 @@ final class ModelCatalog {
         Map.entry("google/gemma-4-31b-it",new Doc(true,true,true,256000,"256K","https://docs.api.nvidia.com/nim/reference/google-gemma-4-31b-it")),
         Map.entry("poolside/laguna-xs-2.1",new Doc(false,true,true,262144,"262144","https://build.nvidia.com/poolside/laguna-xs-2.1/modelcard")),
         Map.entry("stepfun-ai/step-5-preview",new Doc(true,true,true,1000000,"1M","https://build.nvidia.com/stepfun-ai/step-5-preview/modelcard")),
+        Map.entry("nvidia/nemotron-3.5-lightning-30b-a3b",new Doc(false,true,true,1000000,"1M","https://build.nvidia.com/nvidia/nemotron-3.5-lightning-30b-a3b/modelcard")),
         Map.entry("nvidia/nemotron-3-super-120b-a12b",new Doc(false,true,true,1000000,"1M","https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-super-120b-a12b")),
         Map.entry("nvidia/nemotron-3-ultra-550b-a55b",new Doc(null,true,true,0,"","https://docs.api.nvidia.com/nim/re/reference/nvidia-nemotron-3-ultra-550b-a55b")),
         Map.entry("nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",new Doc(true,null,true,0,"","https://build.nvidia.com/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning/modelcard")),

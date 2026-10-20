@@ -304,5 +304,8 @@
   "Intrebarea si definitiile uneltelor depasesc spatiul disponibil. Scurteaza mesajul sau alege un context mai mare.": "Intrebarea si definitiile uneltelor depasesc spatiul disponibil. Scurteaza mesajul sau alege un context mai mare.",
   "Mesajul a fost modificat in timpul compactarii. Verifica ciorna inainte de trimitere.": "Mesajul a fost modificat in timpul compactarii. Verifica ciorna inainte de trimitere.",
   "Configureaza autocompactarea": "Configureaza autocompactarea",
-  "Utilizare: /autocompact on, off sau prag 30-95. Setarea este separata per conversatie.": "Utilizare: /autocompact on, off sau prag 30-95. Setarea este separata per conversatie."
+  "Utilizare: /autocompact on, off sau prag 30-95. Setarea este separata per conversatie.": "Utilizare: /autocompact on, off sau prag 30-95. Setarea este separata per conversatie.",
+  "Buget local de lucru: {0} · Limita reala API: necunoscuta": "Buget local de lucru: {0} · Limita reala API: necunoscuta",
+  "Copiaza textul afisat": "Copiaza textul afisat",
+  "Copiaza textul original": "Copiaza textul original"
 }
