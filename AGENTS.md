@@ -54,3 +54,5 @@ Repository-ul utilizatorului este https://github.com/dbenghe/LocalChat_Build (co
 - Din 1.11.2, reincercarile API automate sunt limitate la HTTP 502/503/504 explicite, maximum trei incercari ale aceleiasi cereri. Nu reexecuta uneltele, nu relua streaming partial si nu reinterpreta eroarea gateway ca limita de context. Numara consumul necunoscut per incercare, respecta Stop in asteptare si identifica separat compactarea. Dupa esec, pastreaza memoria anterioara, istoricul integral si ciorna.
 
 - Din 1.11.3, indicatorul de context deschide un panou ancorat, nemodal, cu procent, bara segmentata si categorii reale din aceleasi estimari ca sidebar-ul. Actualizeaza panoul deschis odata cu dashboard-ul. Pastreaza marcajul ~, limita necunoscuta, temele si cele sase limbi; consumul API ramane separat, iar categorii neimplementate nu sunt inventate.
+
+- Din 1.11.4, panoul de context are 360 px latime si colturi rotunjite. Reaplica explicit tema si UI delegate-ul popup-ului detasat la schimbarea temei si deschidere. Verifica popup-ul real pe ecran la pornire Dark si dupa tranzitii Light/Dark, nu doar randarea izolata; foloseste iconite vectoriale pentru extindere.

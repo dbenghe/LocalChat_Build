@@ -1,3 +1,9 @@
+## 1.11.4 - 2026-10-20
+
+- Refresh the detached context popup UI on theme changes and opening. Paint its explicit themed surface so a stale light popup delegate cannot leave white behind dark-theme text.
+- Reduce the context card to 360 pixels wide, tighter typography and spacing, with rounded corners and a small shadow. API details remain collapsed.
+- Verify actual on-screen popup opening, cold dark startup, theme transitions, API expansion and dismissal, in addition to offscreen rendering.
+
 ## 1.11.3 - 2026-10-20
 
 - Replace the modal context message box with an anchored, live context card: occupancy percentage, rounded segmented bar and color-coded system/tool/conversation estimates.

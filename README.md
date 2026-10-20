@@ -603,3 +603,5 @@ Ctrl+V, Shift+Insert si click dreapta > Lipeste accepta text, fisiere copiate di
 La erori explicite HTTP 502/503/504, LocalChat reincearca acelasi apel API de maximum trei ori, cu asteptare scurta si Stop activ. Compactarea reincearca fragmentul curent, fara unelte operationale; cererea normala pastreaza rezultatele uneltelor deja executate. Un raspuns partial intrerupt nu este reluat automat. Dupa esec, memoria completa precedenta, istoricul si ciorna sunt pastrate.
 
 Click pe indicatorul de context din bara de jos deschide un panou live cu procent, bara segmentata si categoriile Sistem, Unelte si Conversatie. Valorile ~ sunt estimari ale contextului activ pentru cererea urmatoare, inclusiv ciorna. Consumul API este disponibil separat prin extindere; o limita necunoscuta nu este afisata ca 0%. Panoul se inchide cu Escape, click in afara sau inca un click pe indicator.
+
+Panoul de context este un card compact, de 360 px latime, cu colturi rotunjite si suprafata explicita Dark/Light, inclusiv la prima deschidere dupa pornire. Sectiunea API se extinde printr-o iconita vectoriala.

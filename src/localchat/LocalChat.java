@@ -627,7 +627,7 @@ public final class LocalChat extends JFrame {
         keyField.setEchoChar(showKey.isSelected() ? (char)0 : echoChar);
         colorControls(getContentPane(), panel, fg, accent);
         colorControls(getJMenuBar(), panel, fg, accent);
-        commandPopup.theme(dark);SwingUtilities.updateComponentTreeUI(transcriptPopup);colorControls(transcriptPopup,panel,fg,accent);
+        commandPopup.theme(dark);contextPopup.theme(dark);SwingUtilities.updateComponentTreeUI(transcriptPopup);colorControls(transcriptPopup,panel,fg,accent);
         getContentPane().setBackground(bg);
         transcript.setBackground(panel);
         input.setBackground(panel);
