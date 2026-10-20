@@ -38,10 +38,10 @@ final class WorkspacePanel extends JPanel {
                 if(index<0 || !list.getCellBounds(index,index).contains(e.getPoint()))return;
                 list.setSelectedIndex(index);if(!list.getSelectedValue().file().equals(sessions.get(index).file()))return;
                 JPopupMenu menu=new JPopupMenu();
-                JMenuItem renameItem=new JMenuItem(I18n.text("Redenumește conversația…"));renameItem.addActionListener(x->title.run());menu.add(renameItem);
-                JMenuItem a=new JMenuItem(I18n.text(list.getSelectedValue().state().archived?"Restaurează conversația":"Arhivează conversația"));a.addActionListener(x->archive.run());menu.add(a);
-                JMenuItem ex=new JMenuItem(I18n.text("Exportă chat JSON…"));ex.addActionListener(x->export.run());menu.add(ex);
-                JMenuItem d=new JMenuItem(I18n.text("Șterge conversația"));d.addActionListener(x->delete.run());menu.add(d);menu.show(list,e.getX(),e.getY());}
+                JMenuItem renameItem=new JMenuItem(I18n.text("Redenumeste conversatia…"));renameItem.addActionListener(x->title.run());menu.add(renameItem);
+                JMenuItem a=new JMenuItem(I18n.text(list.getSelectedValue().state().archived?"Restaureaza conversatia":"Arhiveaza conversatia"));a.addActionListener(x->archive.run());menu.add(a);
+                JMenuItem ex=new JMenuItem(I18n.text("Exporta chat JSON…"));ex.addActionListener(x->export.run());menu.add(ex);
+                JMenuItem d=new JMenuItem(I18n.text("Sterge conversatia"));d.addActionListener(x->delete.run());menu.add(d);menu.show(list,e.getX(),e.getY());}
             public void mousePressed(MouseEvent e){popup(e);}public void mouseReleased(MouseEvent e){popup(e);}
         });
         list.setCellRenderer(new DefaultListCellRenderer(){
@@ -68,17 +68,17 @@ final class WorkspacePanel extends JPanel {
         translate();
     }
     void translate() {
-        heading.setText(I18n.text("Conversații"));search.putClientProperty("JTextField.placeholderText",I18n.text("Caută conversații"));search.setToolTipText(I18n.text("Caută conversații"));
-        search.getAccessibleContext().setAccessibleName(I18n.text("Caută conversații"));
-        fresh.setText("+");fresh.setToolTipText(I18n.text("Conversație nouă"));
-        remove.setText("−");remove.setToolTipText(I18n.text("Șterge conversația"));archived.setText(I18n.text("Arhivate"));
-        rename.setText(I18n.text("Titlu"));pin.setText(I18n.text("Fixează"));pin.setToolTipText(I18n.text("Fixează / desprinde"));
-        limitLabel.setText("<html>"+I18n.text("Limită context (0 = necunoscut)"));limitLabel.setPreferredSize(new Dimension(220,32));
-        autoCompact.setText(I18n.text("Compactare automată"));
-        autoCompact.setToolTipText(I18n.text("Necesită o limită de context cunoscută. Folosește modelul curent și consumă tokeni."));
+        heading.setText(I18n.text("Conversatii"));search.putClientProperty("JTextField.placeholderText",I18n.text("Cauta conversatii"));search.setToolTipText(I18n.text("Cauta conversatii"));
+        search.getAccessibleContext().setAccessibleName(I18n.text("Cauta conversatii"));
+        fresh.setText("+");fresh.setToolTipText(I18n.text("Conversatie noua"));
+        remove.setText("−");remove.setToolTipText(I18n.text("Sterge conversatia"));archived.setText(I18n.text("Arhivate"));
+        rename.setText(I18n.text("Titlu"));pin.setText(I18n.text("Fixeaza"));pin.setToolTipText(I18n.text("Fixeaza / desprinde"));
+        limitLabel.setText("<html>"+I18n.text("Limita context (0 = necunoscut)"));limitLabel.setPreferredSize(new Dimension(220,32));
+        autoCompact.setText(I18n.text("Compactare automata"));
+        autoCompact.setToolTipText(I18n.text("Necesita o limita de context cunoscuta. Foloseste modelul curent si consuma tokeni."));
         thresholdLabel.setText(I18n.text("Prag context (%)"));
         autoThreshold.getAccessibleContext().setAccessibleName(I18n.text("Prag context (%)"));
-        context.setToolTipText(I18n.text("Estimare pentru cererea următoare, nu consum facturat."));
+        context.setToolTipText(I18n.text("Estimare pentru cererea urmatoare, nu consum facturat."));
     }
     void select(Path file) {
         refreshing=true;
@@ -103,7 +103,7 @@ final class WorkspacePanel extends JPanel {
         long percent=maximum>0 ? (long)Math.ceil(total*100.0/maximum):0;
         context.setValue((int)Math.min(100,percent));
         context.setString(maximum>0 ? I18n.text("Context: ~{0}% · {1}/{2}",ContextRing.percentage(total,maximum),total,maximum)
-                : I18n.text("Context: ~{0} · limită necunoscută",total));
-        details.setText(I18n.text("Sistem: ~{0}\nTool-uri: ~{1}\nConversație: ~{2}",system,tools,conversation)+"\n"+usage);
+                : I18n.text("Context: ~{0} · limita necunoscuta",total));
+        details.setText(I18n.text("Sistem: ~{0}\nTool-uri: ~{1}\nConversatie: ~{2}",system,tools,conversation)+"\n"+usage);
     }
 }

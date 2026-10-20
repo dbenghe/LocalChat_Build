@@ -43,6 +43,19 @@ public final class UiTest {
                 check(k.contains(token) == I18n.text(k).contains(token), "format arguments: "+code+":"+k);
             check(I18n.text("Nu pot deschide {0}: {1}","C:/a/{1}.pdf","$\\result").contains("C:/a/{1}.pdf"),"literal placeholder argument");
         }
+        for(String code:I18n.CODES){
+            I18n.setLanguage(code);
+            check(I18n.text("Conversații").equals(I18n.text("Conversatii")),"accented and plain application keys translate equally in "+code);
+        }
+        I18n.setLanguage("ro");
+        for(String key:I18n.keys("ro"))check(!I18n.text(key).matches("(?s).*[ăâîșşțţĂÂÎȘŞȚŢ].*"),"Romanian application copy has no Romanian diacritics: "+key);
+        check(I18n.romanianAscii("ăâîșşțţ ĂÂÎȘŞȚŢ").equals("aaisstt AAISSTT"),"modern and legacy Romanian accents normalized");
+        check(I18n.NAMES[1].equals("Romana"),"plain Romanian language name");
+        String originalPath="C:/Șantier/Încercări/raport șuruburi ț.pdf",originalText="Conținut şi ținte: {1} $";
+        check(I18n.text("Nu pot deschide {0}: {1}",originalPath,originalText).equals("Nu pot deschide "+originalPath+": "+originalText),"dynamic paths and document/error text remain byte-for-byte unchanged");
+        check(I18n.text("Mesaj nou cu șțîăâ {0}",originalPath).equals("Mesaj nou cu stiaa "+originalPath),"uncatalogued Romanian application template normalized before interpolation");
+        I18n.setLanguage("tr");check(I18n.text("Șterge conversația").equals("Sohbeti sil"),"Turkish translation preserved after source key normalization");
+        I18n.setLanguage("es");check(I18n.text("Limbă").equals("Idioma"),"Spanish translation preserved");
         I18n.setLanguage("unknown"); check(I18n.language().equals("ro"),"unknown locale fallback");
         LocalChat app=window();
         check(app.getTitle().contains(AppVersion.VALUE),"version in title");

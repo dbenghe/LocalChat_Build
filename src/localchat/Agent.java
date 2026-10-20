@@ -73,7 +73,7 @@ final class Agent {
                 if (cancelled) return;
                 ui.toolStarted(call);
                 Tools.Result result = tools == null
-                        ? Tools.Result.error("Tool-urile sunt dezactivate în aplicație.")
+                        ? Tools.Result.error("Tool-urile sunt dezactivate in aplicatie.")
                         : tools.execute(call);
                 if (cancelled) return;
                 synchronized (added) {
@@ -83,7 +83,7 @@ final class Agent {
                 ui.toolFinished(call, result);
             }
         }
-        throw new IOException("Oprit după " + MAX_STEPS + " pași fără un răspuns final.");
+        throw new IOException("Oprit dupa " + MAX_STEPS + " pasi fara un raspuns final.");
     }
 
     private void publishContext(List<ChatClient.Message> base, Ui ui) {
@@ -108,7 +108,7 @@ final class Agent {
         for (ChatClient.Message m : out) {
             fixed.add(m);
             for (ChatClient.ToolCall c : m.toolCalls) {
-                if (!answered.contains(c.id)) fixed.add(ChatClient.Message.toolResult(c.id, "Anulat: utilizatorul a oprit răspunsul.", true));
+                if (!answered.contains(c.id)) fixed.add(ChatClient.Message.toolResult(c.id, "Anulat: utilizatorul a oprit raspunsul.", true));
             }
         }
         return fixed;

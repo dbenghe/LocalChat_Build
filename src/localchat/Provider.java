@@ -4,7 +4,7 @@ package localchat;
 enum Provider {
     OPENAI("ChatGPT (OpenAI)", "ChatGPT", Format.OPENAI, "https://api.openai.com/v1", "OPENAI_API_KEY",
             "gpt-5", "gpt-5-mini", "gpt-4.1", "gpt-4o-mini"),
-    ANTHROPIC("API Anthropic (Claude și compatibile)", "Claude", Format.ANTHROPIC, "https://api.anthropic.com/v1", "ANTHROPIC_API_KEY",
+    ANTHROPIC("API Anthropic (Claude si compatibile)", "Claude", Format.ANTHROPIC, "https://api.anthropic.com/v1", "ANTHROPIC_API_KEY",
             "claude-sonnet-5-5", "claude-opus-5-5", "claude-haiku-5-5", "claude-fable-5-1"),
     CUSTOM("API custom (compatibil OpenAI)", "Custom", Format.OPENAI, "http://localhost:11434/v1", null,
             "llama3.1");

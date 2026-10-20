@@ -37,7 +37,7 @@ final class Mcp {
                 McpServer server = null;
                 try {
                     String command = Json.str(def, "command");
-                    if (command == null || command.isBlank()) throw new IOException("lipsește \"command\"");
+                    if (command == null || command.isBlank()) throw new IOException("lipseste \"command\"");
                     List<String> cmd = new ArrayList<>();
                     cmd.add(expand.apply(command));
                     Object args = Json.get(def, "args");
@@ -49,7 +49,7 @@ final class Mcp {
                     }
                     String cwd = Json.str(def, "cwd");
                     if (!new File(cmd.get(0)).isFile() && cmd.get(0).contains(File.separator)) {
-                        throw new IOException("nu găsesc " + cmd.get(0));
+                        throw new IOException("nu gasesc " + cmd.get(0));
                     }
                     server = new McpServer(name, cmd, env, cwd == null ? null : new File(expand.apply(cwd)));
                     server.start(60_000);

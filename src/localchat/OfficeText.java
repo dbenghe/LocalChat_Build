@@ -121,7 +121,7 @@ final class OfficeText {
             }
             b.append('\n');
         }
-        if (rows.getLength() > MAX_ROWS) b.append("… încă ").append(rows.getLength() - MAX_ROWS).append(" rânduri neafișate\n");
+        if (rows.getLength() > MAX_ROWS) b.append("… inca ").append(rows.getLength() - MAX_ROWS).append(" randuri neafisate\n");
     }
 
     /** Zero-based column of a cell reference like "C12"; falls back to the cell's position. */
@@ -152,7 +152,7 @@ final class OfficeText {
             f.setExpandEntityReferences(false);
             return f.newDocumentBuilder().parse(in);
         } catch (ParserConfigurationException | org.xml.sax.SAXException e) {
-            throw new IOException("XML invalid în " + name + ": " + e.getMessage());
+            throw new IOException("XML invalid in " + name + ": " + e.getMessage());
         }
     }
 }

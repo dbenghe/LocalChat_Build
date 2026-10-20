@@ -98,8 +98,8 @@ final class McpServer implements AutoCloseable {
                 if ("text".equals(type)) part = Json.str(item, "text");
                 else if ("resource".equals(type)) part = Json.str(item, "resource", "text");
                 else if ("resource_link".equals(type)) part = "[link: " + Json.str(item, "uri") + "]";
-                else part = "[conținut " + type + " omis]";
-                if (part == null) part = "[resursă: " + Json.str(item, "resource", "uri") + "]";
+                else part = "[continut " + type + " omis]";
+                if (part == null) part = "[resursa: " + Json.str(item, "resource", "uri") + "]";
                 if (b.length() > 0) b.append('\n');
                 b.append(part);
             }
@@ -142,12 +142,12 @@ final class McpServer implements AutoCloseable {
             return f.get(timeoutMs, TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
             notify("notifications/cancelled", Json.obj("requestId", id, "reason", "timeout"));
-            throw new IOException("Serverul MCP „" + name + "” nu a răspuns în " + timeoutMs / 1000 + " s (" + method + ").");
+            throw new IOException("Serverul MCP „" + name + "” nu a raspuns in " + timeoutMs / 1000 + " s (" + method + ").");
         } catch (ExecutionException e) {
             throw new IOException(e.getCause().getMessage(), e.getCause());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IOException("Întrerupt.");
+            throw new IOException("Intrerupt.");
         } finally {
             pending.remove(id);
         }
@@ -204,7 +204,7 @@ final class McpServer implements AutoCloseable {
         switch (method) {
             case "ping" -> reply.put("result", Json.obj());
             case "roots/list" -> reply.put("result", Json.obj("roots", new ArrayList<>()));
-            default -> reply.put("error", Json.obj("code", -32601, "message", "Metodă nesuportată: " + method));
+            default -> reply.put("error", Json.obj("code", -32601, "message", "Metoda nesuportata: " + method));
         }
         try {
             send(reply);

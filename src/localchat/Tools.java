@@ -255,15 +255,15 @@ final class Tools {
         } catch (ToolError e) {
             return Result.error(e.getMessage());
         } catch (NoSuchFileException e) {
-            return Result.error("Nu există: " + e.getFile());
+            return Result.error("Nu exista: " + e.getFile());
         } catch (AccessDeniedException e) {
             return Result.error("Acces refuzat: " + e.getFile());
         } catch (FileAlreadyExistsException e) {
-            return Result.error("Există deja: " + e.getFile() + " (folosește overwrite=true dacă vrei să-l înlocuiești).");
+            return Result.error("Exista deja: " + e.getFile() + " (foloseste overwrite=true daca vrei sa-l inlocuiesti).");
         } catch (IOException e) {
             return Result.error(e.getClass().getSimpleName() + ": " + e.getMessage());
         } catch (RuntimeException e) {
-            return Result.error("Eroare internă: " + e);
+            return Result.error("Eroare interna: " + e);
         }
     }
 
@@ -273,14 +273,14 @@ final class Tools {
         String given = expand(raw == null || raw.isBlank() ? "." : raw.trim());
         String s = ctx.paths().path(given);
         if (!s.equals(given) && !s.equalsIgnoreCase(given.replace('/', '\\'))) {
-            notes.add("Notă: calea „" + given + "” e de pe alt calculator; pe acesta am folosit „" + s + "”. Folosește de acum calea de aici.");
+            notes.add("Nota: calea „" + given + "” e de pe alt calculator; pe acesta am folosit „" + s + "”. Foloseste de acum calea de aici.");
         }
         try {
             Path p = Paths.get(s);
             if (!p.isAbsolute()) p = ctx.workDir().resolve(p);
             return p.toAbsolutePath().normalize();
         } catch (InvalidPathException e) {
-            throw new ToolError("Cale invalidă: " + raw);
+            throw new ToolError("Cale invalida: " + raw);
         }
     }
 
@@ -288,7 +288,7 @@ final class Tools {
     private Path readable(String raw) throws ToolError {
         Path p = guarded(raw);
         if (!p.startsWith(ctx.workDir()) && !p.startsWith(ctx.skillsDir()) && !p.equals(ctx.rulesFile()) && !AttachmentSupport.grantsRead(p,attachedPaths)) {
-            allow(Access.READ, "Citire în afara folderului de lucru", p.toString());
+            allow(Access.READ, "Citire in afara folderului de lucru", p.toString());
         }
         return p;
     }
@@ -299,7 +299,7 @@ final class Tools {
 
     private Path guarded(String raw) throws ToolError {
         Path p = path(raw);
-        if (p.equals(ctx.secretFile()) || (Files.exists(p) && Files.exists(ctx.secretFile()) && sameFile(p,ctx.secretFile()))) throw new ToolError("Fișierul de setări al aplicației (cu cheile API) nu e accesibil prin tool-uri.");
+        if (p.equals(ctx.secretFile()) || (Files.exists(p) && Files.exists(ctx.secretFile()) && sameFile(p,ctx.secretFile()))) throw new ToolError("Fisierul de setari al aplicatiei (cu cheile API) nu e accesibil prin tool-uri.");
         return p;
     }
 
@@ -307,13 +307,13 @@ final class Tools {
 
     private void allow(Access access, String title, String details) throws ToolError {
         if (cancelled) throw new ToolError("Oprit de utilizator.");
-        if(readOnly && access!=Access.READ)throw new ToolError(I18n.text("Mod doar citire: modificările și comenzile sunt blocate."));
+        if(readOnly && access!=Access.READ)throw new ToolError(I18n.text("Mod doar citire: modificarile si comenzile sunt blocate."));
         if (ctx.autoApprove() || ctx.alwaysAllowed().contains(access)) return;
         Decision d = ctx.permission().ask(title, details);
         if (d == Decision.ALWAYS) ctx.alwaysAllowed().add(access);
         if (d == Decision.NO) {
             throw new ToolError("Utilizatorul a refuzat: " + title.toLowerCase(Locale.ROOT)
-                    + ". Nu încerca același lucru pe altă cale; întreabă utilizatorul ce dorește.");
+                    + ". Nu incerca acelasi lucru pe alta cale; intreaba utilizatorul ce doreste.");
         }
     }
 
@@ -332,7 +332,7 @@ final class Tools {
     // ---- folders and search ----
 
     private String listDir(Path dir, String sort) throws IOException, ToolError {
-        if (!Files.isDirectory(dir)) throw new ToolError(Files.exists(dir) ? "Nu e folder: " + dir + " (folosește read_file)." : "Nu există: " + dir);
+        if (!Files.isDirectory(dir)) throw new ToolError(Files.exists(dir) ? "Nu e folder: " + dir + " (foloseste read_file)." : "Nu exista: " + dir);
         List<Path> entries = new ArrayList<>();
         try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)) {
             for (Path p : ds) entries.add(p);
@@ -351,7 +351,7 @@ final class Tools {
             b.append(String.format("%s  %-5s %9s  %s%s%n", at == null ? "????-??-?? ??:??" : time(at), isDir ? "DIR" : "",
                     isDir || at == null ? "" : size(at.size()), p.getFileName(), isDir ? "\\" : ""));
         }
-        if (entries.size() > MAX_LISTED) b.append("… încă ").append(entries.size() - MAX_LISTED).append(" intrări neafișate.\n");
+        if (entries.size() > MAX_LISTED) b.append("… inca ").append(entries.size() - MAX_LISTED).append(" intrari neafisate.\n");
         return b.toString();
     }
 
@@ -380,12 +380,12 @@ final class Tools {
         });
         if ("modified".equals(sort)) found.sort(Comparator.comparing((Path p) -> modified(attrs.get(p))).reversed());
         else found.sort(Comparator.comparing(p -> p.toString().toLowerCase(Locale.ROOT)));
-        StringBuilder b = new StringBuilder(found.size() + " fișiere găsite pentru '" + pattern + "' în " + root + "\n");
+        StringBuilder b = new StringBuilder(found.size() + " fisiere gasite pentru '" + pattern + "' in " + root + "\n");
         for (int i = 0; i < found.size() && i < MAX_LISTED; i++) {
             Path p = found.get(i);
             b.append(String.format("%s  %9s  %s%n", time(attrs.get(p)), size(attrs.get(p).size()), root.relativize(p)));
         }
-        if (found.size() > MAX_LISTED) b.append("… încă ").append(found.size() - MAX_LISTED).append("; restrânge căutarea.\n");
+        if (found.size() > MAX_LISTED) b.append("… inca ").append(found.size() - MAX_LISTED).append("; restrange cautarea.\n");
         return b.toString();
     }
 
@@ -395,7 +395,7 @@ final class Tools {
             int flags = caseSensitive ? 0 : Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE;
             p = Pattern.compile(regex ? query : Pattern.quote(query), flags);
         } catch (PatternSyntaxException e) {
-            throw new ToolError("Expresie regulată invalidă: " + e.getDescription());
+            throw new ToolError("Expresie regulata invalida: " + e.getDescription());
         }
         PathMatcher names = FileSystems.getDefault().getPathMatcher("glob:" + (filePattern.isBlank() ? "*" : filePattern.trim()));
         List<String> hits = new ArrayList<>();
@@ -417,10 +417,10 @@ final class Tools {
         };
         if (Files.isRegularFile(root)) visitor.visit(root, Files.readAttributes(root, BasicFileAttributes.class));
         else if (Files.isDirectory(root)) walk(root, visitor);
-        else throw new ToolError("Nu există: " + root);
-        StringBuilder b = new StringBuilder(hits.size() + " rânduri găsite în " + files[0] + " fișiere text (" + root + ")\n");
+        else throw new ToolError("Nu exista: " + root);
+        StringBuilder b = new StringBuilder(hits.size() + " randuri gasite in " + files[0] + " fisiere text (" + root + ")\n");
         for (String h : hits) b.append(h).append('\n');
-        if (hits.size() >= 300) b.append("… oprit la 300 de rezultate; restrânge căutarea.\n");
+        if (hits.size() >= 300) b.append("… oprit la 300 de rezultate; restrange cautarea.\n");
         return cap(b.toString());
     }
 
@@ -458,8 +458,8 @@ final class Tools {
     // ---- reading ----
 
     private String readFile(Path p, int offset, Integer limit) throws IOException, ToolError {
-        if (Files.isDirectory(p)) throw new ToolError("E un folder: " + p + " — folosește list_dir.");
-        if (!Files.exists(p)) throw new ToolError("Nu există: " + p);
+        if (Files.isDirectory(p)) throw new ToolError("E un folder: " + p + " — foloseste list_dir.");
+        if (!Files.exists(p)) throw new ToolError("Nu exista: " + p);
         String name = p.getFileName().toString().toLowerCase(Locale.ROOT);
         if (name.endsWith(".pdf")) return readPdf(p, offset, limit == null ? 20 : limit);
         String text;
@@ -471,13 +471,13 @@ final class Tools {
             text = OfficeText.xlsx(p);
         } else {
             long size = Files.size(p);
-            if (size > 50_000_000) throw new ToolError("Fișier prea mare pentru citire (" + size(size) + ").");
+            if (size > 50_000_000) throw new ToolError("Fisier prea mare pentru citire (" + size(size) + ").");
             Text t = decode(Files.readAllBytes(p));
             if (t == null) {
                 String hint = name.endsWith(".xls") || name.endsWith(".doc")
                         ? " Formatul Office vechi nu e suportat; cere salvarea ca .xlsx/.docx sau CSV."
                         : "";
-                throw new ToolError("Fișier binar (" + size(size) + "), nu poate fi citit ca text." + hint);
+                throw new ToolError("Fisier binar (" + size(size) + "), nu poate fi citit ca text." + hint);
             }
             text = t.text();
         }
@@ -485,15 +485,15 @@ final class Tools {
         int from = Math.max(1, offset);
         int count = Math.max(1, limit == null ? 400 : limit);
         int to = Math.min(lines.length, from + count - 1);
-        StringBuilder b = new StringBuilder("Fișier: " + p + " (" + lines.length + " rânduri)\n");
+        StringBuilder b = new StringBuilder("Fisier: " + p + " (" + lines.length + " randuri)\n");
         for (int i = from; i <= to; i++) {
             b.append(String.format("%5d| %s%n", i, clip(lines[i - 1], 2000)));
             if (b.length() > MAX_OUTPUT) {
-                b.append("… limită de text atinsă; continuă cu offset=").append(i + 1).append('\n');
+                b.append("… limita de text atinsa; continua cu offset=").append(i + 1).append('\n');
                 return b.toString();
             }
         }
-        if (to < lines.length) b.append("… mai sunt ").append(lines.length - to).append(" rânduri; continuă cu offset=").append(to + 1).append('\n');
+        if (to < lines.length) b.append("… mai sunt ").append(lines.length - to).append(" randuri; continua cu offset=").append(to + 1).append('\n');
         return b.toString();
     }
 
@@ -513,7 +513,7 @@ final class Tools {
     private String extractAttachments(Path msg, String destination, boolean includeInline) throws IOException, ToolError {
         String file = msg.getFileName().toString();
         if (!file.toLowerCase(Locale.ROOT).endsWith(".msg")) throw new ToolError("extract_attachments merge doar pentru emailuri Outlook .msg.");
-        if (!Files.isRegularFile(msg)) throw new ToolError("Nu există: " + msg);
+        if (!Files.isRegularFile(msg)) throw new ToolError("Nu exista: " + msg);
         OutlookMsg.Message m = OutlookMsg.read(msg);
         Path dir = destination == null || destination.isBlank()
                 ? msg.resolveSibling(OutlookMsg.safeName(file.substring(0, file.length() - 4)) + " - bijlagen")
@@ -525,11 +525,11 @@ final class Tools {
             count++;
             list.append("\n- ").append(att.embedded() != null ? "[email] " + att.name() + ".txt" : att.name() + " (" + size(att.size()) + ")");
         }
-        if (count == 0) return "Emailul nu are atașamente de salvat" + (m.attachments().isEmpty() ? "." : " (doar imagini inline/semnătură).");
-        allow(Access.WRITE, "Salvare atașamente email", "În folderul: " + dir + list);
+        if (count == 0) return "Emailul nu are atasamente de salvat" + (m.attachments().isEmpty() ? "." : " (doar imagini inline/semnatura).");
+        allow(Access.WRITE, "Salvare atasamente email", "In folderul: " + dir + list);
         List<String> report = new ArrayList<>();
         OutlookMsg.extract(m, dir, includeInline, report);
-        return "Atașamentele din " + file + " → " + dir + "\n" + String.join("\n", report);
+        return "Atasamentele din " + file + " → " + dir + "\n" + String.join("\n", report);
     }
 
     // ---- writing ----
@@ -537,25 +537,25 @@ final class Tools {
     private String writeFile(Path p, String content, boolean append) throws IOException, ToolError {
         if (Files.isDirectory(p)) throw new ToolError("E un folder: " + p);
         boolean exists = Files.exists(p);
-        allow(Access.WRITE, append ? "Adăugare la fișier" : exists ? "Suprascriere fișier" : "Fișier nou",
+        allow(Access.WRITE, append ? "Adaugare la fisier" : exists ? "Suprascriere fisier" : "Fisier nou",
                 p + "\n(" + content.length() + " caractere)\n\n" + clip(content, 1500));
         Files.createDirectories(p.getParent());
         if (append) {
             Text old = exists ? decode(Files.readAllBytes(p)) : null;
-            if (exists && old == null) throw new ToolError("Fișierul existent e binar; nu adaug text la el.");
+            if (exists && old == null) throw new ToolError("Fisierul existent e binar; nu adaug text la el.");
             Charset cs = old == null ? StandardCharsets.UTF_8 : old.charset();
             String sep = old != null && !old.text().isEmpty() && !old.text().endsWith("\n") ? System.lineSeparator() : "";
             Files.writeString(p, (old == null ? "" : old.text()) + sep + content, cs);
-            return "Adăugat " + content.length() + " caractere la " + p;
+            return "Adaugat " + content.length() + " caractere la " + p;
         }
         Files.writeString(p, content, StandardCharsets.UTF_8);
         return (exists ? "Suprascris: " : "Creat: ") + p + " (" + content.length() + " caractere)";
     }
 
     private String editFile(Path p, String oldText, String newText, boolean all) throws IOException, ToolError {
-        if (!Files.isRegularFile(p)) throw new ToolError("Nu există fișierul: " + p);
+        if (!Files.isRegularFile(p)) throw new ToolError("Nu exista fisierul: " + p);
         Text t = decode(Files.readAllBytes(p));
-        if (t == null) throw new ToolError("Fișier binar; nu poate fi editat ca text.");
+        if (t == null) throw new ToolError("Fisier binar; nu poate fi editat ca text.");
         String text = t.text();
         if (oldText.isEmpty()) throw new ToolError("old_text e gol.");
         if (!text.contains(oldText) && text.contains("\r\n") && oldText.contains("\n") && !oldText.contains("\r\n")) {
@@ -564,28 +564,28 @@ final class Tools {
         }
         int count = 0;
         for (int i = text.indexOf(oldText); i >= 0; i = text.indexOf(oldText, i + oldText.length())) count++;
-        if (count == 0) throw new ToolError("Textul de înlocuit nu a fost găsit în " + p + ". Citește din nou fișierul și copiază textul exact.");
-        if (count > 1 && !all) throw new ToolError("Textul apare de " + count + " ori; include mai mult context sau folosește replace_all=true.");
-        allow(Access.WRITE, "Modificare fișier", p + "\n\n− " + clip(oldText, 700) + "\n+ " + clip(newText, 700));
+        if (count == 0) throw new ToolError("Textul de inlocuit nu a fost gasit in " + p + ". Citeste din nou fisierul si copiaza textul exact.");
+        if (count > 1 && !all) throw new ToolError("Textul apare de " + count + " ori; include mai mult context sau foloseste replace_all=true.");
+        allow(Access.WRITE, "Modificare fisier", p + "\n\n− " + clip(oldText, 700) + "\n+ " + clip(newText, 700));
         String updated = all ? text.replace(oldText, newText) : text.replaceFirst(Pattern.quote(oldText), Matcher.quoteReplacement(newText));
         Files.writeString(p, updated, t.charset());
-        return "Modificat " + p + " (" + (all ? count : 1) + " înlocuiri)";
+        return "Modificat " + p + " (" + (all ? count : 1) + " inlocuiri)";
     }
 
     private String makeDir(Path p) throws IOException, ToolError {
-        if (Files.isDirectory(p)) return "Există deja: " + p;
+        if (Files.isDirectory(p)) return "Exista deja: " + p;
         allow(Access.WRITE, "Creare folder", p.toString());
         Files.createDirectories(p);
         return "Creat folderul " + p;
     }
 
     private String copyOrMove(Path source, Path destination, boolean overwrite, boolean move) throws IOException, ToolError {
-        if (!Files.exists(source)) throw new ToolError("Nu există sursa: " + source);
-        if (source.equals(ctx.secretFile())) throw new ToolError("Fișierul de setări nu poate fi copiat sau mutat.");
+        if (!Files.exists(source)) throw new ToolError("Nu exista sursa: " + source);
+        if (source.equals(ctx.secretFile())) throw new ToolError("Fisierul de setari nu poate fi copiat sau mutat.");
         Path target = Files.isDirectory(destination) ? destination.resolve(source.getFileName()) : destination;
-        if (target.startsWith(source)) throw new ToolError("Destinația e în interiorul sursei.");
-        if (Files.exists(target) && !overwrite) throw new ToolError("Există deja: " + target + " (folosește overwrite=true dacă vrei să-l înlocuiești).");
-        allow(Access.WRITE, move ? "Mutare" : "Copiere", source + "\n→ " + target + (overwrite ? "\n(înlocuiește ce există)" : ""));
+        if (target.startsWith(source)) throw new ToolError("Destinatia e in interiorul sursei.");
+        if (Files.exists(target) && !overwrite) throw new ToolError("Exista deja: " + target + " (foloseste overwrite=true daca vrei sa-l inlocuiesti).");
+        allow(Access.WRITE, move ? "Mutare" : "Copiere", source + "\n→ " + target + (overwrite ? "\n(inlocuieste ce exista)" : ""));
         StandardCopyOption[] options = overwrite
                 ? new StandardCopyOption[]{StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES}
                 : new StandardCopyOption[]{StandardCopyOption.COPY_ATTRIBUTES};
@@ -614,23 +614,23 @@ final class Tools {
                 return FileVisitResult.CONTINUE;
             }
         });
-        return "Copiat folderul " + source + " → " + target + " (" + totals[0] + " fișiere, " + size(totals[1]) + ")";
+        return "Copiat folderul " + source + " → " + target + " (" + totals[0] + " fisiere, " + size(totals[1]) + ")";
     }
 
     // ---- commands ----
 
     private Result runCommand(String command, Path cwd, int timeoutSeconds) throws IOException, ToolError {
-        if (!Files.isDirectory(cwd)) throw new ToolError("Folderul pentru comandă nu există: " + cwd);
-        allow(Access.RUN, "Rulare comandă", command + "\n\nÎn folderul: " + cwd);
+        if (!Files.isDirectory(cwd)) throw new ToolError("Folderul pentru comanda nu exista: " + cwd);
+        allow(Access.RUN, "Rulare comanda", command + "\n\nIn folderul: " + cwd);
         Path script = Files.createTempFile("localchat-", ".cmd");
         try {
             String body = command.replace("\r\n", "\n").replace("\n", "\r\n");
             Files.writeString(script, "@echo off\r\nchcp 65001 >nul\r\n" + body + "\r\n", StandardCharsets.UTF_8);
             Output out = exec(List.of("cmd.exe", "/d", "/c", script.toString()), cwd, ctx.commandEnv(), timeoutSeconds);
             if (cancelled) throw new ToolError("Oprit de utilizator.");
-            String text = out.text().isBlank() ? "(fără output)" : cap(out.text());
-            if (!out.finished()) return Result.error("Comanda a depășit " + timeoutSeconds + " s și a fost oprită.\n" + text);
-            return new Result("Cod de ieșire: " + out.exitCode() + "\n" + text, out.exitCode() != 0);
+            String text = out.text().isBlank() ? "(fara output)" : cap(out.text());
+            if (!out.finished()) return Result.error("Comanda a depasit " + timeoutSeconds + " s si a fost oprita.\n" + text);
+            return new Result("Cod de iesire: " + out.exitCode() + "\n" + text, out.exitCode() != 0);
         } finally {
             Files.deleteIfExists(script);
         }
@@ -660,7 +660,7 @@ final class Tools {
         } catch (InterruptedException e) {
             kill(proc);
             Thread.currentThread().interrupt();
-            throw new ToolError("Întrerupt.");
+            throw new ToolError("Intrerupt.");
         } finally {
             running = null;
         }
@@ -686,21 +686,21 @@ final class Tools {
     }
 
     private String openInExplorer(Path p) throws IOException, ToolError {
-        if (!Files.exists(p)) throw new ToolError("Nu există: " + p);
+        if (!Files.exists(p)) throw new ToolError("Nu exista: " + p);
         Path folder = Files.isDirectory(p) ? p : p.getParent();
         new ProcessBuilder("explorer.exe", folder.toString()).start();
-        return "Am deschis în Explorer: " + folder;
+        return "Am deschis in Explorer: " + folder;
     }
 
     // ---- rules and MCP ----
 
     private String saveRule(String rule) throws IOException, ToolError {
-        if(readOnly)throw new ToolError(I18n.text("Mod doar citire: modificările și comenzile sunt blocate."));
+        if(readOnly)throw new ToolError(I18n.text("Mod doar citire: modificarile si comenzile sunt blocate."));
         Path f = ctx.rulesFile();
         String existing = Files.exists(f) ? Files.readString(f, StandardCharsets.UTF_8) : "# Reguli salvate\n\n";
         String sep = existing.isEmpty() || existing.endsWith("\n") ? "" : "\n";
         Files.writeString(f, existing + sep + "- " + rule.trim().replace("\n", " ") + "  _(" + LocalDate.now() + ")_\n", StandardCharsets.UTF_8);
-        return "Regula a fost salvată în " + f;
+        return "Regula a fost salvata in " + f;
     }
 
     private Result callMcp(McpRef ref, Map<String, Object> args) throws IOException, ToolError {
@@ -737,14 +737,14 @@ final class Tools {
 
     private static String required(Map<String, Object> a, String key) throws ToolError {
         String v = str(a, key, "").trim();
-        if (v.isEmpty()) throw new ToolError("Lipsește argumentul '" + key + "'.");
+        if (v.isEmpty()) throw new ToolError("Lipseste argumentul '" + key + "'.");
         return v;
     }
 
     /** Like required(), but keeps whitespace: file content and replacement text are taken literally. */
     private static String requiredText(Map<String, Object> a, String key) throws ToolError {
         Object v = a.get(key);
-        if (v == null) throw new ToolError("Lipsește argumentul '" + key + "'.");
+        if (v == null) throw new ToolError("Lipseste argumentul '" + key + "'.");
         return v.toString();
     }
 
@@ -760,7 +760,7 @@ final class Tools {
         try {
             return Integer.parseInt(v.toString().trim());
         } catch (NumberFormatException e) {
-            throw new ToolError("Argumentul '" + key + "' trebuie să fie un număr.");
+            throw new ToolError("Argumentul '" + key + "' trebuie sa fie un numar.");
         }
     }
 

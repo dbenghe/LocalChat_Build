@@ -19,7 +19,7 @@ final class Json {
         p.skipWhitespace();
         Object value = p.value();
         p.skipWhitespace();
-        if (p.i < p.s.length()) throw p.error("text în plus după JSON");
+        if (p.i < p.s.length()) throw p.error("text in plus dupa JSON");
         return value;
     }
 
@@ -58,7 +58,7 @@ final class Json {
     }
 
     private Object value() {
-        if (i >= s.length()) throw error("sfârșit neașteptat");
+        if (i >= s.length()) throw error("sfarsit neasteptat");
         switch (s.charAt(i)) {
             case '{': return object();
             case '[': return array();
@@ -120,7 +120,7 @@ final class Json {
         expect('"');
         StringBuilder b = new StringBuilder();
         while (true) {
-            if (i >= s.length()) throw error("șir neterminat");
+            if (i >= s.length()) throw error("sir neterminat");
             char c = s.charAt(i++);
             if (c == '"') return b.toString();
             if (c != '\\') {
@@ -152,7 +152,7 @@ final class Json {
         int start = i;
         while (i < s.length() && "+-0123456789.eE".indexOf(s.charAt(i)) >= 0) i++;
         String n = s.substring(start, i);
-        if (n.isEmpty()) throw error("caracter neașteptat '" + s.charAt(start) + "'");
+        if (n.isEmpty()) throw error("caracter neasteptat '" + s.charAt(start) + "'");
         try {
             if (n.indexOf('.') < 0 && n.indexOf('e') < 0 && n.indexOf('E') < 0) return Long.parseLong(n);
         } catch (NumberFormatException ignored) {
@@ -161,12 +161,12 @@ final class Json {
         try {
             return Double.parseDouble(n);
         } catch (NumberFormatException e) {
-            throw error("număr invalid");
+            throw error("numar invalid");
         }
     }
 
     private void literal(String word) {
-        if (!s.startsWith(word, i)) throw error("se aștepta " + word);
+        if (!s.startsWith(word, i)) throw error("se astepta " + word);
         i += word.length();
     }
 
@@ -175,7 +175,7 @@ final class Json {
     }
 
     private void expect(char c) {
-        if (!peek(c)) throw error("se aștepta '" + c + "'");
+        if (!peek(c)) throw error("se astepta '" + c + "'");
         i++;
     }
 
@@ -184,7 +184,7 @@ final class Json {
     }
 
     private IllegalArgumentException error(String what) {
-        return new IllegalArgumentException("Răspuns JSON invalid (poziția " + i + "): " + what);
+        return new IllegalArgumentException("Raspuns JSON invalid (pozitia " + i + "): " + what);
     }
 
     private static void write(Object v, StringBuilder b) {

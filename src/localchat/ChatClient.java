@@ -233,7 +233,7 @@ final class ChatClient {
                 for (ToolCall c : m.toolCalls) {
                     blocks.add(Json.obj("type", "tool_use", "id", anthropicId(c.id), "name", c.name, "input", c.args));
                 }
-                if (blocks.isEmpty()) blocks.add(Json.obj("type", "text", "text", "(fără text)"));
+                if (blocks.isEmpty()) blocks.add(Json.obj("type", "text", "text", "(fara text)"));
                 messages.add(Json.obj("role", "assistant", "content", blocks));
                 continue;
             }

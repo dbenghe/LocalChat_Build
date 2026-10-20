@@ -413,3 +413,16 @@ blocate inclusiv când sunt într-un folder selectat. Referințele trimise răm�
 valabile la continuarea chatului; ciorna cu selecțiile nestrimise se salvează
 separat per conversație și este refăcută după un eșec fără răspuns util.
 Exportul unui chat include referințele locale, nu copiile documentelor.
+
+## Interfata romana fara diacritice (1.9.1)
+
+Meniurile, butoanele, dialogurile, mesajele de stare/eroare si etichetele generate
+de uneltele LocalChat folosesc litere normale in romana. Limba se numeste „Romana”
+in selector; codul ro si preferinta salvata raman aceleasi. Celelalte limbi isi
+pastreaza traducerile si caracterele proprii. Textele noi fara traducere sunt
+normalizate ca sabloane in romana, inainte de inserarea valorilor dinamice.
+
+Fisierele si continutul utilizatorului nu se convertesc: numele, caile, textele
+citate, documentele si conversatiile existente isi pastreaza exact caracterele.
+Aceasta schimbare priveste textele proprii interfetei, nu rescrierea istoricului
+sau modificarea raspunsurilor libere generate de model.

@@ -18,8 +18,8 @@ final class SavedProviders {
     }
     static Object resolve(Properties config,String id,Provider fallback){return list(config).stream().filter(e->e.id().equals(id)).map(e->(Object)e).findFirst().orElse(fallback);}
     static Entry save(Properties config,String name,Provider protocol,String base,String key,String model){
-        name=name.strip();if(name.isBlank()||name.length()>80||name.chars().anyMatch(c->Character.isISOControl(c)||c=='<'||c=='>'))throw new IllegalArgumentException(I18n.text("Numele furnizorului trebuie să aibă 1–80 de caractere."));
-        URI uri=URI.create(base);if(!Set.of("https","http").contains(Objects.toString(uri.getScheme(),""))||uri.getHost()==null||uri.getUserInfo()!=null||uri.getRawQuery()!=null||uri.getFragment()!=null)throw new IllegalArgumentException(I18n.text("Adresa API trebuie să fie HTTP/HTTPS, fără cheie în URL."));
+        name=name.strip();if(name.isBlank()||name.length()>80||name.chars().anyMatch(c->Character.isISOControl(c)||c=='<'||c=='>'))throw new IllegalArgumentException(I18n.text("Numele furnizorului trebuie sa aiba 1–80 de caractere."));
+        URI uri=URI.create(base);if(!Set.of("https","http").contains(Objects.toString(uri.getScheme(),""))||uri.getHost()==null||uri.getUserInfo()!=null||uri.getRawQuery()!=null||uri.getFragment()!=null)throw new IllegalArgumentException(I18n.text("Adresa API trebuie sa fie HTTP/HTTPS, fara cheie in URL."));
         String id=UUID.randomUUID().toString();for(Entry entry:list(config))if(entry.name().equalsIgnoreCase(name)){id=entry.id();break;}
         Entry entry=new Entry(id,name,protocol);String prefix=entry.prefix();config.setProperty(prefix+".name",name);config.setProperty(prefix+".protocol",protocol.name());config.setProperty(prefix+".url",base);config.setProperty(prefix+".key",key);config.setProperty(prefix+".model",model);return entry;
     }

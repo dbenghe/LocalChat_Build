@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.9.1 — 2026-10-20
+
+- Textele aplicatiei in romana folosesc litere normale fara diacritice: meniuri, butoane, dialoguri, mesaje de stare/eroare si etichete generate de unelte. Selectorul afiseaza „Romana”, cu acelasi cod de limba ro si aceeasi ordine.
+- Traducerile din celelalte cinci limbi se pastreaza. Cheile de traducere sunt compatibile atat cu forma veche cu diacritice, cat si cu forma noua fara diacritice.
+- Normalizarea se aplica textelor proprii aplicatiei inainte de inserarea parametrilor. Numele fisierelor, caile, documentele, mesajele utilizatorului si conversatiile salvate nu sunt rescrise sau modificate.
+- Include atasamentele si drag-and-drop din 1.9.0 si procentul live din 1.8.1. Pachet pregatit separat, fara inlocuirea ferestrei deschise pana la confirmarea utilizatorului.
+
 ## 1.9.0 — 2026-10-20
 
 - Buton compact de atașare lângă mesaj, cu selecție multiplă de fișiere/foldere și drag-and-drop din Explorer peste mesaj sau conversație. Referințele apar ca etichete cu nume, cale în tooltip și eliminare individuală; maximum 20 per mesaj.

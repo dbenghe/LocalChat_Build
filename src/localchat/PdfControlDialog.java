@@ -13,7 +13,7 @@ import java.util.function.Consumer;
 /** Direct engine operations: the model is never involved in selecting or executing these calls. */
 final class PdfControlDialog extends JDialog {
     static final String[] OPERATIONS={"pdfcontrol_start_check","pdfcontrol_start_extract","pdfcontrol_start_pairs","pdfcontrol_start_compare","pdfcontrol_start_workflow","pdfcontrol_regenerate_report"};
-    static final String[] LABELS={"Verifică desenele","Extrage planșe și perechi","Completează perechi V/W","Compară OUD/NIEUW","Flux complet PDFCONTROL","Regenerează raportul PDF"};
+    static final String[] LABELS={"Verifica desenele","Extrage planse si perechi","Completeaza perechi V/W","Compara OUD/NIEUW","Flux complet PDFCONTROL","Regenereaza raportul PDF"};
     final JComboBox<String> operation=new JComboBox<>();
     final JTextField project=new JTextField(8);
     final JButton start=new JButton(),cancel=new JButton(),open=new JButton();
@@ -36,15 +36,15 @@ final class PdfControlDialog extends JDialog {
         for(String label:LABELS)operation.addItem(I18n.text(label));
         if(workDir!=null)for(Path segment:workDir)if(segment.toString().matches("[0-9]{6}"))project.setText(segment.toString());
         JPanel form=new JPanel(new FlowLayout(FlowLayout.LEFT,6,6));form.add(new JLabel(I18n.text("Proiect")));form.add(project);form.add(operation);
-        JPanel actions=new JPanel(new FlowLayout(FlowLayout.RIGHT));start.setText(I18n.text("Alege PDF-urile și pornește"));cancel.setText(I18n.text("Anulează lucrarea"));open.setText(I18n.text("Deschide raportul"));cancel.setEnabled(false);open.setEnabled(false);actions.add(open);actions.add(cancel);actions.add(start);
-        JPanel north=new JPanel(new BorderLayout());north.add(form);north.add(new JLabel(I18n.text("Motorul original PDFCONTROL. Sursele sunt păstrate; rezultatele se salvează în Controle.")),BorderLayout.SOUTH);
+        JPanel actions=new JPanel(new FlowLayout(FlowLayout.RIGHT));start.setText(I18n.text("Alege PDF-urile si porneste"));cancel.setText(I18n.text("Anuleaza lucrarea"));open.setText(I18n.text("Deschide raportul"));cancel.setEnabled(false);open.setEnabled(false);actions.add(open);actions.add(cancel);actions.add(start);
+        JPanel north=new JPanel(new BorderLayout());north.add(form);north.add(new JLabel(I18n.text("Motorul original PDFCONTROL. Sursele sunt pastrate; rezultatele se salveaza in Controle.")),BorderLayout.SOUTH);
         JPanel south=new JPanel(new BorderLayout(4,4));south.add(status,BorderLayout.NORTH);south.add(progress);south.add(actions,BorderLayout.SOUTH);
         JPanel panel=new JPanel(new BorderLayout(8,8));panel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));panel.add(north,BorderLayout.NORTH);panel.add(new JScrollPane(files));panel.add(south,BorderLayout.SOUTH);setContentPane(panel);
         files.setCellRenderer(new DefaultListCellRenderer(){public Component getListCellRendererComponent(JList<?> l,Object value,int i,boolean selected,boolean focus){return super.getListCellRendererComponent(l,value instanceof Path?((Path)value).getFileName():value,i,selected,focus);}});
         files.addListSelectionListener(e->{Path p=files.getSelectedValue();files.setToolTipText(p==null?null:p.toString());open.setEnabled(p!=null);});
-        start.addActionListener(e->prepare());cancel.addActionListener(e->{cancelled.set(true);cancel.setEnabled(false);status.setText(I18n.text("Anulare solicitată…"));});
+        start.addActionListener(e->prepare());cancel.addActionListener(e->{cancelled.set(true);cancel.setEnabled(false);status.setText(I18n.text("Anulare solicitata…"));});
         open.addActionListener(e->{Path p=files.getSelectedValue();if(p!=null)try{Desktop.getDesktop().open(p.toFile());}catch(Exception error){status.setText(error.getMessage());}});
-        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);addWindowListener(new WindowAdapter(){public void windowClosing(WindowEvent e){if(running){cancelled.set(true);cancel.setEnabled(false);status.setText(I18n.text("Anulare solicitată…"));}else dispose();}});
+        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);addWindowListener(new WindowAdapter(){public void windowClosing(WindowEvent e){if(running){cancelled.set(true);cancel.setEnabled(false);status.setText(I18n.text("Anulare solicitata…"));}else dispose();}});
         setSize(900,510);setMinimumSize(new Dimension(760,420));setLocationRelativeTo(owner);
         // Initialize metadata in the background; it never makes an inference request.
         start.setEnabled(false);
@@ -70,13 +70,13 @@ final class PdfControlDialog extends JDialog {
     private void prepare() {
         if(running || root==null)return;
         try {
-            String number=project.getText().strip();if(!number.matches("[0-9]{6}"))throw new java.io.IOException(I18n.text("Proiectul trebuie să aibă șase cifre."));
+            String number=project.getText().strip();if(!number.matches("[0-9]{6}"))throw new java.io.IOException(I18n.text("Proiectul trebuie sa aiba sase cifre."));
             Path folder=root.resolve(number).toRealPath();if(!folder.getParent().equals(root))throw new java.io.IOException(I18n.text("Alege PDF-uri din proiectul selectat."));
             int selected=operation.getSelectedIndex();Map<String,Object> args=Json.obj("project",number);
-            if(selected==5){String id=JOptionPane.showInputDialog(this,I18n.text("Identificatorul lucrării de control"));if(id==null)return;args.put("job_id",id.strip());}
-            else if(selected==3){var oldFiles=choose(folder,I18n.text("Alege versiunea OUD (veche)"));if(oldFiles==null)return;var newFiles=choose(folder,I18n.text("Alege versiunea NIEUW (nouă)"));if(newFiles==null)return;args.put("old_files",oldFiles);args.put("new_files",newFiles);}
+            if(selected==5){String id=JOptionPane.showInputDialog(this,I18n.text("Identificatorul lucrarii de control"));if(id==null)return;args.put("job_id",id.strip());}
+            else if(selected==3){var oldFiles=choose(folder,I18n.text("Alege versiunea OUD (veche)"));if(oldFiles==null)return;var newFiles=choose(folder,I18n.text("Alege versiunea NIEUW (noua)"));if(newFiles==null)return;args.put("old_files",oldFiles);args.put("new_files",newFiles);}
             else{var selectedFiles=choose(folder,I18n.text(LABELS[selected]));if(selectedFiles==null || selectedFiles.isEmpty())return;args.put("files",selectedFiles);}
-            if(JOptionPane.showConfirmDialog(this,I18n.text("Pornești {0} pentru proiectul {1}? Se creează copii și PDF-uri în Controle.",I18n.text(LABELS[selected]),number),"PDFCONTROL",JOptionPane.YES_NO_OPTION)!=JOptionPane.YES_OPTION)return;
+            if(JOptionPane.showConfirmDialog(this,I18n.text("Pornesti {0} pentru proiectul {1}? Se creeaza copii si PDF-uri in Controle.",I18n.text(LABELS[selected]),number),"PDFCONTROL",JOptionPane.YES_NO_OPTION)!=JOptionPane.YES_OPTION)return;
             selectedFolder.accept(folder);started.accept(I18n.text(LABELS[selected]));execute(OPERATIONS[selected],args);
         }catch(Exception error){status.setText(error.getMessage());}
     }
@@ -105,5 +105,5 @@ final class PdfControlDialog extends JDialog {
             finally{running=false;progress.setIndeterminate(false);cancel.setEnabled(false);start.setEnabled(true);operation.setEnabled(true);project.setEnabled(true);finished.run();}}
         }.execute();
     }
-    static String localizedStatus(String status){return I18n.text(switch(Objects.toString(status,"")){case "done"->"Finalizat";case "partial"->"Parțial: verificare manuală necesară";case "running"->"În lucru";case "pending"->"În așteptare";case "cancelled"->"Anulat";default->"Eroare";});}
+    static String localizedStatus(String status){return I18n.text(switch(Objects.toString(status,"")){case "done"->"Finalizat";case "partial"->"Partial: verificare manuala necesara";case "running"->"In lucru";case "pending"->"In asteptare";case "cancelled"->"Anulat";default->"Eroare";});}
 }

@@ -44,7 +44,7 @@ final class Skills {
         if (skill == null) {
             List<String> names = new ArrayList<>();
             for (Skill s : skills) names.add(s.name());
-            return "Nu există skill-ul '" + name + "'. Disponibile: " + (names.isEmpty() ? "niciunul" : String.join(", ", names)) + ".";
+            return "Nu exista skill-ul '" + name + "'. Disponibile: " + (names.isEmpty() ? "niciunul" : String.join(", ", names)) + ".";
         }
         Path file = skill.file();
         Path dir = file.getParent();
@@ -55,7 +55,7 @@ final class Skills {
             files.filter(Files::isRegularFile).filter(p -> !p.equals(file)).forEach(p -> others.add(dir.relativize(p).toString()));
         }
         if (!others.isEmpty()) {
-            b.append("\n\nAlte fișiere ale skill-ului (citește-le cu read_file):\n");
+            b.append("\n\nAlte fisiere ale skill-ului (citeste-le cu read_file):\n");
             for (String o : others) b.append("- ").append(dir.resolve(o)).append('\n');
         }
         return b.toString();

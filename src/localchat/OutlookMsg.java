@@ -62,12 +62,12 @@ final class OutlookMsg {
         Files.createDirectories(dir);
         for (Attachment a : m.attachments()) {
             if (a.inline() && !includeInline) {
-                report.add("omis (imagine inline / semnătură): " + a.name());
+                report.add("omis (imagine inline / semnatura): " + a.name());
                 continue;
             }
             String name = safeName(a.name());
             if (a.embedded() != null) {
-                StringBuilder b = new StringBuilder("Email atașat: " + a.name() + "\n");
+                StringBuilder b = new StringBuilder("Email atasat: " + a.name() + "\n");
                 append(b, a.embedded(), 0);
                 report.add(save(dir.resolve(name + ".txt"), b.toString().getBytes(StandardCharsets.UTF_8)));
                 if (!a.embedded().attachments().isEmpty()) extract(a.embedded(), dir.resolve(name), includeInline, report);
@@ -78,7 +78,7 @@ final class OutlookMsg {
     }
 
     private static String save(Path target, byte[] data) throws IOException {
-        if (Files.exists(target) && Arrays.equals(Files.readAllBytes(target), data)) return "există deja, identic: " + target;
+        if (Files.exists(target) && Arrays.equals(Files.readAllBytes(target), data)) return "exista deja, identic: " + target;
         Path free = target;
         String file = target.getFileName().toString();
         int dot = file.lastIndexOf('.');
@@ -92,28 +92,28 @@ final class OutlookMsg {
     private static void append(StringBuilder b, Message m, int depth) {
         b.append("Subiect: ").append(orDash(m.subject())).append('\n')
                 .append("De la: ").append(orDash(m.from())).append('\n')
-                .append("Către: ").append(orDash(m.to())).append('\n');
+                .append("Catre: ").append(orDash(m.to())).append('\n');
         if (m.cc() != null && !m.cc().isBlank()) b.append("Cc: ").append(m.cc()).append('\n');
-        b.append("Data: ").append(m.date() == null ? "necunoscută" : m.date() + " (Europe/Amsterdam)").append('\n');
+        b.append("Data: ").append(m.date() == null ? "necunoscuta" : m.date() + " (Europe/Amsterdam)").append('\n');
         List<Attachment> atts = m.attachments();
-        b.append("Atașamente: ").append(atts.isEmpty() ? "niciunul" : String.valueOf(atts.size())).append('\n');
+        b.append("Atasamente: ").append(atts.isEmpty() ? "niciunul" : String.valueOf(atts.size())).append('\n');
         for (int i = 0; i < atts.size(); i++) {
             Attachment a = atts.get(i);
             b.append("  ").append(i + 1).append(". ");
             if (a.embedded() != null) {
-                b.append("[email atașat] ").append(a.name());
+                b.append("[email atasat] ").append(a.name());
             } else {
                 b.append(a.name()).append(" (").append(Tools.size(a.size()));
                 if (a.mime() != null && !a.mime().isBlank()) b.append(", ").append(a.mime());
                 b.append(')');
-                if (a.inline()) b.append(" [imagine în corpul emailului, de obicei semnătură]");
+                if (a.inline()) b.append(" [imagine in corpul emailului, de obicei semnatura]");
             }
             b.append('\n');
         }
         b.append("--- Text ---\n").append(m.body().strip()).append('\n');
         for (Attachment a : atts) {
             if (a.embedded() == null || depth > 5) continue;
-            b.append("\n=== Email atașat: ").append(a.name()).append(" ===\n");
+            b.append("\n=== Email atasat: ").append(a.name()).append(" ===\n");
             append(b, a.embedded(), depth + 1);
         }
     }
@@ -474,11 +474,11 @@ final class OutlookMsg {
         Cfb(byte[] data) throws IOException {
             d = data;
             if (d.length < 512 || le32(d, 0) != 0xE011CFD0 || le32(d, 4) != 0xE11AB1A1) {
-                throw new IOException("Nu e un fișier Outlook .msg valid.");
+                throw new IOException("Nu e un fisier Outlook .msg valid.");
             }
             sectorSize = 1 << le16(d, 30);
             miniSize = 1 << le16(d, 32);
-            if (sectorSize != 512 && sectorSize != 4096) throw new IOException("Fișier .msg deteriorat (sector " + sectorSize + ").");
+            if (sectorSize != 512 && sectorSize != 4096) throw new IOException("Fisier .msg deteriorat (sector " + sectorSize + ").");
             cutoff = le32(d, 56) & 0xFFFFFFFFL;
             int numFat = le32(d, 44);
             int firstDir = le32(d, 48);
@@ -506,7 +506,7 @@ final class OutlookMsg {
             }
             byte[] dir = chain(firstDir, -1);
             for (int off = 0; off + 128 <= dir.length; off += 128) nodes.add(new Node(dir, off, sectorSize == 512));
-            if (nodes.isEmpty()) throw new IOException("Fișier .msg fără conținut.");
+            if (nodes.isEmpty()) throw new IOException("Fisier .msg fara continut.");
             mini = chain(nodes.get(0).start, nodes.get(0).size);
             byte[] mf = numMiniFat > 0 ? chain(firstMiniFat, -1) : new byte[0];
             miniFat = new int[mf.length / 4];
@@ -520,7 +520,7 @@ final class OutlookMsg {
 
         byte[] read(Node n) throws IOException {
             if (n.size <= 0) return new byte[0];
-            if (n.size > MAX_SIZE) throw new IOException("Parte prea mare în .msg.");
+            if (n.size > MAX_SIZE) throw new IOException("Parte prea mare in .msg.");
             return n.size < cutoff ? miniChain(n.start, n.size) : chain(n.start, n.size);
         }
 
@@ -545,7 +545,7 @@ final class OutlookMsg {
 
         private int offset(int sector) throws IOException {
             long off = (long) (sector + 1) * sectorSize;
-            if (sector < 0 || off >= d.length) throw new IOException("Fișier .msg deteriorat (sector " + sector + ").");
+            if (sector < 0 || off >= d.length) throw new IOException("Fisier .msg deteriorat (sector " + sector + ").");
             return (int) off;
         }
 
