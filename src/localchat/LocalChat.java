@@ -131,6 +131,7 @@ public final class LocalChat extends JFrame {
     private final BusyIndicator busyIndicator=new BusyIndicator();
     private final JButton pdfControlButton=new JButton("PDFCONTROL");
     private final ContextRing contextRing=new ContextRing();
+    private final ContextUsagePopup contextPopup=new ContextUsagePopup();
     private final JButton bottomModel=new JButton(),bottomApproval=new JButton(),bottomMode=new JButton();
     private final JComboBox<String> responseProfile=new JComboBox<>(new String[]{"Rapid","Balanced","Detailed"});
     private final JLabel modelMetadata=new JLabel();
@@ -289,7 +290,7 @@ public final class LocalChat extends JFrame {
         modelMetadata.setFont(modelMetadata.getFont().deriveFont(11f));inspectModel.setFont(inspectModel.getFont().deriveFont(11f));applyBudgetButton.setFont(applyBudgetButton.getFont().deriveFont(11f));
         JPanel metadata=new JPanel(new BorderLayout(4,2));metadata.add(modelMetadata);JPanel metadataActions=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT,4,0));metadataActions.add(applyBudgetButton);metadataActions.add(inspectModel);metadata.add(metadataActions,BorderLayout.EAST);controls.setPreferredSize(new Dimension(700,28));
         JPanel north=new JPanel(new BorderLayout());north.add(root.getComponent(0));north.add(metadata,BorderLayout.SOUTH);root.add(north,BorderLayout.NORTH);
-        contextRing.addActionListener(e->JOptionPane.showMessageDialog(this,workspace.context.getString()+"\n"+workspace.details.getText()+"\n"+t("Estimare pentru cererea urmatoare, nu consum facturat."),t("Consum si context"),JOptionPane.INFORMATION_MESSAGE));
+        contextRing.addActionListener(e->{if(contextPopup.isVisible())contextPopup.setVisible(false);else if(contextRing.isShowing()){refreshDashboard();contextPopup.show(contextRing,0,-contextPopup.getPreferredSize().height-8);}});
         bottomModel.addActionListener(e->{javax.swing.JPopupMenu menu=new javax.swing.JPopupMenu();for(int i=0;i<modelBox.getItemCount();i++){String id=modelBox.getItemAt(i);JMenuItem choice=new JMenuItem(id);choice.setIcon(ModelFavorites.icon(null,isFavoriteModel(id)));choice.addActionListener(x->{modelBox.setSelectedItem(id);saveConfig();refreshDashboard();});menu.add(choice);}menu.show(bottomModel,0,bottomModel.getHeight());});
         bottomApproval.addActionListener(e->{javax.swing.JPopupMenu menu=new javax.swing.JPopupMenu();for(int i=0;i<permissionBox.getItemCount();i++){final int index=i;JMenuItem choice=new JMenuItem(permissionBox.getItemAt(i));choice.addActionListener(x->{alwaysAllowed.clear();permissionBox.setSelectedIndex(index);saveConfig();refreshDashboard();});menu.add(choice);}menu.show(bottomApproval,0,bottomApproval.getHeight());});
         bottomMode.addActionListener(e->{if(!busy){toolsBox.setSelected(!toolsBox.isSelected());permissionBox.setEnabled(toolsBox.isSelected());saveConfig();refreshDashboard();}});
@@ -907,7 +908,7 @@ public final class LocalChat extends JFrame {
         }
         double displayScale=contextScale();sys=(long)Math.ceil(sys*displayScale);tools=(long)Math.ceil(tools*displayScale);messages=(long)Math.ceil(messages*displayScale);
         workspace.meter(sys,tools,messages,configured,t("Consum API cumulativ: {0}",usageText(sessionState.usage))+(sessionState.last.requests>0?"\n"+t("Ultimul tur incheiat: {0}",usageText(sessionState.last)):""));
-        contextRing.update(sys,tools,messages,configured);contextRing.setToolTipText(workspace.context.getString()+" · "+t("Procent din bugetul local; consumul API este separat. Configureaza bugetul daca limita nu este comunicata."));
+        contextRing.update(sys,tools,messages,configured);contextPopup.update(sys,tools,messages,configured,t("Consum API cumulativ: {0}",usageText(sessionState.usage))+(sessionState.last.requests>0?"\n"+t("Ultimul tur incheiat: {0}",usageText(sessionState.last)):""));contextRing.setToolTipText(workspace.context.getString()+" · "+t("Procent din bugetul local; consumul API este separat. Configureaza bugetul daca limita nu este comunicata."));
         bottomModel.setText(currentModel());bottomApproval.setText(permissionBox.getSelectedItem().toString());bottomApproval.setToolTipText(permissionBox.getSelectedItem().toString());bottomModel.setToolTipText(currentModel());bottomMode.setText(t(toolsBox.isSelected()?"Chat cu unelte":"Chat simplu"));
         bottomModel.setEnabled(!busy);bottomApproval.setEnabled(!busy);bottomMode.setEnabled(!busy);responseProfile.setEnabled(!busy);inspectModel.setEnabled(!busy && !inspectingModel);
         String metadata=config.getProperty(profile+".metadata","");

@@ -1,3 +1,9 @@
+## 1.11.3 - 2026-10-20
+
+- Replace the modal context message box with an anchored, live context card: occupancy percentage, rounded segmented bar and color-coded system/tool/conversation estimates.
+- Match dark/light themes and all six languages. Keep billed API counters in a separate, collapsed section. Unknown limits remain explicit; no unsupported subagent counters are invented.
+- Share the dashboard estimates with the sidebar and ring; update the open card during drafts, generation, tools and compaction without extra API calls.
+
 ## 1.11.2 - 2026-10-20
 
 - Retry explicit HTTP 502/503/504 gateway failures up to three attempts for each model request, including manual and automatic compaction. Preserve the exact request and all completed tool results; never replay operations or interrupted partial streams.

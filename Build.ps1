@@ -66,6 +66,8 @@ if ($LASTEXITCODE) { throw 'Adaptive memory reduction tests failed' }
 if ($LASTEXITCODE) { throw 'Inference gateway recovery tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/pdf-preview-test-home" "-Dpdfpreview.python=$taskPdfPython" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.PdfPreviewTest
 if ($LASTEXITCODE) { throw 'PDF card and right preview tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/context-popup-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ContextUsagePopupTest
+if ($LASTEXITCODE) { throw 'Live context popup tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_owned_layout.py" --package "$PSScriptRoot/pdfcontrol"
 if ($LASTEXITCODE) { throw 'Owned engine layout tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_pdfcontrol_bridge.py" --package "$PSScriptRoot/pdfcontrol" --output "$taskBuild/pdfcontrol-tests"

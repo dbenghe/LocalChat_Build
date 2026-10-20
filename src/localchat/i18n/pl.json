@@ -358,5 +358,15 @@
   "Imagine lipita ca atasament PNG local. Selectia nu o trimite automat ca imagine la model.": "Obraz wklejono jako lokalny załącznik PNG. Wybranie go nie wysyła go automatycznie jako obrazu do modelu.",
   "API temporar indisponibil (HTTP {0}). Reincerc compactarea: {1}/{2}.": "API jest tymczasowo niedostępne (HTTP {0}). Ponawianie kompakcji: {1}/{2}.",
   "API temporar indisponibil (HTTP {0}). Reincerc raspunsul: {1}/{2}. Uneltele executate nu se repeta.": "API jest tymczasowo niedostępne (HTTP {0}). Ponawianie odpowiedzi: {1}/{2}. Wykonane narzędzia nie są powtarzane.",
-  "Compactarea a esuat la API; memoria si istoricul au fost pastrate: {0}": "Kompakcja nie powiodła się w API; pamięć i historia zostały zachowane: {0}"
+  "Compactarea a esuat la API; memoria si istoricul au fost pastrate: {0}": "Kompakcja nie powiodła się w API; pamięć i historia zostały zachowane: {0}",
+  "Utilizare context": "Użycie kontekstu",
+  "~{0}% ocupat": "~{0}% zajęte",
+  "Limita de context necunoscuta": "Nieznany limit kontekstu",
+  "Estimarea contextului activ pentru cererea urmatoare, inclusiv ciorna. Nu reprezinta consumul API facturat.": "Szacowany aktywny kontekst następnego żądania, wraz ze szkicem. Nie jest to rozliczane zużycie API.",
+  "Prompt de sistem": "Prompt systemowy",
+  "Definitii unelte": "Definicje narzędzi",
+  "Buget local: {0} / {1} tokeni": "Budżet lokalny: {0} / {1} tokenów",
+  "Configureaza bugetul local pentru a calcula procentul.": "Ustaw budżet lokalny, aby obliczyć procent.",
+  "Consum API separat": "Oddzielne zużycie API",
+  "tokeni": "tokenów"
 }

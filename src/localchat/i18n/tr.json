@@ -358,5 +358,15 @@
   "Imagine lipita ca atasament PNG local. Selectia nu o trimite automat ca imagine la model.": "Görüntü yerel PNG eki olarak yapıştırıldı. Seçim, görüntüyü otomatik olarak modele göndermez.",
   "API temporar indisponibil (HTTP {0}). Reincerc compactarea: {1}/{2}.": "API geçici olarak kullanılamıyor (HTTP {0}). Sıkıştırma yeniden deneniyor: {1}/{2}.",
   "API temporar indisponibil (HTTP {0}). Reincerc raspunsul: {1}/{2}. Uneltele executate nu se repeta.": "API geçici olarak kullanılamıyor (HTTP {0}). Yanıt yeniden deneniyor: {1}/{2}. Tamamlanan araçlar tekrarlanmaz.",
-  "Compactarea a esuat la API; memoria si istoricul au fost pastrate: {0}": "API sıkıştırması başarısız oldu; bellek ve geçmiş korundu: {0}"
+  "Compactarea a esuat la API; memoria si istoricul au fost pastrate: {0}": "API sıkıştırması başarısız oldu; bellek ve geçmiş korundu: {0}",
+  "Utilizare context": "Bağlam kullanımı",
+  "~{0}% ocupat": "~%{0} dolu",
+  "Limita de context necunoscuta": "Bağlam sınırı bilinmiyor",
+  "Estimarea contextului activ pentru cererea urmatoare, inclusiv ciorna. Nu reprezinta consumul API facturat.": "Taslak dahil, sonraki istek için tahmini etkin bağlam. Bu, faturalandırılan API kullanımı değildir.",
+  "Prompt de sistem": "Sistem istemi",
+  "Definitii unelte": "Araç tanımları",
+  "Buget local: {0} / {1} tokeni": "Yerel bütçe: {0} / {1} token",
+  "Configureaza bugetul local pentru a calcula procentul.": "Yüzdeyi hesaplamak için yerel bütçeyi ayarlayın.",
+  "Consum API separat": "Ayrı API kullanımı",
+  "tokeni": "token"
 }
