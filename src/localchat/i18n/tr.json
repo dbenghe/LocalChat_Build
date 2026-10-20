@@ -355,5 +355,8 @@
   "Imaginea din clipboard este prea mare sau indisponibila (maximum 16 milioane de pixeli).": "Panodaki görüntü çok büyük veya kullanılamıyor (en fazla 16 milyon piksel).",
   "Nu pot lipi din clipboard: {0}": "Panodan yapıştırılamıyor: {0}",
   "Nu pot atasa imaginea acum: generarea este activa sau sunt deja 20 de atasamente.": "Görüntü şu anda eklenemiyor: yanıt oluşturuluyor veya zaten 20 ek var.",
-  "Imagine lipita ca atasament PNG local. Selectia nu o trimite automat ca imagine la model.": "Görüntü yerel PNG eki olarak yapıştırıldı. Seçim, görüntüyü otomatik olarak modele göndermez."
+  "Imagine lipita ca atasament PNG local. Selectia nu o trimite automat ca imagine la model.": "Görüntü yerel PNG eki olarak yapıştırıldı. Seçim, görüntüyü otomatik olarak modele göndermez.",
+  "API temporar indisponibil (HTTP {0}). Reincerc compactarea: {1}/{2}.": "API geçici olarak kullanılamıyor (HTTP {0}). Sıkıştırma yeniden deneniyor: {1}/{2}.",
+  "API temporar indisponibil (HTTP {0}). Reincerc raspunsul: {1}/{2}. Uneltele executate nu se repeta.": "API geçici olarak kullanılamıyor (HTTP {0}). Yanıt yeniden deneniyor: {1}/{2}. Tamamlanan araçlar tekrarlanmaz.",
+  "Compactarea a esuat la API; memoria si istoricul au fost pastrate: {0}": "API sıkıştırması başarısız oldu; bellek ve geçmiş korundu: {0}"
 }

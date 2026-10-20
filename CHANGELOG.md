@@ -1,3 +1,9 @@
+## 1.11.2 - 2026-10-20
+
+- Retry explicit HTTP 502/503/504 gateway failures up to three attempts for each model request, including manual and automatic compaction. Preserve the exact request and all completed tool results; never replay operations or interrupted partial streams.
+- Show which stage is retrying, distinguish compaction API failures from context overflow, account for every actual attempt, and honor Stop during backoff.
+- Includes the pending 1.11.1 clipboard correction. Installation is held until the user finishes reviewing the compaction issue.
+
 ## 1.11.1 - 2026-10-20
 
 - Add explicit Ctrl+V and Shift+Insert clipboard actions and a translated composer context menu (cut, copy, paste, select all), preserved across theme changes.

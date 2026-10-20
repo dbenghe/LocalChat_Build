@@ -84,6 +84,7 @@ final class ContextGuard {
                     public void before(String s,List<ChatClient.Message> r)throws IOException{ui.compactRequest(s,r,fragment,chunks.size());}
                     public void usage(TokenUsage usage){ui.usage(usage);}
                     public boolean cancelled(){return cancelled;}
+                    public void retry(int next,int total,int status){ui.retry(true,next,total,status);}
                 });
         }
         Memory candidate=new Memory(summary,original.size(),question),previous=memory;

@@ -463,6 +463,10 @@ final class ChatClient {
         return c;
     }
 
+    static final class HttpFailure extends IOException {
+        final int status;
+        HttpFailure(int status,String message){super(message);this.status=status;}
+    }
     private static void checkStatus(HttpURLConnection conn) throws IOException {
         int code = conn.getResponseCode();
         if (code < 400) return;
@@ -476,7 +480,7 @@ final class ChatClient {
         }
         if (msg == null) msg = body.isEmpty() ? conn.getResponseMessage() : body;
         if (msg != null && msg.length() > 600) msg = msg.substring(0, 600) + "…";
-        throw new IOException("HTTP " + code + ": " + msg);
+        throw new HttpFailure(code,"HTTP " + code + ": " + msg);
     }
 
     private static String errorMessage(Object resp) {

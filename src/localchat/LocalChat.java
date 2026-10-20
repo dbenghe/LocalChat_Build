@@ -1110,6 +1110,7 @@ public final class LocalChat extends JFrame {
                             compactStarted.incrementAndGet();SwingUtilities.invokeLater(()->{if(generation==compactGeneration){requestSystem=ContextMemory.estimate(instructions);requestTools=0;
                                 requestConversation=ContextMemory.messages(messages);setStatus("Compactare: fragment {0}/{1}",false,fragment,chunks.size());refreshDashboard();}});
                         }
+                        public void retry(int next,int total,int status){SwingUtilities.invokeLater(()->{if(generation==compactGeneration)setStatus("API temporar indisponibil (HTTP {0}). Reincerc compactarea: {1}/{2}.",false,status,next,total);});}
                         public void usage(TokenUsage usage){SwingUtilities.invokeLater(()->{if(generation==compactGeneration){compactUsage.add(usage);sessionState.usage.add(usage);refreshDashboard();}});}
                     });
                 }
@@ -1273,6 +1274,7 @@ public final class LocalChat extends JFrame {
                 if(turn.normalRequests.get()==0)checkCompactionDraft(turn);
                 turn.started.incrementAndGet();later(turn,()->{turn.contextIncludesStep=true;requestSystem=ContextMemory.estimate(sys);requestTools=0;requestConversation=ContextMemory.messages(conversation);setStatus("Compactare: fragment {0}/{1}",false,fragment,total);refreshDashboard();});
             }
+            @Override public void retry(boolean compaction,int next,int total,int status){later(turn,()->setStatus(compaction?"API temporar indisponibil (HTTP {0}). Reincerc compactarea: {1}/{2}.":"API temporar indisponibil (HTTP {0}). Reincerc raspunsul: {1}/{2}. Uneltele executate nu se repeta.",false,status,next,total));}
             @Override public void compacted(){later(turn,()->setStatus("Memorie compactata. Istoricul original a fost pastrat integral.",false));}
             @Override public void context(List<ChatClient.Message> conversation) {
                 later(turn,()->{requestConversation=ContextMemory.messages(conversation);turn.contextIncludesStep=true;refreshDashboard();});

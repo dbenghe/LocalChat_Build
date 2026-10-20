@@ -599,3 +599,5 @@ folderului goleste toate taburile. Pozitia paginii si zoomul sunt separate per t
 ### Clipboard in caseta de mesaj
 
 Ctrl+V, Shift+Insert si click dreapta > Lipeste accepta text, fisiere copiate din Explorer si capturi din clipboard. Textul inlocuieste selectia curenta. Capturile sunt salvate ca PNG in `atasamente_clipboard/` si atasate la ciorna; eliminarea atasamentului nu sterge fisierul. Selectia nu apeleaza modelul si nu trimite automat pixelii ca intrare vizuala. Sunt pastrate limita de 20 de atasamente si blocarea atasarii in timpul generarii. Imaginile au limita de 16 milioane de pixeli.
+
+La erori explicite HTTP 502/503/504, LocalChat reincearca acelasi apel API de maximum trei ori, cu asteptare scurta si Stop activ. Compactarea reincearca fragmentul curent, fara unelte operationale; cererea normala pastreaza rezultatele uneltelor deja executate. Un raspuns partial intrerupt nu este reluat automat. Dupa esec, memoria completa precedenta, istoricul si ciorna sunt pastrate.

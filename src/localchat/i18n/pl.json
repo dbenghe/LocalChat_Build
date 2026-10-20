@@ -355,5 +355,8 @@
   "Imaginea din clipboard este prea mare sau indisponibila (maximum 16 milioane de pixeli).": "Obraz w schowku jest zbyt duży lub niedostępny (maksymalnie 16 milionów pikseli).",
   "Nu pot lipi din clipboard: {0}": "Nie można wkleić ze schowka: {0}",
   "Nu pot atasa imaginea acum: generarea este activa sau sunt deja 20 de atasamente.": "Nie można teraz dołączyć obrazu: trwa generowanie lub jest już 20 załączników.",
-  "Imagine lipita ca atasament PNG local. Selectia nu o trimite automat ca imagine la model.": "Obraz wklejono jako lokalny załącznik PNG. Wybranie go nie wysyła go automatycznie jako obrazu do modelu."
+  "Imagine lipita ca atasament PNG local. Selectia nu o trimite automat ca imagine la model.": "Obraz wklejono jako lokalny załącznik PNG. Wybranie go nie wysyła go automatycznie jako obrazu do modelu.",
+  "API temporar indisponibil (HTTP {0}). Reincerc compactarea: {1}/{2}.": "API jest tymczasowo niedostępne (HTTP {0}). Ponawianie kompakcji: {1}/{2}.",
+  "API temporar indisponibil (HTTP {0}). Reincerc raspunsul: {1}/{2}. Uneltele executate nu se repeta.": "API jest tymczasowo niedostępne (HTTP {0}). Ponawianie odpowiedzi: {1}/{2}. Wykonane narzędzia nie są powtarzane.",
+  "Compactarea a esuat la API; memoria si istoricul au fost pastrate: {0}": "Kompakcja nie powiodła się w API; pamięć i historia zostały zachowane: {0}"
 }

@@ -62,6 +62,8 @@ if ($LASTEXITCODE) { throw 'Model favorite tests failed; distribution was not ch
 if ($LASTEXITCODE) { throw 'Markdown and inline PDF presentation tests failed' }
 & "$taskJdk/bin/java.exe" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.MemoryReducerTest
 if ($LASTEXITCODE) { throw 'Adaptive memory reduction tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/inference-retry-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.InferenceRetryTest
+if ($LASTEXITCODE) { throw 'Inference gateway recovery tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/pdf-preview-test-home" "-Dpdfpreview.python=$taskPdfPython" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.PdfPreviewTest
 if ($LASTEXITCODE) { throw 'PDF card and right preview tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_owned_layout.py" --package "$PSScriptRoot/pdfcontrol"

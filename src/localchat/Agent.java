@@ -26,6 +26,7 @@ final class Agent {
         default void calibration(double scale) {}
         default void compactRequest(String system,List<ChatClient.Message> conversation,int fragment,int total) throws IOException {}
         default void compacted() {}
+        default void retry(boolean compaction,int next,int total,int status){}
         default void usage(TokenUsage usage) {}
         default void request(String system, List<ChatClient.Message> conversation, List<ChatClient.ToolSpec> tools) throws IOException {}
     }
@@ -65,10 +66,12 @@ final class Agent {
             }
             if(guard!=null){conversation=guard.prepare(p,url,key,model,system,conversation,specs,step,ui);client.outputLimit(guard.outputLimit());}
             if(cancelled)return;
-            ui.request(system, conversation, specs);
-            ChatClient.Reply reply;
-            try { reply = client.chat(p, url, key, model, system, conversation, specs, stream, ui::text); }
-            finally { if(guard!=null)guard.observe(client.usage(),ui);ui.usage(client.usage()); }
+            ChatClient.Reply reply=InferenceRetry.chat(client,p,url,key,model,system,conversation,specs,stream,ui::text,new InferenceRetry.Hooks(){
+                public void before(String s,List<ChatClient.Message> messages)throws IOException{ui.request(s,messages,specs);}
+                public void usage(TokenUsage usage){if(guard!=null)guard.observe(usage,ui);ui.usage(usage);}
+                public boolean cancelled(){return cancelled;}
+                public void retry(int next,int total,int status){ui.retry(false,next,total,status);}
+            });
             if (cancelled) return;
             synchronized (added) {
                 if (!reply.text.isEmpty() || !reply.calls.isEmpty()) {
