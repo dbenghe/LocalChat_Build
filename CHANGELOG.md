@@ -1,3 +1,11 @@
+## 1.11.0 - 2026-10-20
+
+- Add PDF report cards to the conversation and a resizable right preview panel, with page navigation, fit-width/zoom, save copy, external open and file copy.
+- Add closable PDF tabs, another-PDF selection, expand/restore and Ctrl+Shift+B to hide/show the panel. Add conversation actions and quick model/profile/tool/approval settings behind working header icons.
+- Render one page locally in an isolated, bounded process; previewing does not call the model or consume tokens. Close/switch cancels old work and clears the preview.
+- Restore cards from saved conversations without automatically reading PDFs. Translate cards and preview controls in all six languages and both themes.
+- Includes the 1.10.3 chat improvements and 1.10.4 PDFCONTROL corrections. Installation and GitHub publication remain pending.
+
 ## 1.10.4 - 2026-10-20
 
 - Apply VORM DEFINITIEF = DEFINITIEF in the shared status predicate, including generic status cells and compact/spacing variants. Preserve rejection of non-final, provisional and review statuses.

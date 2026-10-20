@@ -563,3 +563,35 @@ neconformitatilor se calculeaza independent de numarul desenelor incluse.
 Raportul pastreaza limitarile de catalog/fabrica si nu reprezinta o aprobare de
 productie. Optiunea originala a motorului pentru un raport doar cu probleme
 ramane disponibila pentru utilizarea separata a motorului.
+
+
+## Card PDF si previzualizare in dreapta (1.11.0)
+
+Fiecare PDF existent descoperit in rezultatele uneltelor are un card in conversatie,
+cu nume, iconita PDF, dimensiune, butonul Previzualizeaza si meniul de actiuni.
+PDF-urile livrate si verificate de PDFCONTROL deschid automat panoul din dreapta
+la terminarea operatiei. Un click pe card permite redeschiderea ulterioara.
+Cardurile reapar la reluarea conversatiei, fara apel API si fara citirea automata
+a rapoartelor vechi. Panoul se goleste cand schimbi conversatia sau folderul.
+
+Panoul afiseaza o singura pagina la un moment dat, cu navigare, numar de pagina,
+potrivire la latime si zoom 50-200%. Bara dintre chat si PDF poate fi redimensionata.
+Butoanele cu iconite permit salvarea unei copii, deschiderea externa si copierea
+fisierului pentru Explorer. Inchiderea panoului reda spatiul conversatiei.
+
+Previzualizarea foloseste Python/PyMuPDF din copia proprie PDFCONTROL, intr-un
+proces local separat, cu limite de timp si rezolutie. Nu trimite PDF-ul modelului,
+nu modifica originalul si nu consuma context sau tokeni. Rapoartele invalide,
+criptate ori inaccesibile au mesaj de eroare si optiune de deschidere externa.
+Interfata este tradusa in toate cele sase limbi si adaptata ambelor teme.
+
+
+Iconitele din antet sunt functionale: meniul cu trei puncte permite redenumire,
+fixare, arhivare, export JSON, compactare si copierea raspunsului. Iconita de
+reglaje ofera modelul, profilul de raspuns, aprobarile, uneltele si autocompactarea.
+
+Panoul PDF pastreaza mai multe taburi, fiecare cu inchidere separata. Plus deschide
+selectorul pentru alt PDF din folderul de lucru. Iconita de marire foloseste tot
+spatiul chatului, apoi restabileste impartirea. Iconita de panouri si Ctrl+Shift+B
+ascund/reafiseaza taburile fara sa le inchida. Schimbarea conversatiei sau a
+folderului goleste toate taburile. Pozitia paginii si zoomul sunt separate per tab.

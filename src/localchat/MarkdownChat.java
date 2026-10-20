@@ -10,6 +10,7 @@ final class MarkdownChat {
     static final String MARK="localchat.markdown", HIDE="localchat.md.hide", TAB="localchat.md.tab";
     static final class Kit extends StyledEditorKit {
         private final ViewFactory factory=e->{
+            if(StyleConstants.getComponent(e.getAttributes())!=null)return new ComponentView(e);
             if(e.getName().equals(AbstractDocument.ContentElementName))return new LabelView(e){
                 boolean hidden(){return Boolean.TRUE.equals(getAttributes().getAttribute(HIDE));}
                 public float getPreferredSpan(int axis){return hidden()&&axis==View.X_AXIS?0:super.getPreferredSpan(axis);}
@@ -93,7 +94,7 @@ final class MarkdownChat {
         }
     }
     static String visibleText(StyledDocument document,int start,int end)throws BadLocationException{
-        StringBuilder text=new StringBuilder();for(int i=start;i<end;){var element=document.getCharacterElement(i);int last=Math.min(end,element.getEndOffset());var a=element.getAttributes();if(!Boolean.TRUE.equals(a.getAttribute(HIDE)))text.append(Boolean.TRUE.equals(a.getAttribute(TAB))?"\t":document.getText(i,last-i));i=last;}return text.toString();
+        StringBuilder text=new StringBuilder();for(int i=start;i<end;){var element=document.getCharacterElement(i);int last=Math.min(end,element.getEndOffset());var a=element.getAttributes();if(StyleConstants.getComponent(a) instanceof PdfReportCard card)text.append(card.file.getFileName());else if(!Boolean.TRUE.equals(a.getAttribute(HIDE)))text.append(Boolean.TRUE.equals(a.getAttribute(TAB))?"\t":document.getText(i,last-i));i=last;}return text.toString();
     }
     private static Color blend(Color c){return c.getRed()<128?c.brighter():new Color(238,240,243);}
 }

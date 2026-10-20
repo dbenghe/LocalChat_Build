@@ -111,6 +111,11 @@ public final class LocalChat extends JFrame {
             t("Intreaba inainte de modificari si comenzi"), t("Permite tot, fara intrebari"), t("Doar citire")});
 
     private final JTextPane transcript = new JTextPane();
+    private boolean expandedPdf;
+    private final JButton chatActions=new JButton(new UiIcon("more",18)),chatSettings=new JButton(new UiIcon("sliders",18));
+    private final JLabel chatTitle=new JLabel();
+    private PdfPreview pdfPreview;
+    private javax.swing.JSplitPane chatSplit;
     private boolean markdownDirty;
     private int markdownFrom=Integer.MAX_VALUE;
     private final javax.swing.Timer markdownTimer=new javax.swing.Timer(180,e->formatMarkdown());
@@ -240,6 +245,8 @@ public final class LocalChat extends JFrame {
         JPanel chat = new JPanel(new BorderLayout());
         chat.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
         chat.add(new JScrollPane(transcript));
+        JPanel chatHeading=new JPanel(new BorderLayout(6,0));chatTitle.putClientProperty("html.disable",true);chatHeading.add(chatTitle);JPanel chatHeadingActions=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT,3,2));for(JButton button:new JButton[]{chatActions,chatSettings}){button.setPreferredSize(new Dimension(29,27));button.setMargin(new Insets(2,3,2,3));chatHeadingActions.add(button);}chatHeading.add(chatHeadingActions,BorderLayout.EAST);chat.add(chatHeading,BorderLayout.NORTH);
+        chatActions.addActionListener(e->buildChatActions().show(chatActions,0,chatActions.getHeight()));chatSettings.addActionListener(e->buildQuickSettings().show(chatSettings,0,chatSettings.getHeight()));
 
         JPanel buttons = new JPanel(new BorderLayout());
         JPanel composeLeft=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT,5,2));
@@ -292,7 +299,9 @@ public final class LocalChat extends JFrame {
         });
         workspace.autoCompact.addActionListener(e->saveAutoSettings());
         workspace.autoThreshold.addChangeListener(e->saveAutoSettings());
-        JPanel center=new JPanel(new BorderLayout());center.add(chat);center.add(south,BorderLayout.SOUTH);
+        JPanel center=new JPanel(new BorderLayout());
+        pdfPreview=new PdfPreview(this::currentWorkDir,this::previewPython,this::reportAction,this::togglePdfPane,this::choosePreviewPdf,this::togglePdfExpansion,this::hidePdfPreview);pdfPreview.setVisible(false);
+        chat.setMinimumSize(new Dimension(380,160));chatSplit=new javax.swing.JSplitPane(javax.swing.JSplitPane.HORIZONTAL_SPLIT,chat,pdfPreview);chatSplit.setResizeWeight(.64);chatSplit.setDividerSize(0);chatSplit.setBorder(null);center.add(chatSplit);center.add(south,BorderLayout.SOUTH);
         root.add(workspace,BorderLayout.WEST);root.add(center);
         reportBar.setLayout(new BorderLayout());
         JPanel reportHeading=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT,6,3));
@@ -304,11 +313,12 @@ public final class LocalChat extends JFrame {
                 return super.getListCellRendererComponent(l,value instanceof Path?((Path)value).getFileName().toString():value,i,selected,focus);}});
         reportHeading.add(reports);reportBar.setToolTipText(t("Fisiere deja salvate pe disc. Salvarea unei copii este optionala."));
         JButton openReport=ui(new JButton(),"Deschide raportul"),folderReport=ui(new JButton(),"Deschide folderul"),saveReport=ui(new JButton(),"Salveaza o copie…");
-        reportActions.add(openReport);reportActions.add(folderReport);reportActions.add(saveReport);
+        JButton previewReport=ui(new JButton(),"Previzualizeaza");previewReport.addActionListener(e->reportAction(5));reportActions.add(previewReport);reportActions.add(openReport);reportActions.add(folderReport);reportActions.add(saveReport);
         JButton copyFile=ui(new JButton(),"Copiaza fisierul"),copyPath=ui(new JButton(),"Copiaza calea");reportActions.add(copyFile);reportActions.add(copyPath);copyFile.addActionListener(e->reportAction(3));copyPath.addActionListener(e->reportAction(4));
         openReport.addActionListener(e->reportAction(0));folderReport.addActionListener(e->reportAction(1));saveReport.addActionListener(e->reportAction(2));
         reportBar.setVisible(false);chat.add(reportBar,BorderLayout.SOUTH);
         setContentPane(root);
+        getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_B,InputEvent.CTRL_DOWN_MASK|InputEvent.SHIFT_DOWN_MASK),"toggle-pdf-pane");getRootPane().getActionMap().put("toggle-pdf-pane",new AbstractAction(){public void actionPerformed(java.awt.event.ActionEvent e){togglePdfPane();}});
         setJMenuBar(buildMenu());
 
         // Enter sends, Shift+Enter inserts a new line.
@@ -343,7 +353,7 @@ public final class LocalChat extends JFrame {
             public void changedUpdate(javax.swing.event.DocumentEvent e){}
         });
         workDirField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener(){
-            public void insertUpdate(javax.swing.event.DocumentEvent e){refreshWorkFolder();}public void removeUpdate(javax.swing.event.DocumentEvent e){refreshWorkFolder();}public void changedUpdate(javax.swing.event.DocumentEvent e){}
+            public void insertUpdate(javax.swing.event.DocumentEvent e){hidePdfPreview();refreshWorkFolder();}public void removeUpdate(javax.swing.event.DocumentEvent e){hidePdfPreview();refreshWorkFolder();}public void changedUpdate(javax.swing.event.DocumentEvent e){}
         });
         restoringSelections=true;try{loadConfig();}finally{restoringSelections=false;}
         installModelRenderer();
@@ -386,11 +396,11 @@ public final class LocalChat extends JFrame {
                 if (current != null || compactClient!=null) stop();
                 saveConversation();
                 saveConfig();
-                dashboardTimer.stop();
+                dashboardTimer.stop();markdownTimer.stop();if(pdfPreview!=null)pdfPreview.clear();
                 if(compactClient!=null)compactClient.cancel();
                 mcp.closeAll();
             }
-            @Override public void windowClosed(WindowEvent e){dashboardTimer.stop();markdownTimer.stop();busyIndicator.active(false);}
+            @Override public void windowClosed(WindowEvent e){dashboardTimer.stop();markdownTimer.stop();if(pdfPreview!=null)pdfPreview.clear();busyIndicator.active(false);}
         });
         setSize(1320, 880);
         setMinimumSize(new Dimension(1080, 650));
@@ -571,7 +581,7 @@ public final class LocalChat extends JFrame {
                 toolsStatus.setText(t("Tool-uri: {0} interne · MCP: {1}", Tools.BUILTIN.size(), mcpSummary.isEmpty() ? t("niciunul") : mcpSummary));
                 toolsStatus.setToolTipText(t("Configurare: {0}", toolsConfigFile));
             } else if (!Boolean.getBoolean("localchat.test")) toolsStatus.setText(t("Pornesc tool-urile…"));
-            copyReply.setText(t("Copiaza raspunsul"));copyDisplayed.setText(t("Copiaza textul afisat"));copyOriginal.setText(t("Copiaza textul original"));refreshTranscriptDisplay();
+            chatActions.setToolTipText(t("Actiuni conversatie"));chatSettings.setToolTipText(t("Setari rapide"));if(pdfPreview!=null)pdfPreview.translate();copyReply.setText(t("Copiaza raspunsul"));copyDisplayed.setText(t("Copiaza textul afisat"));copyOriginal.setText(t("Copiaza textul original"));refreshTranscriptDisplay();
             if(workspace!=null){workspace.translate();refreshDashboard();}
             revalidate();
             repaint();
@@ -680,7 +690,7 @@ public final class LocalChat extends JFrame {
             if(conversationFile!=null){previousConversation=conversationFile;config.setProperty("session.previous",conversationFile.getFileName().toString());}
             Conversations.Saved chosen=Conversations.load(selected.file());
             saveConfig();
-            restoringSelections=true;history.clear();history.addAll(chosen.messages());conversationFile=chosen.file();sessionState=chosen.state();
+            restoringSelections=true;hidePdfPreview();history.clear();history.addAll(chosen.messages());conversationFile=chosen.file();sessionState=chosen.state();
             if(!sessionState.provider.isBlank())try{providerBox.setSelectedItem(SavedProviders.resolve(config,sessionState.providerPreset,Provider.valueOf(sessionState.provider)));}catch(IllegalArgumentException ignored){}
             if(!sessionState.providerPreset.isBlank() && !(shownSelection instanceof SavedProviders.Entry))keyField.setText("");
             if(!sessionState.model.isBlank())modelBox.setSelectedItem(sessionState.model);
@@ -866,6 +876,7 @@ public final class LocalChat extends JFrame {
     }
 
     private void refreshDashboard() {
+        if(chatTitle!=null)chatTitle.setText(sessionState==null||sessionState.title.isBlank()?t("Conversatie"):sessionState.title);
         refreshFavoriteButton();
         if(workspace==null || shownProvider==null)return;
         String profile=contextProfile();
@@ -1006,21 +1017,48 @@ public final class LocalChat extends JFrame {
 
     private void addReports(String result) {
         java.util.List<Path> discovered=ReportFiles.discover(result,currentWorkDir());
+        boolean fresh=false;
         for(Path path:discovered) {
             boolean known=false;for(int i=0;i<reportModel.getSize();i++)if(reportModel.getElementAt(i).equals(path))known=true;
-            if(!known){reportModel.addElement(path);if(path.getFileName().toString().toLowerCase(java.util.Locale.ROOT).endsWith(".pdf"))appendArtifact(path);}
+            if(!known){fresh=true;reportModel.addElement(path);if(path.getFileName().toString().toLowerCase(java.util.Locale.ROOT).endsWith(".pdf"))appendArtifact(path);}
         }
         for(Path path:discovered)if(path.getFileName().toString().toLowerCase(java.util.Locale.ROOT).endsWith(".pdf")){reports.setSelectedItem(path);break;}
-        reportBar.setVisible(reportModel.getSize()>0);reportBar.revalidate();
+        reportBar.setVisible(reportModel.getSize()>0 && (pdfPreview==null || !pdfPreview.isVisible()));reportBar.revalidate();
+        if(fresh && busy && !restoringSelections)try{Object value=Json.parse(result);if(Boolean.TRUE.equals(Json.get(value,"delivery_verified"))){for(Path p:discovered)if(p.getFileName().toString().toLowerCase(java.util.Locale.ROOT).endsWith(".pdf")){showPdfPreview(p);break;}}}catch(RuntimeException ignored){}
     }
 
+    private String previewPython(){Path bundled=appDir.resolve("pdfcontrol/runtime/python/python.exe");return Files.isRegularFile(bundled)?bundled.toString():pdfPython();}
+    private void showPdfPreview(Path file){
+        if(!ReportFiles.allowed(file,currentWorkDir())||!file.getFileName().toString().toLowerCase(java.util.Locale.ROOT).endsWith(".pdf")){setStatus("Fisierul nu mai este disponibil in folderul de lucru.",true);return;}
+        setPdfPaneVisible(true);pdfPreview.open(file);
+    }
+    private void setPdfPaneVisible(boolean visible){
+        if(pdfPreview==null)return;if(!visible){pdfPreview.suspend();expandedPdf=false;pdfPreview.expanded(false);if(chatSplit!=null)chatSplit.getLeftComponent().setVisible(true);}pdfPreview.setVisible(visible);reportBar.setVisible(!visible&&reportModel.getSize()>0);
+        if(chatSplit!=null){chatSplit.setDividerSize(visible&&!expandedPdf?6:0);if(visible&&!expandedPdf)chatSplit.setDividerLocation(Math.max(380,chatSplit.getWidth()-380));}revalidate();if(visible)pdfPreview.resume();
+    }
+    private void hidePdfPreview(){if(pdfPreview==null)return;pdfPreview.clear();setPdfPaneVisible(false);}
+    private void togglePdfPane(){if(pdfPreview==null)return;setPdfPaneVisible(!pdfPreview.isVisible());}
+    private void togglePdfExpansion(){if(pdfPreview==null||!pdfPreview.isVisible())return;expandedPdf=!expandedPdf;chatSplit.getLeftComponent().setVisible(!expandedPdf);chatSplit.setDividerSize(expandedPdf?0:6);pdfPreview.expanded(expandedPdf);if(!expandedPdf)chatSplit.setDividerLocation(Math.max(380,chatSplit.getWidth()-380));revalidate();}
+    private void choosePreviewPdf(){JFileChooser picker=new JFileChooser();Path dir=currentWorkDir();if(dir!=null)picker.setCurrentDirectory(dir.toFile());picker.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("PDF","pdf"));picker.setDialogTitle(t("Deschide alt PDF"));if(picker.showOpenDialog(this)==JFileChooser.APPROVE_OPTION)reportAction(picker.getSelectedFile().toPath(),5);}
+    private javax.swing.JPopupMenu buildChatActions(){
+        javax.swing.JPopupMenu popup=new javax.swing.JPopupMenu();String[] labels={"Redenumeste conversatia…","Fixeaza / desprinde","Arhiveaza conversatia","Exporta chat JSON…","Compacteaza memoria","Copiaza raspunsul"};Runnable[] actions={this::renameSession,this::pinSession,this::archiveSession,this::exportSession,this::compactMemory,this::copyResponse};
+        for(int i=0;i<labels.length;i++){JMenuItem item=new JMenuItem(t(labels[i]));Runnable run=actions[i];item.setEnabled(!busy||i==5);item.addActionListener(e->run.run());popup.add(item);}return popup;
+    }
+    private javax.swing.JPopupMenu buildQuickSettings(){
+        javax.swing.JPopupMenu popup=new javax.swing.JPopupMenu();JMenu modelMenu=new JMenu(t("Model:"));for(int i=0;i<modelBox.getItemCount();i++){String model=modelBox.getItemAt(i);javax.swing.JRadioButtonMenuItem item=new javax.swing.JRadioButtonMenuItem(model,model.equals(currentModel()));item.addActionListener(e->{modelBox.setSelectedItem(model);saveConfig();saveConversation();refreshDashboard();});modelMenu.add(item);}modelMenu.setEnabled(!busy);popup.add(modelMenu);
+        JMenu profile=new JMenu(t("Profil raspuns"));for(int i=0;i<responseProfile.getItemCount();i++){int index=i;javax.swing.JRadioButtonMenuItem item=new javax.swing.JRadioButtonMenuItem(responseProfile.getItemAt(i),i==responseProfile.getSelectedIndex());item.addActionListener(e->responseProfile.setSelectedIndex(index));profile.add(item);}profile.setEnabled(!busy);popup.add(profile);
+        JMenu approvals=new JMenu(t("Aprobari executii"));for(int i=0;i<permissionBox.getItemCount();i++){int index=i;javax.swing.JRadioButtonMenuItem item=new javax.swing.JRadioButtonMenuItem(permissionBox.getItemAt(i),i==permissionBox.getSelectedIndex());item.addActionListener(e->{alwaysAllowed.clear();permissionBox.setSelectedIndex(index);saveConfig();saveConversation();});approvals.add(item);}approvals.setEnabled(!busy);popup.add(approvals);
+        javax.swing.JCheckBoxMenuItem tools=new javax.swing.JCheckBoxMenuItem(toolsBox.getText(),toolsBox.isSelected());tools.setEnabled(!busy);tools.addActionListener(e->{toolsBox.doClick();permissionBox.setEnabled(toolsBox.isSelected());saveConfig();saveConversation();refreshDashboard();});popup.add(tools);
+        javax.swing.JCheckBoxMenuItem automatic=new javax.swing.JCheckBoxMenuItem(t("Compactare automata"),sessionState.autoCompact);automatic.setEnabled(!busy);automatic.addActionListener(e->workspace.autoCompact.doClick());popup.add(automatic);return popup;
+    }
     private void reportAction(int action) {
         reportAction((Path)reports.getSelectedItem(),action);
     }
     private void reportAction(Path source,int action) {
         if(source==null || !ReportFiles.allowed(source,currentWorkDir())){setStatus("Fisierul nu mai este disponibil in folderul de lucru.",true);return;}
         try {
-            if(action==0)Desktop.getDesktop().open(source.toFile());
+            if(action==5)showPdfPreview(source);
+            else if(action==0)Desktop.getDesktop().open(source.toFile());
             else if(action==1)openFolder(source.getParent());
             else if(action==3){java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new FileClipboard(source),null);setStatus("Fisier copiat: {0}",false,source);}
             else if(action==4){java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new java.awt.datatransfer.StringSelection(source.toString()),null);setStatus("Cale copiata: {0}",false,source);}
@@ -1454,7 +1492,7 @@ public final class LocalChat extends JFrame {
         if(!saveConversation())return;
         if(conversationFile!=null){previousConversation=conversationFile;config.setProperty("session.previous",conversationFile.getFileName().toString());}
         input.setText("");
-        sessionState=new Conversations.State();refreshAttachments();reportModel.removeAllElements();reportBar.setVisible(false);
+        hidePdfPreview();sessionState=new Conversations.State();refreshAttachments();reportModel.removeAllElements();reportBar.setVisible(false);
         history.clear();
         transcript.setText("");
         conversationFile = null;
@@ -1795,7 +1833,8 @@ public final class LocalChat extends JFrame {
         return offset<0?SimpleAttributeSet.EMPTY:transcript.getStyledDocument().getCharacterElement(offset).getAttributes();
     }
     private void appendArtifact(Path path){
-        ensureNewline();append("\nPDF  "+path.getFileName()+"\n",toolStyle);
+        ensureNewline();append("\n",toolStyle);
+        var card=new PdfReportCard(path,this::reportAction,()->transcript.getVisibleRect().width);var cardStyle=new SimpleAttributeSet();StyleConstants.setComponent(cardStyle,card);append("\uFFFC",cardStyle);append("\n",toolStyle);
         String[] labels={"Deschide raportul","Salveaza o copie…","Copiaza fisierul","Copiaza calea"};int[] actions={0,2,3,4};
         for(int i=0;i<labels.length;i++){
             var attributes=new SimpleAttributeSet(toolStyle);StyleConstants.setUnderline(attributes,true);attributes.addAttribute("artifact.path",path);attributes.addAttribute("artifact.action",actions[i]);attributes.addAttribute("artifact.label",labels[i]);
@@ -1804,7 +1843,7 @@ public final class LocalChat extends JFrame {
         append("\n",toolStyle);
     }
     private void openMarkdownLink(String href){
-        try{if(href.startsWith("https://")||href.startsWith("http://"))Desktop.getDesktop().browse(java.net.URI.create(href));else reportAction(Path.of(href),0);}
+        try{if(href.startsWith("https://")||href.startsWith("http://"))Desktop.getDesktop().browse(java.net.URI.create(href));else reportAction(Path.of(href),href.toLowerCase(java.util.Locale.ROOT).endsWith(".pdf")?5:0);}
         catch(IOException|RuntimeException error){setStatus("Nu pot deschide {0}: {1}",true,href,describe(error));}
     }
     private void copyResponse(){
@@ -1839,7 +1878,7 @@ public final class LocalChat extends JFrame {
         syncOriginalTranscript();translateArtifactLabels();int start=transcript.getSelectionStart(),end=transcript.getSelectionEnd();updatingTranscript=true;
         try{var document=transcript.getStyledDocument();document.remove(0,document.getLength());
             Map<String,SimpleAttributeSet> roles=Map.of("userHeader",userHeader,"botHeader",botHeader,"body",body,"errorStyle",errorStyle,"toolStyle",toolStyle,"toolErrorStyle",toolErrorStyle);
-            for(int offset=0;offset<originalTranscript.getLength();){var element=originalTranscript.getCharacterElement(offset);int last=Math.min(element.getEndOffset(),originalTranscript.getLength());AttributeSet attributes=element.getAttributes();Object role=attributes.getAttribute(StyleConstants.NameAttribute);if(role!=null && roles.containsKey(role.toString())){var themed=new SimpleAttributeSet(attributes);themed.addAttributes(roles.get(role.toString()));attributes=themed;}document.insertString(offset,ChatDisplay.text(originalTranscript.getText(offset,last-offset)),attributes);offset=last;}
+            for(int offset=0;offset<originalTranscript.getLength();){var element=originalTranscript.getCharacterElement(offset);int last=Math.min(element.getEndOffset(),originalTranscript.getLength());AttributeSet attributes=element.getAttributes();if(StyleConstants.getComponent(attributes) instanceof PdfReportCard card)card.refresh();Object role=attributes.getAttribute(StyleConstants.NameAttribute);if(role!=null && roles.containsKey(role.toString())){var themed=new SimpleAttributeSet(attributes);themed.addAttributes(roles.get(role.toString()));attributes=themed;}document.insertString(offset,ChatDisplay.text(originalTranscript.getText(offset,last-offset)),attributes);offset=last;}
             transcript.select(Math.min(start,document.getLength()),Math.min(end,document.getLength()));
         }catch(BadLocationException ignored){}finally{updatingTranscript=false;markdownFrom=0;markdownDirty=true;formatMarkdown();}
     }
