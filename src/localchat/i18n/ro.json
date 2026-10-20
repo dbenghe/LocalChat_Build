@@ -317,5 +317,10 @@
   "Catalogul fabricii nu este confirmat sau disponibil; verificarea este partiala.": "Catalogul fabricii nu este confirmat sau disponibil; verificarea este partiala.",
   "PDFCONTROL: anulare solicitata pentru lucrarea {0}.": "PDFCONTROL: anulare solicitata pentru lucrarea {0}.",
   "PDFCONTROL: lucrarea {0} continua; verifica starea inainte de a reporni.": "PDFCONTROL: lucrarea {0} continua; verifica starea inainte de a reporni.",
-  "PDFCONTROL: acelasi apel a esuat de trei ori. Verifica eroarea si sursele; lucrarea nu este finalizata.": "PDFCONTROL: acelasi apel a esuat de trei ori. Verifica eroarea si sursele; lucrarea nu este finalizata."
+  "PDFCONTROL: acelasi apel a esuat de trei ori. Verifica eroarea si sursele; lucrarea nu este finalizata.": "PDFCONTROL: acelasi apel a esuat de trei ori. Verifica eroarea si sursele; lucrarea nu este finalizata.",
+  "Copiaza raspunsul": "Copiaza raspunsul",
+  "Copiaza fisierul": "Copiaza fisierul",
+  "Copiaza calea": "Copiaza calea",
+  "Fisier copiat: {0}": "Fisier copiat: {0}",
+  "Cale copiata: {0}": "Cale copiata: {0}"
 }

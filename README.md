@@ -511,3 +511,38 @@ Aceasta regula inlocuieste mentinerea automata la zero pentru modelele fara date
 Favorite modele: apasa steluta de langa selector sau foloseste butonul din catalog. Modelele favorite apar primele; filtrul Doar favorite restrange catalogul. Favoritele sunt locale per furnizor si URL si nu modifica modelul implicit (Unelte > Salveaza setarile si modelul implicit).
 
 Motor propriu PDFCONTROL: sursa autoritara este LocalChat_Build/pdfcontrol. Buildul normal verifica manifestul acestei copii si o distribuie in LocalChat/pdfcontrol; nu citeste si nu suprascrie din C:/PDFCONTROL. Importul originalului este o migrare explicita prin integration/sync_engine.py --package <folder> --import-original <sursa>, niciodata un pas automat. Motorul privat si cataloagele nu se publica in Git.
+
+
+## Markdown, copiere si rapoarte in chat (1.10.3)
+
+Raspunsurile asistentului afiseaza titluri, text ingrosat/cursiv/taiat, citate,
+liste, tabele si cod. Formatarea se actualizeaza in streaming si la reluarea
+conversatiei; continutul original din JSON si cererile API ramane intact.
+Butonul Copiaza raspunsul copiaza ultimul raspuns ca Markdown original.
+Click dreapta > Copiaza textul afisat copiaza selectia fara marcajele ascunse;
+Copiaza textul original pastreaza inclusiv caile reale cu diacritice.
+Fara selectie, cele doua actiuni copiaza conversatia afisata integral.
+
+PDF-urile existente din rezultatele uneltelor apar in conversatie cu actiuni
+Deschide raportul, Salveaza o copie, Copiaza fisierul si Copiaza calea.
+Copiaza fisierul permite lipirea PDF-ului in Explorer. Nu sterge originalul.
+Actiunile reapar la reluarea chatului, fara inferenta. Accesul verifica din nou
+existenta fisierului si folderul de lucru curent. Nu afisa PDF-uri din lucrari
+PDFCONTROL pending/running/failed/cancelled sau fara livrare verificata.
+
+Controlul desenelor livreaza RAPPORT.pdf original si desenele marcate disponibile.
+Compararea versiunilor vechi/noi livreaza Vergelijking_OUD_NIEUW.pdf si PDF-urile
+cu diferente disponibile. V/W sunt tipuri de desen, nu versiuni vechi/noi.
+Exemplu de cerere: Verifica toate PDF-urile sursa ale proiectului 505417 din
+Controle/Atasamente_nou_2026-10-19 cu PDFCONTROL. Genereaza raportul PDF original,
+cu anexele disponibile, salveaza-l in proiect si pune-l in chat. Explica limitarile.
+Pentru comparare: Compara desenele vechi din <folder vechi> cu cele noi din
+<folder nou>, proiectul 505417. Genereaza PDF-ul vizual OUD/NIEUW cu marcaje.
+
+Compactarea manuala si automata lucreaza pe fragmente. Daca rezumatul este prea
+lung, incearca de maximum trei ori cu limite mai stricte. Un raspuns gol poate
+primi o rezerva de iesire mai mare, pastrand rezumatul vizibil limitat.
+Istoricul integral, intrebarea exacta si ciorna sunt protejate la esec sau Stop.
+Un istoric care depaseste bugetul poate ajunge la protectia automata inaintea
+primei inferente normale, daca autocompactarea este activa. Limita locala nu
+este o confirmare a limitei acceptate de furnizor.

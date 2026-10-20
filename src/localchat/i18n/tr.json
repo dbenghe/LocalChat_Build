@@ -317,5 +317,10 @@
   "Catalogul fabricii nu este confirmat sau disponibil; verificarea este partiala.": "Fabrika katalogu onaylanmadi veya mevcut degil; kontrol kismidir.",
   "PDFCONTROL: anulare solicitata pentru lucrarea {0}.": "PDFCONTROL: {0} isi icin iptal istendi.",
   "PDFCONTROL: lucrarea {0} continua; verifica starea inainte de a reporni.": "PDFCONTROL: {0} isi devam ediyor; yeniden baslatmadan once durumunu kontrol edin.",
-  "PDFCONTROL: acelasi apel a esuat de trei ori. Verifica eroarea si sursele; lucrarea nu este finalizata.": "PDFCONTROL: ayni cagri uc kez basarisiz oldu. Hatayi ve kaynaklari kontrol edin; is tamamlanmadi."
+  "PDFCONTROL: acelasi apel a esuat de trei ori. Verifica eroarea si sursele; lucrarea nu este finalizata.": "PDFCONTROL: ayni cagri uc kez basarisiz oldu. Hatayi ve kaynaklari kontrol edin; is tamamlanmadi.",
+  "Copiaza raspunsul": "Yaniti kopyala",
+  "Copiaza fisierul": "Dosyayi kopyala",
+  "Copiaza calea": "Yolu kopyala",
+  "Fisier copiat: {0}": "Dosya kopyalandi: {0}",
+  "Cale copiata: {0}": "Yol kopyalandi: {0}"
 }

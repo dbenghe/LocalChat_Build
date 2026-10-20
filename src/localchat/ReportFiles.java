@@ -9,7 +9,17 @@ final class ReportFiles {
     private static final Pattern PATH=Pattern.compile("(?im)(?:[a-z]:[\\\\/]|/|\\\\\\\\)[^\\r\\n\"<>|]*?\\.(?:pdf|xlsx|csv|docx|txt)(?=$|[\\s\",}\\]])");
     static List<Path> discover(String text, Path root) {
         if(root==null)return List.of(); Set<Path> found=new LinkedHashSet<>();
-        try { collect(Json.parse(text),root.toRealPath(),found); } catch(Exception ignored) { }
+        try {
+            Object value=Json.parse(text);
+            if(value instanceof Map<?,?> map && map.containsKey("job_id")){
+                String state=String.valueOf(map.get("status"));
+                if(!Set.of("done","partial").contains(state) || !Boolean.TRUE.equals(map.get("delivery_verified")))return List.of();
+                Map<String,Object> outputs=new LinkedHashMap<>();
+                for(String key:List.of("report","differences_report","artifacts"))if(map.containsKey(key))outputs.put(key,map.get(key));
+                collect(outputs,root.toRealPath(),found);return new ArrayList<>(found);
+            }
+            collect(value,root.toRealPath(),found);
+        } catch(Exception ignored) { }
         Matcher matcher=PATH.matcher(text);
         while(matcher.find())validate(matcher.group(),root,found);
         return new ArrayList<>(found);
@@ -17,7 +27,7 @@ final class ReportFiles {
     private static void collect(Object value,Path root,Set<Path> found) {
         if(value instanceof Map<?,?>) for(var entry:((Map<?,?>)value).entrySet()) {
             String k=entry.getKey().toString().toLowerCase(Locale.ROOT);
-            if(Set.of("report","path","file","output","report_path").contains(k) && entry.getValue() instanceof String)
+            if(Set.of("report","path","file","output","report_path","differences_report").contains(k) && entry.getValue() instanceof String)
                 validate(entry.getValue().toString(),root,found);
             else if(entry.getValue() instanceof Map<?,?> || entry.getValue() instanceof List<?>)collect(entry.getValue(),root,found);
         }

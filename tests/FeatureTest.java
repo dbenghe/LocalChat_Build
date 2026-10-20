@@ -220,7 +220,7 @@ public final class FeatureTest {
                 else check(state.memory.summary.equals(summary) && state.memory.through==4,"bounded compaction applied after all fragments");
                 check(((List<?>)field(app[0],"history")).size()==8,"fragmentation preserves full archive");
                 for(Object request:server.requests){
-                    check(TokenUsage.number(request,"max_tokens",0)==1024,"output budget reserved");
+                    check(TokenUsage.number(request,"max_tokens",0)>0 && TokenUsage.number(request,"max_tokens",0)<=512,"summary output is bounded to its target rather than the normal reply budget");
                     long estimate=ContextMemory.estimate(Json.write(Json.get(request,"messages")))+1024;
                     check(estimate<4096,"each fragment and output reserve fit configured window");
                 }

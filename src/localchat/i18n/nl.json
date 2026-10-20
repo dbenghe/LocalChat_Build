@@ -317,5 +317,10 @@
   "Catalogul fabricii nu este confirmat sau disponibil; verificarea este partiala.": "De fabriekscatalogus is niet bevestigd of beschikbaar; de controle is gedeeltelijk.",
   "PDFCONTROL: anulare solicitata pentru lucrarea {0}.": "PDFCONTROL: annulering aangevraagd voor taak {0}.",
   "PDFCONTROL: lucrarea {0} continua; verifica starea inainte de a reporni.": "PDFCONTROL: taak {0} loopt nog; controleer de status voordat je opnieuw start.",
-  "PDFCONTROL: acelasi apel a esuat de trei ori. Verifica eroarea si sursele; lucrarea nu este finalizata.": "PDFCONTROL: dezelfde aanroep is drie keer mislukt. Controleer de fout en bronnen; de taak is niet voltooid."
+  "PDFCONTROL: acelasi apel a esuat de trei ori. Verifica eroarea si sursele; lucrarea nu este finalizata.": "PDFCONTROL: dezelfde aanroep is drie keer mislukt. Controleer de fout en bronnen; de taak is niet voltooid.",
+  "Copiaza raspunsul": "Antwoord kopieren",
+  "Copiaza fisierul": "Bestand kopieren",
+  "Copiaza calea": "Pad kopieren",
+  "Fisier copiat: {0}": "Bestand gekopieerd: {0}",
+  "Cale copiata: {0}": "Pad gekopieerd: {0}"
 }

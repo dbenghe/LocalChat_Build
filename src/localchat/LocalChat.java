@@ -111,6 +111,10 @@ public final class LocalChat extends JFrame {
             t("Intreaba inainte de modificari si comenzi"), t("Permite tot, fara intrebari"), t("Doar citire")});
 
     private final JTextPane transcript = new JTextPane();
+    private boolean markdownDirty;
+    private int markdownFrom=Integer.MAX_VALUE;
+    private final javax.swing.Timer markdownTimer=new javax.swing.Timer(180,e->formatMarkdown());
+    private final JMenuItem copyReply=ui(new JMenuItem(),"Copiaza raspunsul");
     private final JButton attachButton=new JButton();
     private final JPanel attachmentItems=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT,5,2));
     private final JScrollPane attachmentBar=new JScrollPane(attachmentItems,JScrollPane.VERTICAL_SCROLLBAR_NEVER,JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -210,13 +214,18 @@ public final class LocalChat extends JFrame {
 
     private LocalChat() {
         super("LocalChat " + AppVersion.VALUE + " — ChatGPT · Claude · API");
+        transcript.setEditorKit(new MarkdownChat.Kit());
         transcript.setEditable(false);
+        if(!Boolean.getBoolean("localchat.test"))markdownTimer.start();
+        transcript.addMouseListener(new java.awt.event.MouseAdapter(){public void mouseClicked(java.awt.event.MouseEvent e){if(!SwingUtilities.isLeftMouseButton(e))return;var a=artifactAt(e.getPoint());Object path=a.getAttribute("artifact.path"),action=a.getAttribute("artifact.action");if(path instanceof Path && action instanceof Integer)reportAction((Path)path,(Integer)action);else if(a.getAttribute("markdown.href") instanceof String href)openMarkdownLink(href);}});
+        transcript.addMouseMotionListener(new java.awt.event.MouseMotionAdapter(){public void mouseMoved(java.awt.event.MouseEvent e){transcript.setCursor(java.awt.Cursor.getPredefinedCursor((artifactAt(e.getPoint()).isDefined("artifact.path")||artifactAt(e.getPoint()).isDefined("markdown.href"))?java.awt.Cursor.HAND_CURSOR:java.awt.Cursor.TEXT_CURSOR));}});
         transcript.getDocument().addDocumentListener(new javax.swing.event.DocumentListener(){
             public void insertUpdate(javax.swing.event.DocumentEvent e){}public void changedUpdate(javax.swing.event.DocumentEvent e){}
             public void removeUpdate(javax.swing.event.DocumentEvent e){if(!updatingTranscript)try{originalTranscript.remove(0,originalTranscript.getLength());}catch(BadLocationException ignored){}}
         });
+        transcriptPopup.add(copyReply);copyReply.addActionListener(e->copyResponse());
         transcriptPopup.add(copyDisplayed);transcriptPopup.add(copyOriginal);transcript.setComponentPopupMenu(transcriptPopup);
-        copyDisplayed.addActionListener(e->transcript.copy());copyOriginal.addActionListener(e->{String text=originalSelection();if(!text.isEmpty())java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new java.awt.datatransfer.StringSelection(text),null);});
+        copyDisplayed.addActionListener(e->{if(transcript.getSelectionStart()==transcript.getSelectionEnd())transcript.selectAll();try{int start=transcript.getSelectionStart(),end=transcript.getSelectionEnd();java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new java.awt.datatransfer.StringSelection(MarkdownChat.visibleText(transcript.getStyledDocument(),start,end)),null);}catch(BadLocationException ignored){}});copyOriginal.addActionListener(e->{if(transcript.getSelectionStart()==transcript.getSelectionEnd())transcript.selectAll();String text=originalSelection();if(!text.isEmpty())java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new java.awt.datatransfer.StringSelection(text),null);});
         transcript.setMargin(new Insets(10, 12, 10, 12));
         input.setLineWrap(true);
         input.setWrapStyleWord(true);
@@ -236,7 +245,8 @@ public final class LocalChat extends JFrame {
         JPanel composeLeft=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT,5,2));
         JPanel composeRight=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT,5,2));
         composeLeft.add(attachButton);attachButton.setIcon(new UiIcon("attach",19));attachButton.setPreferredSize(new Dimension(32,30));attachButton.putClientProperty("JComponent.minimumWidth",0);attachButton.addActionListener(e->chooseAttachments());
-        composeLeft.add(newChatButton);composeLeft.add(downloadsButton);composeLeft.add(pdfControlButton);pdfControlButton.addActionListener(e->showPdfControl());composeRight.add(busyIndicator);composeRight.add(stopButton);composeRight.add(sendButton);
+        JButton copyResponseButton=ui(new JButton(),"Copiaza raspunsul");copyResponseButton.setFont(copyResponseButton.getFont().deriveFont(12f));copyResponseButton.setMargin(new Insets(3,6,3,6));copyResponseButton.addActionListener(e->copyResponse());
+        composeLeft.add(copyResponseButton);composeLeft.add(newChatButton);composeLeft.add(downloadsButton);composeLeft.add(pdfControlButton);pdfControlButton.addActionListener(e->showPdfControl());composeRight.add(busyIndicator);composeRight.add(stopButton);composeRight.add(sendButton);
         buttons.add(composeLeft);buttons.add(composeRight,BorderLayout.EAST);
         sendButton.setIcon(new UiIcon("send",20));stopButton.setIcon(new UiIcon("stop",16));newChatButton.setIcon(new UiIcon("new",15));downloadsButton.setIcon(new UiIcon("folder",15));
         sendButton.setPreferredSize(new Dimension(34,32));stopButton.setPreferredSize(new Dimension(32,30));
@@ -295,6 +305,7 @@ public final class LocalChat extends JFrame {
         reportHeading.add(reports);reportBar.setToolTipText(t("Fisiere deja salvate pe disc. Salvarea unei copii este optionala."));
         JButton openReport=ui(new JButton(),"Deschide raportul"),folderReport=ui(new JButton(),"Deschide folderul"),saveReport=ui(new JButton(),"Salveaza o copie…");
         reportActions.add(openReport);reportActions.add(folderReport);reportActions.add(saveReport);
+        JButton copyFile=ui(new JButton(),"Copiaza fisierul"),copyPath=ui(new JButton(),"Copiaza calea");reportActions.add(copyFile);reportActions.add(copyPath);copyFile.addActionListener(e->reportAction(3));copyPath.addActionListener(e->reportAction(4));
         openReport.addActionListener(e->reportAction(0));folderReport.addActionListener(e->reportAction(1));saveReport.addActionListener(e->reportAction(2));
         reportBar.setVisible(false);chat.add(reportBar,BorderLayout.SOUTH);
         setContentPane(root);
@@ -379,7 +390,7 @@ public final class LocalChat extends JFrame {
                 if(compactClient!=null)compactClient.cancel();
                 mcp.closeAll();
             }
-            @Override public void windowClosed(WindowEvent e){dashboardTimer.stop();busyIndicator.active(false);}
+            @Override public void windowClosed(WindowEvent e){dashboardTimer.stop();markdownTimer.stop();busyIndicator.active(false);}
         });
         setSize(1320, 880);
         setMinimumSize(new Dimension(1080, 650));
@@ -560,7 +571,7 @@ public final class LocalChat extends JFrame {
                 toolsStatus.setText(t("Tool-uri: {0} interne · MCP: {1}", Tools.BUILTIN.size(), mcpSummary.isEmpty() ? t("niciunul") : mcpSummary));
                 toolsStatus.setToolTipText(t("Configurare: {0}", toolsConfigFile));
             } else if (!Boolean.getBoolean("localchat.test")) toolsStatus.setText(t("Pornesc tool-urile…"));
-            copyDisplayed.setText(t("Copiaza textul afisat"));copyOriginal.setText(t("Copiaza textul original"));refreshTranscriptDisplay();
+            copyReply.setText(t("Copiaza raspunsul"));copyDisplayed.setText(t("Copiaza textul afisat"));copyOriginal.setText(t("Copiaza textul original"));refreshTranscriptDisplay();
             if(workspace!=null){workspace.translate();refreshDashboard();}
             revalidate();
             repaint();
@@ -994,19 +1005,25 @@ public final class LocalChat extends JFrame {
     }
 
     private void addReports(String result) {
-        for(Path path:ReportFiles.discover(result,currentWorkDir())) {
+        java.util.List<Path> discovered=ReportFiles.discover(result,currentWorkDir());
+        for(Path path:discovered) {
             boolean known=false;for(int i=0;i<reportModel.getSize();i++)if(reportModel.getElementAt(i).equals(path))known=true;
-            if(!known)reportModel.addElement(path);
+            if(!known){reportModel.addElement(path);if(path.getFileName().toString().toLowerCase(java.util.Locale.ROOT).endsWith(".pdf"))appendArtifact(path);}
         }
+        for(Path path:discovered)if(path.getFileName().toString().toLowerCase(java.util.Locale.ROOT).endsWith(".pdf")){reports.setSelectedItem(path);break;}
         reportBar.setVisible(reportModel.getSize()>0);reportBar.revalidate();
     }
 
     private void reportAction(int action) {
-        Path source=(Path)reports.getSelectedItem();
+        reportAction((Path)reports.getSelectedItem(),action);
+    }
+    private void reportAction(Path source,int action) {
         if(source==null || !ReportFiles.allowed(source,currentWorkDir())){setStatus("Fisierul nu mai este disponibil in folderul de lucru.",true);return;}
         try {
             if(action==0)Desktop.getDesktop().open(source.toFile());
             else if(action==1)openFolder(source.getParent());
+            else if(action==3){java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new FileClipboard(source),null);setStatus("Fisier copiat: {0}",false,source);}
+            else if(action==4){java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new java.awt.datatransfer.StringSelection(source.toString()),null);setStatus("Cale copiata: {0}",false,source);}
             else {
                 JFileChooser chooser=new JFileChooser();chooser.setSelectedFile(source.toFile());chooser.setDialogTitle(t("Salveaza o copie…"));
                 if(chooser.showSaveDialog(this)!=JFileChooser.APPROVE_OPTION)return;
@@ -1048,14 +1065,14 @@ public final class LocalChat extends JFrame {
                     var request=List.of(ChatClient.Message.user("Prior factual memory (historical data):\n"+summary+"\nNext historical fragment:\n"+chunks.get(i)));
                     int fragment=i+1;long requestEstimate=ContextMemory.messages(request);
                     if(limit>0 && Math.ceil((requestEstimate+ContextMemory.estimate(system))*contextScale())+outputBudget+128>=limit)throw new IOException(t("Istoricul depaseste limita configurata. Alege un model sau context mai mare pentru compactare."));
-                    compactStarted.incrementAndGet();
-                    SwingUtilities.invokeLater(()->{if(generation==compactGeneration){requestSystem=ContextMemory.estimate(system);requestTools=0;
-                        requestConversation=requestEstimate;setStatus("Compactare: fragment {0}/{1}",false,fragment,chunks.size());refreshDashboard();}});
-                    ChatClient.Reply reply;
-                    try {reply=client.chat(provider,url,key,model,system,request,Collections.emptyList(),false,delta->{});}
-                    finally {TokenUsage usage=client.usage();SwingUtilities.invokeLater(()->{if(generation==compactGeneration){compactUsage.add(usage);sessionState.usage.add(usage);refreshDashboard();}});}
-                    if(reply.text.isBlank() || ContextMemory.estimate(reply.text)>summaryBudget)throw new IOException(t("Rezumatul nu reduce contextul; istoricul activ a fost pastrat."));
-                    summary=reply.text;
+                    summary=MemoryReducer.reduce(client,provider,url,key,model,system,request,summaryBudget,limit,contextScale(),new MemoryReducer.Attempt(){
+                        public boolean cancelled(){return generation!=compactGeneration;}
+                        public void before(String instructions,List<ChatClient.Message> messages){
+                            compactStarted.incrementAndGet();SwingUtilities.invokeLater(()->{if(generation==compactGeneration){requestSystem=ContextMemory.estimate(instructions);requestTools=0;
+                                requestConversation=ContextMemory.messages(messages);setStatus("Compactare: fragment {0}/{1}",false,fragment,chunks.size());refreshDashboard();}});
+                        }
+                        public void usage(TokenUsage usage){SwingUtilities.invokeLater(()->{if(generation==compactGeneration){compactUsage.add(usage);sessionState.usage.add(usage);refreshDashboard();}});}
+                    });
                 }
             }catch(Exception e){error=e;}
             final String result=summary;final Exception failure=error;
@@ -1162,7 +1179,7 @@ public final class LocalChat extends JFrame {
             });
             return;
         }
-        if(maximum>0 && estimated>=maximum){setStatus("Contextul estimat depaseste limita. Foloseste /compact sau configureaza contextul corect.",true);return;}
+        if(maximum>0 && estimated>=maximum && !sessionState.autoCompact){setStatus("Contextul estimat depaseste limita. Foloseste /compact sau configureaza contextul corect.",true);return;}
 
         final String label = SavedProviders.label(shownSelection,url) + " · " + model;
         List<Skills.Skill> skills = useTools ? Skills.load(skillsDir) : Collections.emptyList();
@@ -1224,7 +1241,7 @@ public final class LocalChat extends JFrame {
                 later(turn, () -> {
                     turn.stepText.append(delta);
                     refreshDashboard();
-                    append(delta, body);
+                    appendMarkdown(delta);
                 });
             }
 
@@ -1400,6 +1417,7 @@ public final class LocalChat extends JFrame {
                 .append("How to work:\n")
                 .append("- Keep the user-selected internal MBS project number distinct from client WERKNO/order numbers. Discover the actual server folder with directory listing/search; do not invent an exact folder path from a number or silently replace the project ID.\n")
                 .append("- For drawing/PDFCONTROL operations, use the dedicated PDFCONTROL start tools, poll job_status until terminal, and deliver existing PDF reports and marked drawings. Never substitute a text report or claim a pending/partial job is complete. The original engine determines extraction, V/W identity and visual revision differences.\n")
+                .append("- Drawing verification must deliver the original control RAPPORT PDF with available annotated drawings. Old/new revision comparison must deliver Vergelijking_OUD_NIEUW.pdf and available differences PDFs. These are distinct operations: V and W are not old and new revisions. Each operation delivers its own PDF; when both operations are requested, deliver both actual PDF outputs, never Markdown substitutes.\n")
                 .append("- PDFCONTROL accepts local project sources, including Controle/Atasamente folders. Use exact project-relative paths from pdfcontrol_project_files (pdf_source=true); never guess basenames or require a server copy. Do not change the requested project or drawing set to bypass an error. Six V/W files mean six files, not twelve. Read the schema of each tool.\n")
                 .append("- A PDFCONTROL start response is only a job receipt. Poll that same job; successful delivery requires a terminal done/partial status, matching source_files, delivery_verified=true, and PDF paths returned in artifacts. For failed/cancelled jobs report the actual error, never claim a report was generated. Repeated validation errors require diagnosis, not repeated random paths or shell commands.\n")
                 .append("- Find things out with the tools (list_dir, find_files, search_text, read_file) instead of guessing; never invent tool results.\n")
@@ -1500,7 +1518,8 @@ public final class LocalChat extends JFrame {
             } else if (m.role.equals("assistant")) {
                 if (previous.equals("user") || previous.isEmpty()) header(m.label == null ? t("Asistent") : m.label, botHeader);
                 else ensureNewline();
-                append(m.content, body);
+                appendMarkdown(m.content);
+                if("PDFCONTROL".equals(m.label))addReports(m.content);
                 for (ChatClient.ToolCall c : m.toolCalls) {
                     ensureNewline();
                     append("» " + describeCall(c) + "\n", toolStyle);
@@ -1508,6 +1527,7 @@ public final class LocalChat extends JFrame {
                     if (r != null) {
                         Tools.Result res = new Tools.Result(r.content, r.isError);
                         append("    → " + preview(res) + "\n", r.isError ? toolErrorStyle : toolStyle);
+                        if(!r.isError)addReports(r.content);
                     }
                 }
             }
@@ -1767,6 +1787,38 @@ public final class LocalChat extends JFrame {
         transcript.setCaretPosition(doc.getLength());
     }
 
+    private AttributeSet artifactAt(java.awt.Point point){
+        int offset=transcript.viewToModel2D(point);
+        try{var bounds=offset<0?null:transcript.modelToView2D(offset);if(bounds==null || point.y<bounds.getY() || point.y>bounds.getMaxY())return SimpleAttributeSet.EMPTY;
+            if(offset+1<transcript.getDocument().getLength()){var next=transcript.modelToView2D(offset+1);if(next!=null&&next.getY()==bounds.getY()&&(point.x<bounds.getX()||point.x>next.getX()))return SimpleAttributeSet.EMPTY;}
+        }catch(BadLocationException ignored){return SimpleAttributeSet.EMPTY;}
+        return offset<0?SimpleAttributeSet.EMPTY:transcript.getStyledDocument().getCharacterElement(offset).getAttributes();
+    }
+    private void appendArtifact(Path path){
+        ensureNewline();append("\nPDF  "+path.getFileName()+"\n",toolStyle);
+        String[] labels={"Deschide raportul","Salveaza o copie…","Copiaza fisierul","Copiaza calea"};int[] actions={0,2,3,4};
+        for(int i=0;i<labels.length;i++){
+            var attributes=new SimpleAttributeSet(toolStyle);StyleConstants.setUnderline(attributes,true);attributes.addAttribute("artifact.path",path);attributes.addAttribute("artifact.action",actions[i]);attributes.addAttribute("artifact.label",labels[i]);
+            append("  ["+t(labels[i])+"]",attributes);
+        }
+        append("\n",toolStyle);
+    }
+    private void openMarkdownLink(String href){
+        try{if(href.startsWith("https://")||href.startsWith("http://"))Desktop.getDesktop().browse(java.net.URI.create(href));else reportAction(Path.of(href),0);}
+        catch(IOException|RuntimeException error){setStatus("Nu pot deschide {0}: {1}",true,href,describe(error));}
+    }
+    private void copyResponse(){
+        String text="";
+        if(current!=null)text=current.stepText.toString();
+        if(text.isBlank())for(int i=history.size()-1;i>=0;i--)if("assistant".equals(history.get(i).role)&&!history.get(i).content.isBlank()){text=history.get(i).content;break;}
+        if(!text.isBlank())java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new java.awt.datatransfer.StringSelection(text),null);
+    }
+    private void appendMarkdown(String text){markdownFrom=Math.min(markdownFrom,transcript.getDocument().getLength());var attributes=new SimpleAttributeSet(body);attributes.addAttribute(MarkdownChat.MARK,true);append(text,attributes);markdownDirty=true;}
+    private void formatMarkdown(){
+        if(!markdownDirty)return;markdownDirty=false;
+        try{MarkdownChat.apply(transcript.getStyledDocument(),body,transcript.getBackground(),markdownFrom,originalTranscript);markdownFrom=Integer.MAX_VALUE;}catch(BadLocationException ignored){}
+    }
+
     private String originalSelection(){
         syncOriginalTranscript();int start=transcript.getSelectionStart(),end=transcript.getSelectionEnd();
         try{return originalTranscript.getText(start,end-start);}catch(BadLocationException ignored){return "";}
@@ -1777,13 +1829,19 @@ public final class LocalChat extends JFrame {
             for(int offset=0;offset<document.getLength();){var element=document.getCharacterElement(offset);int end=Math.min(element.getEndOffset(),document.getLength());originalTranscript.insertString(offset,document.getText(offset,end-offset),element.getAttributes());offset=end;}
         }catch(BadLocationException ignored){}
     }
+    private void translateArtifactLabels(){
+        try{for(int end=originalTranscript.getLength();end>0;){var element=originalTranscript.getCharacterElement(end-1);int start=element.getStartOffset();Object key=element.getAttributes().getAttribute("artifact.label");
+            if(key instanceof String){String label="  ["+t((String)key)+"]";if(!originalTranscript.getText(start,end-start).equals(label)){var attrs=new SimpleAttributeSet(element.getAttributes());originalTranscript.remove(start,end-start);originalTranscript.insertString(start,label,attrs);}}
+            end=start;
+        }}catch(BadLocationException ignored){}
+    }
     private void refreshTranscriptDisplay(){
-        syncOriginalTranscript();int start=transcript.getSelectionStart(),end=transcript.getSelectionEnd();updatingTranscript=true;
+        syncOriginalTranscript();translateArtifactLabels();int start=transcript.getSelectionStart(),end=transcript.getSelectionEnd();updatingTranscript=true;
         try{var document=transcript.getStyledDocument();document.remove(0,document.getLength());
             Map<String,SimpleAttributeSet> roles=Map.of("userHeader",userHeader,"botHeader",botHeader,"body",body,"errorStyle",errorStyle,"toolStyle",toolStyle,"toolErrorStyle",toolErrorStyle);
-            for(int offset=0;offset<originalTranscript.getLength();){var element=originalTranscript.getCharacterElement(offset);int last=Math.min(element.getEndOffset(),originalTranscript.getLength());AttributeSet attributes=element.getAttributes();Object role=attributes.getAttribute(StyleConstants.NameAttribute);if(role!=null && roles.containsKey(role.toString()))attributes=roles.get(role.toString());document.insertString(offset,ChatDisplay.text(originalTranscript.getText(offset,last-offset)),attributes);offset=last;}
+            for(int offset=0;offset<originalTranscript.getLength();){var element=originalTranscript.getCharacterElement(offset);int last=Math.min(element.getEndOffset(),originalTranscript.getLength());AttributeSet attributes=element.getAttributes();Object role=attributes.getAttribute(StyleConstants.NameAttribute);if(role!=null && roles.containsKey(role.toString())){var themed=new SimpleAttributeSet(attributes);themed.addAttributes(roles.get(role.toString()));attributes=themed;}document.insertString(offset,ChatDisplay.text(originalTranscript.getText(offset,last-offset)),attributes);offset=last;}
             transcript.select(Math.min(start,document.getLength()),Math.min(end,document.getLength()));
-        }catch(BadLocationException ignored){}finally{updatingTranscript=false;}
+        }catch(BadLocationException ignored){}finally{updatingTranscript=false;markdownFrom=0;markdownDirty=true;formatMarkdown();}
     }
     private static String describeCall(ChatClient.ToolCall call) {
         StringBuilder b = new StringBuilder(call.name).append('(');

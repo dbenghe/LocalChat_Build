@@ -78,14 +78,13 @@ final class ContextGuard {
             var request=List.of(ChatClient.Message.user("Prior factual memory:\n"+summary+"\nNext historical fragment:\n"+chunk));
             long raw=raw(instructions,request,List.of());
             if(predicted(raw)+summaryLimit+margin()>=maximum)throw new IOException(I18n.text("Compactarea a esuat: {0}","fragment exceeds safe input budget"));
-            ui.compactRequest(instructions,request,++fragments,chunks.size());summarizer.outputLimit(summaryLimit);
-            ChatClient.Reply result;
-            try{result=summarizer.chat(provider,url,key,model,instructions,request,List.of(),false,delta->{});}
-            finally{ui.usage(summarizer.usage());}
-            if(cancelled)throw new InterruptedIOException("Cancelled");
-            if(result.text.isBlank() || predicted(ContextMemory.estimate(result.text))>summaryLimit)
-                throw new IOException(I18n.text("Rezumatul nu reduce contextul; istoricul activ a fost pastrat."));
-            summary=result.text;
+            int fragment=++fragments;
+            summary=MemoryReducer.reduce(summarizer,provider,url,key,model,instructions,request,
+                Math.max(32,(int)(summaryLimit/scale)),maximum,scale,new MemoryReducer.Attempt(){
+                    public void before(String s,List<ChatClient.Message> r)throws IOException{ui.compactRequest(s,r,fragment,chunks.size());}
+                    public void usage(TokenUsage usage){ui.usage(usage);}
+                    public boolean cancelled(){return cancelled;}
+                });
         }
         Memory candidate=new Memory(summary,original.size(),question),previous=memory;
         memory=candidate;

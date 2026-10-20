@@ -317,5 +317,10 @@
   "Catalogul fabricii nu este confirmat sau disponibil; verificarea este partiala.": "El catalogo de fabrica no esta confirmado o disponible; la comprobacion es parcial.",
   "PDFCONTROL: anulare solicitata pentru lucrarea {0}.": "PDFCONTROL: cancelacion solicitada para la tarea {0}.",
   "PDFCONTROL: lucrarea {0} continua; verifica starea inainte de a reporni.": "PDFCONTROL: la tarea {0} continua; comprueba su estado antes de reiniciarla.",
-  "PDFCONTROL: acelasi apel a esuat de trei ori. Verifica eroarea si sursele; lucrarea nu este finalizata.": "PDFCONTROL: la misma llamada ha fallado tres veces. Revisa el error y las fuentes; la tarea no esta terminada."
+  "PDFCONTROL: acelasi apel a esuat de trei ori. Verifica eroarea si sursele; lucrarea nu este finalizata.": "PDFCONTROL: la misma llamada ha fallado tres veces. Revisa el error y las fuentes; la tarea no esta terminada.",
+  "Copiaza raspunsul": "Copiar respuesta",
+  "Copiaza fisierul": "Copiar archivo",
+  "Copiaza calea": "Copiar ruta",
+  "Fisier copiat: {0}": "Archivo copiado: {0}",
+  "Cale copiata: {0}": "Ruta copiada: {0}"
 }

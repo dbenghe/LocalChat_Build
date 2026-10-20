@@ -58,6 +58,10 @@ if ($LASTEXITCODE) { throw 'Themed slash command palette tests failed; distribut
 if ($LASTEXITCODE) { throw 'Plain chat display/original data tests failed; distribution was not changed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/favorites-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ModelFavoritesTest
 if ($LASTEXITCODE) { throw 'Model favorite tests failed; distribution was not changed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/presentation-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ChatPresentationTest
+if ($LASTEXITCODE) { throw 'Markdown and inline PDF presentation tests failed' }
+& "$taskJdk/bin/java.exe" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.MemoryReducerTest
+if ($LASTEXITCODE) { throw 'Adaptive memory reduction tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_owned_layout.py" --package "$PSScriptRoot/pdfcontrol"
 if ($LASTEXITCODE) { throw 'Owned engine layout tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_pdfcontrol_bridge.py" --package "$PSScriptRoot/pdfcontrol" --output "$taskBuild/pdfcontrol-tests"

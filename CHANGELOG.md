@@ -1,3 +1,11 @@
+## 1.10.3 - 2026-10-20
+
+- Render assistant Markdown headings, emphasis, code, quotes and tables in the chat, including streaming and restored conversations. Preserve source text and copyable Markdown.
+- Show PDF outputs inline after successful tool results, with open, save copy, copy file (Explorer) and copy path actions. Restore actions with the conversation without API calls.
+- Add copy response and file clipboard actions in all six languages. Do not present unfinished or unverified PDFCONTROL job outputs as delivered reports.
+- Retry oversized summaries up to three times with tighter output budgets; split oversized conversations before inference, preserve the exact new question and retain the original archive. Stop/failure never sends the pending question.
+- Make the original control PDF and the old/new comparison PDF explicit, separate deliverables in agent instructions.
+
 # Changelog
 
 ## 1.10.2 — 2026-10-20

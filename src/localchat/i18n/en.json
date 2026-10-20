@@ -317,5 +317,10 @@
   "Catalogul fabricii nu este confirmat sau disponibil; verificarea este partiala.": "The factory catalogue is unconfirmed or unavailable; the check is partial.",
   "PDFCONTROL: anulare solicitata pentru lucrarea {0}.": "PDFCONTROL: cancellation requested for job {0}.",
   "PDFCONTROL: lucrarea {0} continua; verifica starea inainte de a reporni.": "PDFCONTROL: job {0} is still running; check its status before restarting.",
-  "PDFCONTROL: acelasi apel a esuat de trei ori. Verifica eroarea si sursele; lucrarea nu este finalizata.": "PDFCONTROL: the same call failed three times. Check the error and sources; the job is not complete."
+  "PDFCONTROL: acelasi apel a esuat de trei ori. Verifica eroarea si sursele; lucrarea nu este finalizata.": "PDFCONTROL: the same call failed three times. Check the error and sources; the job is not complete.",
+  "Copiaza raspunsul": "Copy response",
+  "Copiaza fisierul": "Copy file",
+  "Copiaza calea": "Copy path",
+  "Fisier copiat: {0}": "File copied: {0}",
+  "Cale copiata: {0}": "Path copied: {0}"
 }
