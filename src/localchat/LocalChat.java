@@ -264,7 +264,8 @@ public final class LocalChat extends JFrame {
         compose.setBorder(BorderFactory.createEmptyBorder(6, 8, 2, 8));
         attachmentBar.setPreferredSize(new Dimension(400,43));attachmentBar.setBorder(BorderFactory.createEmptyBorder());attachmentBar.setVisible(false);compose.add(attachmentBar,BorderLayout.NORTH);
         compose.add(new JScrollPane(input));
-        for(JComponent target:new JComponent[]{compose,input,transcript,attachmentItems,attachmentBar})target.setTransferHandler(new AttachmentSupport.FileTransfer(target.getTransferHandler(),()->!busy,this::addAttachments));
+        for(JComponent target:new JComponent[]{compose,input,transcript,attachmentItems,attachmentBar})target.setTransferHandler(new AttachmentSupport.FileTransfer(target.getTransferHandler(),()->!busy,this::addAttachments,this::pasteClipboardImage));
+        ComposerClipboard.install(input,error->setStatus("Nu pot lipi din clipboard: {0}",true,describe(error)));
         compose.add(buttons, BorderLayout.SOUTH);
         JPanel statusBar = new JPanel(new BorderLayout(12, 0));
         statusBar.setBorder(BorderFactory.createEmptyBorder(2, 10, 6, 10));
@@ -1137,6 +1138,11 @@ public final class LocalChat extends JFrame {
         JFileChooser picker=new JFileChooser();Path dir=currentWorkDir();if(dir!=null)picker.setCurrentDirectory(dir.toFile());
         picker.setDialogTitle(t("Adauga fisiere sau foldere"));picker.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);picker.setMultiSelectionEnabled(true);
         if(picker.showOpenDialog(this)==JFileChooser.APPROVE_OPTION){List<Path> paths=new ArrayList<>();for(File file:picker.getSelectedFiles())paths.add(file.toPath());if(paths.isEmpty() && picker.getSelectedFile()!=null)paths.add(picker.getSelectedFile().toPath());addAttachments(paths);}
+    }
+    private boolean pasteClipboardImage(java.awt.Image image){
+        if(busy || sessionState.draftAttachments.size()>=AttachmentSupport.MAX_PENDING){setStatus("Nu pot atasa imaginea acum: generarea este activa sau sunt deja 20 de atasamente.",true);return false;}
+        try{Path file=ComposerClipboard.saveImage(image,appDir.resolve("atasamente_clipboard"));addAttachments(List.of(file));setStatus("Imagine lipita ca atasament PNG local. Selectia nu o trimite automat ca imagine la model.",false);return true;}
+        catch(IOException|RuntimeException error){setStatus("Nu pot lipi din clipboard: {0}",true,describe(error));return false;}
     }
     private void addAttachments(List<Path> paths){
         if(busy)return;int added=0,skipped=0;

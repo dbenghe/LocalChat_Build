@@ -346,5 +346,14 @@
   "Setari rapide": "Ajustes rápidos",
   "Conversatie": "Conversación",
   "Profil raspuns": "Perfil de respuesta",
-  "Aprobari executii": "Aprobaciones de ejecución"
+  "Aprobari executii": "Aprobaciones de ejecución",
+  "Decupeaza": "Cortar",
+  "Copiaza": "Copiar",
+  "Lipeste": "Pegar",
+  "Selecteaza tot": "Seleccionar todo",
+  "Clipboard-ul nu contine text, fisiere sau o imagine acceptata.": "El portapapeles no contiene texto, archivos o una imagen compatibles.",
+  "Imaginea din clipboard este prea mare sau indisponibila (maximum 16 milioane de pixeli).": "La imagen del portapapeles es demasiado grande o no está disponible (máximo 16 millones de píxeles).",
+  "Nu pot lipi din clipboard: {0}": "No se puede pegar desde el portapapeles: {0}",
+  "Nu pot atasa imaginea acum: generarea este activa sau sunt deja 20 de atasamente.": "No se puede adjuntar la imagen ahora: se está generando o ya hay 20 adjuntos.",
+  "Imagine lipita ca atasament PNG local. Selectia nu o trimite automat ca imagine la model.": "Imagen pegada como adjunto PNG local. La selección no la envía automáticamente como imagen al modelo."
 }

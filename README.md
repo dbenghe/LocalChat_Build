@@ -595,3 +595,7 @@ selectorul pentru alt PDF din folderul de lucru. Iconita de marire foloseste tot
 spatiul chatului, apoi restabileste impartirea. Iconita de panouri si Ctrl+Shift+B
 ascund/reafiseaza taburile fara sa le inchida. Schimbarea conversatiei sau a
 folderului goleste toate taburile. Pozitia paginii si zoomul sunt separate per tab.
+
+### Clipboard in caseta de mesaj
+
+Ctrl+V, Shift+Insert si click dreapta > Lipeste accepta text, fisiere copiate din Explorer si capturi din clipboard. Textul inlocuieste selectia curenta. Capturile sunt salvate ca PNG in `atasamente_clipboard/` si atasate la ciorna; eliminarea atasamentului nu sterge fisierul. Selectia nu apeleaza modelul si nu trimite automat pixelii ca intrare vizuala. Sunt pastrate limita de 20 de atasamente si blocarea atasarii in timpul generarii. Imaginile au limita de 16 milioane de pixeli.

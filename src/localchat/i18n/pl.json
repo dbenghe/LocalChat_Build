@@ -346,5 +346,14 @@
   "Setari rapide": "Szybkie ustawienia",
   "Conversatie": "Rozmowa",
   "Profil raspuns": "Profil odpowiedzi",
-  "Aprobari executii": "Zatwierdzanie działań"
+  "Aprobari executii": "Zatwierdzanie działań",
+  "Decupeaza": "Wytnij",
+  "Copiaza": "Kopiuj",
+  "Lipeste": "Wklej",
+  "Selecteaza tot": "Zaznacz wszystko",
+  "Clipboard-ul nu contine text, fisiere sau o imagine acceptata.": "Schowek nie zawiera obsługiwanego tekstu, plików ani obrazu.",
+  "Imaginea din clipboard este prea mare sau indisponibila (maximum 16 milioane de pixeli).": "Obraz w schowku jest zbyt duży lub niedostępny (maksymalnie 16 milionów pikseli).",
+  "Nu pot lipi din clipboard: {0}": "Nie można wkleić ze schowka: {0}",
+  "Nu pot atasa imaginea acum: generarea este activa sau sunt deja 20 de atasamente.": "Nie można teraz dołączyć obrazu: trwa generowanie lub jest już 20 załączników.",
+  "Imagine lipita ca atasament PNG local. Selectia nu o trimite automat ca imagine la model.": "Obraz wklejono jako lokalny załącznik PNG. Wybranie go nie wysyła go automatycznie jako obrazu do modelu."
 }

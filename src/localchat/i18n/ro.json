@@ -346,5 +346,14 @@
   "Setari rapide": "Setari rapide",
   "Conversatie": "Conversatie",
   "Profil raspuns": "Profil raspuns",
-  "Aprobari executii": "Aprobari executii"
+  "Aprobari executii": "Aprobari executii",
+  "Decupeaza": "Decupeaza",
+  "Copiaza": "Copiaza",
+  "Lipeste": "Lipeste",
+  "Selecteaza tot": "Selecteaza tot",
+  "Clipboard-ul nu contine text, fisiere sau o imagine acceptata.": "Clipboard-ul nu contine text, fisiere sau o imagine acceptata.",
+  "Imaginea din clipboard este prea mare sau indisponibila (maximum 16 milioane de pixeli).": "Imaginea din clipboard este prea mare sau indisponibila (maximum 16 milioane de pixeli).",
+  "Nu pot lipi din clipboard: {0}": "Nu pot lipi din clipboard: {0}",
+  "Nu pot atasa imaginea acum: generarea este activa sau sunt deja 20 de atasamente.": "Nu pot atasa imaginea acum: generarea este activa sau sunt deja 20 de atasamente.",
+  "Imagine lipita ca atasament PNG local. Selectia nu o trimite automat ca imagine la model.": "Imagine lipita ca atasament PNG local. Selectia nu o trimite automat ca imagine la model."
 }

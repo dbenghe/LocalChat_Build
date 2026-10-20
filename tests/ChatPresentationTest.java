@@ -9,7 +9,7 @@ public final class ChatPresentationTest{
     static void check(boolean b,String text){checks++;if(!b)throw new AssertionError(text);}
     static AttributeSet at(JTextPane pane,String text)throws Exception{return pane.getStyledDocument().getCharacterElement(pane.getDocument().getText(0,pane.getDocument().getLength()).indexOf(text)).getAttributes();}
     public static void main(String[] args)throws Exception{
-        var clipboard=java.awt.Toolkit.getDefaultToolkit().getSystemClipboard();Transferable savedClipboard=clipboard.getContents(null);Map<DataFlavor,Object> savedData=new LinkedHashMap<>();if(savedClipboard!=null)for(DataFlavor flavor:savedClipboard.getTransferDataFlavors())try{savedData.put(flavor,savedClipboard.getTransferData(flavor));}catch(Exception ignored){}
+        var clipboard=java.awt.Toolkit.getDefaultToolkit().getSystemClipboard();Transferable savedClipboard=ComposerClipboard.contents(clipboard);Map<DataFlavor,Object> savedData=new LinkedHashMap<>();if(savedClipboard!=null)for(DataFlavor flavor:savedClipboard.getTransferDataFlavors())try{savedData.put(flavor,savedClipboard.getTransferData(flavor));}catch(Exception ignored){}
         Path home=Files.createDirectories(Path.of(System.getProperty("localchat.home")));
         Path root=Files.createDirectories(home.resolve("files"));Path control=Files.writeString(root.resolve("RAPPORT.pdf"),"test PDF");Path compare=Files.writeString(root.resolve("Vergelijking_OUD_NIEUW.pdf"),"test PDF");
         String result=Json.write(Json.obj("job_id","check-fixture","status","done","delivery_verified",true,"report",control.toString(),"differences_report",compare.toString(),"source_files",List.of("input.pdf"),"artifacts",List.of(Json.obj("path",compare.toString()))));

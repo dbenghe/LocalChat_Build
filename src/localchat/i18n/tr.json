@@ -346,5 +346,14 @@
   "Setari rapide": "Hızlı ayarlar",
   "Conversatie": "Sohbet",
   "Profil raspuns": "Yanıt profili",
-  "Aprobari executii": "İşlem onayları"
+  "Aprobari executii": "İşlem onayları",
+  "Decupeaza": "Kes",
+  "Copiaza": "Kopyala",
+  "Lipeste": "Yapıştır",
+  "Selecteaza tot": "Tümünü seç",
+  "Clipboard-ul nu contine text, fisiere sau o imagine acceptata.": "Panoda desteklenen metin, dosya veya görüntü yok.",
+  "Imaginea din clipboard este prea mare sau indisponibila (maximum 16 milioane de pixeli).": "Panodaki görüntü çok büyük veya kullanılamıyor (en fazla 16 milyon piksel).",
+  "Nu pot lipi din clipboard: {0}": "Panodan yapıştırılamıyor: {0}",
+  "Nu pot atasa imaginea acum: generarea este activa sau sunt deja 20 de atasamente.": "Görüntü şu anda eklenemiyor: yanıt oluşturuluyor veya zaten 20 ek var.",
+  "Imagine lipita ca atasament PNG local. Selectia nu o trimite automat ca imagine la model.": "Görüntü yerel PNG eki olarak yapıştırıldı. Seçim, görüntüyü otomatik olarak modele göndermez."
 }

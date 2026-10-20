@@ -346,5 +346,14 @@
   "Setari rapide": "Quick settings",
   "Conversatie": "Conversation",
   "Profil raspuns": "Response profile",
-  "Aprobari executii": "Execution approvals"
+  "Aprobari executii": "Execution approvals",
+  "Decupeaza": "Cut",
+  "Copiaza": "Copy",
+  "Lipeste": "Paste",
+  "Selecteaza tot": "Select all",
+  "Clipboard-ul nu contine text, fisiere sau o imagine acceptata.": "The clipboard does not contain supported text, files or an image.",
+  "Imaginea din clipboard este prea mare sau indisponibila (maximum 16 milioane de pixeli).": "The clipboard image is too large or unavailable (maximum 16 million pixels).",
+  "Nu pot lipi din clipboard: {0}": "Cannot paste from clipboard: {0}",
+  "Nu pot atasa imaginea acum: generarea este activa sau sunt deja 20 de atasamente.": "Cannot attach the image now: generation is active or there are already 20 attachments.",
+  "Imagine lipita ca atasament PNG local. Selectia nu o trimite automat ca imagine la model.": "Image pasted as a local PNG attachment. Selecting it does not automatically send it as an image to the model."
 }

@@ -36,13 +36,23 @@ final class AttachmentSupport {
     }
     /** Keep the text component's native clipboard and text drag/drop behavior. */
     static final class FileTransfer extends TransferHandler {
-        final TransferHandler text;final BooleanSupplier enabled;final Consumer<List<Path>> receive;
-        FileTransfer(TransferHandler text,BooleanSupplier enabled,Consumer<List<Path>> receive){this.text=text;this.enabled=enabled;this.receive=receive;}
+        final TransferHandler text;final BooleanSupplier enabled;final Consumer<List<Path>> receive;final Function<java.awt.Image,Boolean> image;
+        FileTransfer(TransferHandler text,BooleanSupplier enabled,Consumer<List<Path>> receive){this(text,enabled,receive,null);}
+        FileTransfer(TransferHandler text,BooleanSupplier enabled,Consumer<List<Path>> receive,Function<java.awt.Image,Boolean> image){this.text=text;this.enabled=enabled;this.receive=receive;this.image=image;}
         public boolean canImport(TransferSupport support){
-            return support.isDataFlavorSupported(DataFlavor.javaFileListFlavor)?enabled.getAsBoolean():text!=null && text.canImport(support);
+            if(support.isDataFlavorSupported(DataFlavor.javaFileListFlavor))return enabled.getAsBoolean();
+            if(image!=null && support.isDataFlavorSupported(DataFlavor.imageFlavor))return enabled.getAsBoolean();
+            if(support.getComponent() instanceof javax.swing.text.JTextComponent c && c.isEditable() && c.isEnabled() && support.isDataFlavorSupported(DataFlavor.stringFlavor))return true;
+            return text!=null && text.canImport(support);
         }
         public boolean importData(TransferSupport support){
-            if(!support.isDataFlavorSupported(DataFlavor.javaFileListFlavor))return text!=null && text.importData(support);
+            if(!support.isDataFlavorSupported(DataFlavor.javaFileListFlavor)){
+                try{
+                    if(image!=null && support.isDataFlavorSupported(DataFlavor.imageFlavor))return enabled.getAsBoolean() && Boolean.TRUE.equals(image.apply((java.awt.Image)support.getTransferable().getTransferData(DataFlavor.imageFlavor)));
+                    if(support.getComponent() instanceof javax.swing.text.JTextComponent c && c.isEditable() && c.isEnabled() && support.isDataFlavorSupported(DataFlavor.stringFlavor)){c.replaceSelection((String)support.getTransferable().getTransferData(DataFlavor.stringFlavor));return true;}
+                    return text!=null && text.importData(support);
+                }catch(UnsupportedFlavorException|IOException|RuntimeException e){return false;}
+            }
             if(!enabled.getAsBoolean())return false;
             try{
                 Object value=support.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);

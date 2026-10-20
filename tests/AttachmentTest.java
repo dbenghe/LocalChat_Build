@@ -93,9 +93,44 @@ public final class AttachmentTest {
             FeatureTest.edt(()->a[0].dispose());
         }
     }
+    static void clipboard(Path home)throws Exception{
+        Path local=home.resolve("clipboard");
+        try(FeatureTest.Server server=new FeatureTest.Server()){
+            FeatureTest.edt(()->{
+                LocalChat app=window(local,server.url());JTextArea text=input(app);Clipboard clip=new Clipboard("isolated-composer-test");AtomicInteger failures=new AtomicInteger();ComposerClipboard.install(text,()->clip,error->failures.incrementAndGet());
+                for(int lang=0;lang<6;lang++)for(int theme=0;theme<2;theme++){
+                    ((JComboBox<?>)FeatureTest.field(app,"languageBox")).setSelectedIndex(lang);((JComboBox<?>)FeatureTest.field(app,"themeBox")).setSelectedIndex(theme);
+                    text.setText("before replace after");text.select(7,14);clip.setContents(new StringSelection("linie 1\nRomână 日本語"),null);
+                    Object key=text.getInputMap().get(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_V,java.awt.event.InputEvent.CTRL_DOWN_MASK));text.getActionMap().get(key).actionPerformed(new java.awt.event.ActionEvent(text,0,"paste"));
+                    check(text.getText().equals("before linie 1\nRomână 日本語 after"),"Ctrl+V replaces selection and preserves multiline Unicode after theme change");
+                    check(text.getInputMap().get(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_INSERT,java.awt.event.InputEvent.SHIFT_DOWN_MASK)).equals(javax.swing.text.DefaultEditorKit.pasteAction),"Shift+Insert uses the same paste action");
+                    JPopupMenu popup=text.getComponentPopupMenu();for(var listener:popup.getPopupMenuListeners())listener.popupMenuWillBecomeVisible(new javax.swing.event.PopupMenuEvent(popup));
+                    check(((JMenuItem)popup.getComponent(2)).getText().equals(I18n.text("Lipeste")),"right-click paste is translated in both themes");
+                    text.selectAll();clip.setContents(new StringSelection("context menu paste"),null);((JMenuItem)popup.getComponent(2)).doClick();check(text.getText().equals("context menu paste"),"right-click paste inserts clipboard text");
+                    text.selectAll();text.getActionMap().get(javax.swing.text.DefaultEditorKit.copyAction).actionPerformed(new java.awt.event.ActionEvent(text,0,"copy"));check(clip.getData(DataFlavor.stringFlavor).equals("context menu paste"),"copy remains functional");
+                    text.getActionMap().get(javax.swing.text.DefaultEditorKit.cutAction).actionPerformed(new java.awt.event.ActionEvent(text,0,"cut"));check(text.getText().isEmpty()&&clip.getData(DataFlavor.stringFlavor).equals("context menu paste"),"cut preserves clipboard text");
+                }
+                java.awt.image.BufferedImage original=new java.awt.image.BufferedImage(12,8,java.awt.image.BufferedImage.TYPE_INT_ARGB);original.setRGB(1,2,0xFF123456);
+                Transferable image=new Transferable(){public DataFlavor[] getTransferDataFlavors(){return new DataFlavor[]{DataFlavor.imageFlavor};}public boolean isDataFlavorSupported(DataFlavor f){return f.equals(DataFlavor.imageFlavor);}public Object getTransferData(DataFlavor f)throws UnsupportedFlavorException{if(!isDataFlavorSupported(f))throw new UnsupportedFlavorException(f);return original;}};
+                clip.setContents(image,null);text.getActionMap().get(javax.swing.text.DefaultEditorKit.pasteAction).actionPerformed(new java.awt.event.ActionEvent(text,0,"paste"));
+                check(state(app).draftAttachments.size()==1,"clipboard screenshot is attached as a local PNG");Path png=Path.of(state(app).draftAttachments.get(0));check(png.startsWith(local.resolve("atasamente_clipboard"))&&javax.imageio.ImageIO.read(png.toFile()).getRGB(1,2)==original.getRGB(1,2),"saved screenshot preserves pixels in private application storage");
+                Path saved=FeatureTest.field(app,"conversationFile");check(Conversations.load(saved).state().draftAttachments.contains(png.toString()),"screenshot reference is persisted with the draft");
+                FeatureTest.call(app,"setBusy",new Class<?>[]{boolean.class},true);check(!text.getTransferHandler().importData(text,image),"image paste blocked while generating");clip.setContents(new StringSelection("next question"),null);text.getActionMap().get(javax.swing.text.DefaultEditorKit.pasteAction).actionPerformed(new java.awt.event.ActionEvent(text,0,"paste"));check(text.getText().equals("next question"),"text draft can be pasted while generating");FeatureTest.call(app,"setBusy",new Class<?>[]{boolean.class},false);
+                check(failures.get()==0&&server.requests.isEmpty(),"clipboard actions create no API requests or hidden failures");
+                ComposerClipboard.install(text,()->{throw new IllegalStateException("fixture clipboard locked");},error->failures.incrementAndGet());text.getActionMap().get(javax.swing.text.DefaultEditorKit.pasteAction).actionPerformed(new java.awt.event.ActionEvent(text,0,"paste"));check(failures.get()==1&&text.getText().equals("next question"),"locked clipboard reports error and preserves draft");
+                AtomicInteger transientCalls=new AtomicInteger();Clipboard transientClip=new Clipboard("transient lock"){public synchronized Transferable getContents(Object requestor){if(transientCalls.incrementAndGet()<3)throw new IllegalStateException("fixture lock");return new StringSelection("recovered");}};
+                check(ComposerClipboard.contents(transientClip).getTransferData(DataFlavor.stringFlavor).equals("recovered")&&transientCalls.get()==3,"temporary Windows clipboard lock is retried without duplicating input");
+                AtomicInteger permanentCalls=new AtomicInteger();try{ComposerClipboard.contents(new Clipboard("locked"){public synchronized Transferable getContents(Object requestor){permanentCalls.incrementAndGet();throw new IllegalStateException("fixture lock");}});throw new AssertionError("permanent lock accepted");}catch(IllegalStateException expected){check(permanentCalls.get()==5,"clipboard lock retries are bounded");}
+                try{ComposerClipboard.saveImage(null,local.resolve("invalid-images"));throw new AssertionError("null image accepted");}catch(java.io.IOException expected){check(!Files.exists(local.resolve("invalid-images")),"invalid image creates no attachment file");}
+                java.awt.Image giant=new java.awt.Image(){public int getWidth(java.awt.image.ImageObserver observer){return 5000;}public int getHeight(java.awt.image.ImageObserver observer){return 5000;}public java.awt.image.ImageProducer getSource(){return null;}public java.awt.Graphics getGraphics(){return null;}public Object getProperty(String name,java.awt.image.ImageObserver observer){return null;}};
+                try{ComposerClipboard.saveImage(giant,local.resolve("invalid-images"));throw new AssertionError("oversize accepted");}catch(java.io.IOException expected){check(!Files.exists(local.resolve("invalid-images")),"oversize image rejected before allocation or file creation");}
+                app.dispose();
+            });
+        }
+    }
     public static void main(String[] args)throws Exception{
         Path home=Path.of(System.getProperty("localchat.home"));Files.createDirectories(home);
-        try{check(!AttachmentSupport.message("",List.of("fixture.pdf")).isBlank(),"attachments-only send gets a useful request");permissions(home);selection(home);sending(home,false);sending(home,true);check(Conversations.State.fromJson(Json.obj(),0).draftAttachments.isEmpty(),"old conversation format remains compatible");System.out.println("PASS: "+checks+" attachment checks; six languages x two themes; real file tools; synthetic HTTP only");}
+        try{check(!AttachmentSupport.message("",List.of("fixture.pdf")).isBlank(),"attachments-only send gets a useful request");permissions(home);selection(home);clipboard(home);sending(home,false);sending(home,true);check(Conversations.State.fromJson(Json.obj(),0).draftAttachments.isEmpty(),"old conversation format remains compatible");System.out.println("PASS: "+checks+" attachment checks; six languages x two themes; real file tools; synthetic HTTP only");}
         finally{FeatureTest.edt(()->{for(var w:java.awt.Window.getWindows())w.dispose();});}System.exit(0);
     }
 }

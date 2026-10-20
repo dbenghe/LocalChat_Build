@@ -29,3 +29,6 @@
 
 # Account-specific model availability results remain local
 **/model-tests/
+
+# Private screenshots pasted into the composer
+**/atasamente_clipboard/

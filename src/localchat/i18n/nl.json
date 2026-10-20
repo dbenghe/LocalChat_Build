@@ -346,5 +346,14 @@
   "Setari rapide": "Snelle instellingen",
   "Conversatie": "Gesprek",
   "Profil raspuns": "Antwoordprofiel",
-  "Aprobari executii": "Uitvoeringsgoedkeuringen"
+  "Aprobari executii": "Uitvoeringsgoedkeuringen",
+  "Decupeaza": "Knippen",
+  "Copiaza": "Kopiëren",
+  "Lipeste": "Plakken",
+  "Selecteaza tot": "Alles selecteren",
+  "Clipboard-ul nu contine text, fisiere sau o imagine acceptata.": "Het klembord bevat geen ondersteunde tekst, bestanden of afbeelding.",
+  "Imaginea din clipboard este prea mare sau indisponibila (maximum 16 milioane de pixeli).": "De klembordafbeelding is te groot of niet beschikbaar (maximaal 16 miljoen pixels).",
+  "Nu pot lipi din clipboard: {0}": "Kan niet plakken van het klembord: {0}",
+  "Nu pot atasa imaginea acum: generarea este activa sau sunt deja 20 de atasamente.": "De afbeelding kan nu niet worden toegevoegd: er wordt gegenereerd of er zijn al 20 bijlagen.",
+  "Imagine lipita ca atasament PNG local. Selectia nu o trimite automat ca imagine la model.": "Afbeelding geplakt als lokale PNG-bijlage. Selectie stuurt deze niet automatisch als afbeelding naar het model."
 }
