@@ -307,5 +307,15 @@
   "Utilizare: /autocompact on, off sau prag 30-95. Setarea este separata per conversatie.": "Kullanım: /autocompact on, off veya 30-95 eşiği. Ayar her konuşma için ayrıdır.",
   "Buget local de lucru: {0} · Limita reala API: necunoscuta": "Yerel çalışma bütçesi: {0} · Gerçek API sınırı: bilinmiyor",
   "Copiaza textul afisat": "Görüntülenen metni kopyala",
-  "Copiaza textul original": "Özgün metni kopyala"
+  "Copiaza textul original": "Özgün metni kopyala",
+  "Adauga modelul la favorite": "Modeli favorilere ekle",
+  "Scoate modelul din favorite": "Modeli favorilerden kaldir",
+  "Doar favorite": "Yalnizca favoriler",
+  "Fabrica neconfirmata": "Fabrika onaylanmadi",
+  "Alege fabrica confirmata pentru aceste desene.": "Bu cizimler icin onaylanan fabrikayi secin.",
+  "Catalogul fabricii nu poate fi validat; verifica sursa.": "Fabrika katalogu dogrulanamadi; kaynagi kontrol edin.",
+  "Catalogul fabricii nu este confirmat sau disponibil; verificarea este partiala.": "Fabrika katalogu onaylanmadi veya mevcut degil; kontrol kismidir.",
+  "PDFCONTROL: anulare solicitata pentru lucrarea {0}.": "PDFCONTROL: {0} isi icin iptal istendi.",
+  "PDFCONTROL: lucrarea {0} continua; verifica starea inainte de a reporni.": "PDFCONTROL: {0} isi devam ediyor; yeniden baslatmadan once durumunu kontrol edin.",
+  "PDFCONTROL: acelasi apel a esuat de trei ori. Verifica eroarea si sursele; lucrarea nu este finalizata.": "PDFCONTROL: ayni cagri uc kez basarisiz oldu. Hatayi ve kaynaklari kontrol edin; is tamamlanmadi."
 }

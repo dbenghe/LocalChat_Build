@@ -97,6 +97,7 @@ public final class LocalChat extends JFrame {
 
     private final JComboBox<Object> providerBox = new JComboBox<>(Provider.values());
     private final JComboBox<String> modelBox = new JComboBox<>();
+    private final JButton favoriteModelButton = new JButton();
     private final JButton loadModelsButton = ui(new JButton(), "Incarca modele");
     private final JPasswordField keyField = new JPasswordField(26);
     private final JCheckBox showKey = ui(new JCheckBox("", false), "Arata");
@@ -221,6 +222,9 @@ public final class LocalChat extends JFrame {
         input.setWrapStyleWord(true);
         input.setFont(new Font(fontFamily, Font.PLAIN, 15));
         modelBox.setEditable(true);
+        favoriteModelButton.setIcon(ModelFavorites.icon(null,false));favoriteModelButton.putClientProperty("JComponent.minimumWidth",0);favoriteModelButton.setPreferredSize(new Dimension(30,26));
+        favoriteModelButton.addActionListener(e->{if(shownSelection==null||currentModel().isBlank())return;ModelFavorites.toggle(config,SavedProviders.prefix(shownSelection),currentUrl(),currentModel());reorderFavoriteModels();saveConfig();refreshFavoriteButton();});
+        modelBox.addActionListener(e->refreshFavoriteButton());
         stopButton.setEnabled(false);
         toolsStatus.setForeground(TOOL_COLOR);
 
@@ -268,7 +272,7 @@ public final class LocalChat extends JFrame {
         JPanel metadata=new JPanel(new BorderLayout(4,2));metadata.add(modelMetadata);JPanel metadataActions=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT,4,0));metadataActions.add(applyBudgetButton);metadataActions.add(inspectModel);metadata.add(metadataActions,BorderLayout.EAST);controls.setPreferredSize(new Dimension(700,28));
         JPanel north=new JPanel(new BorderLayout());north.add(root.getComponent(0));north.add(metadata,BorderLayout.SOUTH);root.add(north,BorderLayout.NORTH);
         contextRing.addActionListener(e->JOptionPane.showMessageDialog(this,workspace.context.getString()+"\n"+workspace.details.getText()+"\n"+t("Estimare pentru cererea urmatoare, nu consum facturat."),t("Consum si context"),JOptionPane.INFORMATION_MESSAGE));
-        bottomModel.addActionListener(e->{javax.swing.JPopupMenu menu=new javax.swing.JPopupMenu();for(int i=0;i<modelBox.getItemCount();i++){String id=modelBox.getItemAt(i);JMenuItem choice=new JMenuItem(id);choice.addActionListener(x->{modelBox.setSelectedItem(id);saveConfig();refreshDashboard();});menu.add(choice);}menu.show(bottomModel,0,bottomModel.getHeight());});
+        bottomModel.addActionListener(e->{javax.swing.JPopupMenu menu=new javax.swing.JPopupMenu();for(int i=0;i<modelBox.getItemCount();i++){String id=modelBox.getItemAt(i);JMenuItem choice=new JMenuItem(id);choice.setIcon(ModelFavorites.icon(null,isFavoriteModel(id)));choice.addActionListener(x->{modelBox.setSelectedItem(id);saveConfig();refreshDashboard();});menu.add(choice);}menu.show(bottomModel,0,bottomModel.getHeight());});
         bottomApproval.addActionListener(e->{javax.swing.JPopupMenu menu=new javax.swing.JPopupMenu();for(int i=0;i<permissionBox.getItemCount();i++){final int index=i;JMenuItem choice=new JMenuItem(permissionBox.getItemAt(i));choice.addActionListener(x->{alwaysAllowed.clear();permissionBox.setSelectedIndex(index);saveConfig();refreshDashboard();});menu.add(choice);}menu.show(bottomApproval,0,bottomApproval.getHeight());});
         bottomMode.addActionListener(e->{if(!busy){toolsBox.setSelected(!toolsBox.isSelected());permissionBox.setEnabled(toolsBox.isSelected());saveConfig();refreshDashboard();}});
         inspectModel.addActionListener(e->inspectModel());applyBudgetButton.addActionListener(e->applyRecommendedBudget());saveProviderButton.addActionListener(e->saveProviderDialog());
@@ -426,7 +430,7 @@ public final class LocalChat extends JFrame {
         cell(p, c, 0, 1, 1, 0, ui(new JLabel(), "Furnizor:"));
         JPanel providerControls=new JPanel(new BorderLayout(4,0));providerControls.add(providerBox);providerControls.add(saveProviderButton,BorderLayout.EAST);cell(p,c,1,1,1,0.5,providerControls);
         cell(p, c, 2, 1, 1, 0, ui(new JLabel(), "Model:"));
-        cell(p, c, 3, 1, 1, 0.5, modelBox);
+        JPanel modelControls=new JPanel(new BorderLayout(3,0));modelControls.add(modelBox);modelControls.add(favoriteModelButton,BorderLayout.EAST);cell(p, c, 3, 1, 1, 0.5, modelControls);
         cell(p, c, 4, 1, 1, 0, loadModelsButton);
 
         cell(p, c, 0, 2, 1, 0, ui(new JLabel(), "Cheie API:"));
@@ -717,6 +721,7 @@ public final class LocalChat extends JFrame {
             String state=Json.str(record,"status");StringBuilder result=new StringBuilder(PdfControlDialog.localizedStatus(state));
             String id=Json.str(record,"job_id");if(id!=null)result.append("\n").append(id);
             for(String key:new String[]{"report","differences_report","error"}){String value=Json.str(record,key);if(value!=null)result.append("\n").append(value);}
+            String limitation=PdfControlDialog.limitations(record);if(!limitation.isBlank())result.append("\n").append(limitation);
             StringBuilder saved=new StringBuilder(result);Object outputs=Json.get(record,"artifacts");
             if(outputs instanceof List)for(Object output:(List<?>)outputs){String path=Json.str(output,"path");if(path!=null)saved.append("\n").append(path);}
             addReports(Json.write(record));history.add(ChatClient.Message.assistant(saved.toString(),Collections.emptyList(),"PDFCONTROL"));append("\n"+result,Set.of("failed","cancelled").contains(state)?errorStyle:body);saveConversation();
@@ -850,6 +855,7 @@ public final class LocalChat extends JFrame {
     }
 
     private void refreshDashboard() {
+        refreshFavoriteButton();
         if(workspace==null || shownProvider==null)return;
         String profile=contextProfile();
         if(!profile.equals(contextProfile)) {
@@ -1394,6 +1400,8 @@ public final class LocalChat extends JFrame {
                 .append("How to work:\n")
                 .append("- Keep the user-selected internal MBS project number distinct from client WERKNO/order numbers. Discover the actual server folder with directory listing/search; do not invent an exact folder path from a number or silently replace the project ID.\n")
                 .append("- For drawing/PDFCONTROL operations, use the dedicated PDFCONTROL start tools, poll job_status until terminal, and deliver existing PDF reports and marked drawings. Never substitute a text report or claim a pending/partial job is complete. The original engine determines extraction, V/W identity and visual revision differences.\n")
+                .append("- PDFCONTROL accepts local project sources, including Controle/Atasamente folders. Use exact project-relative paths from pdfcontrol_project_files (pdf_source=true); never guess basenames or require a server copy. Do not change the requested project or drawing set to bypass an error. Six V/W files mean six files, not twelve. Read the schema of each tool.\n")
+                .append("- A PDFCONTROL start response is only a job receipt. Poll that same job; successful delivery requires a terminal done/partial status, matching source_files, delivery_verified=true, and PDF paths returned in artifacts. For failed/cancelled jobs report the actual error, never claim a report was generated. Repeated validation errors require diagnosis, not repeated random paths or shell commands.\n")
                 .append("- Find things out with the tools (list_dir, find_files, search_text, read_file) instead of guessing; never invent tool results.\n")
                 .append("- When the request matches a skill listed below, call read_skill first and follow it.\n")
                 .append("- Apply the saved rules below. When the user states a lasting rule or preference, store it with save_rule.\n")
@@ -1657,14 +1665,18 @@ public final class LocalChat extends JFrame {
         updatingLimit=true;try{workspace.limit.setValue((int)budget);}finally{updatingLimit=false;}
         config.setProperty(profile,Long.toString(budget));config.setProperty(profile+".limitSource",targetSource);saveConfig();
     }
+    private boolean isFavoriteModel(String id){return shownSelection!=null&&ModelFavorites.contains(config,SavedProviders.prefix(shownSelection),currentUrl(),id);}
+    private void refreshFavoriteButton(){boolean favorite=isFavoriteModel(currentModel());favoriteModelButton.setIcon(ModelFavorites.icon(null,favorite));String label=I18n.text(favorite?"Scoate modelul din favorite":"Adauga modelul la favorite");favoriteModelButton.setToolTipText(label);favoriteModelButton.getAccessibleContext().setAccessibleName(label);}
+    private void reorderFavoriteModels(){if(shownSelection==null)return;String keep=currentModel();List<String> ids=new ArrayList<>();for(int i=0;i<modelBox.getItemCount();i++)ids.add(modelBox.getItemAt(i));modelBox.removeAllItems();for(String id:ModelFavorites.order(config,SavedProviders.prefix(shownSelection),currentUrl(),ids))modelBox.addItem(id);modelBox.setSelectedItem(keep);refreshFavoriteButton();}
     private void installModelRenderer(){modelBox.setRenderer(new javax.swing.DefaultListCellRenderer(){
-        public Component getListCellRendererComponent(JList<?> list,Object value,int index,boolean selected,boolean focus){putClientProperty("html.disable",true);super.getListCellRendererComponent(list,value, index,selected,focus);if(shownSelection==null||value==null)return this;String id=value.toString();ModelCatalog.Entry entry=catalogEntries().stream().filter(e->e.id().equals(id)).findFirst().orElseGet(()->ModelCatalog.entry(Json.obj("id",id),currentUrl()));var result=currentModelCache().get(id);setIcon(new ModelCatalog.CapabilityIcon(entry,result));setText((result.fresh()&&result.state().equals("responded")?"✓ ":result.fresh()&&result.state().equals("unavailable")?"× ":"? ")+id);if(!selected&&result.fresh()&&result.state().equals("unavailable"))setForeground(Color.GRAY);else if(!selected&&result.fresh()&&result.state().equals("responded"))setForeground(new Color(0x28A078));setToolTipText(ModelCatalog.facts(entry,result));return this;}
+        public Component getListCellRendererComponent(JList<?> list,Object value,int index,boolean selected,boolean focus){putClientProperty("html.disable",true);super.getListCellRendererComponent(list,value, index,selected,focus);if(shownSelection==null||value==null)return this;String id=value.toString();ModelCatalog.Entry entry=catalogEntries().stream().filter(e->e.id().equals(id)).findFirst().orElseGet(()->ModelCatalog.entry(Json.obj("id",id),currentUrl()));var result=currentModelCache().get(id);setIcon(ModelFavorites.icon(new ModelCatalog.CapabilityIcon(entry,result),isFavoriteModel(id)));setText((result.fresh()&&result.state().equals("responded")?"✓ ":result.fresh()&&result.state().equals("unavailable")?"× ":"? ")+id);if(!selected&&result.fresh()&&result.state().equals("unavailable"))setForeground(Color.GRAY);else if(!selected&&result.fresh()&&result.state().equals("responded"))setForeground(new Color(0x28A078));setToolTipText(ModelCatalog.facts(entry,result));return this;}
     });}
     private void showModelCatalog(boolean auto){
         if(busy){setStatus("Opreste generarea inainte de aceasta comanda.",true);return;}String prefix=SavedProviders.prefix(shownSelection),url=currentUrl(),key=currentKey(shownProvider);Object selected=shownSelection;ModelCatalog.Cache cache=currentModelCache();
         ModelCatalogDialog dialog=new ModelCatalogDialog(this,SavedProviders.label(selected,url),catalogEntries(),cache,shownProvider,url,key,config.getProperty(prefix+".probeOnLoad","true").equals("true"),entry->{if(java.util.Objects.equals(selected,shownSelection)&&url.equals(currentUrl())&&key.equals(currentKey(shownProvider))){modelBox.setSelectedItem(entry.id());saveConfig();refreshDashboard();}},enabled->{config.setProperty(prefix+".probeOnLoad",enabled.toString());saveConfig();},()->modelBox.repaint());
+        dialog.configureFavorites(id->ModelFavorites.contains(config,prefix,url,id),id->{ModelFavorites.toggle(config,prefix,url,id);saveConfig();reorderFavoriteModels();});
         if(auto)SwingUtilities.invokeLater(dialog::startUntested);dialog.setVisible(true);
-        if(java.util.Objects.equals(selected,shownSelection)&&url.equals(currentUrl())){String keep=currentModel();List<String> ids=new ArrayList<>();for(int i=0;i<modelBox.getItemCount();i++)ids.add(modelBox.getItemAt(i));ids.sort(java.util.Comparator.comparingInt((String id)->cache.get(id).rank()).thenComparing(id->id));modelBox.removeAllItems();for(String id:ids)modelBox.addItem(id);modelBox.setSelectedItem(keep);config.setProperty(prefix+".models",Json.write(ids));saveConfig();}
+        if(java.util.Objects.equals(selected,shownSelection)&&url.equals(currentUrl())){String keep=currentModel();List<String> ids=new ArrayList<>();for(int i=0;i<modelBox.getItemCount();i++)ids.add(modelBox.getItemAt(i));ids.sort(java.util.Comparator.comparingInt((String id)->isFavoriteModel(id)?0:1).thenComparingInt(id->cache.get(id).rank()).thenComparing(id->id));modelBox.removeAllItems();for(String id:ids)modelBox.addItem(id);modelBox.setSelectedItem(keep);config.setProperty(prefix+".models",Json.write(ids));saveConfig();}
     }
 
     private void loadModels() {
@@ -1687,7 +1699,7 @@ public final class LocalChat extends JFrame {
                     config.setProperty(prefix+".models",Json.write(ids));config.setProperty(prefix+".catalog",Json.write(catalog.stream().map(ModelCatalog.Entry::json).toList()));config.setProperty(prefix+".catalogUrl",url);
                     String keep = currentModel();
                     modelBox.removeAllItems();
-                    for (String id : ids) modelBox.addItem(id);
+                    for (String id : ModelFavorites.order(config,prefix,url,ids)) modelBox.addItem(id);
                     modelBox.setSelectedItem(keep.isEmpty() ? ids.get(0) : keep);
                     setStatus("{0} modele disponibile — alege din lista.", false, ids.size());
                     saveConfig();inspectModel();
@@ -1710,7 +1722,7 @@ public final class LocalChat extends JFrame {
         sendButton.setEnabled(!b);attachButton.setEnabled(!b);refreshAttachments();
         stopButton.setEnabled(b);
         newChatButton.setEnabled(!b);
-        providerBox.setEnabled(!b);saveProviderButton.setEnabled(!b);applyBudgetButton.setEnabled(!b);modelBox.setEnabled(!b);urlField.setEnabled(!b);keyField.setEnabled(!b);
+        favoriteModelButton.setEnabled(!b);providerBox.setEnabled(!b);saveProviderButton.setEnabled(!b);applyBudgetButton.setEnabled(!b);modelBox.setEnabled(!b);urlField.setEnabled(!b);keyField.setEnabled(!b);
         toolsBox.setEnabled(!b);workDirField.setEnabled(!b);chooseDirButton.setEnabled(!b);systemField.setEnabled(!b);
         permissionBox.setEnabled(!b && toolsBox.isSelected());loadModelsButton.setEnabled(!b);
         if(workspace!=null){workspace.limit.setEnabled(!b);workspace.autoCompact.setEnabled(!b);
@@ -1843,7 +1855,7 @@ public final class LocalChat extends JFrame {
         modelBox.removeAllItems();
         java.util.LinkedHashSet<String> models=new java.util.LinkedHashSet<>(selection instanceof Provider?Arrays.asList(p.models):Collections.emptyList());
         try{Object saved=Json.parse(config.getProperty(prefix+".models","[]"));if(saved instanceof List)for(Object m:(List<?>)saved)if(m instanceof String)models.add((String)m);}catch(RuntimeException ignored){}
-        for (String m : models) modelBox.addItem(m);
+        for (String m : ModelFavorites.order(config,prefix,currentUrl(),models)) modelBox.addItem(m);
         if (!models.contains(model)) modelBox.addItem(model);
         modelBox.setSelectedItem(model);
     }

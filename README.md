@@ -507,3 +507,7 @@ Datele cunoscute ulterior inlocuiesc bugetul de lucru, iar bugetele manuale
 pozitive raman separate per model. /context 0 dezactiveaza explicit folosirea
 unei limite locale cunoscute, caz in care procentul ramane necunoscut.
 Aceasta regula inlocuieste mentinerea automata la zero pentru modelele fara date.
+
+Favorite modele: apasa steluta de langa selector sau foloseste butonul din catalog. Modelele favorite apar primele; filtrul Doar favorite restrange catalogul. Favoritele sunt locale per furnizor si URL si nu modifica modelul implicit (Unelte > Salveaza setarile si modelul implicit).
+
+Motor propriu PDFCONTROL: sursa autoritara este LocalChat_Build/pdfcontrol. Buildul normal verifica manifestul acestei copii si o distribuie in LocalChat/pdfcontrol; nu citeste si nu suprascrie din C:/PDFCONTROL. Importul originalului este o migrare explicita prin integration/sync_engine.py --package <folder> --import-original <sursa>, niciodata un pas automat. Motorul privat si cataloagele nu se publica in Git.

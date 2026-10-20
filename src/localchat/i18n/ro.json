@@ -307,5 +307,15 @@
   "Utilizare: /autocompact on, off sau prag 30-95. Setarea este separata per conversatie.": "Utilizare: /autocompact on, off sau prag 30-95. Setarea este separata per conversatie.",
   "Buget local de lucru: {0} · Limita reala API: necunoscuta": "Buget local de lucru: {0} · Limita reala API: necunoscuta",
   "Copiaza textul afisat": "Copiaza textul afisat",
-  "Copiaza textul original": "Copiaza textul original"
+  "Copiaza textul original": "Copiaza textul original",
+  "Adauga modelul la favorite": "Adauga modelul la favorite",
+  "Scoate modelul din favorite": "Scoate modelul din favorite",
+  "Doar favorite": "Doar favorite",
+  "Fabrica neconfirmata": "Fabrica neconfirmata",
+  "Alege fabrica confirmata pentru aceste desene.": "Alege fabrica confirmata pentru aceste desene.",
+  "Catalogul fabricii nu poate fi validat; verifica sursa.": "Catalogul fabricii nu poate fi validat; verifica sursa.",
+  "Catalogul fabricii nu este confirmat sau disponibil; verificarea este partiala.": "Catalogul fabricii nu este confirmat sau disponibil; verificarea este partiala.",
+  "PDFCONTROL: anulare solicitata pentru lucrarea {0}.": "PDFCONTROL: anulare solicitata pentru lucrarea {0}.",
+  "PDFCONTROL: lucrarea {0} continua; verifica starea inainte de a reporni.": "PDFCONTROL: lucrarea {0} continua; verifica starea inainte de a reporni.",
+  "PDFCONTROL: acelasi apel a esuat de trei ori. Verifica eroarea si sursele; lucrarea nu este finalizata.": "PDFCONTROL: acelasi apel a esuat de trei ori. Verifica eroarea si sursele; lucrarea nu este finalizata."
 }

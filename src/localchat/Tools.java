@@ -134,11 +134,15 @@ final class Tools {
         return mcpTools.size();
     }
 
+    private record PdfJob(McpServer server,String project,String id) {}
+    private final Set<PdfJob> activePdfJobs=java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private static void cancelPdfJob(PdfJob job){try{job.server.call("pdfcontrol_cancel_job",Json.obj("project",job.project,"job_id",job.id),10_000);}catch(Exception ignored){}}
     void cancel() {
         cancelled = true;
         Process p = running;
         if (p != null) kill(p);
         for (McpServer s : ctx.mcp().servers()) s.cancelPending();
+        for(PdfJob job:activePdfJobs){Thread thread=new Thread(()->cancelPdfJob(job),"pdfcontrol-cancel");thread.setDaemon(true);thread.start();}
     }
 
     List<ChatClient.ToolSpec> specs() {
@@ -708,6 +712,22 @@ final class Tools {
             allow(Access.RUN, "Tool " + ref.server().name + ": " + ref.tool().name, clip(Json.write(args), 1500));
         }
         Result r = ref.server().call(ref.tool().name, args, 15 * 60_000L);
+        if(!r.isError&&(ref.tool().name.startsWith("pdfcontrol_start_")||ref.tool().name.equals("pdfcontrol_regenerate_report"))){
+            Object record=Json.parse(r.text);String id=Json.str(record,"job_id"),project=String.valueOf(args.get("project"));
+            if(id!=null&&Set.of("pending","running").contains(java.util.Objects.toString(Json.str(record,"status"),""))){
+                PdfJob job=new PdfJob(ref.server(),project,id);activePdfJobs.add(job);long until=System.nanoTime()+java.util.concurrent.TimeUnit.HOURS.toNanos(1);
+                try{
+                    while(Set.of("pending","running").contains(java.util.Objects.toString(Json.str(record,"status"),""))){
+                        if(cancelled){cancelPdfJob(job);return Result.error(I18n.text("PDFCONTROL: anulare solicitata pentru lucrarea {0}.",id));}
+                        if(System.nanoTime()>until)return Result.error(I18n.text("PDFCONTROL: lucrarea {0} continua; verifica starea inainte de a reporni.",id));
+                        Result update=ref.server().call("pdfcontrol_job_status",Json.obj("project",project,"job_id",id,"wait_seconds",5),30_000);
+                        if(update.isError)return update;record=Json.parse(update.text);
+                    }
+                    boolean failed=Set.of("failed","cancelled").contains(java.util.Objects.toString(Json.str(record,"status"),""));
+                    return new Result(cap(Json.write(record)),failed);
+                }finally{activePdfJobs.remove(job);if(cancelled)cancelPdfJob(job);}
+            }
+        }
         return new Result(cap(r.text), r.isError);
     }
 

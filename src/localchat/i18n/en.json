@@ -307,5 +307,15 @@
   "Utilizare: /autocompact on, off sau prag 30-95. Setarea este separata per conversatie.": "Usage: /autocompact on, off or threshold 30-95. The setting is separate per conversation.",
   "Buget local de lucru: {0} · Limita reala API: necunoscuta": "Local working budget: {0} · Actual API limit: unknown",
   "Copiaza textul afisat": "Copy displayed text",
-  "Copiaza textul original": "Copy original text"
+  "Copiaza textul original": "Copy original text",
+  "Adauga modelul la favorite": "Add model to favorites",
+  "Scoate modelul din favorite": "Remove model from favorites",
+  "Doar favorite": "Favorites only",
+  "Fabrica neconfirmata": "Factory unconfirmed",
+  "Alege fabrica confirmata pentru aceste desene.": "Choose the confirmed factory for these drawings.",
+  "Catalogul fabricii nu poate fi validat; verifica sursa.": "The factory catalogue could not be validated; check the source.",
+  "Catalogul fabricii nu este confirmat sau disponibil; verificarea este partiala.": "The factory catalogue is unconfirmed or unavailable; the check is partial.",
+  "PDFCONTROL: anulare solicitata pentru lucrarea {0}.": "PDFCONTROL: cancellation requested for job {0}.",
+  "PDFCONTROL: lucrarea {0} continua; verifica starea inainte de a reporni.": "PDFCONTROL: job {0} is still running; check its status before restarting.",
+  "PDFCONTROL: acelasi apel a esuat de trei ori. Verifica eroarea si sursele; lucrarea nu este finalizata.": "PDFCONTROL: the same call failed three times. Check the error and sources; the job is not complete."
 }

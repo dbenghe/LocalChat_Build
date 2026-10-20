@@ -21,6 +21,8 @@ finally { $taskSha256.Dispose(); $taskHashStream.Dispose() }
 if ($taskLibraryHash -ne '917AFF3963C88D797D0FD9B9CCBD70F7681C101DF9D11C59E2BC7A3A6C0FABF4') { throw 'FlatLaf checksum mismatch' }
 $taskPdfPython = Join-Path $PSScriptRoot 'pdfcontrol/runtime/python/python.exe'
 if (!(Test-Path -LiteralPath $taskPdfPython)) { throw 'PDFCONTROL runtime missing. Restore the local engine/runtime in pdfcontrol.' }
+& $taskPdfPython -I "$PSScriptRoot/integration/test_sync_engine.py"
+if ($LASTEXITCODE) { throw 'Owned engine build isolation tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/sync_engine.py" --package "$PSScriptRoot/pdfcontrol"
 if ($LASTEXITCODE) { throw 'PDFCONTROL engine synchronization failed' }
 $taskBuild = Join-Path $PSScriptRoot 'build'
@@ -54,10 +56,16 @@ if ($LASTEXITCODE) { throw 'Context budget/automatic tool-loop compaction tests 
 if ($LASTEXITCODE) { throw 'Themed slash command palette tests failed; distribution was not changed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/chat-display-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ChatDisplayTest
 if ($LASTEXITCODE) { throw 'Plain chat display/original data tests failed; distribution was not changed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/favorites-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ModelFavoritesTest
+if ($LASTEXITCODE) { throw 'Model favorite tests failed; distribution was not changed' }
+& $taskPdfPython -I "$PSScriptRoot/integration/test_owned_layout.py" --package "$PSScriptRoot/pdfcontrol"
+if ($LASTEXITCODE) { throw 'Owned engine layout tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_pdfcontrol_bridge.py" --package "$PSScriptRoot/pdfcontrol" --output "$taskBuild/pdfcontrol-tests"
 if ($LASTEXITCODE) { throw 'PDFCONTROL workflow tests failed; distribution was not changed' }
 & "$taskJdk/bin/java.exe" "-Dpdfcontrol.package=$PSScriptRoot/pdfcontrol" "-Dpdfcontrol.projects=$taskBuild/pdfcontrol-tests/PROJECTS" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.PdfControlTest
 if ($LASTEXITCODE) { throw 'Direct PDFCONTROL UI/MCP tests failed; distribution was not changed' }
+& "$taskJdk/bin/java.exe" "-Dpdfcontrol.package=$PSScriptRoot/pdfcontrol" "-Dpdfcontrol.projects=$taskBuild/pdfcontrol-tests/PROJECTS" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.PdfAgentTest
+if ($LASTEXITCODE) { throw 'Model to PDFCONTROL workflow tests failed' }
 $taskJar = Join-Path $taskBuild 'LocalChat.jar'
 $taskManifest = Join-Path $taskBuild 'MANIFEST.MF'
 @"

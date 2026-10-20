@@ -115,7 +115,7 @@ class Workflows(unittest.TestCase):
         with pymupdf.open(record['report']) as doc:
             self.assertGreater(len(doc),1);doc[0].get_pixmap(matrix=pymupdf.Matrix(1,1),alpha=False).save(OUT/'report-preview.png')
         regen=self.client.wait(self.client.start('pdfcontrol_regenerate_report',job_id=record['job_id'],include_drawings=True))
-        self.artifacts(regen);self.assertTrue(Path(regen['report']).is_file())
+        self.artifacts(regen);self.assertTrue(Path(regen['report']).is_file());self.assertEqual(regen['status'],record['status']);self.assertEqual(regen.get('limitation_codes'),record.get('limitation_codes'))
     def test_07_cancel_job(self):
         record=self.client.start('pdfcontrol_start_workflow',files=['bundle.pdf'])
         self.client.start('pdfcontrol_cancel_job',job_id=record['job_id'])
@@ -132,6 +132,94 @@ class Workflows(unittest.TestCase):
         self.artifacts(record);self.assertTrue(record['include_drawings']);self.assertTrue(record['engine_fingerprint'])
         with pymupdf.open(record['report']) as doc:
             text='\n'.join(page.get_text() for page in doc);self.assertIn('controlerapport',text.lower())
+
+    def test_10_sources_in_controle_and_verified_delivery(self):
+        relative='Controle/Atasamente_nou/123456_TRK300_V.pdf'
+        pdf(PROJECT/relative,['Projectnummer: 123456\nVormtekening\nTRK300_V\nDefinitief'])
+        fingerprint=digest(PROJECT/relative)
+        record=self.client.wait(self.client.start('pdfcontrol_start_check',files=[relative]))
+        self.artifacts(record);self.assertTrue(record['delivery_verified'])
+        self.assertEqual(record['source_files'],[relative]);self.assertEqual(record['source_count'],1)
+        target=PROJECT/'Controle/PDFCONTROL/Rapoarte'
+        self.assertTrue(Path(record['report']).is_relative_to(target))
+        manifest=json.loads(Path(record['delivery_manifest']).read_text(encoding='utf-8'))
+        self.assertEqual(manifest['sources_sha256'],{relative:fingerprint})
+        for item in record['artifacts']:self.assertEqual(item['sha256'],digest(Path(item['path'])))
+        self.assertEqual(digest(PROJECT/relative),fingerprint)
+        with pymupdf.open(record['report']) as report:self.assertIn('Uitvoering gedeeltelijk',report[0].get_text())
+        inventory=self.client.start('pdfcontrol_project_files')
+        entry=next(row for row in inventory['files'] if row['path']==relative);self.assertTrue(entry['pdf_source'])
+        rejected=self.client.call('pdfcontrol_start_check',{'project':'123456','files':[Path(record['report']).relative_to(PROJECT).as_posix()]},error=True)
+        self.assertIn('nu sunt surse',rejected)
+        self.client.call('pdfcontrol_start_check',{'project':'123456','files':['123456_TRK300_V.pdf']},error=True)
+        # A new run must keep the earlier PDF and create a distinct delivery.
+        before=digest(Path(record['report']))
+        again=self.client.wait(self.client.start('pdfcontrol_start_check',files=[relative]))
+        self.assertNotEqual(record['delivery_folder'],again['delivery_folder'])
+        self.assertEqual(digest(Path(record['report'])),before)
+
+    def test_11_generated_and_annotated_inputs_rejected(self):
+        for relative in ['Controle/checked/source.pdf','Controle/PDFCONTROL/Rapoarte/source.pdf','loose/source_checked_OK.pdf','loose/RAPPORT.pdf']:
+            pdf(PROJECT/relative,['Generated output'])
+            self.client.call('pdfcontrol_start_check',{'project':'123456','files':[relative]},error=True)
+
+    def test_12_workflow_accepts_explicit_drawings_option(self):
+        record=self.client.wait(self.client.start('pdfcontrol_start_workflow',files=['bundle.pdf'],include_drawings=True))
+        self.artifacts(record);self.assertTrue(record['delivery_verified']);self.assertTrue(record['include_drawings'])
+
+    def test_13_delivery_failure_is_not_success(self):
+        isolated=ROOT/'654321';isolated.mkdir(exist_ok=True)
+        pdf(isolated/'source.pdf',['Projectnummer: 654321\nVormtekening\nA1_V\nDefinitief'])
+        (isolated/'Controle').mkdir(exist_ok=True)
+        (isolated/'Controle/PDFCONTROL').write_text('Deliberately blocked output directory',encoding='ascii')
+        record=self.client.call('pdfcontrol_start_check',{'project':'654321','files':['source.pdf']})
+        deadline=time.monotonic()+90
+        while record['status'] in {'pending','running'}:
+            self.assertLess(time.monotonic(),deadline)
+            record=self.client.call('pdfcontrol_job_status',{'project':'654321','job_id':record['job_id'],'wait_seconds':2})
+        self.assertEqual(record['status'],'failed');self.assertFalse(record.get('delivery_verified',False))
+
+    def test_14_explicit_factory_uses_isolated_original_catalogue(self):
+        state=PROJECT/'Controle/PDFCONTROL/project-state.json'
+        before=state.read_bytes() if state.exists() else None
+        record=self.client.wait(self.client.start('pdfcontrol_start_check',files=['loose/123456_WA224_V.pdf'],factory='soest'))
+        self.artifacts(record);self.assertTrue(record['catalogue']['available']);self.assertEqual(record['catalogue']['factory'],'soest')
+        snapshot=Path(record['run_folder'])/'engine/data_lokaal/catalogus_soest.json'
+        self.assertEqual(digest(snapshot),digest(PACKAGE/'data_lokaal/catalogus_soest.json'))
+        self.assertEqual(state.read_bytes() if state.exists() else None,before)
+        context=Path(record['run_folder'])/'catalog_context/123456/Controle/PDFCONTROL/project-state.json'
+        self.assertEqual(json.loads(context.read_text(encoding='utf-8'))['factory'],'soest')
+
+    def test_15_delivery_retries_temporary_windows_lock(self):
+        import importlib.util
+        spec=importlib.util.spec_from_file_location('delivery_test_bridge',PACKAGE/'octop_mcp.py');bridge=importlib.util.module_from_spec(spec);spec.loader.exec_module(bridge)
+        run=PROJECT/'Controle/Octop-PDFCONTROL'/('e'*32);run.mkdir(exist_ok=True)
+        report=run/'RAPPORT.pdf';pdf(report,['Only this verified job'])
+        original=bridge.os.replace;attempts=[]
+        def locked(source,target):
+            if Path(source).is_dir():
+                attempts.append(1)
+                if len(attempts)<3:raise PermissionError('Simulated transient file scanner')
+            return original(source,target)
+        bridge.os.replace=locked
+        record={'project':'123456','job_id':'e'*32,'operation':'check','sources_sha256':{},'report':str(report)}
+        try:artifacts=bridge.deliver_outputs(PROJECT,run,record,[{'path':str(report),'pages':1,'bytes':report.stat().st_size}],'done',lambda:False)
+        finally:bridge.os.replace=original
+        self.assertEqual(len(attempts),3);self.assertTrue(record['delivery_verified']);self.assertEqual(digest(Path(record['report'])),digest(report))
+
+    def test_16_job_status_retries_temporary_read_lock(self):
+        import importlib.util
+        from unittest.mock import patch
+        spec=importlib.util.spec_from_file_location('read_test_bridge',PACKAGE/'octop_mcp.py');bridge=importlib.util.module_from_spec(spec);spec.loader.exec_module(bridge)
+        target=OUT/'read-lock-state.json';target.write_text(json.dumps({'status':'done'}),encoding='utf-8')
+        original=Path.read_text;attempts=[]
+        def locked(path,*args,**kwargs):
+            if path==target:
+                attempts.append(1)
+                if len(attempts)<3:raise PermissionError('Temporary scanner lock')
+            return original(path,*args,**kwargs)
+        with patch.object(Path,'read_text',locked):self.assertEqual(bridge.read_record(target)['status'],'done')
+        self.assertEqual(len(attempts),3)
 
 if __name__=='__main__':
     result=unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(Workflows))

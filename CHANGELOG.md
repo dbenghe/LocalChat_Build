@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.10.2 — 2026-10-20
+
+- Motorul propriu din LocalChat_Build/pdfcontrol devine autoritar: buildul normal nu mai importa automat din C:/PDFCONTROL. Manifestul sursei si copiile instalate se verifica; importul originalului este explicit.
+- Corectie pentru cartusul MBS Specials: statusul curent VORM DEFINITIEF/DEFINITIEF este citit din celula sa, fara a imprumuta valori din legende/revizii. Identitatea TRK si armarea reala sunt recunoscute separat; numarul MBS explicit prevaleaza fata de WERKNO al clientului. Sursele private originale nu sunt modificate.
+- Apelurile PDFCONTROL din chat sunt urmarite automat pana la starea terminala. Modelul primeste livrarea verificata; apelurile identice reusite reutilizeaza acelasi job in turul curent. Trei erori identice opresc bucla. Stop solicita si anularea jobului activ.
+
+- Conector PDFCONTROL corectat: accepta surse locale din Controle/Atasamente, cu cai relative complete; exclude directoarele de rezultate si PDF-urile deja marcate. Inventarul indica eligibilitatea surselor. Fluxul complet accepta explicit include_drawings.
+- PDF-ul livrat pentru un rezultat partial include o pagina explicita cu limitele si sursele selectate. Regenerarea unui raport pastreaza limitarile jobului initial; PDF-ul tehnic original ramane intact.
+- Rapoartele si desenele rezultate se livreaza automat in Controle/PDFCONTROL/Rapoarte, separat per job, cu hashuri si manifestul exact al surselor. Erorile de export nu sunt raportate drept succes, rularea partiala este marcata distinct si originalele raman intacte.
+- Cataloagele locale Soest/Alphen sunt incluse in snapshotul izolat; fabrica se selecteaza explicit in panou sau prin parametrul factory, fara modificarea altui proiect. Lipsa catalogului este raportata ca limitare si rezultat partial. Referintele lipsa ale skillului productie sunt incluse numai local, fara publicarea datelor private.
+- Instructiunile modelului disting pornirea jobului de finalizare si cer dovezi de livrare pentru selectia solicitata, fara substituirea unui alt set de desene.
+
+- Favorite locale pentru modele, separate per profil de furnizor si URL API. Steluta langa selector adauga/elimina modelul curent; favoritele apar primele in selector si in meniul de jos.
+- Catalogul ofera steluta pentru modelul selectat si filtrul Doar favorite. Marcarea nu apeleaza API-ul, nu schimba modelul implicit si pastreaza selectia si istoricul. Preferintele sunt pastrate la repornire si reincarcarea catalogului.
+- Pictograma desenata functioneaza in Dark/Light; textele sunt traduse in toate cele sase limbi.
+
 ## 1.10.1 — 2026-10-20
 
 - Corectie de afisare in chat: raspunsurile modelelor, istoricul vechi, mesajele utilizatorului si previzualizarile uneltelor folosesc litere normale in interfata romana. Liniile de arbori Unicode se afiseaza ca +-- si |, pentru compatibilitate cu fonturile Windows.

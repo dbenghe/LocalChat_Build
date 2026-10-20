@@ -278,7 +278,7 @@ public final class FeatureTest {
                 } else check(server.requests.size()==1 && state.memory.through==0 && history.size()==14,"disabled or unknown-limit auto mode sends normally without compacting");
                 var saved=Conversations.load(file[0]);check(saved.state().autoCompact==(mode!=4) && saved.state().autoThreshold==30,"auto preferences persisted per chat");
                 command(app[0],"/new Different chat");
-                check(!((Conversations.State)field(app[0],"sessionState")).autoCompact,"new chat has independent auto preference");
+                check(!((Conversations.State)field(app[0],"sessionState")).autoCompact,"new chat has independent auto preference; mode="+mode+" status="+((JLabel)field(app[0],"status")).getText());
                 command(app[0],"/switch "+Conversations.shortId(file[0]));
                 WorkspacePanel panel=field(app[0],"workspace");check(panel.autoCompact.isSelected()==(mode!=4) && panel.autoThreshold.getValue().equals(30),"auto controls restored on chat switch; mode="+mode+" selected="+panel.autoCompact.isSelected()+" threshold="+panel.autoThreshold.getValue()+" status="+((JLabel)field(app[0],"status")).getText());
                 if(mode==0){

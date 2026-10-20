@@ -35,6 +35,8 @@ final class Agent {
     private final ChatClient client = new ChatClient();
     private final Tools tools; // null: plain chat
     private final List<ChatClient.Message> added = new ArrayList<>(); // guarded by itself
+    private final java.util.Map<String,Tools.Result> startedPdfJobs=new java.util.HashMap<>();
+    private final java.util.Map<String,Integer> failedPdfCalls=new java.util.HashMap<>();
     private boolean replyPending; // guarded by added
     private volatile boolean cancelled;
 
@@ -79,15 +81,19 @@ final class Agent {
             for (ChatClient.ToolCall call : reply.calls) {
                 if (cancelled) return;
                 ui.toolStarted(call);
-                Tools.Result result = tools == null
-                        ? Tools.Result.error("Tool-urile sunt dezactivate in aplicatie.")
-                        : tools.execute(call);
+                boolean pdfStart=call.name.contains("pdfcontrol_start_")||call.name.endsWith("pdfcontrol_regenerate_report");
+                String signature=pdfStart?call.name+"|"+Json.write(new java.util.TreeMap<>(call.args)):"";
+                Tools.Result result=pdfStart?startedPdfJobs.get(signature):null;
+                if(result==null)result=tools==null?Tools.Result.error("Tool-urile sunt dezactivate in aplicatie."):tools.execute(call);
+                if(pdfStart&&!result.isError)startedPdfJobs.put(signature,result);
+                if(pdfStart&&result.isError)failedPdfCalls.merge(signature,1,Integer::sum);
                 if (cancelled) return;
                 synchronized (added) {
                     added.add(ChatClient.Message.toolResult(call.id, result.text, result.isError));
                 }
                 publishContext(base, ui);
                 ui.toolFinished(call, result);
+                if(pdfStart&&failedPdfCalls.getOrDefault(signature,0)>=3)throw new IOException(I18n.text("PDFCONTROL: acelasi apel a esuat de trei ori. Verifica eroarea si sursele; lucrarea nu este finalizata."));
             }
         }
         throw new IOException("Oprit dupa " + MAX_STEPS + " pasi fara un raspuns final.");

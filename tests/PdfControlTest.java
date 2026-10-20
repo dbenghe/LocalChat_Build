@@ -26,7 +26,7 @@ public final class PdfControlTest {
                 edt(()->{ref[0]=new PdfControlDialog(null,server,projects.resolve("123456"),s->{},r->{},p->{},()->{});dialogs.add(ref[0]);});ready(ref[0],false);
                 edt(()->{
                     PdfControlDialog dialog=ref[0];check(dialog.project.getText().equals("123456"),"project inferred from selected working folder");
-                    check(dialog.operation.getItemCount()==6,"six direct operations available");
+                    check(dialog.operation.getItemCount()==6,"six direct operations available");check(dialog.factory.getItemCount()==5,"factory is explicit with unconfirmed default");check(PdfControlDialog.limitations(Json.obj("limitation_codes",List.of("factory_catalogue_unavailable"))).equals(I18n.text("Catalogul fabricii nu este confirmat sau disponibil; verificarea este partiala.")),"factory limitation translated "+language);
                     for(int i=0;i<6;i++)check(dialog.operation.getItemAt(i).equals(I18n.text(PdfControlDialog.LABELS[i])),"localized operation "+language);
                     check(dialog.start.getText().equals(I18n.text("Alege PDF-urile și pornește")),"localized start action");
                     for(boolean dark:new boolean[]{false,true}){
@@ -37,6 +37,7 @@ public final class PdfControlTest {
                 });
             }
             var selection=PdfControlDialog.relativeSelection(projects.resolve("123456"),new Path[]{projects.resolve("123456/loose/123456_WA224_V.pdf")});check(selection.equals(List.of("loose/123456_WA224_V.pdf")),"selected PDFs become project-relative arguments");
+            check(PdfControlDialog.relativeSelection(projects.resolve("123456"),new Path[]{projects.resolve("123456/Controle/Atasamente_nou/123456_TRK300_V.pdf")}).equals(List.of("Controle/Atasamente_nou/123456_TRK300_V.pdf")),"UI preserves valid sources under Controle");
             try{PdfControlDialog.relativeSelection(projects.resolve("123456/loose"),new Path[]{projects.resolve("123456/bundle.pdf")});throw new AssertionError("Outside selection accepted");}catch(java.io.IOException expected){checks++;}
             AtomicReference<Object> result=new AtomicReference<>();PdfControlDialog[] run={null};
             edt(()->{run[0]=new PdfControlDialog(null,server,projects.resolve("123456"),s->{},result::set,p->{},()->{});dialogs.add(run[0]);});ready(run[0],false);

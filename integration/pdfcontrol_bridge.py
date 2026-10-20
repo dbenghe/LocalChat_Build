@@ -82,6 +82,22 @@ def sha(path):
     return h.hexdigest()
 
 
+def read_record(path):
+    for attempt in range(60):
+        try:return json.loads(path.read_text(encoding='utf-8'))
+        except PermissionError:
+            if attempt==59:raise
+            time.sleep(.05)
+
+
+def replace_retry(source,target):
+    for attempt in range(60):
+        try:os.replace(source,target);return
+        except PermissionError:
+            if attempt==59:raise
+            time.sleep(.05)
+
+
 def atomic(path,data):
     temp=path.with_name(path.name+'.'+uuid.uuid4().hex+'.tmp')
     temp.write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding='utf-8')
@@ -167,7 +183,7 @@ def run_tool(name,args):
             for filename in sorted(names):
                 path=Path(parent)/filename
                 if path.is_file() and path.resolve().is_relative_to(project):
-                    files.append({'path':path.relative_to(project).as_posix(),'bytes':path.stat().st_size})
+                    files.append({'path':path.relative_to(project).as_posix(),'bytes':path.stat().st_size,'pdf_source':path.suffix.lower()=='.pdf' and source_rejection(project,path) is None})
         return {'project':args['project'],'files':files[offset:offset+200],'total':len(files),
                 'next_offset':offset+200 if offset+200<len(files) else None}
     if name=='pdfcontrol_read_document':
@@ -200,7 +216,7 @@ def run_tool(name,args):
     raise ValueError('Unealta de citire necunoscuta.')
 
 
-FILES_SCHEMA={'type':'array','items':{'type':'string'},'minItems':1,'maxItems':500}
+FILES_SCHEMA={'type':'array','description':'Cai relative la radacina proiectului, exact ca in pdfcontrol_project_files; include subfolderele. Sursele din Controle/Atasamente sunt acceptate. Nu folosi rapoarte sau rezultate anterioare.','items':{'type':'string'},'minItems':1,'maxItems':500}
 for definition in TOOLS:
     if definition['name']=='pdfcontrol_start_check':
         definition['inputSchema']['properties']['files']=FILES_SCHEMA
@@ -213,13 +229,18 @@ for name,description in [
     ('pdfcontrol_start_extract','Extrage planse din brosuri si verifica/completeaza perechi V/W folosind regulile originale; nu inventeaza armari. Produce PDF-uri separate, provenienta si raport PDF.'),
     ('pdfcontrol_start_pairs','Verifica perechi V/W individuale si copiaza numai armarea confirmata prin proiect si referinta. Pastreaza cartusul. Produce PDF cu lipsuri/provenienta.'),
     ('pdfcontrol_start_workflow','Flux complet: extrage brosuri, completeaza perechile confirmate, controleaza desenele cu OCR si genereaza raport PDF cu planse marcate anexate.')]:
-    TOOLS.append(tool(name,description,{'project':SCHEMA_PROJECT,'files':FILES_SCHEMA},['project','files'],False))
+    TOOLS.append(tool(name,description,{'project':SCHEMA_PROJECT,'files':FILES_SCHEMA,'include_drawings':{'type':'boolean','default':True}},['project','files'],False))
 TOOLS.append(tool('pdfcontrol_start_compare','Compara OUD/NIEUW cu motorul original: PDF vizual cu chenare identice HTML, PDF diferente T/B, PDF individual per pereche. Nu modifica sursele.',
                   {'project':SCHEMA_PROJECT,'old_files':FILES_SCHEMA,'new_files':FILES_SCHEMA},['project','old_files','new_files'],False))
 TOOLS.append(tool('pdfcontrol_regenerate_report','Genereaza dintr-un job de control existent un nou raport PDF, implicit cu desenele marcate anexate; fara reluarea controlului.',
                   {'project':SCHEMA_PROJECT,'job_id':{'type':'string'},'include_drawings':{'type':'boolean','default':True}},['project','job_id'],False))
 TOOLS.append(tool('pdfcontrol_cancel_job','Solicita anularea lucrarii PDFCONTROL. Rezultatele partiale raman marcate cancelled, nu done.',
                   {'project':SCHEMA_PROJECT,'job_id':{'type':'string'}},['project','job_id'],False))
+
+for definition in TOOLS:
+    if definition['name'] in {'pdfcontrol_start_check','pdfcontrol_start_workflow'}:
+        definition['inputSchema']['properties']['factory']={'type':'string','enum':['soest','alphen','veenoord','lelystad'],
+            'description':'Fabrica confirmata pentru lot; nu o deduce din litera discului. Optional; altfel foloseste numai configurarea explicita existenta a proiectului.'}
 
 _read_tool=run_tool
 OPERATIONS={'pdfcontrol_start_check':'check','pdfcontrol_start_extract':'extract','pdfcontrol_start_pairs':'pairs',
@@ -229,21 +250,113 @@ def job_file(project,identifier):
     if not isinstance(identifier,str) or not re.fullmatch('[a-f0-9]{32}',identifier):raise ValueError('Job invalid.')
     return within(project,f'Controle/Octop-PDFCONTROL/{identifier}/job.json')
 
+def source_rejection(project,path):
+    parts=[part.casefold() for part in path.relative_to(project).parts]
+    if path.suffix.lower()!='.pdf':return 'Selecteaza numai PDF-uri.'
+    if any(part in {'octop-pdfcontrol','checked','_checked','pdfcompare','rapoarte','reports'} or part.startswith('run-') for part in parts[:-1]):
+        return 'Rezultatele generate nu sunt surse pentru o noua lucrare.'
+    name=path.name.casefold()
+    if '_checked' in name or name.startswith(('rapport','vergelijking_oud_nieuw','verschillen_')):
+        return 'Un raport sau un desen deja marcat nu este sursa originala.'
+    return None
+
+
 def selected_sources(project,names):
     if not isinstance(names,list) or not 1<=len(names)<=500 or any(not isinstance(n,str) for n in names) or len(set(names))!=len(names):
         raise ValueError('Selecteaza intre 1 si 500 PDF-uri distincte.')
-    paths=[within(project,n) for n in names]
-    for path in paths:
-        if path.suffix.lower()!='.pdf' or '_checked' in path.name.lower() or path.relative_to(project).parts[0].lower()=='controle':
-            raise ValueError('Sunt permise numai PDF-uri sursa, fara rezultate din Controle sau _checked.')
+    paths=[]
+    for name in names:
+        try:path=within(project,name)
+        except ValueError as error:
+            raise ValueError(str(error)+' Foloseste calea relativa completa din pdfcontrol_project_files, cu subfoldere, nu doar numele fisierului. Nu este necesar accesul la server.') from error
+        reason=source_rejection(project,path)
+        if reason:raise ValueError(reason+' Fisier: '+name)
         if path.stat().st_size>200*1024*1024:raise ValueError('PDF peste 200 MB.')
+        paths.append(path)
+    if len(set(paths))!=len(paths):raise ValueError('Acelasi PDF a fost selectat prin cai diferite.')
     if sum(p.stat().st_size for p in paths)>2*1024**3:raise ValueError('Lot peste 2 GB; separa loturile.')
     return paths
+
+
+def partial_report_notice(target,record):
+    """The delivered PDF itself states the limits; the untouched engine PDF remains in the job."""
+    import pymupdf
+    import mbs_rapport
+    notice=pymupdf.open();layout=mbs_rapport.Blad(notice,'PDFCONTROL - Uitvoeringsgrenzen')
+    layout.titel('Uitvoering gedeeltelijk')
+    layout.regel('Project '+record['project']+' | Job '+record['job_id'])
+    layout.regel('Geen productie- of importvrijgave. De volgende paginas tonen de uitgevoerde controles.')
+    if record.get('catalogue') is not None and not record['catalogue'].get('available'):
+        layout.regel('Fabriekscatalogus niet bevestigd of niet beschikbaar.')
+        layout.regel('Artikelbenamingen zijn niet volledig tegen de fabriekscatalogus getoetst.')
+    if record.get('pair_summary',{}).get('unresolved'):
+        layout.regel('Niet bevestigde V/W-koppelingen: '+str(record['pair_summary']['unresolved']))
+        layout.regel('Zie ook het afzonderlijke rapport RAPPORT_PERECHI.pdf.')
+    if record.get('summary',{}).get('mislukt'):
+        layout.regel('Niet verwerkte bronnen: '+str(record['summary']['mislukt']))
+    sources=record.get('source_files') or list(record.get('sources_sha256',{}))
+    layout.titel('Geselecteerde bronnen',size=13)
+    layout.tabel([('Bestand',760)],[[Path(name).name] for name in sources])
+    with pymupdf.open(target) as original:notice.insert_pdf(original)
+    temporary=target.with_name(target.name+'.notice.tmp')
+    try:notice.save(temporary,garbage=4,deflate=True)
+    finally:notice.close()
+    replace_retry(temporary,target)
+
+
+def deliver_outputs(project,run,record,artifacts,state,cancel):
+    """Publish only verified outputs from this job; never overwrite an earlier delivery."""
+    destination=project/'Controle/PDFCONTROL/Rapoarte'
+    if not destination.resolve().is_relative_to(project):raise ValueError('Destinatia rapoartelor iese din proiect.')
+    destination.mkdir(parents=True,exist_ok=True)
+    folder=destination/(record['operation']+'_'+record['job_id']+('_PARTIAL' if state=='partial' else ''))
+    staging=destination/('.delivery-'+uuid.uuid4().hex)
+    if folder.exists():raise ValueError('Destinatia acestui job exista deja; nu suprascriu raportul anterior.')
+    staging.mkdir()
+    delivered=[];mapping={}
+    try:
+        for item in artifacts:
+            if cancel():raise InterruptedError('Anulat inainte de livrarea rapoartelor.')
+            source=Path(item['path']).resolve()
+            if not source.is_relative_to(run.resolve()):raise ValueError('Artefact in afara jobului.')
+            rel=source.relative_to(run.resolve());target=staging/rel
+            target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source,target)
+            fingerprint=sha(source)
+            if sha(target)!=fingerprint:raise ValueError('Copie raport invalida.')
+            if state=='partial' and str(source)==str(Path(record.get('report','')).resolve()):partial_report_notice(target,record)
+            import pymupdf
+            with pymupdf.open(target) as pdf:pages=len(pdf)
+            mapping[str(source)]=str(folder/rel)
+            delivered.append(dict(item,path=str(folder/rel),pages=pages,bytes=target.stat().st_size,sha256=sha(target),engine_output_sha256=fingerprint,job_id=record['job_id']))
+        source_manifest=record['sources_sha256']
+        if record.get('parent_job'):
+            source_manifest=read_record(job_file(project,record['parent_job'])).get('sources_sha256',{})
+        atomic(staging/'MANIFEST.json',{'project':record['project'],'job_id':record['job_id'],'operation':record['operation'],'status':state,
+            'sources_sha256':source_manifest,'engine_fingerprint':record.get('engine_fingerprint'),'catalogue':record.get('catalogue'),'limitations':record.get('limitations',[]),'artifacts':delivered,'transfer_approved':False})
+        if cancel():raise InterruptedError('Anulat inainte de livrarea rapoartelor.')
+        for attempt in range(60):
+            if cancel():raise InterruptedError('Anulat inainte de livrarea rapoartelor.')
+            try:os.replace(staging,folder);break
+            except PermissionError:
+                if attempt==59:raise
+                time.sleep(.05)
+    finally:
+        if staging.exists() and staging.parent.resolve()==destination.resolve():shutil.rmtree(staging)
+    original=record.get('report');record['original_report']=original
+    if original:record['report']=mapping.get(str(Path(original).resolve()),original)
+    if isinstance(record.get('report_info'),dict):record['report_info']=dict(record['report_info'],pad=record['report'],paginas=next((item['pages'] for item in delivered if item['path']==record['report']),record['report_info'].get('paginas')))
+    if record.get('differences_report'):record['differences_report']=mapping.get(str(Path(record['differences_report']).resolve()),record['differences_report'])
+    record.update(delivery_folder=str(folder),delivery_manifest=str(folder/'MANIFEST.json'),delivery_verified=True,
+                  source_count=len(source_manifest),source_files=list(source_manifest))
+    return delivered
+
 
 def public_record(record,offset=0):
     # The full source/engine manifests remain on disk; polling must not exhaust model context.
     value={k:v for k,v in record.items() if k not in {'files','groups','sources_sha256','engine_sha256','artifacts'}}
-    value['source_count']=len(record.get('sources_sha256',{}))
+    if record.get('status') not in {'done','partial'}:
+        for key in ('report','differences_report','original_report','report_info','delivery_folder','delivery_manifest'):value.pop(key,None)
+    value['source_count']=record.get('source_count',len(record.get('sources_sha256',{})))
     outputs=record.get('artifacts',[]);value['artifact_total']=len(outputs);value['artifacts']=outputs[offset:offset+20]
     value['next_artifact_offset']=offset+20 if offset+20<len(outputs) else None
     return value
@@ -268,7 +381,7 @@ def run_tool(name,args):
     if name not in OPERATIONS and name not in {'pdfcontrol_job_status','pdfcontrol_cancel_job'}:
         value=_read_tool(name,args)
         if name in {'pdfcontrol_status','pdfcontrol_live_status'}:
-            value.update(bridge_version='2.0.0',workflows=list(OPERATIONS),reports='PDF with marked drawings',engine_manifest=str(APP/'localchat_engine_manifest.json'))
+            value.update(bridge_version='2.1.0',workflows=list(OPERATIONS),reports='PDF with marked drawings',engine_manifest=str(APP/'localchat_engine_manifest.json'))
         return value
     definition=next(t for t in TOOLS if t['name']==name)
     if not isinstance(args,dict) or set(args)-set(definition['inputSchema']['properties']) or any(k not in args for k in definition['inputSchema']['required']):
@@ -277,14 +390,14 @@ def run_tool(name,args):
     if name in {'pdfcontrol_job_status','pdfcontrol_cancel_job'}:
         path=job_file(project,args['job_id'])
         if name=='pdfcontrol_cancel_job':
-            record=json.loads(path.read_text(encoding='utf-8'))
+            record=read_record(path)
             if record['status'] in {'pending','running'}:(path.parent/'cancel.request').touch()
             return {'job_id':args['job_id'],'cancel_requested':record['status'] in {'pending','running'},'status':record['status']}
         delay=args.get('wait_seconds',10);offset=args.get('artifact_offset',0)
         if type(delay) is not int or not 0<=delay<=20 or type(offset) is not int or offset<0:raise ValueError('Paginare/asteptare invalida.')
         until=time.monotonic()+delay
         while True:
-            record=json.loads(path.read_text(encoding='utf-8'))
+            record=read_record(path)
             if record['status'] in {'pending','running'} and (path.parent/'worker.pid').is_file():
                 try:alive=process_alive(int((path.parent/'worker.pid').read_text(encoding='ascii')))
                 except (ValueError,OSError):alive=True
@@ -294,10 +407,12 @@ def run_tool(name,args):
             time.sleep(.25)
         return public_record(record,offset)
     operation=OPERATIONS[name]
+    factory=args.get('factory')
+    if factory is not None and factory not in {'soest','alphen','veenoord','lelystad'}:raise ValueError('Fabrica invalida.')
     include=args.get('include_drawings',True)
     if type(include) is not bool:raise ValueError('include_drawings trebuie boolean.')
     if operation=='report':
-        previous=job_file(project,args['job_id']);parent=json.loads(previous.read_text(encoding='utf-8'))
+        previous=job_file(project,args['job_id']);parent=read_record(previous)
         if parent.get('status') not in {'done','partial'} or not (previous.parent/'engine/checked/resultaten.json').is_file():
             raise ValueError('Raportul necesita un job de control terminat, cu rezultate disponibile.')
         files=[];groups={};hashes={};parent_job=args['job_id']
@@ -315,7 +430,7 @@ def run_tool(name,args):
     if not run.parent.resolve().is_relative_to(project):raise ValueError('Folderul Controle iese din proiect.')
     run.mkdir(parents=True)
     record={'project':args['project'],'job_id':identifier,'operation':operation,'status':'pending','files':files,'groups':groups,
-            'sources_sha256':hashes,'include_drawings':include,'parent_job':parent_job,'transfer_approved':False,'run_folder':str(run)}
+            'sources_sha256':hashes,'factory':factory,'include_drawings':include,'parent_job':parent_job,'transfer_approved':False,'run_folder':str(run)}
     atomic(run/'job.json',record)
     env=dict(os.environ,PDFCONTROL_PACKAGE=str(PACKAGE),PDFCONTROL_PROJECTS_ROOT=str(PROJECTS),PDFCONTROL_PRODUCTIE_ROOT=str(PROJECTS))
     try:
@@ -329,7 +444,7 @@ def run_tool(name,args):
 
 def worker(number,identifier):
     project=project_path(number);record_path=job_file(project,identifier);run=record_path.parent
-    record=json.loads(record_path.read_text(encoding='utf-8'));cancel=lambda:(run/'cancel.request').exists()
+    record=read_record(record_path);cancel=lambda:(run/'cancel.request').exists()
     def progress(phase,current=0,total=0,item=''):
         record['progress']={'phase':str(phase),'current':current,'total':total,'item':str(item)};atomic(record_path,record)
         if cancel():raise InterruptedError('Anulat de utilizator.')
@@ -356,6 +471,16 @@ def worker(number,identifier):
         for path in APP.iterdir():
             if path.is_file() and (path.name in {'bureaus.json','bureaus_prive.json','mbs_artikelnamen.json','mbs_catalogus.json','kennisbank.json','lower_right_ignored_labels.json','localchat_engine_manifest.json'} or path.suffix=='.py' and (path.name.startswith('mbs_') or path.name=='leer_van_tekenfouten.py')):
                 shutil.copy2(path,engine/path.name);manifest[path.name]=sha(engine/path.name)
+        for name in ['catalogus_soest.json','catalogus_alphen.json']:
+            source=APP/'data_lokaal'/name
+            if source.is_file():
+                target=engine/'data_lokaal'/name;target.parent.mkdir(exist_ok=True);shutil.copy2(source,target)
+                if sha(source)!=sha(target):raise ValueError('Copie catalog invalida.')
+                manifest['data_lokaal/'+name]=sha(target)
+        if record.get('factory'):
+            context=run/'catalog_context';context_state=context/number/'Controle/PDFCONTROL/project-state.json'
+            context_state.parent.mkdir(parents=True);atomic(context_state,{'project':number,'factory':record['factory']})
+            os.environ['PDFCONTROL_PRODUCTIE_ROOT']=str(context)
         record['engine_sha256']=manifest;atomic(run/'ENGINE.json',manifest);record['engine_manifest']=str(run/'ENGINE.json');record['engine_fingerprint']=hashlib.sha256(json.dumps(manifest,sort_keys=True).encode()).hexdigest();sys.path.insert(0,str(engine))
         inp=engine/'PDF_NOU';inp.mkdir()
         for group,names in record.get('groups',{}).items():
@@ -402,6 +527,18 @@ def worker(number,identifier):
             doc.save(run/'RAPPORT_PERECHI.pdf',garbage=4,deflate=True);doc.close()
             record['report']=str(run/'RAPPORT_PERECHI.pdf')
         if operation in {'check','workflow'}:
+            import mbs_artikelcatalogus
+            try:
+                catalogue=mbs_artikelcatalogus.catalogus_voor_project(number)
+                record['catalogue']={'available':catalogue is not None,'factory':catalogue.data['factory'] if catalogue else record.get('factory'),
+                    'source_sha256':catalogue.data.get('source_sha256') if catalogue else None}
+                if catalogue is None:
+                    record['limitation_codes']=['factory_catalogue_unavailable']
+                    record.setdefault('limitations',[]).append('Catalogul fabricii nu este confirmat sau disponibil. Controlul PDF nu valideaza complet denumirile fata de catalog.');partial=True
+            except (OSError,ValueError,KeyError,TypeError) as error:
+                record['catalogue']={'available':False,'factory':record.get('factory'),'error':str(error)}
+                record['limitation_codes']=['factory_catalogue_invalid']
+                record.setdefault('limitations',[]).append('Catalogul fabricii nu poate fi validat: '+str(error));partial=True
             import mbs_pdf_checker_pdfcontrol as checker
             selected=None
             if operation=='workflow':
@@ -414,7 +551,7 @@ def worker(number,identifier):
             import mbs_rapport
             info=mbs_rapport.genereer(uit_pad=str(run/'RAPPORT.pdf'),tekeningen_bijvoegen=record['include_drawings'],voortgang=lambda *a:progress('report',item=str(a)))
             record.update(summary=summary,results=str(results),report=info['pad'],report_info=info)
-            partial=partial or bool(summary.get('mislukt'))
+            partial=partial or bool(summary.get('mislukt')) or bool(summary.get('afgebroken')) or summary.get('verwerkt')!=summary.get('totaal')
         elif operation=='compare':
             import mbs_vergelijk as compare
             progress('compare');viewer,_=compare.maak_rapport(voortgang=lambda *a:progress('compare',item=str(a)),stop=cancel)
@@ -423,18 +560,25 @@ def worker(number,identifier):
             record.update(report=str(folder/data['exports']['pdf']),differences_report=str(folder/data['exports']['verschillen_pdf']),viewer=viewer,results=str(folder/'vergelijking.json'))
             partial=any(bool(v) for v in data.get('dubbele_ids',{}).values()) if isinstance(data.get('dubbele_ids'),dict) else bool(data.get('dubbele_ids'))
         elif operation=='report':
-            previous=job_file(project,record['parent_job']);previous_results=previous.parent/'engine/checked/resultaten.json'
+            previous=job_file(project,record['parent_job']);parent=read_record(previous);previous_results=previous.parent/'engine/checked/resultaten.json'
             before=sha(previous_results)
             import mbs_rapport
             mbs_rapport.CHECKED=str(previous_results.parent);mbs_rapport.GEGEVENS=str(previous_results)
             info=mbs_rapport.genereer(uit_pad=str(run/'RAPPORT.pdf'),tekeningen_bijvoegen=record['include_drawings'],voortgang=lambda *a:progress('report',item=str(a)))
             if sha(previous_results)!=before:raise ValueError('Rezultatele sursa s-au schimbat.')
             record.update(report=info['pad'],report_info=info,results=str(previous_results))
+            partial=parent.get('status')=='partial'
+            for key in ('catalogue','limitations','limitation_codes','pair_summary','source_files'):
+                if key in parent:record[key]=parent[key]
+            record['parent_engine_fingerprint']=parent.get('engine_fingerprint')
         progress('validate_outputs')
         if not verify_sources():raise ValueError('O sursa originala s-a schimbat; reverifica lucrarea.')
         artifacts=pdf_artifacts()
         if not artifacts:raise ValueError('Lucrarea nu a produs PDF-uri valide.')
-        record.update(status='partial' if partial else 'done',artifacts=artifacts,source_unchanged=True,manual_review_required=True,transfer_approved=False,finished=time.time())
+        state='partial' if partial else 'done'
+        progress('deliver_reports')
+        artifacts=deliver_outputs(project,run,record,artifacts,state,cancel)
+        record.update(status=state,artifacts=artifacts,source_unchanged=True,manual_review_required=True,transfer_approved=False,finished=time.time())
     except InterruptedError as error:record.update(status='cancelled',error=str(error),finished=time.time())
     except Exception as error:
         traceback.print_exc();record.update(status='failed',error=str(error),finished=time.time())
@@ -454,7 +598,7 @@ def response(message):
     if method=='initialize':
         offered=params.get('protocolVersion')
         result['result']={'protocolVersion':offered if offered in {'2024-11-05','2025-03-26','2025-06-18','2025-11-25'} else '2025-03-26',
-                          'serverInfo':{'name':'pdfcontrol-octop','version':'2.0.0'},'capabilities':{'tools':{'listChanged':False}}}
+                          'serverInfo':{'name':'pdfcontrol-octop','version':'2.1.0'},'capabilities':{'tools':{'listChanged':False}}}
     elif method=='ping':result['result']={}
     elif method=='tools/list':result['result']={'tools':TOOLS}
     elif method=='tools/call':
