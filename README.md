@@ -546,3 +546,20 @@ Istoricul integral, intrebarea exacta si ciorna sunt protejate la esec sau Stop.
 Un istoric care depaseste bugetul poate ajunge la protectia automata inaintea
 primei inferente normale, daca autocompactarea este activa. Limita locala nu
 este o confirmare a limitei acceptate de furnizor.
+
+
+## Status si raport complet PDFCONTROL (1.10.4)
+
+VORM DEFINITIEF si DEFINITIEF sunt echivalente in predicatul comun de status,
+inclusiv la celulele obisnuite, nu numai la cartusul MBS Specials. Sunt acceptate
+variante de spatiere/majuscule si VORMDEFINITIEF; NIET DEFINITIEF, CONCEPT,
+VOORLOPIG si TER CONTROLE raman nefinale. Se citeste celula de status curenta,
+nu o mentiune din legenda sau istoricul reviziilor.
+
+Controlul si regenerarea prin conector folosesc raportul complet al motorului:
+tabele pentru toate desenele selectate, controale executate inclusiv OK si anexele
+disponibile, cu limita de siguranta originala a numarului de anexe. Numarul
+neconformitatilor se calculeaza independent de numarul desenelor incluse.
+Raportul pastreaza limitarile de catalog/fabrica si nu reprezinta o aprobare de
+productie. Optiunea originala a motorului pentru un raport doar cu probleme
+ramane disponibila pentru utilizarea separata a motorului.

@@ -20,6 +20,47 @@ class OwnedLayout(unittest.TestCase):
     def test_final_status_in_actual_current_cell(self):
         for value in ('DEFINITIEF','VORM DEFINITIEF','Definiitief','DEF'):
             with drawing(value) as doc:self.assertTrue(status.lees_status(doc[0])['ok'])
+    def test_vorm_definitief_is_a_common_final_status(self):
+        for value in ('VORM DEFINITIEF','vorm definitief','VORMDEFINITIEF','VORM  DEFINITIEF','VORM\nDEFINITIEF','VORM-DEFINITIEF','VORM DEF'):
+            self.assertTrue(status.is_definitief(value),value)
+        for value in ('NIET DEFINITIEF','VORM NIET DEFINITIEF','VORM CONCEPT','VORM DEFINITIEF TER CONTROLE','VORM VOORLOPIG','VORMDEFINITIEFNOGNIET','VORM DEFINITIEF / CONCEPT'):
+            self.assertFalse(status.is_definitief(value),value)
+    def test_generic_status_cell_accepts_vorm_definitief(self):
+        for value in ('VORM DEFINITIEF','VORMDEFINITIEF','NIET DEFINITIEF','VORM CONCEPT'):
+            with pymupdf.open() as doc:
+                page=doc.new_page(width=842,height=595);page.insert_text((550,530),'STATUS:',fontsize=12);page.insert_text((615,530),value,fontsize=12)
+                found=status.lees_status(page);self.assertEqual(found['ok'],value in ('VORM DEFINITIEF','VORMDEFINITIEF'),(value,found))
+
+    def test_complete_report_keeps_ok_drawings_and_honest_counts(self):
+        import mbs_rapport,json
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);rows=[]
+            for i,ok in enumerate((True,True,False)):
+                name=f'123456_TRK30{i}_V.pdf';attachment=root/name
+                with pymupdf.open() as doc:
+                    doc.new_page().insert_text((50,60),f'ATTACHMENT_{i}');doc.save(attachment)
+                rows.append({'bestand':name,'uitvoer':str(attachment),'bureau':'Synthetic','project':'123456','status':'OK' if ok else 'NIET_OK',
+                    'tekeningstatus':{'ok':ok,'tekst':'STATUS: VORM DEFINITIEF; definitief.' if ok else 'STATUS: CONCEPT; niet definitief.'},
+                    'artikelen':[{'omschrijving':'Status tekening','status':'OK' if ok else 'NIET_OK','note':'VORM DEFINITIEF' if ok else 'CONCEPT'}],
+                    'bevindingen':[] if ok else [{'code':'STATUS_NIET_DEFINITIEF','ernst':'FOUT','artikel':'Status tekening','tekst':'CONCEPT'}]})
+            data=root/'resultaten.json';data.write_text(json.dumps({'tekeningen':rows,'bijgewerkt':'fixture'}),encoding='utf-8')
+            old=(mbs_rapport.CHECKED,mbs_rapport.GEGEVENS)
+            try:
+                mbs_rapport.CHECKED=str(root);mbs_rapport.GEGEVENS=str(data)
+                full=mbs_rapport.genereer(str(root/'full.pdf'),tekeningen_bijvoegen=True,alleen_problemen=False)
+                self.assertEqual((full['tekeningen'],full['met_bevinding'],full['zonder_bevinding'],full['scope']),(3,1,2,'all'))
+                with pymupdf.open(full['pad']) as doc:
+                    text='\n'.join(page.get_text() for page in doc)
+                    self.assertIn('1 met een bevinding',text);self.assertIn('2 zonder bevinding',text)
+                    self.assertIn('Uitgevoerde controles per tekening',text)
+                    for i in range(3):self.assertIn(f'ATTACHMENT_{i}',text)
+                problems=mbs_rapport.genereer(str(root/'findings.pdf'),tekeningen_bijvoegen=True)
+                self.assertEqual((problems['tekeningen'],problems['met_bevinding'],problems['zonder_bevinding']),(1,1,2))
+                with pymupdf.open(problems['pad']) as doc:
+                    text='\n'.join(page.get_text() for page in doc)
+                    self.assertIn('ATTACHMENT_2',text);self.assertNotIn('ATTACHMENT_0',text)
+            finally:mbs_rapport.CHECKED,mbs_rapport.GEGEVENS=old
+
     def test_revision_legend_and_empty_cell_are_not_final(self):
         for value in ('','TER CONTROLE','NIET DEFINITIEF','CONCEPT'):
             with drawing(value,legend=True) as doc:self.assertFalse(status.lees_status(doc[0])['ok'])

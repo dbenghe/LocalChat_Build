@@ -1,3 +1,9 @@
+## 1.10.4 - 2026-10-20
+
+- Apply VORM DEFINITIEF = DEFINITIEF in the shared status predicate, including generic status cells and compact/spacing variants. Preserve rejection of non-final, provisional and review statuses.
+- PDFCONTROL control and regenerated PDFs include every selected drawing, detailed executed checks and available annotated drawing appendices. Count findings independently of included drawings; retain visible catalogue/partial limitations.
+- Includes all 1.10.3 chat, Markdown, copying and compaction changes; installation and publication remain pending.
+
 ## 1.10.3 - 2026-10-20
 
 - Render assistant Markdown headings, emphasis, code, quotes and tables in the chat, including streaming and restored conversations. Preserve source text and copyable Markdown.

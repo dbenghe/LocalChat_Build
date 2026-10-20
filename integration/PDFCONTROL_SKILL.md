@@ -51,3 +51,5 @@ La control/flux complet poti transmite factory=soest/alphen/veenoord/lelystad nu
 
 LocalChat urmareste automat joburile pornite din chat pana la rezultatul final; daca primesti deja done/partial cu delivery_verified=true, nu reporni lucrarea. Pentru un job pending/running sau reluare foloseste acelasi job_id. Stop solicita anularea lucrarii active; confirma starea terminala la reluare. Apelurile identice reusite se reutilizeaza in acelasi tur, iar trei erori identice opresc bucla.
 Motorul propriu este cel din LocalChat/pdfcontrol, distribuit din LocalChat_Build/pdfcontrol. Nu folosi instalarea C:/PDFCONTROL pentru a ocoli conectorul.
+
+Controlul si regenerarea livreaza raportul complet: toate desenele selectate, inclusiv cele fara neconformitati, controalele executate si anexele disponibile. Nu inventa probleme pentru a umple raportul. VORM DEFINITIEF este un status DEFINITIEF; valoarea originala ramane vizibila. NIET DEFINITIEF, CONCEPT si TER CONTROLE raman nefinale. Lipsa catalogului fabricii ramane o limitare explicita, chiar daca statusurile desenelor sunt finale.

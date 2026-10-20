@@ -549,7 +549,7 @@ def worker(number,identifier):
             progress('report');results=engine/'checked/resultaten.json'
             if not results.is_file():raise ValueError('Motorul nu a produs resultaten.json.')
             import mbs_rapport
-            info=mbs_rapport.genereer(uit_pad=str(run/'RAPPORT.pdf'),tekeningen_bijvoegen=record['include_drawings'],voortgang=lambda *a:progress('report',item=str(a)))
+            info=mbs_rapport.genereer(uit_pad=str(run/'RAPPORT.pdf'),tekeningen_bijvoegen=record['include_drawings'],alleen_problemen=False,voortgang=lambda *a:progress('report',item=str(a)))
             record.update(summary=summary,results=str(results),report=info['pad'],report_info=info)
             partial=partial or bool(summary.get('mislukt')) or bool(summary.get('afgebroken')) or summary.get('verwerkt')!=summary.get('totaal')
         elif operation=='compare':
@@ -564,7 +564,7 @@ def worker(number,identifier):
             before=sha(previous_results)
             import mbs_rapport
             mbs_rapport.CHECKED=str(previous_results.parent);mbs_rapport.GEGEVENS=str(previous_results)
-            info=mbs_rapport.genereer(uit_pad=str(run/'RAPPORT.pdf'),tekeningen_bijvoegen=record['include_drawings'],voortgang=lambda *a:progress('report',item=str(a)))
+            info=mbs_rapport.genereer(uit_pad=str(run/'RAPPORT.pdf'),tekeningen_bijvoegen=record['include_drawings'],alleen_problemen=False,voortgang=lambda *a:progress('report',item=str(a)))
             if sha(previous_results)!=before:raise ValueError('Rezultatele sursa s-au schimbat.')
             record.update(report=info['pad'],report_info=info,results=str(previous_results))
             partial=parent.get('status')=='partial'

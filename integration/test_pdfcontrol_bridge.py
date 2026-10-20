@@ -108,14 +108,14 @@ class Workflows(unittest.TestCase):
     def test_06_full_workflow_and_report_regeneration(self):
         record=self.client.wait(self.client.start('pdfcontrol_start_workflow',files=['bundle.pdf']))
         self.artifacts(record);self.assertIn(record['status'],{'done','partial'})
-        self.assertTrue(Path(record['results']).is_file());self.assertEqual(record['report_info']['pad'],record['report'])
+        self.assertTrue(Path(record['results']).is_file());self.assertEqual(record['report_info']['pad'],record['report']);self.assertEqual(record['report_info']['scope'],'all')
         results=json.loads(Path(record['results']).read_text(encoding='utf-8'))
         self.assertGreater(len(results.get('tekeningen',[])),0)
         self.assertTrue(any('_checked' in row['path'] for row in record['artifacts']))
         with pymupdf.open(record['report']) as doc:
             self.assertGreater(len(doc),1);doc[0].get_pixmap(matrix=pymupdf.Matrix(1,1),alpha=False).save(OUT/'report-preview.png')
         regen=self.client.wait(self.client.start('pdfcontrol_regenerate_report',job_id=record['job_id'],include_drawings=True))
-        self.artifacts(regen);self.assertTrue(Path(regen['report']).is_file());self.assertEqual(regen['status'],record['status']);self.assertEqual(regen.get('limitation_codes'),record.get('limitation_codes'))
+        self.artifacts(regen);self.assertTrue(Path(regen['report']).is_file());self.assertEqual(regen['report_info']['scope'],'all');self.assertEqual(regen['status'],record['status']);self.assertEqual(regen.get('limitation_codes'),record.get('limitation_codes'))
     def test_07_cancel_job(self):
         record=self.client.start('pdfcontrol_start_workflow',files=['bundle.pdf'])
         self.client.start('pdfcontrol_cancel_job',job_id=record['job_id'])
