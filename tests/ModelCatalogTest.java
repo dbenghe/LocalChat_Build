@@ -41,7 +41,36 @@ public final class ModelCatalogTest {
         check(ModelCatalog.parse(Json.obj("data",List.of(Json.obj("id","a"),Json.obj("id","a"))),"https://api.test/v1").size()==1,"duplicate catalog IDs eliminated");
         var usage=TokenUsage.parse(Json.obj("usage",Json.obj("input_tokens",23,"output_tokens",4)),false,TokenUsage.UNKNOWN,true);check(usage.input()==23&&usage.output()==4&&usage.complete(),"compatible API usage field aliases read without estimates");
     }
-    static void budget(Path home)throws Exception{FeatureTest.edt(()->{I18n.setLanguage("ro");var ctor=LocalChat.class.getDeclaredConstructor();ctor.setAccessible(true);var app=ctor.newInstance();ProviderTest.set(app,Provider.CUSTOM,"https://integrate.api.nvidia.com/v1","deepseek-ai/deepseek-v4.1-flash","fixture-not-real");FeatureTest.call(app,"refreshDashboard",new Class<?>[]{});check(((JLabel)FeatureTest.field(app,"modelMetadata")).getText().contains("1048576"),"NVIDIA model context visible as documentation");check(((WorkspacePanel)FeatureTest.field(app,"workspace")).limit.getValue().equals(0),"documented maximum is not silently applied");FeatureTest.call(app,"applyRecommendedBudget",new Class<?>[]{});check(((WorkspacePanel)FeatureTest.field(app,"workspace")).limit.getValue().equals(131072),"explicit NVIDIA working budget applied");check(((ContextRing)FeatureTest.field(app,"contextRing")).maximum==131072,"NVIDIA footer percent uses local budget");app.dispose();});}
+    static void budget(Path home)throws Exception{FeatureTest.edt(()->{
+        I18n.setLanguage("ro");var ctor=LocalChat.class.getDeclaredConstructor();ctor.setAccessible(true);var app=ctor.newInstance();
+        ProviderTest.set(app,Provider.CUSTOM,"https://integrate.api.nvidia.com/v1","deepseek-ai/deepseek-v4.1-flash","fixture-not-real");
+        FeatureTest.call(app,"refreshDashboard",new Class<?>[]{});
+        WorkspacePanel workspace=FeatureTest.field(app,"workspace");ContextRing ring=FeatureTest.field(app,"contextRing");
+        check(((JLabel)FeatureTest.field(app,"modelMetadata")).getText().contains("1048576"),"NVIDIA model context visible as documentation");
+        check(workspace.limit.getValue().equals(131072),"documented model initializes conservative LOCAL working budget");
+        check(((JLabel)FeatureTest.field(app,"modelMetadata")).getText().contains("buget recomandat automat"),"automatic recommendation clearly labeled");
+        Properties config=FeatureTest.field(app,"config");String profile=(String)FeatureTest.call(app,"contextProfile",new Class<?>[]{});
+        check(config.getProperty(profile+".limitSource").equals("automatic"),"local recommendation has separate provenance");
+        config.setProperty(profile+".metadata",Json.write(new ModelInfo.Info(0,0,"").json()));
+        FeatureTest.call(app,"refreshDashboard",new Class<?>[]{});
+        check(ring.maximum==131072&&!ring.getText().equals("~?"),"unknown API context does not disable local percentage");
+        check(ModelInfo.Info.from(Json.parse(config.getProperty(profile+".metadata"))).loaded()==0,"local budget never promoted to confirmed API window");
+        workspace.limit.setValue(42000);FeatureTest.call(app,"refreshDashboard",new Class<?>[]{});
+        check(ring.maximum==42000,"manual positive budget preserved");
+        ProviderTest.set(app,Provider.CUSTOM,"https://integrate.api.nvidia.com/v1","meta/muse-glimmer-30b","fixture-not-real");
+        FeatureTest.call(app,"refreshDashboard",new Class<?>[]{});
+        check(ring.maximum==131072,"Muse Glimmer screenshot scenario auto enables percentage");
+        String muse=(String)FeatureTest.call(app,"contextProfile",new Class<?>[]{});
+        config.setProperty(muse+".metadata",Json.write(new ModelInfo.Info(0,0,64000,"fixture API input cap").json()));
+        FeatureTest.call(app,"refreshDashboard",new Class<?>[]{});
+        check(ring.maximum==64000,"automatic budget respects subsequently discovered API input cap");
+        ProviderTest.set(app,Provider.CUSTOM,"https://integrate.api.nvidia.com/v1","deepseek-ai/deepseek-v4.1-flash","fixture-not-real");
+        FeatureTest.call(app,"refreshDashboard",new Class<?>[]{});check(ring.maximum==42000,"switching models restores independent manual budget");
+        ProviderTest.set(app,Provider.CUSTOM,"https://example.test/v1","unknown-model","fixture-not-real");
+        FeatureTest.call(app,"refreshDashboard",new Class<?>[]{});check(ring.maximum==0&&ring.getText().equals("~?"),"unknown model context not invented");
+        for(String lang:I18n.CODES){I18n.setLanguage(lang);ring.update(0,0,1000,131072);String before=ring.getText();ring.update(0,0,1014,131072);check(!ring.getText().equals(before),"small sub-percent changes visible in "+lang);workspace.meter(0,0,1014,131072,"");check(workspace.context.getString().contains(ring.getText().substring(1)),"sidebar and footer percentage agree in "+lang);}
+        app.dispose();
+    });}
     static void probes(Path home)throws Exception{
         try(Server server=new Server()){
             var catalog=ModelCatalog.fetch(Provider.CUSTOM,server.url(),"fixture-key");check(catalog.size()==2&&catalog.get(0).tools(),"real GET retains metadata and IDs");

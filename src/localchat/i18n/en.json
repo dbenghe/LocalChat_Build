@@ -290,5 +290,6 @@
   "Apel de unealtă verificat": "Tool call verified",
   "Nu a returnat apelul de test": "Did not return the test call",
   "Eroare temporară a serverului": "Temporary server error",
-  "Cerere acceptată, răspuns în așteptare": "Request accepted, response pending"
+  "Cerere acceptată, răspuns în așteptare": "Request accepted, response pending",
+  " · buget recomandat automat": " · automatic recommended budget"
 }

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.8.1 — 2026-10-20
+
+- Procentul estimat funcționează automat pentru modelele cu recomandări documentate sau metadate cunoscute, inclusiv NVIDIA Muse Glimmer: buget local inițial 131072 tokeni, etichetat explicit ca recomandare automată. Limita reală a API-ului rămâne distinctă; modelele necunoscute păstrează „~?”.
+- Bugetele manuale pozitive și setările separate per model/furnizor se păstrează. Bugetul automat respectă limitele API cunoscute; nu declanșează inferență sau compactare la încărcarea chatului.
+- Cercul și panoul afișează același procent cu două zecimale, actualizat cu textul primit și fiecare rezultat de unealtă, fără dublarea textului sau a consumului API. Actualizarea estimării nu reprezintă usage facturat în timp real.
+- Eticheta nouă este tradusă în toate cele șase limbi. Teste offline pentru bugete automate/manuale, schimbarea modelului, limite API, procente mici, streaming și rezultate de unelte.
+
 ## 1.8.0 — 2026-10-20
 
 - Added a searchable model catalog with response-test status, responded-only filtering, active-first ordering and image/tool/reasoning vector badges with explicit unknown states and sources.

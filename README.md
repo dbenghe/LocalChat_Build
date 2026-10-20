@@ -370,3 +370,20 @@ chiar dacă API-ul a raportat tokenii consumați. Estimările nu înlocuiesc usa
 raportat, iar usage absent este afișat ca necunoscut, inclusiv după EOF/anulare.
 
 Capabilitățile documentate pentru Muse Glimmer, Gemma 4, Nemotron, Laguna și Step 5 sunt incluse cu sursele lor oficiale. Cifrele publicate ca 1M/256K/131072+ își păstrează eticheta originală; nu sunt prezentate drept limite exacte ale API-ului. Filtrul Doar cu unelte cere o capabilitate declarată sau un apel de test verificat. Testele de unelte sunt păstrate separat: un test de unelte nereușit nu șterge disponibilitatea confirmată pentru chat.
+
+## Procent de context live (1.8.1)
+
+Când bugetul local este zero și există o recomandare documentată sau metadate de
+context, LocalChat inițializează automat un buget conservator, etichetat „buget
+recomandat automat”. Pentru NVIDIA Muse Glimmer este 131072 tokeni. Această regulă
+înlocuiește necesitatea de a apăsa manual „Aplică buget recomandat” din 1.8.0.
+Bugetul nu configurează serverul și nu confirmă contextul real al rutei API.
+Valorile manuale pozitive rămân neschimbate, separat per model/furnizor; modelele
+fără informații rămân cu „~?” până la configurare. Limitele cunoscute ale API-ului
+restrâng bugetul automat. Încărcarea unui chat nu generează răspunsuri sau compactări.
+
+Procentul estimat are două zecimale și se actualizează în timpul streamingului și
+după fiecare rezultat de unealtă. Cu streaming oprit, textul devine disponibil
+numai la primirea răspunsului complet. Tokenii interni de reasoning și usage
+facturat devin cunoscuți numai când API-ul îi raportează; nu sunt inventați din
+animația de activitate. Consumul API cumulativ rămâne separat de procent.

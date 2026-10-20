@@ -80,10 +80,12 @@ public final class FeatureTest {
         try(Server server=new Server(json(toolResponse),json(answer("Done",30,4)))){
             Mcp mcp=new Mcp();PathMap paths=new PathMap(Map.of(),home.toString(),home.toString());
             Tools tools=new Tools(new Tools.Context(home,home.resolve("skills"),home.resolve("reguli.md"),home.resolve("setari.properties"),Map.of(),null,mcp,paths,false,EnumSet.noneOf(Tools.Access.class),(a,b)->Tools.Decision.NO),List.of());
-            TokenUsage.Ledger total=new TokenUsage.Ledger();AtomicInteger calls=new AtomicInteger();
+            TokenUsage.Ledger total=new TokenUsage.Ledger();AtomicInteger calls=new AtomicInteger();List<List<ChatClient.Message>> contexts=new ArrayList<>();
             new Agent(tools).run(Provider.CUSTOM,server.url(),"","test-model","test","system",List.of(ChatClient.Message.user("List files")),false,new Agent.Ui(){
-                public void text(String t){}public void step(){}public void toolStarted(ChatClient.ToolCall c){calls.incrementAndGet();}public void toolFinished(ChatClient.ToolCall c,Tools.Result r){check(!r.isError,"real local list_dir succeeded");}public void usage(TokenUsage u){total.add(u);}});
+                public void context(List<ChatClient.Message> snapshot){contexts.add(snapshot);}public void text(String t){}public void step(){}public void toolStarted(ChatClient.ToolCall c){calls.incrementAndGet();}public void toolFinished(ChatClient.ToolCall c,Tools.Result r){check(!r.isError,"real local list_dir succeeded");}public void usage(TokenUsage u){total.add(u);}});
             check(calls.get()==1 && total.requests==2 && total.input==40 && total.output==6,"agent sums all tool-loop requests");
+            check(contexts.size()==3 && contexts.get(0).size()==2 && contexts.get(1).size()==3 && contexts.get(2).size()==4,"live snapshots after reply, tool and final reply are independent");
+            check(contexts.get(1).get(2).role.equals("tool") && ContextMemory.messages(contexts.get(1))>ContextMemory.messages(contexts.get(0)),"tool result contributes to live context BEFORE next model request");
             check(Json.str(server.requests.get(1),"messages",3,"role").equals("tool"),"tool result preserved in next request");
         }
     }
@@ -464,7 +466,7 @@ public final class FeatureTest {
                 });
                 check(firstChunk.await(4,TimeUnit.SECONDS),"stream begins");boolean[] observed={false};
                 for(int i=0;i<150 && !observed[0];i++){edt(()->{ContextRing ring=field(app[0],"contextRing");observed[0]=ring.conversation>before[0]+100;});if(!observed[0])Thread.sleep(10);}
-                edt(()->{check(observed[0] && (Boolean)field(app[0],"busy"),"context updates during streaming before final usage arrives");check(((BusyIndicator)field(app[0],"busyIndicator")).active,"busy marker remains active while streaming");});
+                edt(()->{check(observed[0] && (Boolean)field(app[0],"busy"),"context updates during streaming before final usage arrives");check(((BusyIndicator)field(app[0],"busyIndicator")).active,"busy marker remains active while streaming");ContextRing ring=field(app[0],"contextRing");check(ring.getText().equals("~"+ContextRing.percentage(ring.system+ring.tools+ring.conversation,8192)+"%"),"fractional percentage updates before streamed response completes");});
             }finally{finish.countDown();}
             idle(app[0]);edt(()->{check(!((BusyIndicator)field(app[0],"busyIndicator")).active,"stream completion clears busy marker");app[0].dispose();});server.join(4000);if(error.get()!=null)throw new Exception(error.get());
         }

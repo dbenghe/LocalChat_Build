@@ -21,6 +21,8 @@ final class Agent {
         void toolStarted(ChatClient.ToolCall call);
 
         void toolFinished(ChatClient.ToolCall call, Tools.Result result);
+        /** Updated context after a reply or tool result, without starting another API request. */
+        default void context(List<ChatClient.Message> conversation) {}
         default void usage(TokenUsage usage) {}
         default void request(String system, List<ChatClient.Message> conversation, List<ChatClient.ToolSpec> tools) throws IOException {}
     }
@@ -65,6 +67,7 @@ final class Agent {
                 }
                 replyPending = false;
             }
+            publishContext(base, ui);
             if (reply.calls.isEmpty()) return;
             for (ChatClient.ToolCall call : reply.calls) {
                 if (cancelled) return;
@@ -76,10 +79,17 @@ final class Agent {
                 synchronized (added) {
                     added.add(ChatClient.Message.toolResult(call.id, result.text, result.isError));
                 }
+                publishContext(base, ui);
                 ui.toolFinished(call, result);
             }
         }
         throw new IOException("Oprit după " + MAX_STEPS + " pași fără un răspuns final.");
+    }
+
+    private void publishContext(List<ChatClient.Message> base, Ui ui) {
+        List<ChatClient.Message> snapshot = new ArrayList<>(base);
+        synchronized (added) { snapshot.addAll(added); }
+        ui.context(List.copyOf(snapshot));
     }
 
     /**

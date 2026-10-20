@@ -185,6 +185,7 @@ public final class LocalChat extends JFrame {
         final StringBuilder stepText = new StringBuilder(); // text of the model step in progress
         boolean done;
         boolean requestActive;
+        boolean contextIncludesStep;
         ModelCatalog.Cache modelCache;String modelId;
         final java.util.concurrent.atomic.AtomicInteger started=new java.util.concurrent.atomic.AtomicInteger();
         final TokenUsage.Ledger usage=new TokenUsage.Ledger();
@@ -828,6 +829,7 @@ public final class LocalChat extends JFrame {
             try{saved=Integer.parseInt(config.getProperty(profile,"0"));}catch(NumberFormatException ignored){}
             updatingLimit=true;try{workspace.limit.setValue(Math.max(0,Math.min(2000000,saved)));}finally{updatingLimit=false;}
         }
+        initializeContextBudget(profile);
         updatingAuto=true;
         try{workspace.autoCompact.setSelected(sessionState.autoCompact);workspace.autoThreshold.setValue(sessionState.autoThreshold);}
         finally{updatingAuto=false;}
@@ -838,7 +840,7 @@ public final class LocalChat extends JFrame {
                 :t("Necesită o limită de context cunoscută. Folosește modelul curent și consumă tokeni."));
         long sys,tools,messages;
         if(busy && (current!=null || compactClient!=null)) {
-            sys=requestSystem;tools=requestTools;messages=requestConversation+(current==null?0:ContextMemory.estimate(current.stepText.toString()));
+            sys=requestSystem;tools=requestTools;messages=requestConversation+(current==null || current.contextIncludesStep?0:ContextMemory.estimate(current.stepText.toString()));
         } else {
             Path dir=currentWorkDir();if(dir==null)dir=appDir;
             String system=toolsBox.isSelected()?agentPrompt(dir,installedSkills,pathMap()):systemField.getText().strip();
@@ -858,6 +860,7 @@ public final class LocalChat extends JFrame {
         else if(info.inputLimit()>0)modelMetadata.setText(t("Maxim API: {0} · Instanță: {1} · Intrare API: {2} · Buget: {3}",info.maximum()>0?info.maximum():t("necunoscut"),info.loaded()>0?info.loaded():t("necunoscut"),info.inputLimit(),configured>0?configured:t("necunoscut")));
         if(info.maximum()==0 && currentCatalogEntry().documentedMaximum()>0)modelMetadata.setText(t("Model (documentație): {0} · API: necunoscut · Buget local: {1}",currentCatalogEntry().documentedLabel(),configured>0?configured:t("necunoscut")));
         String metadataError=metadataErrors.get(profile);if(metadataError!=null)modelMetadata.setText(t("Metadate indisponibile: {0} · Buget local: {1}",metadataError,configured>0?configured:t("necunoscut")));
+        if(config.getProperty(profile+".limitSource","").equals("automatic"))modelMetadata.setText(modelMetadata.getText()+t(" · buget recomandat automat"));
         applyBudgetButton.setVisible(recommendedModelBudget()>0);applyBudgetButton.setEnabled(!busy);applyBudgetButton.setToolTipText(ModelInfo.recommendedBudget(currentUrl())>0?t("Buget local de 180000 tokeni, sub limita de intrare de aproximativ 200K publicată de GonkaRouter. Nu este context confirmat de API. Sursă: https://gonkarouter.io/pricing"):t("Buget local recomandat: {0}. Bazat pe documentația modelului, nu pe o limită confirmată a serverului. {1}",recommendedModelBudget(),currentCatalogEntry().source()));
         modelMetadata.setToolTipText(metadata.isBlank()?t("Verifică metadatele serverului. Nu deducem limita din numele modelului."):t("Metadate memorate: {0}",metadata));
         String title=sessionState.title.isBlank()?Conversations.title(history):sessionState.title;
@@ -1098,8 +1101,11 @@ public final class LocalChat extends JFrame {
                     throw new IOException(t("Contextul estimat depășește limita. Folosește /compact sau configurează contextul corect."));
                 if(maximum>0)turn.agent.outputLimit((int)Math.max(1,Math.min(budget,maximum-ContextMemory.estimate(sys)-ContextMemory.messages(conversation)-ContextMemory.tools(specs)-32)));
                 turn.started.incrementAndGet();
-                later(turn,()->{turn.requestActive=true;requestSystem=ContextMemory.estimate(sys);requestTools=ContextMemory.tools(specs);
+                later(turn,()->{turn.contextIncludesStep=false;turn.requestActive=true;requestSystem=ContextMemory.estimate(sys);requestTools=ContextMemory.tools(specs);
                     requestConversation=ContextMemory.messages(conversation);refreshDashboard();});
+            }
+            @Override public void context(List<ChatClient.Message> conversation) {
+                later(turn,()->{requestConversation=ContextMemory.messages(conversation);turn.contextIncludesStep=true;refreshDashboard();});
             }
             @Override public void usage(TokenUsage value) {
                 later(turn,()->{turn.requestActive=false;turn.usage.add(value);sessionState.usage.add(value);refreshDashboard();});
@@ -1508,7 +1514,26 @@ public final class LocalChat extends JFrame {
     private ModelCatalog.Entry currentCatalogEntry() {
         return catalogEntries().stream().filter(entry->entry.id().equals(currentModel())).findFirst().orElseGet(()->ModelCatalog.entry(Json.obj("id",currentModel()),currentUrl()));
     }
-    private long recommendedModelBudget(){return currentCatalogEntry().suggestedBudget(currentUrl());}
+    private long recommendedModelBudget(){
+        long budget=currentCatalogEntry().suggestedBudget(currentUrl());
+        String raw=config.getProperty(contextProfile()+".metadata","");
+        if(!raw.isBlank())try{
+            ModelInfo.Info info=ModelInfo.Info.from(Json.parse(raw));
+            for(long cap:new long[]{info.maximum(),info.loaded(),info.inputLimit()})if(cap>0)budget=budget>0?Math.min(budget,cap):Math.min(131072,cap);
+        }catch(RuntimeException ignored){}
+        return Math.min(2000000,budget);
+    }
+    /** A local working budget, never a claim about the API instance's actual window. */
+    private void initializeContextBudget(String profile){
+        if(restoringSelections || busy)return;
+        int configured=((Number)workspace.limit.getValue()).intValue();
+        boolean automatic=config.getProperty(profile+".limitSource","").equals("automatic");
+        if(configured>0 && !automatic)return;
+        long budget=recommendedModelBudget();
+        if(budget<=0 || budget==configured)return;
+        updatingLimit=true;try{workspace.limit.setValue((int)budget);}finally{updatingLimit=false;}
+        config.setProperty(profile,Long.toString(budget));config.setProperty(profile+".limitSource","automatic");saveConfig();
+    }
     private void installModelRenderer(){modelBox.setRenderer(new javax.swing.DefaultListCellRenderer(){
         public Component getListCellRendererComponent(JList<?> list,Object value,int index,boolean selected,boolean focus){putClientProperty("html.disable",true);super.getListCellRendererComponent(list,value, index,selected,focus);if(shownSelection==null||value==null)return this;String id=value.toString();ModelCatalog.Entry entry=catalogEntries().stream().filter(e->e.id().equals(id)).findFirst().orElseGet(()->ModelCatalog.entry(Json.obj("id",id),currentUrl()));var result=currentModelCache().get(id);setIcon(new ModelCatalog.CapabilityIcon(entry,result));setText((result.fresh()&&result.state().equals("responded")?"✓ ":result.fresh()&&result.state().equals("unavailable")?"× ":"? ")+id);if(!selected&&result.fresh()&&result.state().equals("unavailable"))setForeground(Color.GRAY);else if(!selected&&result.fresh()&&result.state().equals("responded"))setForeground(new Color(0x28A078));setToolTipText(ModelCatalog.facts(entry,result));return this;}
     });}
