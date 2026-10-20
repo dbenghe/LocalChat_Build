@@ -426,3 +426,64 @@ Fisierele si continutul utilizatorului nu se convertesc: numele, caile, textele
 citate, documentele si conversatiile existente isi pastreaza exact caracterele.
 Aceasta schimbare priveste textele proprii interfetei, nu rescrierea istoricului
 sau modificarea raspunsurilor libere generate de model.
+
+## Context protejat inaintea fiecarei cereri (1.10.0)
+
+Cu autocompactarea activa, LocalChat verifica atat intrebarea noua, cat si fiecare
+pas care urmeaza unui rezultat de unealta. Rezerva loc pentru raspuns si o marja
+de siguranta. Daca este necesar, rezuma mai intai memoria in fragmente, apoi
+verifica din nou incadrarea si continua aceeasi intrebare. Intrebarea curenta este
+pastrata exact, iar istoricul original, inclusiv rezultatele complete ale
+uneltelor, ramane in arhiva. Vederea trimisa modelului este separata.
+
+Numarul real de tokeni de intrare raportat de API calibreaza estimarile pentru
+profilul/modelul selectat. Ultima valoare cunoscuta este pastrata per chat;
+cresterea prin rezultate noi de unelte este planificata conservator, separat de
+consumul facturat. Ancora este valabila numai pentru acelasi model, sistem,
+definitii de unelte si memorie. Procentele sunt in continuare estimari ~, nu o
+promisiune ca API-ul ofera un tokenizer sau o limita verificata pentru cont.
+
+Compactarea foloseste modelul curent si consuma tokeni; consumul este inclus in
+statistici. Nu executa unelte operationale si nu reia scrierile/comenzile deja
+terminate. Stop, esecul rezumarii sau modificarea ciornei inainte de prima
+trimitere opresc continuarea automata. O intrebare prea mare pentru context nu
+este trunchiata in tacere. Cand limita este necunoscuta, configureaza un buget
+verificat; cand autocompactarea este oprita, o cerere care nu incape este blocata.
+
+## Lista completa de comenzi
+
+Tasteaza `/` in caseta mesajului: lista se deruleaza cu rotita mouse-ului si cu
+sagetile Sus/Jos. Enter alege comanda; Esc inchide lista. Comenzile care cer
+parametri se insereaza in caseta pentru completare. Celelalte se executa la
+selectie. Shift+Enter continua sa insereze un rand nou. `/help` afiseaza lista
+integrala in chat. Dark si Light aplica fundal, text si selectie cu contrast.
+
+| Comanda | Functie |
+| --- | --- |
+| `/status` | Starea, modelul si folderul curent |
+| `/model provider:model` | Model; fara argument afiseaza selectia curenta |
+| `/new [titlu]` | Conversatie noua |
+| `/stop` | Oprire |
+| `/token` | Context estimat si consum API |
+| `/history` | Statistici |
+| `/compact` | Compactare manuala |
+| `/list [filtru]` | Lista conversatiilor si ID-uri pentru navigare |
+| `/switch ID` | Deschide conversatia |
+| `/resume [ID]` | Reia conversatia anterioara sau cea indicata |
+| `/title [titlu]` | Redenumire |
+| `/pin` | Fixare/desprindere |
+| `/skills` | Skill-uri instalate |
+| `/connectors` | Starea conectorilor MCP |
+| `/context numar` | Bugetul local de context |
+| `/archive` | Arhivare/restaurare |
+| `/export` | Export JSON |
+| `/delete` | Stergere recuperabila, cu confirmare |
+| `/attach` | Selectie de fisiere/foldere |
+| `/folder` | Deschide folderul de lucru |
+| `/pdfcontrol` | Panoul operatiilor PDFCONTROL |
+| `/settings` | Salveaza explicit setarile si modelul implicit |
+| `/autocompact on`, `off` sau `70` | Activeaza, dezactiveaza sau seteaza pragul 30-95% per chat |
+| `/help` | Lista completa |
+
+Lista contine functii implementate in LocalChat. Functii specifice altor
+aplicatii, precum animale de companie sau obiective programate, nu sunt simulate.

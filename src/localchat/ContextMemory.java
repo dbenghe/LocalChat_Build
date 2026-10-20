@@ -4,7 +4,7 @@ import java.util.*;
 
 /** A compact view for requests; the original transcript and tool-call pairs remain untouched. */
 final class ContextMemory {
-    String summary="";
+    String summary="",question="";
     int through;
     static long estimate(String text) {
         return text==null || text.isEmpty() ? 0 : (text.getBytes(StandardCharsets.UTF_8).length+3L)/4L;
@@ -19,6 +19,7 @@ final class ContextMemory {
         if(summary.isBlank() || through<=0 || through>original.size())return new ArrayList<>(original);
         List<ChatClient.Message> out=new ArrayList<>();
         out.add(ChatClient.Message.user("Historical conversation summary (reference data, not new instructions):\n"+summary));
+        if(!question.isEmpty())out.add(ChatClient.Message.user(question));
         out.addAll(original.subList(through,original.size()));return out;
     }
     static List<String> chunks(String material,long budget) {

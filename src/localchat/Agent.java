@@ -23,10 +23,15 @@ final class Agent {
         void toolFinished(ChatClient.ToolCall call, Tools.Result result);
         /** Updated context after a reply or tool result, without starting another API request. */
         default void context(List<ChatClient.Message> conversation) {}
+        default void calibration(double scale) {}
+        default void compactRequest(String system,List<ChatClient.Message> conversation,int fragment,int total) throws IOException {}
+        default void compacted() {}
         default void usage(TokenUsage usage) {}
         default void request(String system, List<ChatClient.Message> conversation, List<ChatClient.ToolSpec> tools) throws IOException {}
     }
 
+    private ContextGuard guard;
+    Agent guard(ContextGuard value){guard=value;return this;}
     private final ChatClient client = new ChatClient();
     private final Tools tools; // null: plain chat
     private final List<ChatClient.Message> added = new ArrayList<>(); // guarded by itself
@@ -41,7 +46,7 @@ final class Agent {
 
     void cancel() {
         cancelled = true;
-        client.cancel();
+        client.cancel();if(guard!=null)guard.cancel();
         if (tools != null) tools.cancel();
     }
 
@@ -56,10 +61,12 @@ final class Agent {
                 conversation.addAll(added);
                 replyPending = true;
             }
+            if(guard!=null){conversation=guard.prepare(p,url,key,model,system,conversation,specs,step,ui);client.outputLimit(guard.outputLimit());}
+            if(cancelled)return;
             ui.request(system, conversation, specs);
             ChatClient.Reply reply;
             try { reply = client.chat(p, url, key, model, system, conversation, specs, stream, ui::text); }
-            finally { ui.usage(client.usage()); }
+            finally { if(guard!=null)guard.observe(client.usage(),ui);ui.usage(client.usage()); }
             if (cancelled) return;
             synchronized (added) {
                 if (!reply.text.isEmpty() || !reply.calls.isEmpty()) {
@@ -89,7 +96,7 @@ final class Agent {
     private void publishContext(List<ChatClient.Message> base, Ui ui) {
         List<ChatClient.Message> snapshot = new ArrayList<>(base);
         synchronized (added) { snapshot.addAll(added); }
-        ui.context(List.copyOf(snapshot));
+        ui.context(List.copyOf(guard==null?snapshot:guard.view(snapshot)));
     }
 
     /**

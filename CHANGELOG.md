@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.10.0 — 2026-10-20
+
+- Verificarea contextului ruleaza inaintea fiecarei cereri catre model, inclusiv dupa citiri PDF si alte rezultate de unelte. Planificarea include intrebarea, sistemul, definitiile uneltelor, rezerva raspunsului si o marja de siguranta.
+- Autocompactarea activa per chat compacteaza inainte de continuare daca pragul sau spatiul ramas o cer. Rezultatele mari sunt rezumate in fragmente prin acelasi model, fara unelte operationale; intrebarea curenta ramane exacta. Arhiva originala si perechile apel/rezultat raman integrale, separat de vederea compactata folosita la API.
+- Consumul de intrare raportat de API calibreaza estimarile per profil/model. Ultima valoare cunoscuta se pastreaza separat per chat; rezultatele nou adaugate sunt planificate conservator. Ancora este invalidata la schimbarea modelului, sistemului, uneltelor sau memoriei. Estimarile raman marcate cu ~, separat de consumul API facturat.
+- Stop si esecul compactarii nu reiau cererea; nu sunt repetate operatiile deja executate. Daca intrebarea si definitiile uneltelor nu pot incapea, cererea este oprita cu explicatie. Contextul necunoscut nu este inventat; autocompactarea oprita este respectata.
+- Meniul / are lista completa derulabila cu 24 de comenzi, navigare Sus/Jos, Enter si Esc, selectie cu mouse-ul si contrast corect in Dark/Light. Sunt disponibile /archive, /export, /delete, /attach, /folder, /pdfcontrol, /settings si /autocompact, pe langa comenzile existente, inclusiv /compact.
+- Textele noi sunt traduse in toate cele sase limbi; interfata romana ramane fara diacritice. Teste offline pentru bugetul raspunsului, PDF-uri simulate mari citite prin unelte reale, pastrarea intrebarii/arhivei, anulare, reluare si meniul complet in ambele teme.
+
 ## 1.9.1 — 2026-10-20
 
 - Textele aplicatiei in romana folosesc litere normale fara diacritice: meniuri, butoane, dialoguri, mesaje de stare/eroare si etichete generate de unelte. Selectorul afiseaza „Romana”, cu acelasi cod de limba ro si aceeasi ordine.
