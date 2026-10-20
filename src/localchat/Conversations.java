@@ -26,6 +26,7 @@ final class Conversations {
         String title="";
         boolean pinned, archived;
         String draft="",provider="",providerPreset="",model="",baseUrl="";
+        final List<String> draftAttachments=new ArrayList<>(),attachedPaths=new ArrayList<>();
         int contextLimit=-1;
         int responseProfile=1;
         boolean autoCompact;
@@ -35,10 +36,12 @@ final class Conversations {
         ContextMemory memory=new ContextMemory();
         TokenUsage.Ledger usage=new TokenUsage.Ledger();
         TokenUsage.Ledger last=new TokenUsage.Ledger();
-        Object toJson() { return Json.obj("customTitle",title,"pinned",pinned,"archived",archived,"draft",draft,"provider",provider,"providerPreset",providerPreset,"model",model,"baseUrl",baseUrl,"contextLimit",contextLimit,"autoCompact",autoCompact,"autoThreshold",autoThreshold,"responseProfile",responseProfile,"systemPrompt",systemPrompt,"toolsEnabled",toolsEnabled,"streamEnabled",streamEnabled,"summary",memory.summary,
+        Object toJson() { return Json.obj("customTitle",title,"pinned",pinned,"archived",archived,"draft",draft,"draftAttachments",draftAttachments,"attachedPaths",attachedPaths,"provider",provider,"providerPreset",providerPreset,"model",model,"baseUrl",baseUrl,"contextLimit",contextLimit,"autoCompact",autoCompact,"autoThreshold",autoThreshold,"responseProfile",responseProfile,"systemPrompt",systemPrompt,"toolsEnabled",toolsEnabled,"streamEnabled",streamEnabled,"summary",memory.summary,
                 "compactedThrough",memory.through,"usage",usage.toJson(),"lastTurn",last.toJson()); }
         static State fromJson(Object o, int count) {
-            State s=new State();String t=Json.str(o,"customTitle");if(t!=null)s.title=t;
+            State s=new State();
+            for(String key:List.of("draftAttachments","attachedPaths")){Object values=Json.get(o,key);if(values instanceof List<?> list)for(Object v:list)if(v instanceof String value && !value.isBlank() && !(key.equals("draftAttachments")?s.draftAttachments:s.attachedPaths).contains(value))(key.equals("draftAttachments")?s.draftAttachments:s.attachedPaths).add(value);}
+            String t=Json.str(o,"customTitle");if(t!=null)s.title=t;
             s.providerPreset=java.util.Objects.toString(Json.str(o,"providerPreset"),"");
             s.pinned=Boolean.TRUE.equals(Json.get(o,"pinned"));s.archived=Boolean.TRUE.equals(Json.get(o,"archived"));
             String draft=Json.str(o,"draft"),provider=Json.str(o,"provider"),model=Json.str(o,"model"),url=Json.str(o,"baseUrl");

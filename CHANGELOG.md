@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.9.0 — 2026-10-20
+
+- Buton compact de atașare lângă mesaj, cu selecție multiplă de fișiere/foldere și drag-and-drop din Explorer peste mesaj sau conversație. Referințele apar ca etichete cu nume, cale în tooltip și eliminare individuală; maximum 20 per mesaj.
+- Atașamentele nestrimise se salvează cu ciorna și sunt izolate per chat, inclusiv după repornire. Trimiterea fără text propune analiza selecției. Selectarea nu citește documentele, nu schimbă folderul de lucru și nu trimite cereri către API.
+- Referințele trimise sunt disponibile uneltelor reale, inclusiv citirea PDF, DOCX, XLSX/XLSM, MSG și text. Fișierele/folderele selectate explicit primesc acces de citire pentru conversația respectivă, inclusiv la continuare. Selectarea unui fișier nu autorizează citirea vecinilor sau modificări; setările cu chei rămân protejate.
+- Modificarea selecției este blocată în timpul lucrului. Eșecul fără răspuns util reface ciorna și selecția pentru reîncercare; autocompactarea verifică și selecția înainte de retrimitere. Clipboard-ul de text rămâne funcțional.
+- Interfață tradusă în toate cele șase limbi și testare offline a transferurilor, persistenței, accesului restrâns și citirii reale prin unelte. Include corecția procentului live din 1.8.1, încă neinstalată anterior.
+
 ## 1.8.1 — 2026-10-20
 
 - Procentul estimat funcționează automat pentru modelele cu recomandări documentate sau metadate cunoscute, inclusiv NVIDIA Muse Glimmer: buget local inițial 131072 tokeni, etichetat explicit ca recomandare automată. Limita reală a API-ului rămâne distinctă; modelele necunoscute păstrează „~?”.

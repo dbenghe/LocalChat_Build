@@ -46,6 +46,8 @@ if ($LASTEXITCODE) { throw 'Feature tests failed; distribution was not changed' 
 if ($LASTEXITCODE) { throw 'Provider/metadata tests failed; distribution was not changed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/catalog-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ModelCatalogTest
 if ($LASTEXITCODE) { throw 'Catalog/probe tests failed; distribution was not changed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/attachment-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.AttachmentTest
+if ($LASTEXITCODE) { throw 'Attachment/drop/session tests failed; distribution was not changed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_pdfcontrol_bridge.py" --package "$PSScriptRoot/pdfcontrol" --output "$taskBuild/pdfcontrol-tests"
 if ($LASTEXITCODE) { throw 'PDFCONTROL workflow tests failed; distribution was not changed' }
 & "$taskJdk/bin/java.exe" "-Dpdfcontrol.package=$PSScriptRoot/pdfcontrol" "-Dpdfcontrol.projects=$taskBuild/pdfcontrol-tests/PROJECTS" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.PdfControlTest

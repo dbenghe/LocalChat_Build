@@ -387,3 +387,29 @@ după fiecare rezultat de unealtă. Cu streaming oprit, textul devine disponibil
 numai la primirea răspunsului complet. Tokenii interni de reasoning și usage
 facturat devin cunoscuți numai când API-ul îi raportează; nu sunt inventați din
 animația de activitate. Consumul API cumulativ rămâne separat de procent.
+
+## Atașamente și drag-and-drop (1.9.0)
+
+Apasă agrafa de lângă „Conversație nouă” pentru selecția multiplă de fișiere și
+foldere sau trage-le din Explorer peste zona mesajului ori conversației. Selecția
+apare deasupra casetei de text; „×” elimină referința, fără a șterge fișierul.
+Poți atașa maximum 20 de referințe per mesaj. Calea completă apare în tooltip.
+
+Exemplu: selectează desenele PDF și lista XLSX, apoi scrie „Verifică desenele cu
+PDFCONTROL și compară articolele cu lista atașată”. Uneltele trebuie activate.
+Fără text, Trimite cere analiza fișierelor/folderelor selectate. Referințele sunt
+locale: selectarea nu citește întregul conținut, nu încarcă recursiv un folder și
+nu apelează modelul. După trimitere, modelul poate cere citirea cu uneltele reale
+pentru PDF, DOCX, XLSX/XLSM, MSG și text. Conținutul citit de unelte poate ajunge
+la API-ul modelului selectat ca rezultat de unealtă. Pentru imagini/binare, simpla
+selectare nu adaugă trimitere vizuală multimodală sau un cititor nou: se aplică
+formatele acceptate de uneltele existente.
+
+Fișierele selectate explicit, chiar în afara folderului de lucru, sunt autorizate
+pentru citire în conversația curentă; un folder selectat autorizează citirea
+conținutului său. Aceasta nu schimbă aprobările pentru scrieri sau comenzi. Un
+fișier atașat nu oferă acces automat la vecinii săi. Setările cu cheile API rămân
+blocate inclusiv când sunt într-un folder selectat. Referințele trimise rămân
+valabile la continuarea chatului; ciorna cu selecțiile nestrimise se salvează
+separat per conversație și este refăcută după un eșec fără răspuns util.
+Exportul unui chat include referințele locale, nu copiile documentelor.

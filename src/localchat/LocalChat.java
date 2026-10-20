@@ -110,6 +110,9 @@ public final class LocalChat extends JFrame {
             t("Întreabă înainte de modificări și comenzi"), t("Permite tot, fără întrebări"), t("Doar citire")});
 
     private final JTextPane transcript = new JTextPane();
+    private final JButton attachButton=new JButton();
+    private final JPanel attachmentItems=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT,5,2));
+    private final JScrollPane attachmentBar=new JScrollPane(attachmentItems,JScrollPane.VERTICAL_SCROLLBAR_NEVER,JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
     private final JTextArea input = new JTextArea(3, 40);
     private final JButton sendButton = ui(new JButton(), "Trimite");
     private final JButton stopButton = ui(new JButton(), "Stop");
@@ -186,6 +189,7 @@ public final class LocalChat extends JFrame {
         boolean done;
         boolean requestActive;
         boolean contextIncludesStep;
+        String originalDraft;List<String> attachments=List.of();
         ModelCatalog.Cache modelCache;String modelId;
         final java.util.concurrent.atomic.AtomicInteger started=new java.util.concurrent.atomic.AtomicInteger();
         final TokenUsage.Ledger usage=new TokenUsage.Ledger();
@@ -215,6 +219,7 @@ public final class LocalChat extends JFrame {
         JPanel buttons = new JPanel(new BorderLayout());
         JPanel composeLeft=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT,5,2));
         JPanel composeRight=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT,5,2));
+        composeLeft.add(attachButton);attachButton.setIcon(new UiIcon("attach",19));attachButton.setPreferredSize(new Dimension(32,30));attachButton.putClientProperty("JComponent.minimumWidth",0);attachButton.addActionListener(e->chooseAttachments());
         composeLeft.add(newChatButton);composeLeft.add(downloadsButton);composeLeft.add(pdfControlButton);pdfControlButton.addActionListener(e->showPdfControl());composeRight.add(busyIndicator);composeRight.add(stopButton);composeRight.add(sendButton);
         buttons.add(composeLeft);buttons.add(composeRight,BorderLayout.EAST);
         sendButton.setIcon(new UiIcon("send",20));stopButton.setIcon(new UiIcon("stop",16));newChatButton.setIcon(new UiIcon("new",15));downloadsButton.setIcon(new UiIcon("folder",15));
@@ -224,7 +229,9 @@ public final class LocalChat extends JFrame {
         status.setFont(status.getFont().deriveFont(11f));toolsStatus.setFont(toolsStatus.getFont().deriveFont(11f));
         JPanel compose = new JPanel(new BorderLayout(6, 0));
         compose.setBorder(BorderFactory.createEmptyBorder(6, 8, 2, 8));
+        attachmentBar.setPreferredSize(new Dimension(400,43));attachmentBar.setBorder(BorderFactory.createEmptyBorder());attachmentBar.setVisible(false);compose.add(attachmentBar,BorderLayout.NORTH);
         compose.add(new JScrollPane(input));
+        for(JComponent target:new JComponent[]{compose,input,transcript,attachmentItems,attachmentBar})target.setTransferHandler(new AttachmentSupport.FileTransfer(target.getTransferHandler(),()->!busy,this::addAttachments));
         compose.add(buttons, BorderLayout.SOUTH);
         JPanel statusBar = new JPanel(new BorderLayout(12, 0));
         statusBar.setBorder(BorderFactory.createEmptyBorder(2, 10, 6, 10));
@@ -498,6 +505,7 @@ public final class LocalChat extends JFrame {
             themeBox.setSelectedIndex("dark".equals(theme) ? 1 : 0);
             translateControls(getContentPane());
             translateControls(getJMenuBar());
+            attachButton.setToolTipText(t("Adaugă fișiere sau foldere"));attachButton.getAccessibleContext().setAccessibleName(t("Adaugă fișiere sau foldere"));refreshAttachments();
             sendButton.setText("");sendButton.setToolTipText(t("Trimite"));sendButton.getAccessibleContext().setAccessibleName(t("Trimite"));
             stopButton.setText("");stopButton.setToolTipText(t("Stop"));stopButton.getAccessibleContext().setAccessibleName(t("Stop"));
             reportBar.setToolTipText(t("Fișiere deja salvate pe disc. Salvarea unei copii este opțională."));
@@ -648,7 +656,7 @@ public final class LocalChat extends JFrame {
             permissionBox.setEnabled(toolsBox.isSelected());
             if(sessionState.contextLimit>=0 && !config.containsKey(contextProfile()+".metadata"))config.setProperty(contextProfile(),Integer.toString(sessionState.contextLimit));
             contextProfile="";
-            input.setText(sessionState.draft);
+            input.setText(sessionState.draft);refreshAttachments();
             alwaysAllowed.clear();
             if(chosen.workDir()!=null && !chosen.workDir().isBlank())workDirField.setText(pathMap().path(chosen.workDir()));
             responseProfile.setSelectedIndex(sessionState.responseProfile);
@@ -846,7 +854,7 @@ public final class LocalChat extends JFrame {
             String system=toolsBox.isSelected()?agentPrompt(dir,installedSkills,pathMap()):systemField.getText().strip();
             sys=ContextMemory.estimate(system);tools=ContextMemory.tools(dashboardTools());
             messages=ContextMemory.messages(sessionState.memory.view(history));
-            if(!input.getText().isBlank() && !input.getText().startsWith("/"))messages+=ContextMemory.estimate(input.getText())+8;
+            String pending=composerMessage();if(!pending.isBlank() && !input.getText().startsWith("/"))messages+=ContextMemory.estimate(pending)+8;
         }
         workspace.meter(sys,tools,messages,configured,t("Consum API cumulativ: {0}",usageText(sessionState.usage))+(sessionState.last.requests>0?"\n"+t("Ultimul tur încheiat: {0}",usageText(sessionState.last)):""));
         contextRing.update(sys,tools,messages,configured);contextRing.setToolTipText(workspace.context.getString()+" · "+t("Procent din bugetul local; consumul API este separat. Configurează bugetul dacă limita nu este comunicată."));
@@ -1023,12 +1031,45 @@ public final class LocalChat extends JFrame {
 
     // ---- sending and the agent loop ----
 
+    private String composerMessage(){return AttachmentSupport.message(input.getText().trim(),sessionState.draftAttachments);}
+    private List<String> attachmentAccess(List<String> pending){List<String> all=new ArrayList<>(sessionState.attachedPaths);for(String path:pending)if(!all.contains(path))all.add(path);return all;}
+    private void chooseAttachments(){
+        if(busy)return;
+        JFileChooser picker=new JFileChooser();Path dir=currentWorkDir();if(dir!=null)picker.setCurrentDirectory(dir.toFile());
+        picker.setDialogTitle(t("Adaugă fișiere sau foldere"));picker.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);picker.setMultiSelectionEnabled(true);
+        if(picker.showOpenDialog(this)==JFileChooser.APPROVE_OPTION){List<Path> paths=new ArrayList<>();for(File file:picker.getSelectedFiles())paths.add(file.toPath());if(paths.isEmpty() && picker.getSelectedFile()!=null)paths.add(picker.getSelectedFile().toPath());addAttachments(paths);}
+    }
+    private void addAttachments(List<Path> paths){
+        if(busy)return;int added=0,skipped=0;
+        for(Path path:paths)try{
+            String selected=AttachmentSupport.validate(path,configFile).toString();
+            if(sessionState.draftAttachments.contains(selected))continue;
+            if(sessionState.draftAttachments.size()>=AttachmentSupport.MAX_PENDING){skipped++;continue;}
+            sessionState.draftAttachments.add(selected);added++;
+        }catch(IOException|RuntimeException error){skipped++;}
+        if(added>0 && history.isEmpty() && sessionState.title.isBlank()){Path first=Path.of(sessionState.draftAttachments.get(0));sessionState.title=first.getFileName()==null?first.toString():first.getFileName().toString();}
+        refreshAttachments();if(added>0){ensureSession();saveConversation();}refreshDashboard();
+        setStatus("Atașamente adăugate: {0}. Omise: {1}. Maximum 20 per mesaj; conținutul este citit prin unelte după trimitere.",skipped>0,added,skipped);
+    }
+    private void removeAttachment(String path){if(busy)return;sessionState.draftAttachments.remove(path);refreshAttachments();saveConversation();refreshDashboard();}
+    private void refreshAttachments(){
+        attachmentItems.removeAll();
+        for(String path:sessionState.draftAttachments){
+            JPanel chip=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT,3,0));String name=path;
+            try{Path p=Path.of(path);name=p.getFileName()==null?path:p.getFileName().toString();}catch(RuntimeException ignored){}
+            JLabel label=new JLabel(name.length()>36?name.substring(0,33)+"…":name);label.putClientProperty("html.disable",true);label.setToolTipText(path);label.setFont(label.getFont().deriveFont(12f));chip.add(label);
+            JButton remove=new JButton("×");remove.setMargin(new Insets(1,5,1,5));remove.putClientProperty("JComponent.minimumWidth",0);remove.setToolTipText(t("Elimină atașamentul"));remove.getAccessibleContext().setAccessibleName(t("Elimină atașamentul")+": "+name);remove.setEnabled(!busy);remove.addActionListener(e->removeAttachment(path));chip.add(remove);chip.setToolTipText(path);attachmentItems.add(chip);
+        }
+        attachmentBar.setVisible(!sessionState.draftAttachments.isEmpty());attachmentItems.revalidate();attachmentItems.repaint();
+    }
     private void send() {send(true);}
 
     private void send(boolean allowAutoCompact) {
-        final String text = input.getText().trim();
+        final String draft=input.getText().trim();
+        final List<String> pendingAttachments=List.copyOf(sessionState.draftAttachments);
+        final String text=AttachmentSupport.message(draft,pendingAttachments);
         if (text.isEmpty()) return;
-        if(text.startsWith("/")){input.setText("");commandPopup.setVisible(false);executeCommand(text);return;}
+        if(draft.startsWith("/")){input.setText("");commandPopup.setVisible(false);executeCommand(draft);return;}
         if (busy) return;
         final Provider p = shownProvider;
         final String model = currentModel();
@@ -1046,6 +1087,10 @@ public final class LocalChat extends JFrame {
             setStatus("Lipsește cheia API pentru {0}.", true, p.shortName);
             keyField.requestFocusInWindow();
             return;
+        }
+        if(!pendingAttachments.isEmpty()){
+            if(!toolsBox.isSelected()){setStatus("Activează Tool-uri pentru a citi fișierele atașate.",true);return;}
+            try{for(String path:pendingAttachments)AttachmentSupport.validate(Path.of(path),configFile);}catch(IOException|RuntimeException error){setStatus("Un atașament nu mai este disponibil. Verifică selecția înainte de trimitere.",true);return;}
         }
         final boolean useTools = toolsBox.isSelected();
         final Path workDir = useTools ? currentWorkDir() : null;
@@ -1065,7 +1110,7 @@ public final class LocalChat extends JFrame {
                 && sessionState.memory.boundary(history)>sessionState.memory.through) {
             String pending=input.getText();
             compactMemory(()->{
-                if(input.getText().equals(pending))send(false);
+                if(input.getText().equals(pending) && sessionState.draftAttachments.equals(pendingAttachments))send(false);
                 else setStatus("Memorie compactată. Mesajul a fost modificat; apasă Trimite când este gata.",false);
             });
             return;
@@ -1076,10 +1121,10 @@ public final class LocalChat extends JFrame {
         List<Skills.Skill> skills = useTools ? Skills.load(skillsDir) : Collections.emptyList();
         PathMap paths = pathMap();
         Tools tools = useTools ? new Tools(new Tools.Context(workDir, skillsDir, rulesFile, configFile, commandEnv(),
-                pdfPython(), mcp, paths, permissionBox.getSelectedIndex() == 1, alwaysAllowed, this::askPermission), skills).readOnly(permissionBox.getSelectedIndex()==2) : null;
+                pdfPython(), mcp, paths, permissionBox.getSelectedIndex() == 1, alwaysAllowed, this::askPermission), skills).readOnly(permissionBox.getSelectedIndex()==2).attachments(attachmentAccess(pendingAttachments)) : null;
         final String system = useTools ? agentPrompt(workDir, skills, paths) : systemField.getText().trim();
         final boolean stream = streamBox.isSelected();
-        final Turn turn = new Turn(ChatClient.Message.user(text), new Agent(tools), label);turn.modelCache=currentModelCache();turn.modelId=model;
+        final Turn turn = new Turn(ChatClient.Message.user(text), new Agent(tools), label);turn.originalDraft=draft;turn.attachments=pendingAttachments;turn.modelCache=currentModelCache();turn.modelId=model;
         int budget=new int[]{1024,4096,8192}[responseProfile.getSelectedIndex()];
         turn.agent.outputLimit(maximum>0?(int)Math.max(1,Math.min(budget,maximum-estimated-32)):budget);
         history.add(turn.question);
@@ -1087,7 +1132,8 @@ public final class LocalChat extends JFrame {
         current = turn;
         if (conversationFile == null) conversationFile = Conversations.newFile(conversationsDir);
 
-        input.setText("");
+        for(String path:pendingAttachments)if(!sessionState.attachedPaths.contains(path))sessionState.attachedPaths.add(path);
+        sessionState.draftAttachments.clear();refreshAttachments();input.setText("");
         saveConversation();
         header(t("Tu"), userHeader);
         append(text, body);
@@ -1206,7 +1252,8 @@ public final class LocalChat extends JFrame {
         }
         // No usable reply: drop the question so the conversation stays valid, and give it back for a retry.
         history.remove(turn.question);
-        if (input.getText().isEmpty()) input.setText(turn.question.content);
+        if (input.getText().isEmpty()) input.setText(turn.originalDraft);
+        for(String path:turn.attachments)if(!sessionState.draftAttachments.contains(path))sessionState.draftAttachments.add(path);refreshAttachments();
         if (error != null) {
             showError(error);
             setStatus("Eroare — mesajul tău a fost pus înapoi în caseta de text.", true);
@@ -1307,7 +1354,7 @@ public final class LocalChat extends JFrame {
         if(!saveConversation())return;
         if(conversationFile!=null){previousConversation=conversationFile;config.setProperty("session.previous",conversationFile.getFileName().toString());}
         input.setText("");
-        sessionState=new Conversations.State();reportModel.removeAllElements();reportBar.setVisible(false);
+        sessionState=new Conversations.State();refreshAttachments();reportModel.removeAllElements();reportBar.setVisible(false);
         history.clear();
         transcript.setText("");
         conversationFile = null;
@@ -1584,7 +1631,7 @@ public final class LocalChat extends JFrame {
     private void setBusy(boolean b) {
         busy = b;busyIndicator.active(b);pdfControlButton.setEnabled(!b);
         bottomModel.setEnabled(!b);bottomApproval.setEnabled(!b);bottomMode.setEnabled(!b);responseProfile.setEnabled(!b);inspectModel.setEnabled(!b && !inspectingModel);
-        sendButton.setEnabled(!b);
+        sendButton.setEnabled(!b);attachButton.setEnabled(!b);refreshAttachments();
         stopButton.setEnabled(b);
         newChatButton.setEnabled(!b);
         providerBox.setEnabled(!b);saveProviderButton.setEnabled(!b);applyBudgetButton.setEnabled(!b);modelBox.setEnabled(!b);urlField.setEnabled(!b);keyField.setEnabled(!b);

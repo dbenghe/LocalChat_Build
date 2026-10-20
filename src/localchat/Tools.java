@@ -111,6 +111,8 @@ final class Tools {
     private final List<String> notes = new ArrayList<>(); // told to the model with the current call's result
     private volatile Process running;
     private volatile boolean cancelled;
+    private List<String> attachedPaths=List.of();
+    Tools attachments(List<String> paths){attachedPaths=List.copyOf(paths);return this;}
     private boolean readOnly;
     Tools readOnly(boolean value){readOnly=value;return this;}
 
@@ -285,7 +287,7 @@ final class Tools {
     /** Reading inside the working folder (or skills) is free; anywhere else asks first. */
     private Path readable(String raw) throws ToolError {
         Path p = guarded(raw);
-        if (!p.startsWith(ctx.workDir()) && !p.startsWith(ctx.skillsDir()) && !p.equals(ctx.rulesFile())) {
+        if (!p.startsWith(ctx.workDir()) && !p.startsWith(ctx.skillsDir()) && !p.equals(ctx.rulesFile()) && !AttachmentSupport.grantsRead(p,attachedPaths)) {
             allow(Access.READ, "Citire în afara folderului de lucru", p.toString());
         }
         return p;
@@ -297,9 +299,11 @@ final class Tools {
 
     private Path guarded(String raw) throws ToolError {
         Path p = path(raw);
-        if (p.equals(ctx.secretFile())) throw new ToolError("Fișierul de setări al aplicației (cu cheile API) nu e accesibil prin tool-uri.");
+        if (p.equals(ctx.secretFile()) || (Files.exists(p) && Files.exists(ctx.secretFile()) && sameFile(p,ctx.secretFile()))) throw new ToolError("Fișierul de setări al aplicației (cu cheile API) nu e accesibil prin tool-uri.");
         return p;
     }
+
+    private static boolean sameFile(Path a,Path b){try{return Files.isSameFile(a,b);}catch(IOException ignored){return false;}}
 
     private void allow(Access access, String title, String details) throws ToolError {
         if (cancelled) throw new ToolError("Oprit de utilizator.");
@@ -436,7 +440,7 @@ final class Tools {
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if (!attrs.isRegularFile()) return FileVisitResult.CONTINUE;
+                if (!attrs.isRegularFile() || file.equals(ctx.secretFile()) || sameFile(file,ctx.secretFile())) return FileVisitResult.CONTINUE;
                 try {
                     return visitor.visit(file, attrs) ? FileVisitResult.CONTINUE : FileVisitResult.TERMINATE;
                 } catch (IOException e) {
