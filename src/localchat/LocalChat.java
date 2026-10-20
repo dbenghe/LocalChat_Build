@@ -121,6 +121,9 @@ public final class LocalChat extends JFrame {
     private final JButton bottomModel=new JButton(),bottomApproval=new JButton(),bottomMode=new JButton();
     private final JComboBox<String> responseProfile=new JComboBox<>(new String[]{"Rapid","Balanced","Detailed"});
     private final JLabel modelMetadata=new JLabel();
+    private final Map<String,ModelCatalog.Cache> modelCaches=new HashMap<>();
+    private String catalogFactsKey="";
+    private List<ModelCatalog.Entry> catalogFacts=List.of();
     private final JButton inspectModel=ui(new JButton(),"Verifică contextul modelului");
     private final JLabel status = new JLabel(" ");
     private final JLabel toolsStatus = new JLabel(" ");
@@ -182,6 +185,7 @@ public final class LocalChat extends JFrame {
         final StringBuilder stepText = new StringBuilder(); // text of the model step in progress
         boolean done;
         boolean requestActive;
+        ModelCatalog.Cache modelCache;String modelId;
         final java.util.concurrent.atomic.AtomicInteger started=new java.util.concurrent.atomic.AtomicInteger();
         final TokenUsage.Ledger usage=new TokenUsage.Ledger();
 
@@ -301,6 +305,7 @@ public final class LocalChat extends JFrame {
             public void insertUpdate(javax.swing.event.DocumentEvent e){refreshWorkFolder();}public void removeUpdate(javax.swing.event.DocumentEvent e){refreshWorkFolder();}public void changedUpdate(javax.swing.event.DocumentEvent e){}
         });
         restoringSelections=true;try{loadConfig();}finally{restoringSelections=false;}
+        installModelRenderer();
         installedSkills=Skills.load(skillsDir);
         previousConversation=storedPrevious();
         refreshSessions();
@@ -433,6 +438,7 @@ public final class LocalChat extends JFrame {
         tools.add(item("Configurare tool-uri și MCP (unelte.json)", null, e -> openInEditor(toolsConfigFile, DEFAULT_TOOLS_CONFIG)));
         tools.add(item("Repornește serverele MCP", null, e -> reloadTools()));
         tools.add(item("PDFCONTROL: operații directe…",null,e->showPdfControl()));
+        tools.add(item("Catalog modele",null,e->showModelCatalog(false)));
         tools.add(item("Exportă toate chaturile…",null,e->exportAllSessions()));
         tools.add(item("Salvează setările și modelul implicit",KeyStroke.getKeyStroke(KeyEvent.VK_S,InputEvent.CTRL_DOWN_MASK),e->saveDefaults()));
         tools.add(item("Recomandări pentru viteză și acuratețe",null,e->showRecommendations()));
@@ -700,7 +706,7 @@ public final class LocalChat extends JFrame {
         providerBox.addItem(saved);providerBox.setSelectedItem(saved);}finally{selectingSavedProvider=false;}saveConfig();refreshDashboard();
     }
     private void applyRecommendedBudget() {
-        if(busy)return;long budget=ModelInfo.recommendedBudget(currentUrl());if(budget<=0)return;
+        if(busy)return;long budget=recommendedModelBudget();if(budget<=0)return;
         String profile=contextProfile();String raw=config.getProperty(profile+".metadata","");if(!raw.isBlank())try{ModelInfo.Info info=ModelInfo.Info.from(Json.parse(raw));for(long cap:new long[]{info.maximum(),info.loaded(),info.inputLimit()})if(cap>0)budget=Math.min(budget,cap);}catch(RuntimeException ignored){}
         workspace.limit.setValue((int)budget);config.setProperty(profile+".limitSource","recommended");saveConfig();saveConversation();refreshDashboard();setStatus("Buget local aplicat: {0}. Limita API rămâne neconfirmată.",false,budget);
     }
@@ -840,8 +846,8 @@ public final class LocalChat extends JFrame {
             messages=ContextMemory.messages(sessionState.memory.view(history));
             if(!input.getText().isBlank() && !input.getText().startsWith("/"))messages+=ContextMemory.estimate(input.getText())+8;
         }
-        workspace.meter(sys,tools,messages,configured,usageText(sessionState.usage));
-        contextRing.update(sys,tools,messages,configured);contextRing.setToolTipText(workspace.context.getString());
+        workspace.meter(sys,tools,messages,configured,t("Consum API cumulativ: {0}",usageText(sessionState.usage))+(sessionState.last.requests>0?"\n"+t("Ultimul tur încheiat: {0}",usageText(sessionState.last)):""));
+        contextRing.update(sys,tools,messages,configured);contextRing.setToolTipText(workspace.context.getString()+" · "+t("Procent din bugetul local; consumul API este separat. Configurează bugetul dacă limita nu este comunicată."));
         bottomModel.setText(currentModel());bottomApproval.setText(permissionBox.getSelectedItem().toString());bottomApproval.setToolTipText(permissionBox.getSelectedItem().toString());bottomModel.setToolTipText(currentModel());bottomMode.setText(t(toolsBox.isSelected()?"Chat cu unelte":"Chat simplu"));
         bottomModel.setEnabled(!busy);bottomApproval.setEnabled(!busy);bottomMode.setEnabled(!busy);responseProfile.setEnabled(!busy);inspectModel.setEnabled(!busy && !inspectingModel);
         String metadata=config.getProperty(profile+".metadata","");
@@ -850,8 +856,9 @@ public final class LocalChat extends JFrame {
         modelMetadata.setText(t("Maxim model: {0} · Încărcat: {1} · Limită utilizată: {2}",info.maximum()>0?info.maximum():t("necunoscut"),info.loaded()>0?info.loaded():t("necunoscut"),configured>0?configured:t("necunoscut")));
         if(!metadata.isBlank() && info.maximum()==0 && info.loaded()==0 && info.inputLimit()==0)modelMetadata.setText(t("API-ul nu comunică limita de context · Buget local: {0}",configured>0?configured:t("necunoscut")));
         else if(info.inputLimit()>0)modelMetadata.setText(t("Maxim API: {0} · Instanță: {1} · Intrare API: {2} · Buget: {3}",info.maximum()>0?info.maximum():t("necunoscut"),info.loaded()>0?info.loaded():t("necunoscut"),info.inputLimit(),configured>0?configured:t("necunoscut")));
+        if(info.maximum()==0 && currentCatalogEntry().documentedMaximum()>0)modelMetadata.setText(t("Model (documentație): {0} · API: necunoscut · Buget local: {1}",currentCatalogEntry().documentedLabel(),configured>0?configured:t("necunoscut")));
         String metadataError=metadataErrors.get(profile);if(metadataError!=null)modelMetadata.setText(t("Metadate indisponibile: {0} · Buget local: {1}",metadataError,configured>0?configured:t("necunoscut")));
-        applyBudgetButton.setVisible(ModelInfo.recommendedBudget(currentUrl())>0);applyBudgetButton.setEnabled(!busy);applyBudgetButton.setToolTipText(t("Buget local de 180000 tokeni, sub limita de intrare de aproximativ 200K publicată de GonkaRouter. Nu este context confirmat de API. Sursă: https://gonkarouter.io/pricing"));
+        applyBudgetButton.setVisible(recommendedModelBudget()>0);applyBudgetButton.setEnabled(!busy);applyBudgetButton.setToolTipText(ModelInfo.recommendedBudget(currentUrl())>0?t("Buget local de 180000 tokeni, sub limita de intrare de aproximativ 200K publicată de GonkaRouter. Nu este context confirmat de API. Sursă: https://gonkarouter.io/pricing"):t("Buget local recomandat: {0}. Bazat pe documentația modelului, nu pe o limită confirmată a serverului. {1}",recommendedModelBudget(),currentCatalogEntry().source()));
         modelMetadata.setToolTipText(metadata.isBlank()?t("Verifică metadatele serverului. Nu deducem limita din numele modelului."):t("Metadate memorate: {0}",metadata));
         String title=sessionState.title.isBlank()?Conversations.title(history):sessionState.title;
         setTitle("LocalChat "+AppVersion.VALUE+" — "+(title.isBlank()?"ChatGPT · Claude · API":title));
@@ -1069,7 +1076,7 @@ public final class LocalChat extends JFrame {
                 pdfPython(), mcp, paths, permissionBox.getSelectedIndex() == 1, alwaysAllowed, this::askPermission), skills).readOnly(permissionBox.getSelectedIndex()==2) : null;
         final String system = useTools ? agentPrompt(workDir, skills, paths) : systemField.getText().trim();
         final boolean stream = streamBox.isSelected();
-        final Turn turn = new Turn(ChatClient.Message.user(text), new Agent(tools), label);
+        final Turn turn = new Turn(ChatClient.Message.user(text), new Agent(tools), label);turn.modelCache=currentModelCache();turn.modelId=model;
         int budget=new int[]{1024,4096,8192}[responseProfile.getSelectedIndex()];
         turn.agent.outputLimit(maximum>0?(int)Math.max(1,Math.min(budget,maximum-estimated-32)):budget);
         history.add(turn.question);
@@ -1167,6 +1174,10 @@ public final class LocalChat extends JFrame {
         while(turn.started.get()>turn.usage.requests){turn.usage.add(TokenUsage.UNKNOWN);sessionState.usage.add(TokenUsage.UNKNOWN);}
         turn.requestActive=false;
         sessionState.last=turn.usage;
+        if(!stopped && turn.modelCache!=null){
+            String probeState=null;int code=0;if(error!=null){var match=java.util.regex.Pattern.compile("HTTP ([0-9]{3})").matcher(java.util.Objects.toString(error.getMessage(),""));if(match.find()){code=Integer.parseInt(match.group(1));probeState=switch(code){case 403,404->"unavailable";case 401->"auth";case 429->"rate";default->"transport";};}}
+            if(probeState!=null)try{var prior=turn.modelCache.get(turn.modelId);turn.modelCache.put(turn.modelId,new ModelCatalog.Probe(probeState,code,0,System.currentTimeMillis(),TokenUsage.UNKNOWN,prior.fresh()?prior.toolVerified():null));modelBox.repaint();}catch(IOException ignored){}
+        }
         turn.done = true;
         current = null;
         setBusy(false);
@@ -1484,6 +1495,30 @@ public final class LocalChat extends JFrame {
         }
     }
 
+    private ModelCatalog.Cache currentModelCache() {
+        String prefix=SavedProviders.prefix(shownSelection),key=currentKey(shownProvider),base=currentUrl();String identity=ModelCatalog.hash(prefix+"|"+shownProvider+"|"+base+"|"+ModelCatalog.hash(key));
+        return modelCaches.computeIfAbsent(identity,ignored->new ModelCatalog.Cache(appDir,prefix,shownProvider,base,key));
+    }
+    private List<ModelCatalog.Entry> catalogEntries() {
+        String prefix=SavedProviders.prefix(shownSelection),base=currentUrl(),raw=config.getProperty(prefix+".catalog",""),models=config.getProperty(prefix+".models","");String identity=prefix+"|"+base+"|"+raw+"|"+models+"|"+config.getProperty(prefix+".catalogUrl","");
+        if(!identity.equals(catalogFactsKey)){List<String> ids=new ArrayList<>();try{Object saved=Json.parse(models.isBlank()?"[]":models);if(saved instanceof List<?> list)for(Object id:list)if(id instanceof String text&&!text.isBlank())ids.add(text);}catch(RuntimeException ignored){}
+            if(ids.isEmpty())for(int i=0;i<modelBox.getItemCount();i++){String id=modelBox.getItemAt(i);if(id!=null&&!id.isBlank())ids.add(id);}catalogFacts=ModelCatalog.saved(config,prefix,base,ids);catalogFactsKey=identity;
+        }return catalogFacts;
+    }
+    private ModelCatalog.Entry currentCatalogEntry() {
+        return catalogEntries().stream().filter(entry->entry.id().equals(currentModel())).findFirst().orElseGet(()->ModelCatalog.entry(Json.obj("id",currentModel()),currentUrl()));
+    }
+    private long recommendedModelBudget(){return currentCatalogEntry().suggestedBudget(currentUrl());}
+    private void installModelRenderer(){modelBox.setRenderer(new javax.swing.DefaultListCellRenderer(){
+        public Component getListCellRendererComponent(JList<?> list,Object value,int index,boolean selected,boolean focus){putClientProperty("html.disable",true);super.getListCellRendererComponent(list,value, index,selected,focus);if(shownSelection==null||value==null)return this;String id=value.toString();ModelCatalog.Entry entry=catalogEntries().stream().filter(e->e.id().equals(id)).findFirst().orElseGet(()->ModelCatalog.entry(Json.obj("id",id),currentUrl()));var result=currentModelCache().get(id);setIcon(new ModelCatalog.CapabilityIcon(entry,result));setText((result.fresh()&&result.state().equals("responded")?"✓ ":result.fresh()&&result.state().equals("unavailable")?"× ":"? ")+id);if(!selected&&result.fresh()&&result.state().equals("unavailable"))setForeground(Color.GRAY);else if(!selected&&result.fresh()&&result.state().equals("responded"))setForeground(new Color(0x28A078));setToolTipText(ModelCatalog.facts(entry,result));return this;}
+    });}
+    private void showModelCatalog(boolean auto){
+        if(busy){setStatus("Oprește generarea înainte de această comandă.",true);return;}String prefix=SavedProviders.prefix(shownSelection),url=currentUrl(),key=currentKey(shownProvider);Object selected=shownSelection;ModelCatalog.Cache cache=currentModelCache();
+        ModelCatalogDialog dialog=new ModelCatalogDialog(this,SavedProviders.label(selected,url),catalogEntries(),cache,shownProvider,url,key,config.getProperty(prefix+".probeOnLoad","true").equals("true"),entry->{if(java.util.Objects.equals(selected,shownSelection)&&url.equals(currentUrl())&&key.equals(currentKey(shownProvider))){modelBox.setSelectedItem(entry.id());saveConfig();refreshDashboard();}},enabled->{config.setProperty(prefix+".probeOnLoad",enabled.toString());saveConfig();},()->modelBox.repaint());
+        if(auto)SwingUtilities.invokeLater(dialog::startUntested);dialog.setVisible(true);
+        if(java.util.Objects.equals(selected,shownSelection)&&url.equals(currentUrl())){String keep=currentModel();List<String> ids=new ArrayList<>();for(int i=0;i<modelBox.getItemCount();i++)ids.add(modelBox.getItemAt(i));ids.sort(java.util.Comparator.comparingInt((String id)->cache.get(id).rank()).thenComparing(id->id));modelBox.removeAllItems();for(String id:ids)modelBox.addItem(id);modelBox.setSelectedItem(keep);config.setProperty(prefix+".models",Json.write(ids));saveConfig();}
+    }
+
     private void loadModels() {
         final Provider p = shownProvider;final Object selection=shownSelection;final String prefix=SavedProviders.prefix(selection);
         final String url = currentUrl();
@@ -1492,7 +1527,8 @@ public final class LocalChat extends JFrame {
         setStatus("Se încarcă lista de modele…", false);
         Thread worker = new Thread(() -> {
             try {
-                final List<String> ids = ChatClient.listModels(p, url, key);
+                final List<ModelCatalog.Entry> catalog=ModelCatalog.fetch(p,url,key);
+                final List<String> ids = catalog.stream().map(ModelCatalog.Entry::id).toList();
                 SwingUtilities.invokeLater(() -> {
                     loadModelsButton.setEnabled(true);
                     if (!java.util.Objects.equals(shownSelection,selection) || !currentUrl().equals(url) || !currentKey(p).equals(key)) return;
@@ -1500,14 +1536,14 @@ public final class LocalChat extends JFrame {
                         setStatus("Serverul nu a întors niciun model.", true);
                         return;
                     }
-                    config.setProperty(prefix+".models",Json.write(ids));
+                    config.setProperty(prefix+".models",Json.write(ids));config.setProperty(prefix+".catalog",Json.write(catalog.stream().map(ModelCatalog.Entry::json).toList()));config.setProperty(prefix+".catalogUrl",url);
                     String keep = currentModel();
                     modelBox.removeAllItems();
                     for (String id : ids) modelBox.addItem(id);
                     modelBox.setSelectedItem(keep.isEmpty() ? ids.get(0) : keep);
                     setStatus("{0} modele disponibile — alege din listă.", false, ids.size());
                     saveConfig();inspectModel();
-                    if (modelBox.isShowing()) modelBox.showPopup();
+                    showModelCatalog(config.getProperty(prefix+".probeOnLoad","true").equals("true"));
                 });
             } catch (Exception e) {
                 SwingUtilities.invokeLater(() -> {

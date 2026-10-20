@@ -16,9 +16,9 @@ record TokenUsage(long input, long output, long cached, long created, boolean co
                 : number(Json.get(u,"prompt_tokens_details"),"cached_tokens",previous.cached);
         long created=anthropic ? number(u,"cache_creation_input_tokens",previous.created) : 0;
         long rawPrevious=previous.input<0 ? -1 : previous.input-(anthropic ? previous.cached+previous.created : 0);
-        long raw=number(u,anthropic ? "input_tokens" : "prompt_tokens",rawPrevious);
+        long raw=number(u,anthropic ? "input_tokens" : "prompt_tokens",number(u,"input_tokens",rawPrevious));
         long in=raw<0 ? -1 : raw+(anthropic ? cached+created : 0);
-        long out=number(u,anthropic ? "output_tokens" : "completion_tokens",previous.output);
+        long out=number(u,anthropic ? "output_tokens" : "completion_tokens",number(u,"output_tokens",previous.output));
         return new TokenUsage(in,out,cached,created,terminal && in>=0 && out>=0);
     }
     static final class Ledger {

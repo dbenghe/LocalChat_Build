@@ -26,3 +26,6 @@
 
 # Isolated integration fixtures and generated PDFs
 /bridge-test*/
+
+# Account-specific model availability results remain local
+**/model-tests/

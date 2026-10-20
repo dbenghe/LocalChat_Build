@@ -321,3 +321,52 @@ confirmat de API. Pentru alte servicii poți configura manual un buget verificat
 pentru modelul/ruta folosită. Procentajul estimat și autocompactarea se raportează
 la bugetul local; alegerea lui nu modifică serverul. Valorile introduse manual
 nu sunt șterse când catalogul nu comunică limite.
+
+
+## Catalog, disponibilitate și capabilități (1.8.0)
+
+**Încarcă modele** citește catalogul API și deschide lista detaliată. Poți reveni
+la ea prin **Unelte → Catalog modele**, fără a declanșa automat teste. Bifa
+**Testează la încărcarea listei**, memorată per furnizor, pornește teste pentru
+modelele netestate/expirate când soliciți explicit încărcarea listei. Pornirea
+aplicației, reluarea chaturilor și actualizările GET nu pornesc teste de inferență.
+
+Testele trimit doar un mesaj sintetic scurt (maximum 128 tokeni de ieșire), fără
+conversație, documente sau uneltele aplicației. Consumă tokeni API și sunt afișate
+separat de consumul chatului. Sunt maximum două cereri simultane, pornite la cel
+puțin 1,5 secunde distanță; HTTP 429 introduce o pauză de 30 secunde. Poți opri
+lotul. Un timeout ori o cerere de test incompatibilă nu declară modelul inexistent.
+HTTP 403/404 indică acces indisponibil pentru cont la acel test; HTTP 401 oprește
+lotul. Un HTTP 200 fără răspuns final este afișat distinct. Un identificator de
+model diferit în răspuns este semnalat, iar GonkaRouter primește No-Fallback la
+probe. Testul nu garantează calitatea răspunsurilor sau funcționarea pe orice input.
+
+Modelele care au răspuns apar primele în catalog și în lista de selecție după
+închiderea acestuia. Filtrul **Doar modele care au răspuns** ascunde restul.
+Accesul este memorat separat per profil, URL, protocol și amprentă de cheie,
+în model-tests/, cu expirare după 24 de ore. Cheia și răspunsurile de eroare cu
+identificatori de cont nu se scriu în aceste rezultate. Un model inaccesibil
+rămâne vizibil pentru diagnostic/retestare; catalogul nu îl selectează în locul
+tău și nu schimbă automat modelul unui chat reluat.
+
+Pictogramele sunt: ochi = imagini, ciocan = apeluri de unelte, bec = raționament.
+Culorile arată capabilități declarate de API/documentație; ? înseamnă informație
+absentă, iar bara oblică înseamnă false explicit din API. Un test de răspuns simplu
+nu verifică imaginile sau raționamentul. **Testează uneltele** solicită o funcție
+fictivă și verifică dacă modelul o returnează; funcția nu se execută. Capabilitatea
+vizuală a modelului nu adaugă un flux de atașare de imagini în LocalChat.
+
+Pentru deepseek-ai/deepseek-v4.1-flash pe NVIDIA, documentația modelului precizează
+1048576 tokeni și imagini/unelte/raționament:
+https://docs.api.nvidia.com/nim/reference/nvidia-deepseek-v4_1-flash . Acest maxim
+publicat este separat de contextul rutei, absent din catalogul contului. Butonul
+**Aplică buget recomandat** poate seta explicit un buget local conservator de
+131072 tokeni; nu configurează serverul și nu dovedește o limită a contului.
+Modelele fără informații rămân necunoscute până la o sursă sau configurare manuală.
+
+În stânga, consumul API cumulativ și ultimul tur încheiat sunt distincte de
+ocuparea estimată a contextului. Un „~?” în cerc indică buget local necunoscut,
+chiar dacă API-ul a raportat tokenii consumați. Estimările nu înlocuiesc usage
+raportat, iar usage absent este afișat ca necunoscut, inclusiv după EOF/anulare.
+
+Capabilitățile documentate pentru Muse Glimmer, Gemma 4, Nemotron, Laguna și Step 5 sunt incluse cu sursele lor oficiale. Cifrele publicate ca 1M/256K/131072+ își păstrează eticheta originală; nu sunt prezentate drept limite exacte ale API-ului. Filtrul Doar cu unelte cere o capabilitate declarată sau un apel de test verificat. Testele de unelte sunt păstrate separat: un test de unelte nereușit nu șterge disponibilitatea confirmată pentru chat.

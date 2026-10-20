@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.8.0 — 2026-10-20
+
+- Added a searchable model catalog with response-test status, responded-only filtering, active-first ordering and image/tool/reasoning vector badges with explicit unknown states and sources.
+- Manual model loading can test uncached models with tiny synthetic prompts; startup, chat resume and metadata refresh never infer. Tests use two paced workers, cancellation, rate backoff and account-specific results that expire after 24 hours.
+- Distinguished HTTP 403/404 account access failures, 401 authentication, 429 rate limits, incompatible test requests, empty responses, different served IDs and transport/EOF errors.
+- Added a harmless tool-call test that verifies a returned call without executing any action. Probes never receive user history, files or operational tools.
+- Show documented NVIDIA DeepSeek V4.1 Flash capabilities and the model's published 1048576-token maximum separately from the unreported route limit; offer an explicit conservative 131072-token local working budget.
+- Clarified cumulative API usage, the last completed turn and estimated local context occupancy; read input_tokens/output_tokens aliases in compatible API usage.
+- Added synthetic HTTP/cache/UI regression tests and six-language, two-theme catalog rendering.
+
 ## 1.7.0 — 2026-10-20
 
 - Added named provider profiles with separate URLs, protocols, credentials, cached model lists and defaults; conversation state stores only the profile ID, never credentials.
