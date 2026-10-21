@@ -254,7 +254,7 @@ public final class LocalChat extends JFrame {
 
         JPanel chat = new JPanel(new BorderLayout());
         chat.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
-        JScrollPane responseScroll=new JScrollPane(transcript);responseScroll.getVerticalScrollBar().addAdjustmentListener(e->{if(!updatingTranscript){var bar=responseScroll.getVerticalScrollBar();if(bar.getValue()+bar.getVisibleAmount()>=bar.getMaximum()-12)transcript.putClientProperty("localchat.followTail",true);else if(e.getValueIsAdjusting())transcript.putClientProperty("localchat.followTail",false);}});chat.add(responseScroll);chat.add(timeline,BorderLayout.WEST);timelineMenu.addActionListener(e->timeline.menu(timelineMenu));timelineMenu.setToolTipText(t("Navigare in discutie"));
+        JScrollPane responseScroll=new JScrollPane(transcript);responseScroll.putClientProperty("FlatLaf.style","arc: 14");responseScroll.getVerticalScrollBar().addAdjustmentListener(e->{if(!updatingTranscript){var bar=responseScroll.getVerticalScrollBar();if(bar.getValue()+bar.getVisibleAmount()>=bar.getMaximum()-12)transcript.putClientProperty("localchat.followTail",true);else if(e.getValueIsAdjusting())transcript.putClientProperty("localchat.followTail",false);}});chat.add(responseScroll);chat.add(timeline,BorderLayout.WEST);timelineMenu.addActionListener(e->timeline.menu(timelineMenu));timelineMenu.setToolTipText(t("Navigare in discutie"));
         JPanel chatHeading=new JPanel(new BorderLayout(6,0));chatTitle.putClientProperty("html.disable",true);chatHeading.add(chatTitle);JPanel chatHeadingActions=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT,3,2));for(JButton button:new JButton[]{timelineMenu,chatActions,chatSettings}){button.setPreferredSize(new Dimension(29,27));button.setMargin(new Insets(2,3,2,3));chatHeadingActions.add(button);}chatHeading.add(chatHeadingActions,BorderLayout.EAST);chat.add(chatHeading,BorderLayout.NORTH);
         chatActions.addActionListener(e->buildChatActions().show(chatActions,0,chatActions.getHeight()));chatSettings.addActionListener(e->buildQuickSettings().show(chatSettings,0,chatSettings.getHeight()));
 
@@ -273,7 +273,7 @@ public final class LocalChat extends JFrame {
         JPanel compose = new JPanel(new BorderLayout(6, 0));
         compose.setBorder(BorderFactory.createEmptyBorder(6, 8, 2, 8));
         attachmentBar.setPreferredSize(new Dimension(400,43));attachmentBar.setBorder(BorderFactory.createEmptyBorder());attachmentBar.setVisible(false);compose.add(attachmentBar,BorderLayout.NORTH);
-        JScrollPane inputScroll=new JScrollPane(input);compose.add(inputScroll);
+        JScrollPane inputScroll=new JScrollPane(input);inputScroll.putClientProperty("FlatLaf.style","arc: 14");compose.add(inputScroll);
         for(JComponent target:new JComponent[]{compose,input,transcript,attachmentItems,attachmentBar})target.setTransferHandler(new AttachmentSupport.FileTransfer(target.getTransferHandler(),()->!busy,this::addAttachments,this::pasteClipboardImage));
         ComposerClipboard.install(input,error->setStatus("Nu pot lipi din clipboard: {0}",true,describe(error)));
 
@@ -642,9 +642,11 @@ public final class LocalChat extends JFrame {
         TOOL_COLOR = muted;
         try {
             UIManager.put("defaultFont", new javax.swing.plaf.FontUIResource(fontFamily, Font.PLAIN, 13));
-            UIManager.put("Component.arc", 10);
-            UIManager.put("Button.arc", 10);
-            UIManager.put("TextComponent.arc", 10);
+            UIManager.put("Component.arc", 12);
+            UIManager.put("Button.arc", 12);
+            UIManager.put("TextComponent.arc", 12);
+            for(String key:new String[]{"ScrollPane.arc","ScrollPane.TextComponent.arc","ScrollPane.List.arc","ScrollPane.Table.arc","ScrollPane.Tree.arc"})UIManager.put(key,14);
+            UIManager.put("List.selectionArc",10);UIManager.put("Table.selectionArc",10);
             UIManager.setLookAndFeel(dark ? new com.formdev.flatlaf.FlatDarkLaf() : new com.formdev.flatlaf.FlatLightLaf());
             for (java.awt.Window window : java.awt.Window.getWindows()) SwingUtilities.updateComponentTreeUI(window);
         } catch (javax.swing.UnsupportedLookAndFeelException e) { throw new IllegalStateException(e); }
@@ -1329,7 +1331,7 @@ public final class LocalChat extends JFrame {
                 later(turn, () -> {
                     turn.stepText.append(delta);
                     refreshDashboard();
-                    appendMarkdown(delta);
+                    appendMarkdown(delta);timeline.answer(history.indexOf(turn.question),turn.stepText.toString());
                 });
             }
 
@@ -1619,17 +1621,17 @@ public final class LocalChat extends JFrame {
         timeline.clear();timeline.bookmarks(sessionState.bookmarks);transcript.putClientProperty("localchat.followTail",true);transcript.setText("");
         Map<String, ChatClient.Message> results = new HashMap<>();
         for (ChatClient.Message m : history) if (m.role.equals("tool")) results.put(m.toolCallId, m);
-        String previous = "";
+        String previous = "";int timelineQuestion=-1;
         for (int messageIndex=0;messageIndex<history.size();messageIndex++) {
             ChatClient.Message m=history.get(messageIndex);
             if (m.role.equals("user")) {
                 int questionOffset=transcript.getDocument().getLength();
                 header(t("Tu"), userHeader);
-                append(m.content, body);timeline.add(messageIndex,questionOffset,m.content);
+                append(m.content, body);timeline.add(messageIndex,questionOffset,m.content);timelineQuestion=messageIndex;
             } else if (m.role.equals("assistant")) {
                 if (previous.equals("user") || previous.isEmpty()) header(m.label == null ? t("Asistent") : m.label, botHeader);
                 else ensureNewline();
-                appendMarkdown(m.content,m.displayLanguage);
+                appendMarkdown(m.content,m.displayLanguage);timeline.answer(timelineQuestion,m.content);
                 if("PDFCONTROL".equals(m.label))addReports(m.content);
                 for (ChatClient.ToolCall c : m.toolCalls) {
                     ensureNewline();

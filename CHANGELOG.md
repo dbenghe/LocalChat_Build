@@ -1,3 +1,11 @@
+## 1.14.1 - 2026-10-21
+
+- Rotunjeste zona de raspunsuri si caseta mesajului, plus campurile, butoanele si panourile de derulare/listare/tabele din ferestrele aplicatiei, cu pastrarea temelor si a redimensionarii.
+
+- Inlocuieste meniul lat al reperului cu un card de 320 x 110 px, colturi rotunjite, titlu scurt si extras din raspuns (sau intrebare pana exista raspuns).
+- Semnul de carte este o iconita vectoriala de 15 px in coltul dreapta sus, cu stare marcata distincta. Clicul pe iconita nu navigheaza; clicul pe titlu sau extras sare la discutie.
+- Pastreaza salvarea per chat, originalele si lipsa apelurilor API; ambele teme au culori explicite si texte lizibile.
+
 ## 1.14.0 - 2026-10-21
 
 - Diagnosticheaza calea interna PDFCONTROL ghicita fara engine folosind job.json confirmat, fara redirectionare sau rerulare automata. Agentul foloseste campul results din status.
