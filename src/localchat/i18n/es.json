@@ -431,5 +431,6 @@
   "Mod schimbat: context nou; istoricul ramane vizibil.": "Modo cambiado: contexto nuevo; el historial sigue visible.",
   "Normal: fara unelte, reguli MBS sau memorii salvate. Schimbarea modului incepe un context nou.": "Normal: sin herramientas, reglas MBS ni memorias guardadas. Cambiar de modo inicia un contexto nuevo.",
   "Automat (in functie de mod)": "Automático (según el modo)",
-  "Normal: Automat foloseste limba mesajului; o limba fixa are prioritate. Memoriile salvate nu sunt folosite.": "Normal: Automático usa el idioma del mensaje; un idioma fijo tiene prioridad. No se usan memorias guardadas."
+  "Normal: Automat foloseste limba mesajului; o limba fixa are prioritate. Memoriile salvate nu sunt folosite.": "Normal: Automático usa el idioma del mensaje; un idioma fijo tiene prioridad. No se usan memorias guardadas.",
+  "PDFCONTROL: cale recuperata din job.json (engine/checked/resultaten.json).\nCale ceruta: {0}\nCale folosita: {1}": "PDFCONTROL: ruta recuperada de job.json (engine/checked/resultaten.json).\nRuta solicitada: {0}\nRuta utilizada: {1}"
 }

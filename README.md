@@ -659,3 +659,7 @@ Din 1.14.1, zona de raspunsuri, editorul de mesaj si panourile de derulare folos
 In caseta de mesaj, Ctrl+A selecteaza tot, Ctrl+C copiaza selectia, Ctrl+X o decupeaza, Ctrl+V o inlocuieste cu textul din clipboard. Ctrl+Z anuleaza editarea; Ctrl+Y sau Ctrl+Shift+Z o refac. Sunt disponibile si Ctrl+Insert (copiere), Shift+Insert (lipire), Shift+Delete (decupare). Meniul contextual include Undo/Redo traduse. Lipirea capturilor/fisierelor ramane o atasare locala, conform regulilor existente.
 
 Undo/Redo privesc numai textul ciornei, fara a anula operatii cu fisiere sau executii. Istoricul editarilor este local sesiunii editorului, limitat si resetat la schimbarea chatului ori trimiterea/restaurarea mesajului; nu se serializeaza si nu amesteca textele conversatiilor. Clipboard-ul temporar blocat are reincercari limitate; textul nu este decupat daca nu a putut fi copiat.
+
+### Recuperarea caii rezultatului PDFCONTROL (1.15.1)
+
+Cand modelul omite `engine` din `<run>/engine/checked/resultaten.json`, citirea recupereaza calea numai daca manifestul `job.json` al aceluiasi job done/partial confirma exact fisierul existent, iar manifestul si rezultatul raman in folderul de lucru autorizat. Raspunsul uneltei arata calea ceruta si calea folosita si contine datele citite efectiv, cu acelasi offset/limit. Lipsa dovezilor, o tinta protejata sau o eroare reala de citire raman erori. Nu sunt create copii/aliasuri si nu se reface controlul PDF. Mesajele rosii din istoricul existent raman dovezi ale apelurilor vechi; actualizarea nu le rescrie.

@@ -246,7 +246,7 @@ final class Tools {
                 case "find_files" -> Result.ok(findFiles(required(a, "pattern"), readable(str(a, "path", ".")), str(a, "sort", "path")));
                 case "search_text" -> Result.ok(searchText(required(a, "query"), readable(str(a, "path", ".")),
                         str(a, "file_pattern", "*"), bool(a, "regex"), bool(a, "case_sensitive")));
-                case "read_file" -> Result.ok(readFile(readable(required(a, "path")), integer(a, "offset", 1), a.get("limit") == null ? null : integer(a, "limit", 400)));
+                case "read_file" -> Result.ok(readRequestedFile(readable(required(a, "path")), integer(a, "offset", 1), a.get("limit") == null ? null : integer(a, "limit", 400)));
                 case "extract_attachments" -> Result.ok(extractAttachments(readable(required(a, "path")), str(a, "destination", null), bool(a, "include_inline")));
                 case "write_file" -> Result.ok(writeFile(writable(required(a, "path")), requiredText(a, "content"), false));
                 case "append_file" -> Result.ok(writeFile(writable(required(a, "path")), requiredText(a, "content"), true));
@@ -465,23 +465,31 @@ final class Tools {
 
     // ---- reading ----
 
-    /** Correct a known legacy typo with job evidence, without reading/redirecting outside the workspace. */
-    private String missingFile(Path path){
-        String plain=I18n.text("Nu exista: {0}",path);
+    /** Recover only the known missing engine component, using exact completed-job evidence inside the workspace. */
+    private Path confirmedPdfResult(Path path){
         try{
             Path checked=path.getParent(),run=checked==null?null:checked.getParent();
-            if(!path.getFileName().toString().equalsIgnoreCase("resultaten.json")||checked==null||!checked.getFileName().toString().equalsIgnoreCase("checked")||run==null||!run.getFileName().toString().matches("[a-fA-F0-9]{32}")||run.getParent()==null||!run.getParent().getFileName().toString().equalsIgnoreCase("Octop-PDFCONTROL"))return plain;
+            if(!path.getFileName().toString().equalsIgnoreCase("resultaten.json")||checked==null||!checked.getFileName().toString().equalsIgnoreCase("checked")||run==null||!run.getFileName().toString().matches("[a-fA-F0-9]{32}")||run.getParent()==null||!run.getParent().getFileName().toString().equalsIgnoreCase("Octop-PDFCONTROL"))return null;
             Path actual=run.resolve("engine/checked/resultaten.json"),job=run.resolve("job.json"),scope=ctx.workDir().toRealPath();
-            if(!Files.isRegularFile(actual)||!Files.isRegularFile(job)||!actual.toRealPath().startsWith(scope)||!job.toRealPath().startsWith(scope)||Files.size(job)>1048576)return plain;
+            if(!Files.isRegularFile(actual)||!Files.isRegularFile(job)||!actual.toRealPath().startsWith(scope)||!job.toRealPath().startsWith(scope)||Files.size(job)>1048576)return null;
+            guarded(job.toString());guarded(actual.toString());
             Object record=Json.parse(Files.readString(job,StandardCharsets.UTF_8));String status=Json.str(record,"status"),result=Json.str(record,"results");
-            if(!List.of("done","partial").contains(status)||!run.getFileName().toString().equals(Json.str(record,"job_id"))||result==null||!Path.of(result).toAbsolutePath().normalize().equals(actual.toAbsolutePath().normalize()))return plain;
-            return I18n.text("Nu exista: {0}. Calea confirmata PDFCONTROL este: {1}. Foloseste campul results din pdfcontrol_job_status; nu relansa controlul pentru aceasta eroare de cale.",path,actual);
-        }catch(IOException|RuntimeException ignored){return plain;}
+            if(!List.of("done","partial").contains(status)||!run.getFileName().toString().equals(Json.str(record,"job_id"))||result==null||!Path.of(result).toAbsolutePath().normalize().equals(actual.toAbsolutePath().normalize()))return null;
+            return actual;
+        }catch(IOException|RuntimeException|ToolError ignored){return null;}
+    }
+
+    private String readRequestedFile(Path requested,int offset,Integer limit)throws IOException,ToolError{
+        Path actual=Files.exists(requested)?null:confirmedPdfResult(requested);
+        if(actual==null)return readFile(requested,offset,limit);
+        // Apply the normal access and secret-file checks to the confirmed target, then report the real read.
+        String content=readFile(readable(actual.toString()),offset,limit);
+        return I18n.text("PDFCONTROL: cale recuperata din job.json (engine/checked/resultaten.json).\nCale ceruta: {0}\nCale folosita: {1}",requested,actual)+"\n"+content;
     }
 
     private String readFile(Path p, int offset, Integer limit) throws IOException, ToolError {
         if (Files.isDirectory(p)) throw new ToolError("E un folder: " + p + " — foloseste list_dir.");
-        if (!Files.exists(p)) throw new ToolError(missingFile(p));
+        if (!Files.exists(p)) throw new ToolError(I18n.text("Nu exista: {0}",p));
         String name = p.getFileName().toString().toLowerCase(Locale.ROOT);
         if (name.endsWith(".pdf")) return readPdf(p, offset, limit == null ? 20 : limit);
         String text;

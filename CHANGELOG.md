@@ -1,3 +1,8 @@
+## 1.15.1 - 2026-10-21
+
+- Citirea rezultatelor PDFCONTROL recupereaza automat greseala exacta `<run>/checked/resultaten.json` atunci cand `job.json` confirma pentru acelasi job terminat sau partial fisierul existent `<run>/engine/checked/resultaten.json`, in folderul de lucru autorizat.
+- Returneaza continutul citit cu o nota explicita despre calea ceruta si cea folosita, in toate cele sase limbi. Nu mai produce o eroare falsa si o noua cerere la model pentru aceasta corectie verificata. Pastreaza offset/limit, originalele si erorile reale; nu creeaza aliasuri si nu reruleaza controlul.
+
 ## 1.15.0 - 2026-10-21
 
 - Testele cu taste/clicuri native asteapta stabilizarea focusului si procesarea evenimentelor dupa schimbarea temei sau deschiderea cardului, pastrand verificarile functionale.
