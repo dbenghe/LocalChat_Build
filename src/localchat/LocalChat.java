@@ -2026,16 +2026,12 @@ public final class LocalChat extends JFrame {
         config.setProperty("tools", String.valueOf(toolsBox.isSelected()));
         config.setProperty("response.profile",Integer.toString(responseProfile.getSelectedIndex()));
         config.setProperty("permission", permissionBox.getSelectedIndex()==2?"read":permissionBox.getSelectedIndex() == 1 ? "auto" : "ask");
-        Path temporary=null;
         try {
-            Files.createDirectories(appDir);temporary=Files.createTempFile(appDir,"settings-",".tmp");
-            try(OutputStream out=Files.newOutputStream(temporary)){config.store(out,"Setari LocalChat (contin cheile API - nu le distribui)");}
-            try{Files.move(temporary,configFile,java.nio.file.StandardCopyOption.REPLACE_EXISTING,java.nio.file.StandardCopyOption.ATOMIC_MOVE);}
-            catch(java.nio.file.AtomicMoveNotSupportedException e){Files.move(temporary,configFile,java.nio.file.StandardCopyOption.REPLACE_EXISTING);}
+            SettingsStore.save(configFile, config);
             return true;
         } catch (IOException e) {
             setStatus("Nu pot salva setarile in {0}: {1}", true, configFile, e.getMessage());return false;
-        } finally {if(temporary!=null)try{Files.deleteIfExists(temporary);}catch(IOException ignored){}}
+        }
     }
 
     /** Settings, conversations, skills and rules live next to LocalChat.jar, so the whole folder stays portable. */

@@ -1,3 +1,8 @@
+## 1.12.1 - 2026-10-21
+
+- Retry transient Windows access-denied locks when replacing settings, with bounded attempts and interruption support. Preserve the existing settings on failure and clean temporary files.
+- Add regression checks for transient/permanent locks, unrelated IO failures and interrupted saves.
+
 ## 1.12.0 - 2026-10-21
 
 - Add Tools > Local memories: enable/use local memory, allow automatic preference capture from tool-assisted chats, inspect/edit scoped entries and delete individual/all memories.
