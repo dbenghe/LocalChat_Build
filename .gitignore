@@ -35,3 +35,6 @@
 
 # Private local memories and project-scoped preferences
 **/memorie/
+
+# Private child-agent tasks, results and complete local histories
+**/agent-runs/

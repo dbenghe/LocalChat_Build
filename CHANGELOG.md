@@ -1,3 +1,15 @@
+## 1.16.0 - 2026-10-21
+
+- Selectia modelelor se adapteaza profilului MBS/Normal pentru fiecare furnizor, inclusiv API-uri adaugate ulterior. MBS afiseaza implicit modele cu suport pentru unelte declarat/verificat; Normal include modele de chat fara unelte. Catalogul permite afisarea tuturor cu motivul clasificarii, in toate cele sase limbi.
+- Separa modelele specializate de chat, accesul blocat per cont de erorile temporare, capabilitatile neconfirmate de recomandarile de utilizare. Evaluarea locala Muse este marcata distinct, fara anularea capabilitatilor declarate.
+- Filtrarea nu sterge modele, favorite, selectii sau conversatii si nu porneste probe la schimbarea profilului. Trimiterea blocheaza modelele specializate/incompatibile confirmate, pastrand ciorna. Probele manuale din MBS pot confirma apelurile de unelte pentru modele noi.
+
+- Agentii runtime sunt disponibili la cerere explicita in profilul MBS, prin prompt sau `/agents`. Folosesc furnizorul/modelul selectat pentru orice API compatibil; fiecare copil are context propriu si permisiunile chatului. Maximum 3 sarcini/lot, 2 simultan, 16 pasi/copil, 4096 tokeni de iesire/cerere/copil si 180 secunde/lot. Rezultatele si arhivele private sunt pastrate, cererile sunt contabilizate, Stop se propaga, iar acelasi lot nu se executa repetat.
+- Tileward primeste explicit dezactivarea memoriei serverului (`X-Tileward-Conversation: off`), pentru a pastra izolarea locala a chaturilor, profilurilor, compactarilor si agentilor. Transportul Gonka evita substituirea tacita a modelului.
+- Un index factual limitat reconstruit din arhiva originala pastreaza progresul recent la reluare, separat de rezumatul modelului si de regulile permanente. Repetarea fara progres a aceleiasi citiri este oprita dupa cinci cereri; citirea repetata a skillului returneaza un memento scurt. Inventarierea nu reseteaza bucla.
+- copy_path verifica SHA-256, omite fisiere identice fara rescriere si reia foldere partiale, pastrand conflictele diferite fara overwrite implicit. Foloseste staging pentru copiere, verifica destinatia si nu declara succes dupa anulare. O aprobare tardiva dupa Stop nu mai executa modificarea.
+- Buildul permite `-SkipNativeQA` explicit pentru desktop indisponibil; testele deterministe ruleaza, iar lipsa verificarilor native este semnalata, fara a pretinde ca au trecut.
+
 ## 1.15.1 - 2026-10-21
 
 - Citirea rezultatelor PDFCONTROL recupereaza automat greseala exacta `<run>/checked/resultaten.json` atunci cand `job.json` confirma pentru acelasi job terminat sau partial fisierul existent `<run>/engine/checked/resultaten.json`, in folderul de lucru autorizat.

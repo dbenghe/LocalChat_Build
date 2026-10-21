@@ -194,7 +194,7 @@ final class Tools {
         out.add(spec("make_dir", "Create a folder (and missing parent folders).", List.of("path"),
                 "path", "string", "Folder to create."));
         out.add(spec("copy_path", "Copy a file or a whole folder, also to network shares. If destination is an existing "
-                        + "folder, the source is copied into it.", List.of("source", "destination"),
+                        + "folder, the source is copied into it. Matching SHA-256 targets are verified and skipped; partial folders can resume. Differing targets require explicit overwrite. Success includes destination hash verification; cancellation is not success.", List.of("source", "destination"),
                 "source", "string", "File or folder to copy.",
                 "destination", "string", "Target path or folder.",
                 "overwrite", "boolean", "Replace existing files (default false)."));
@@ -238,6 +238,7 @@ final class Tools {
     private Result run(ChatClient.ToolCall call) {
         Map<String, Object> a = call.args;
         try {
+            ensureActive();
             if (a.containsKey(INVALID_ARGS)) throw new ToolError("Argumentele nu sunt JSON valid: " + a.get(INVALID_ARGS));
             McpRef ref = mcpTools.get(call.name);
             if (ref != null) return callMcp(ref, a);
@@ -313,11 +314,17 @@ final class Tools {
 
     private static boolean sameFile(Path a,Path b){try{return Files.isSameFile(a,b);}catch(IOException ignored){return false;}}
 
+    private void ensureActive() throws ToolError {
+        if(cancelled || Thread.currentThread().isInterrupted())throw new ToolError("Oprit de utilizator.");
+    }
+
     private void allow(Access access, String title, String details) throws ToolError {
-        if (cancelled) throw new ToolError("Oprit de utilizator.");
+        ensureActive();
         if(readOnly && access!=Access.READ)throw new ToolError(I18n.text("Mod doar citire: modificarile si comenzile sunt blocate."));
-        if (ctx.autoApprove() || ctx.alwaysAllowed().contains(access)) return;
+        if (ctx.autoApprove() || ctx.alwaysAllowed().contains(access)) {ensureActive();return;}
         Decision d = ctx.permission().ask(title, details);
+        // Stop can arrive while the approval dialog is open; a late YES/ALWAYS cannot revive the tool.
+        ensureActive();
         if (d == Decision.ALWAYS) ctx.alwaysAllowed().add(access);
         if (d == Decision.NO) {
             throw new ToolError("Utilizatorul a refuzat: " + title.toLowerCase(Locale.ROOT)
@@ -609,42 +616,98 @@ final class Tools {
         return "Creat folderul " + p;
     }
 
+    private void checkCopyCancelled() throws IOException {
+        if(cancelled || Thread.currentThread().isInterrupted())throw new java.io.InterruptedIOException(I18n.text("Copiere anulata; fisierele deja copiate sunt pastrate. Reia pentru verificare si continuare."));
+    }
+
+    private void protectCopyPath(Path path) throws ToolError {
+        if(path.equals(ctx.secretFile()) || (Files.exists(path) && Files.exists(ctx.secretFile()) && sameFile(path,ctx.secretFile())))
+            throw new ToolError("Fisierul de setari nu poate fi copiat sau mutat.");
+    }
+
+    private String copyDigest(Path file) throws IOException {
+        final java.security.MessageDigest digest;
+        try{digest=java.security.MessageDigest.getInstance("SHA-256");}catch(java.security.NoSuchAlgorithmException e){throw new IllegalStateException(e);}
+        try(InputStream input=Files.newInputStream(file)){
+            byte[] buffer=new byte[64*1024];int count;
+            while((count=input.read(buffer))>=0){checkCopyCancelled();if(count>0)digest.update(buffer,0,count);}
+        }
+        checkCopyCancelled();return java.util.HexFormat.of().formatHex(digest.digest());
+    }
+
+    /** Existing identical files are verified success; differing files still require explicit overwrite. */
+    private boolean copyVerifiedFile(Path source,Path target,boolean overwrite) throws IOException,ToolError {
+        checkCopyCancelled();protectCopyPath(source);protectCopyPath(target);
+        if(Files.exists(target) && !Files.isRegularFile(target))throw new FileAlreadyExistsException(target.toString());
+        String sourceHash=copyDigest(source);
+        if(Files.isRegularFile(target)){
+            if(Files.size(source)==Files.size(target) && sourceHash.equals(copyDigest(target)))return false;
+            if(!overwrite)throw new FileAlreadyExistsException(target.toString());
+        }
+        if(target.getParent()!=null)Files.createDirectories(target.getParent());
+        // Keep incomplete bytes out of the final drawing name; this temporary belongs only to this call.
+        Path staged=Files.createTempFile(target.getParent(),".localchat-copy-",".part");
+        try{
+            Files.copy(source,staged,StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.COPY_ATTRIBUTES);
+            checkCopyCancelled();
+            if(!sourceHash.equals(copyDigest(staged)))throw new IOException(I18n.text("Verificarea SHA-256 a copierii a esuat: {0}",target));
+            Files.move(staged,target,overwrite?new StandardCopyOption[]{StandardCopyOption.REPLACE_EXISTING}:new StandardCopyOption[0]);
+            if(!sourceHash.equals(copyDigest(target)))throw new IOException(I18n.text("Verificarea SHA-256 a copierii a esuat: {0}",target));
+            return true;
+        }finally{Files.deleteIfExists(staged);}
+    }
+
     private String copyOrMove(Path source, Path destination, boolean overwrite, boolean move) throws IOException, ToolError {
+        checkCopyCancelled();
         if (!Files.exists(source)) throw new ToolError("Nu exista sursa: " + source);
-        if (source.equals(ctx.secretFile())) throw new ToolError("Fisierul de setari nu poate fi copiat sau mutat.");
+        protectCopyPath(source);
         Path target = Files.isDirectory(destination) ? destination.resolve(source.getFileName()) : destination;
-        if (target.startsWith(source)) throw new ToolError("Destinatia e in interiorul sursei.");
-        if (Files.exists(target) && !overwrite) throw new ToolError("Exista deja: " + target + " (foloseste overwrite=true daca vrei sa-l inlocuiesti).");
+        protectCopyPath(target);
+        if (!target.equals(source) && target.startsWith(source)) throw new ToolError("Destinatia e in interiorul sursei.");
+        if (move && Files.exists(target) && !overwrite) throw new FileAlreadyExistsException(target.toString());
         allow(Access.WRITE, move ? "Mutare" : "Copiere", source + "\n→ " + target + (overwrite ? "\n(inlocuieste ce exista)" : ""));
-        StandardCopyOption[] options = overwrite
-                ? new StandardCopyOption[]{StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES}
-                : new StandardCopyOption[]{StandardCopyOption.COPY_ATTRIBUTES};
-        if (target.getParent() != null) Files.createDirectories(target.getParent());
+        checkCopyCancelled();
+        if (Files.isDirectory(source)) {
+            // Validate the entire source/target tree before the first mutation, including nested settings.
+            Files.walkFileTree(source,new SimpleFileVisitor<>(){
+                @Override public FileVisitResult preVisitDirectory(Path dir,BasicFileAttributes attrs)throws IOException{
+                    checkCopyCancelled();Path planned=target.resolve(source.relativize(dir).toString());
+                    if(Files.exists(planned)&&!Files.isDirectory(planned))throw new FileAlreadyExistsException(planned.toString());
+                    return FileVisitResult.CONTINUE;
+                }
+                @Override public FileVisitResult visitFile(Path file,BasicFileAttributes attrs)throws IOException{
+                    checkCopyCancelled();Path planned=target.resolve(source.relativize(file).toString());
+                    try{protectCopyPath(file);protectCopyPath(planned);}catch(ToolError error){throw new IOException(error.getMessage());}
+                    if(!move && Files.exists(planned) && (!Files.isRegularFile(planned) || (!overwrite && (Files.size(file)!=Files.size(planned)||!copyDigest(file).equals(copyDigest(planned))))))
+                        throw new FileAlreadyExistsException(planned.toString());
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        }
         if (move) {
+            if(target.getParent()!=null)Files.createDirectories(target.getParent());
             Files.move(source, target, overwrite ? new StandardCopyOption[]{StandardCopyOption.REPLACE_EXISTING} : new StandardCopyOption[0]);
-            return "Mutat: " + source + " → " + target;
+            checkCopyCancelled();return "Mutat: " + source + " → " + target;
         }
         if (Files.isRegularFile(source)) {
-            Files.copy(source, target, options);
-            return "Copiat: " + source + " → " + target + " (" + size(Files.size(target)) + ")";
+            boolean copied=copyVerifiedFile(source,target,overwrite);
+            checkCopyCancelled();
+            return I18n.text(copied?"Copiat si verificat SHA-256: {0} → {1}":"Fisier deja identic (SHA-256 verificat), fara recopie: {0} → {1}",source,target);
         }
         long[] totals = {0, 0};
         Files.walkFileTree(source, new SimpleFileVisitor<>() {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                Files.createDirectories(target.resolve(source.relativize(dir).toString()));
-                return cancelled ? FileVisitResult.TERMINATE : FileVisitResult.CONTINUE;
+            @Override public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                checkCopyCancelled();Files.createDirectories(target.resolve(source.relativize(dir).toString()));return FileVisitResult.CONTINUE;
             }
-
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                Files.copy(file, target.resolve(source.relativize(file).toString()), options);
-                totals[0]++;
-                totals[1] += attrs.size();
+            @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                checkCopyCancelled();
+                try{if(copyVerifiedFile(file,target.resolve(source.relativize(file).toString()),overwrite))totals[0]++;else totals[1]++;}
+                catch(ToolError error){throw new IOException(error.getMessage());}
                 return FileVisitResult.CONTINUE;
             }
         });
-        return "Copiat folderul " + source + " → " + target + " (" + totals[0] + " fisiere, " + size(totals[1]) + ")";
+        checkCopyCancelled();
+        return I18n.text("Copiat folderul {0} → {1} ({2} fisiere copiate, {3} identice omise; SHA-256 verificat).",source,target,totals[0],totals[1]);
     }
 
     // ---- commands ----

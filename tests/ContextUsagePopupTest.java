@@ -48,7 +48,7 @@ public final class ContextUsagePopupTest {
                 popup.update(100,200,800,1000,"");check(popup.occupancy.getText().contains(ContextRing.percentage(1100,1000)),"overflow percentage is honest rather than clamped");image(popup,home.resolve("overflow.png"));
                 check(ContextUsagePopup.shortTokens(999).equals("~999")&&ContextUsagePopup.shortTokens(1000000).endsWith("M"),"small and million token estimates formatted");
                 check(server.requests.isEmpty(),"viewing and updating context creates no inference requests");app.dispose();
-            });nativePopup(home.resolve("native"));System.out.println("PASS: "+checks+" live context popup checks; six languages, both themes, estimates and native rendering");
+            });if(!Boolean.getBoolean("localchat.skipNativeQA"))nativePopup(home.resolve("native"));else System.out.println("Native popup screen capture explicitly skipped; deterministic theme/layout checks still ran");System.out.println("PASS: "+checks+" live context popup checks; six languages, both themes and estimates; native="+!Boolean.getBoolean("localchat.skipNativeQA"));
         }finally{FeatureTest.edt(()->{for(var w:Window.getWindows())w.dispose();});}System.exit(0);
     }
 }

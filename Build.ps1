@@ -1,6 +1,7 @@
 ﻿param(
     [string]$DistributionPath = (Join-Path (Split-Path $PSScriptRoot -Parent) 'LocalChat'),
-    [switch]$SkipDeploy
+    [switch]$SkipDeploy,
+    [switch]$SkipNativeQA
 )
 $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath $PSScriptRoot
@@ -30,6 +31,8 @@ $taskBuild = Join-Path $PSScriptRoot 'build'
 $taskResolved = [IO.Path]::GetFullPath($taskBuild)
 if ($taskResolved -ne ([IO.Path]::GetFullPath($PSScriptRoot).TrimEnd('\') + '\build')) { throw 'Unexpected build directory' }
 if (Test-Path -LiteralPath $taskResolved) { Remove-Item -LiteralPath $taskResolved -Recurse -Force }
+$taskNativeQaOptions = @(if ($SkipNativeQA) { '-Dlocalchat.skipNativeQA=true' })
+if ($SkipNativeQA) { Write-Output 'Native desktop QA explicitly skipped; report this limitation with the build.' }
 $taskClasses = Join-Path $taskBuild 'classes'
 New-Item -ItemType Directory -Path $taskClasses -Force | Out-Null
 $taskSources = (Get-ChildItem -LiteralPath "$PSScriptRoot/src/localchat" -Filter '*.java').FullName
@@ -50,9 +53,21 @@ if ($LASTEXITCODE) { throw 'Feature tests failed; distribution was not changed' 
 if ($LASTEXITCODE) { throw 'Provider/metadata tests failed; distribution was not changed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/catalog-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ModelCatalogTest
 if ($LASTEXITCODE) { throw 'Catalog/probe tests failed; distribution was not changed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/model-suitability-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ModelSuitabilityTest
+if ($LASTEXITCODE) { throw 'Profile model suitability tests failed' }
+& "$taskJdk/bin/java.exe" "-Dlocalchat.home=$taskBuild/work-progress-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.WorkProgressTest
+if ($LASTEXITCODE) { throw 'Continuity/loop/provider isolation tests failed' }
+& "$taskJdk/bin/java.exe" "-Dlocalchat.home=$taskBuild/copy-resume-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.CopyResumeTest
+if ($LASTEXITCODE) { throw 'Verified resumable copy tests failed' }
+& "$taskJdk/bin/java.exe" "-Dlocalchat.home=$taskBuild/agent-group-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.AgentGroupTest
+if ($LASTEXITCODE) { throw 'Runtime parallel agent tests failed' }
+& "$taskJdk/bin/java.exe" "-Dlocalchat.home=$taskBuild/agent-artifacts-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.AgentArtifactsTest
+if ($LASTEXITCODE) { throw 'Verified child-agent PDF artifact tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/agent-integration-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.AgentIntegrationTest
+if ($LASTEXITCODE) { throw 'Chat to runtime-agent integration tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/attachment-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.AttachmentTest
 if ($LASTEXITCODE) { throw 'Attachment/drop/session tests failed; distribution was not changed' }
-& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/composer-shortcuts-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ComposerShortcutsTest
+& "$taskJdk/bin/java.exe" @taskNativeQaOptions '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/composer-shortcuts-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ComposerShortcutsTest
 if ($LASTEXITCODE) { throw 'Composer keyboard/Undo/Redo tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/contextguardtest-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ContextGuardTest
 if ($LASTEXITCODE) { throw 'Context budget/automatic tool-loop compaction tests failed; distribution was not changed' }
@@ -64,7 +79,7 @@ if ($LASTEXITCODE) { throw 'Plain chat display/original data tests failed; distr
 if ($LASTEXITCODE) { throw 'Model favorite tests failed; distribution was not changed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/presentation-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ChatPresentationTest
 if ($LASTEXITCODE) { throw 'Markdown and inline PDF presentation tests failed' }
-& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/navigation-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ChatNavigationTest
+& "$taskJdk/bin/java.exe" @taskNativeQaOptions '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/navigation-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ChatNavigationTest
 if ($LASTEXITCODE) { throw 'Chat navigation/disclosure tests failed' }
 & "$taskJdk/bin/java.exe" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.PdfResultPathTest
 if ($LASTEXITCODE) { throw 'PDF result path diagnostics tests failed' }
@@ -74,7 +89,7 @@ if ($LASTEXITCODE) { throw 'Adaptive memory reduction tests failed' }
 if ($LASTEXITCODE) { throw 'Inference gateway recovery tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/pdf-preview-test-home" "-Dpdfpreview.python=$taskPdfPython" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.PdfPreviewTest
 if ($LASTEXITCODE) { throw 'PDF card and right preview tests failed' }
-& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/context-popup-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ContextUsagePopupTest
+& "$taskJdk/bin/java.exe" @taskNativeQaOptions '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/context-popup-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ContextUsagePopupTest
 if ($LASTEXITCODE) { throw 'Live context popup tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/composer-split-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ComposerSplitTest
 if ($LASTEXITCODE) { throw 'Composer resize tests failed' }

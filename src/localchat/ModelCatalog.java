@@ -12,10 +12,12 @@ import java.util.List;
 
 /** Catalog facts and account-specific response tests. No private prompts or tool execution. */
 final class ModelCatalog {
-    record Entry(String id,Boolean vision,Boolean tools,Boolean reasoning,long maximum,long documentedMaximum,String source,String documentedLabel) {
+    record Entry(String id,Boolean vision,Boolean tools,Boolean reasoning,long maximum,long documentedMaximum,String source,String documentedLabel,String purpose,Boolean chat) {
+        Entry(String id,Boolean vision,Boolean tools,Boolean reasoning,long maximum,long documentedMaximum,String source,String documentedLabel,String purpose){this(id,vision,tools,reasoning,maximum,documentedMaximum,source,documentedLabel,purpose,null);}
+        Entry(String id,Boolean vision,Boolean tools,Boolean reasoning,long maximum,long documentedMaximum,String source,String documentedLabel){this(id,vision,tools,reasoning,maximum,documentedMaximum,source,documentedLabel,"");}
         Entry(String id,Boolean vision,Boolean tools,Boolean reasoning,long maximum,long documentedMaximum,String source){this(id,vision,tools,reasoning,maximum,documentedMaximum,source,documentedMaximum>0?Long.toString(documentedMaximum):"");}
-        Object json(){return Json.obj("id",id,"vision",vision,"tools",tools,"reasoning",reasoning,"maximum",maximum,"documentedMaximum",documentedMaximum,"source",source,"documentedLabel",documentedLabel);}
-        static Entry from(Object o){return new Entry(Json.str(o,"id"),bool(Json.get(o,"vision")),bool(Json.get(o,"tools")),bool(Json.get(o,"reasoning")),ModelInfo.first(o,"maximum"),ModelInfo.first(o,"documentedMaximum"),Objects.toString(Json.str(o,"source"),""),Objects.toString(Json.str(o,"documentedLabel"),ModelInfo.first(o,"documentedMaximum")>0?Long.toString(ModelInfo.first(o,"documentedMaximum")):""));}
+        Object json(){return Json.obj("id",id,"vision",vision,"tools",tools,"reasoning",reasoning,"maximum",maximum,"documentedMaximum",documentedMaximum,"source",source,"documentedLabel",documentedLabel,"purpose",purpose,"chat",chat);}
+        static Entry from(Object o){return new Entry(Json.str(o,"id"),bool(Json.get(o,"vision")),bool(Json.get(o,"tools")),bool(Json.get(o,"reasoning")),ModelInfo.first(o,"maximum"),ModelInfo.first(o,"documentedMaximum"),Objects.toString(Json.str(o,"source"),""),Objects.toString(Json.str(o,"documentedLabel"),ModelInfo.first(o,"documentedMaximum")>0?Long.toString(ModelInfo.first(o,"documentedMaximum")):""),Objects.toString(Json.str(o,"purpose"),""),bool(Json.get(o,"chat")));}
         long suggestedBudget(String base){return ModelInfo.recommendedBudget(base)>0?ModelInfo.recommendedBudget(base):Math.min(131072,maximum>0?maximum:documentedMaximum);}
     }
     record Doc(Boolean vision,Boolean tools,Boolean reasoning,long context,String label,String source){}
@@ -46,14 +48,16 @@ final class ModelCatalog {
         if("api.gonkarouter.io".equalsIgnoreCase(host)&&Set.of("zai-org/GLM-5.3-Flash","MiniMaxAI/MiniMax-M2.7","deepseek-ai/DeepSeek-V4-Flash-0731").contains(id)){
             if(tools==null)tools=true;if(reasoning==null&&!id.equals("deepseek-ai/DeepSeek-V4-Flash-0731"))reasoning=true;source+=" | https://gonkarouter.io/models";
         }
-        return new Entry(id,vision,tools,reasoning,maximum,documented,source,docLabel);
+        if("api.groq.com".equalsIgnoreCase(host)&&Set.of("qwen/qwen3.8-27b","openai/gpt-oss-120b","openai/gpt-oss-20b").contains(id)){if(tools==null)tools=true;source+=" | https://console.groq.com/docs/tool-use/overview";}
+        if("api.tileward.com".equalsIgnoreCase(host)&&Set.of("Tileward-Qwen3.8-27b","Tileward-Qwen3.6-35B-A3B","Qwen3.6-35B-A3B-TW","tileward-35b-a3b").contains(id)){if(tools==null)tools=true;source+=" | https://tileward.com/docs/";}
+        return new Entry(id,vision,tools,reasoning,maximum,documented,source,docLabel,ModelSuitability.purpose(row),capability(row,"chat","supports_chat"));
     }
     static List<Entry> parse(Object root,String base){Object rows=Json.get(root,"data");if(!(rows instanceof List))rows=Json.get(root,"models");List<Entry> entries=new ArrayList<>();Set<String> seen=new HashSet<>();if(rows instanceof List<?> list)for(Object row:list){String id=Json.str(row,"id");if(id==null)id=Json.str(row,"key");if(id!=null&&!id.isBlank()&&seen.add(id))entries.add(entry(row,base));}return entries;}
     static List<Entry> fetch(Provider protocol,String base,String key)throws IOException{
         HttpURLConnection c=open(protocol,base+"/models",key,"GET",10000);try{int status=c.getResponseCode();if(status!=200)throw new IOException("HTTP "+status);return parse(Json.parse(read(c.getInputStream(),4*1024*1024,System.nanoTime()+TimeUnit.SECONDS.toNanos(15))),base);}finally{c.disconnect();}
     }
     static HttpURLConnection open(Provider protocol,String address,String key,String method,int timeout)throws IOException{
-        HttpURLConnection c=(HttpURLConnection)new URL(address).openConnection();c.setRequestMethod(method);c.setConnectTimeout(5000);c.setReadTimeout(timeout);c.setInstanceFollowRedirects(false);c.setRequestProperty("Content-Type","application/json");if("api.gonkarouter.io".equalsIgnoreCase(URI.create(address).getHost()))c.setRequestProperty("X-Gonka-No-Fallback","true");
+        HttpURLConnection c=(HttpURLConnection)new URL(address).openConnection();c.setRequestMethod(method);c.setConnectTimeout(5000);c.setReadTimeout(timeout);c.setInstanceFollowRedirects(false);c.setRequestProperty("Content-Type","application/json");ProviderHeaders.apply(c);if("api.gonkarouter.io".equalsIgnoreCase(URI.create(address).getHost()))c.setRequestProperty("X-Gonka-No-Fallback","true");
         if(!key.isBlank())c.setRequestProperty(protocol.format==Provider.Format.ANTHROPIC?"x-api-key":"Authorization",protocol.format==Provider.Format.ANTHROPIC?key:"Bearer "+key);
         if(protocol.format==Provider.Format.ANTHROPIC)c.setRequestProperty("anthropic-version",ChatClient.ANTHROPIC_VERSION);return c;
     }
@@ -107,5 +111,5 @@ final class ModelCatalog {
     }
     static String facts(Entry entry,Probe probe){return I18n.text("Imagini: {0} · Unelte: {1} · Rationament: {2}",flag(entry.vision()),flag(Boolean.TRUE.equals(probe.toolVerified())?Boolean.TRUE:entry.tools()),flag(entry.reasoning()))+" | "+probe.display()+" | "+probe.servedModel()+" | "+entry.source();}
     static String flag(Boolean value){return I18n.text(value==null?"necunoscut":value?"Da":"Nu");}
-    static List<Entry> saved(Properties config,String prefix,String base,List<String> ids){Map<String,Entry> indexed=new HashMap<>();try{Object rows=Json.parse(base.equals(config.getProperty(prefix+".catalogUrl",""))?config.getProperty(prefix+".catalog","[]"):"[]");if(rows instanceof List<?> list)for(Object row:list){Entry entry=Entry.from(row);indexed.put(entry.id(),entry);}}catch(RuntimeException ignored){}List<Entry> rows=new ArrayList<>();for(String id:ids){Entry documented=entry(Json.obj("id",id),base),cached=indexed.get(id);rows.add(cached==null?documented:new Entry(id,cached.vision()!=null?cached.vision():documented.vision(),cached.tools()!=null?cached.tools():documented.tools(),cached.reasoning()!=null?cached.reasoning():documented.reasoning(),cached.maximum(),documented.documentedMaximum(),documented.source(),documented.documentedLabel()));}return rows;}
+    static List<Entry> saved(Properties config,String prefix,String base,List<String> ids){Map<String,Entry> indexed=new HashMap<>();try{Object rows=Json.parse(base.equals(config.getProperty(prefix+".catalogUrl",""))?config.getProperty(prefix+".catalog","[]"):"[]");if(rows instanceof List<?> list)for(Object row:list){Entry entry=Entry.from(row);indexed.put(entry.id(),entry);}}catch(RuntimeException ignored){}List<Entry> rows=new ArrayList<>();for(String id:ids){Entry documented=entry(Json.obj("id",id),base),cached=indexed.get(id);rows.add(cached==null?documented:new Entry(id,cached.vision()!=null?cached.vision():documented.vision(),cached.tools()!=null?cached.tools():documented.tools(),cached.reasoning()!=null?cached.reasoning():documented.reasoning(),cached.maximum(),documented.documentedMaximum(),documented.source(),documented.documentedLabel(),cached.purpose().isBlank()?documented.purpose():cached.purpose(),cached.chat()!=null?cached.chat():documented.chat()));}return rows;}
 }

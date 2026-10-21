@@ -663,3 +663,19 @@ Undo/Redo privesc numai textul ciornei, fara a anula operatii cu fisiere sau exe
 ### Recuperarea caii rezultatului PDFCONTROL (1.15.1)
 
 Cand modelul omite `engine` din `<run>/engine/checked/resultaten.json`, citirea recupereaza calea numai daca manifestul `job.json` al aceluiasi job done/partial confirma exact fisierul existent, iar manifestul si rezultatul raman in folderul de lucru autorizat. Raspunsul uneltei arata calea ceruta si calea folosita si contine datele citite efectiv, cu acelasi offset/limit. Lipsa dovezilor, o tinta protejata sau o eroare reala de citire raman erori. Nu sunt create copii/aliasuri si nu se reface controlul PDF. Mesajele rosii din istoricul existent raman dovezi ale apelurilor vechi; actualizarea nu le rescrie.
+
+## Modele dupa profil (1.16.0)
+
+Lista de selectie aplica implicit filtrul de profil tuturor furnizorilor, indiferent de pret sau nume. **MBS** afiseaza modele cu suport pentru unelte declarat de API/documentatie sau verificat prin proba. **Normal** permite si modele de chat fara unelte. Modelele de audio, embeddings sau moderare sunt specializate, nu modele de conversatie generala.
+
+In **Unelte > Catalog modele**, debifeaza **Doar modele potrivite profilului** pentru toate intrarile si motivele clasificarii. Modelele necunoscute pot fi testate explicit; lipsa metadatelor nu declara lipsa suportului. HTTP 403/404 este acces blocat per cont, cu expirare/retestare; 429, timeout si erorile temporare nu modifica aptitudinea modelului. Filtrarea nu genereaza inferente, nu sterge favoritele sau modelele si pastreaza selectia curenta, chiar daca este nerecomandata. O evaluare MBS nefavorabila nu blocheaza folosirea modelului in Normal.
+
+## Agenti la cerere si reluarea lucrului (1.16.0)
+
+In **MBS**, poti scrie: `Porneste doi agenti: unul verifica raportul PDF deja existent, celalalt verifica perechile V/W. Nu relansa controlul si nu modifica sursele. Reuneste constatarile.` Sau foloseste `/agents <sarcina>`. Modelul principal imparte cererea in sarcini independente prin `run_agents`; fiecare foloseste furnizorul si modelul selectat, pentru orice API de chat compatibil cu unelte. Nu necesita MiniMax/Qwen sau o lista fixa de furnizori. In Normal nu sunt expuse unelte.
+
+Limite: maximum 3 sarcini intr-un lot, 2 simultan, 2 loturi distincte pe tura, 16 pasi/copil, maximum 4096 tokeni de iesire pentru fiecare cerere a copilului, 180 secunde/lot. Bugetul/contextul si permisiunile chatului raman aplicate, iar consumul copiilor se adauga consumului real al conversatiei. Rate limit-ul furnizorului poate limita paralelismul util. Agentii nu se pornesc pentru simpla discutie despre agenti sau pentru o cerere negativa si nu deleaga recursiv. Stop opreste cererile si uneltele cunoscute; arhivele private sunt in `agent-runs/`, fara credentialele furnizorului.
+
+La «continua», indexul factual local al actiunilor si caile returnate raman disponibile separat de rezumat. Aplicatia opreste repetarea fara progres a citirilor. Pentru fisiere deja copiate, copy_path verifica hashul si omite identicele; diferentele nu autorizeaza suprascrierea. O operatie SMB blocata in Files.copy nu poate fi intrerupta instantaneu, dar anularea nu este declarata succes.
+
+Pentru un build intr-o sesiune fara desktop interactiv se poate folosi `Build.ps1 -SkipDeploy -SkipNativeQA`. Aceasta omite explicit testele cu tastatura/mouse/captura native; nu reprezinta verificare a lor. Buildul implicit pastreaza testele native obligatorii.

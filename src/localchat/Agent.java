@@ -28,9 +28,17 @@ final class Agent {
         default void compacted() {}
         default void retry(boolean compaction,int next,int total,int status){}
         default void usage(TokenUsage usage) {}
+        default void agentProgress(String title,String state) {}
+        default void agentRequest(String title) {}
         default void request(String system, List<ChatClient.Message> conversation, List<ChatClient.ToolSpec> tools) throws IOException {}
     }
 
+    private int maximumSteps=MAX_STEPS;
+    Agent maxSteps(int count){maximumSteps=Math.max(1,Math.min(MAX_STEPS,count));return this;}
+    private AgentGroup team;
+    Agent group(AgentGroup value){team=value;return this;}
+    private static final Object MUTATION_LOCK=new Object();
+    private final ToolLoopGuard loopGuard=new ToolLoopGuard();
     private ContextGuard guard;
     Agent guard(ContextGuard value){guard=value;return this;}
     private final ChatClient client = new ChatClient();
@@ -49,14 +57,15 @@ final class Agent {
 
     void cancel() {
         cancelled = true;
-        client.cancel();if(guard!=null)guard.cancel();
+        client.cancel();if(team!=null)team.cancel();if(guard!=null)guard.cancel();
         if (tools != null) tools.cancel();
     }
 
     void run(Provider p, String url, String key, String model, String label, String system,
              List<ChatClient.Message> base, boolean stream, Ui ui) throws IOException {
-        List<ChatClient.ToolSpec> specs = tools == null ? Collections.emptyList() : tools.specs();
-        for (int step = 0; step < MAX_STEPS; step++) {
+        List<ChatClient.ToolSpec> specs = new ArrayList<>(tools == null ? Collections.emptyList() : tools.specs());
+        if(team!=null&&tools!=null)specs.add(AgentGroup.spec());
+        for (int step = 0; step < maximumSteps; step++) {
             if (cancelled) return;
             if (step > 0) ui.step();
             List<ChatClient.Message> conversation = new ArrayList<>(base);
@@ -87,20 +96,30 @@ final class Agent {
                 boolean pdfStart=call.name.contains("pdfcontrol_start_")||call.name.endsWith("pdfcontrol_regenerate_report");
                 String signature=pdfStart?call.name+"|"+Json.write(new java.util.TreeMap<>(call.args)):"";
                 Tools.Result result=pdfStart?startedPdfJobs.get(signature):null;
-                if(result==null)result=tools==null?Tools.Result.error("Tool-urile sunt dezactivate in aplicatie."):tools.execute(call);
+                if(result==null)result=loopGuard.before(call);
+                if(result==null){
+                    if(team!=null&&call.name.equals("run_agents"))result=team.run(call,p,url,key,model,label,system,ui);
+                    else if(tools==null)result=Tools.Result.error("Tool-urile sunt dezactivate in aplicatie.");
+                    else if(isMutation(call.name)){synchronized(MUTATION_LOCK){if(cancelled)return;result=tools.execute(call);}}
+                    else result=tools.execute(call);
+                }
+                loopGuard.completed(call,result);
                 if(pdfStart&&!result.isError)startedPdfJobs.put(signature,result);
                 if(pdfStart&&result.isError)failedPdfCalls.merge(signature,1,Integer::sum);
-                if (cancelled) return;
                 synchronized (added) {
                     added.add(ChatClient.Message.toolResult(call.id, result.text, result.isError));
                 }
                 publishContext(base, ui);
                 ui.toolFinished(call, result);
+                if(cancelled)return;
+                if(loopGuard.stalled(call))throw new IOException(result.text);
                 if(pdfStart&&failedPdfCalls.getOrDefault(signature,0)>=3)throw new IOException(I18n.text("PDFCONTROL: acelasi apel a esuat de trei ori. Verifica eroarea si sursele; lucrarea nu este finalizata."));
             }
         }
-        throw new IOException("Oprit dupa " + MAX_STEPS + " pasi fara un raspuns final.");
+        throw new IOException("Oprit dupa " + maximumSteps + " pasi fara un raspuns final.");
     }
+
+    private static boolean isMutation(String name){if(name.matches("(?:.*_)?pdfcontrol_start_(?:check|extract|pairs|compare|workflow)"))return false;return !Set.of("read_skill","read_file","list_dir","find_files","search_text").contains(name)&&!name.endsWith("pdfcontrol_job_status")&&!name.endsWith("pdfcontrol_project_files")&&!name.endsWith("pdfcontrol_list_projects")&&!name.endsWith("pdfcontrol_read_document");}
 
     private void publishContext(List<ChatClient.Message> base, Ui ui) {
         List<ChatClient.Message> snapshot = new ArrayList<>(base);
@@ -124,7 +143,7 @@ final class Agent {
         for (ChatClient.Message m : out) {
             fixed.add(m);
             for (ChatClient.ToolCall c : m.toolCalls) {
-                if (!answered.contains(c.id)) fixed.add(ChatClient.Message.toolResult(c.id, "Anulat: utilizatorul a oprit raspunsul.", true));
+                if (!answered.contains(c.id)) fixed.add(ChatClient.Message.toolResult(c.id, team!=null&&c.name.equals("run_agents")?team.pendingEvidence():I18n.text("Anulat inainte de confirmarea rezultatului; verifica starea reala inainte de repetarea operatiei."), true));
             }
         }
         return fixed;

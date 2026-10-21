@@ -463,6 +463,7 @@ final class ChatClient {
         c.setConnectTimeout(30_000);
         c.setReadTimeout(600_000);
         c.setRequestProperty("Content-Type", "application/json");
+        ProviderHeaders.apply(c);
         if (p.format == Provider.Format.ANTHROPIC) {
             c.setRequestProperty("x-api-key", apiKey);
             c.setRequestProperty("anthropic-version", ANTHROPIC_VERSION);
