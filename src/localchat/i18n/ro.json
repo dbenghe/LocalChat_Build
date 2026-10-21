@@ -425,5 +425,7 @@
   "Elimina semnul de carte": "Elimina semnul de carte",
   "Nicio discutie": "Nicio discutie",
   "Nu exista: {0}": "Nu exista: {0}",
-  "Nu exista: {0}. Calea confirmata PDFCONTROL este: {1}. Foloseste campul results din pdfcontrol_job_status; nu relansa controlul pentru aceasta eroare de cale.": "Nu exista: {0}. Calea confirmata PDFCONTROL este: {1}. Foloseste campul results din pdfcontrol_job_status; nu relansa controlul pentru aceasta eroare de cale."
+  "Nu exista: {0}. Calea confirmata PDFCONTROL este: {1}. Foloseste campul results din pdfcontrol_job_status; nu relansa controlul pentru aceasta eroare de cale.": "Nu exista: {0}. Calea confirmata PDFCONTROL este: {1}. Foloseste campul results din pdfcontrol_job_status; nu relansa controlul pentru aceasta eroare de cale.",
+  "Anuleaza editarea": "Anuleaza editarea",
+  "Refa editarea": "Refa editarea"
 }

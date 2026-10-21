@@ -425,5 +425,7 @@
   "Elimina semnul de carte": "Yer imini kaldir",
   "Nicio discutie": "Henuz soru yok",
   "Nu exista: {0}": "Mevcut degil: {0}",
-  "Nu exista: {0}. Calea confirmata PDFCONTROL este: {1}. Foloseste campul results din pdfcontrol_job_status; nu relansa controlul pentru aceasta eroare de cale.": "Mevcut degil: {0}. Dogrulanan PDFCONTROL yolu: {1}. pdfcontrol_job_status results alanini kullanin; bu yol hatasi icin kontrolu yeniden baslatmayin."
+  "Nu exista: {0}. Calea confirmata PDFCONTROL este: {1}. Foloseste campul results din pdfcontrol_job_status; nu relansa controlul pentru aceasta eroare de cale.": "Mevcut degil: {0}. Dogrulanan PDFCONTROL yolu: {1}. pdfcontrol_job_status results alanini kullanin; bu yol hatasi icin kontrolu yeniden baslatmayin.",
+  "Anuleaza editarea": "Duzenlemeyi geri al",
+  "Refa editarea": "Duzenlemeyi yinele"
 }

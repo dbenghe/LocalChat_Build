@@ -195,6 +195,10 @@ class Workflows(unittest.TestCase):
             'excluded_rows':[]}),encoding='utf-8')
         client=Client(package)
         try:
+            # Probe the freshly copied OCR runtime before the catalogue-isolation operation.
+            # This also preserves the detailed loader diagnostic instead of a generic start error.
+            status=client.call('pdfcontrol_status')
+            self.assertTrue(status['ocr']['available'],json.dumps(status['ocr']))
             record=client.wait(client.start('pdfcontrol_start_check',files=['loose/123456_WA224_V.pdf'],factory='soest'))
         finally:
             client.close()

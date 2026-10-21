@@ -1,3 +1,9 @@
+## 1.14.2 - 2026-10-21
+
+- Adauga Undo/Redo in caseta mesajului: Ctrl+Z, Ctrl+Y si Ctrl+Shift+Z, inclusiv in meniul contextual tradus. Lipirea peste selectie se anuleaza intr-un singur pas.
+- Copierea si decuparea folosesc explicit textul original selectat, cu reincercari limitate la clipboard temporar blocat. Decuparea nu sterge textul daca scrierea in clipboard esueaza. Pastreaza Ctrl+C/X/V/A, Ctrl+Insert, Shift+Insert si Shift+Delete.
+- Schimbarea/crearea chatului si trimiterea/restaurarea mesajului delimiteaza istoricul Undo; acesta nu poate readuce ciorna altei conversatii sau text deja trimis. Schimbarea temei pastreaza scurtaturile si editarile curente.
+
 ## 1.14.1 - 2026-10-21
 
 - Rotunjeste zona de raspunsuri si caseta mesajului, plus campurile, butoanele si panourile de derulare/listare/tabele din ferestrele aplicatiei, cu pastrarea temelor si a redimensionarii.

@@ -733,7 +733,7 @@ public final class LocalChat extends JFrame {
             permissionBox.setEnabled(toolsBox.isSelected());
             if(sessionState.contextLimit>=0 && !config.containsKey(contextProfile()+".metadata"))config.setProperty(contextProfile(),Integer.toString(sessionState.contextLimit));
             contextProfile="";
-            input.setText(sessionState.draft);refreshAttachments();
+            ComposerEditing.setText(input,sessionState.draft);refreshAttachments();
             alwaysAllowed.clear();
             if(chosen.workDir()!=null && !chosen.workDir().isBlank())workDirField.setText(pathMap().path(chosen.workDir()));
             responseProfile.setSelectedIndex(sessionState.responseProfile);
@@ -980,7 +980,7 @@ public final class LocalChat extends JFrame {
             if(!input.getText().equals(prefix))return;
             commandPopup.filter(prefix,COMMANDS,command->{
                 if(Set.of("/model","/context","/switch","/autocompact").contains(command)){input.setText(command+" ");input.requestFocusInWindow();}
-                else{input.setText("");executeCommand(command);input.requestFocusInWindow();}
+                else{ComposerEditing.setText(input,"");executeCommand(command);input.requestFocusInWindow();}
             },Math.max(320,input.getWidth()-20));
             if(input.isShowing() && !commandPopup.choices.isEmpty()){commandPopup.show(input,0,-commandPopup.getPreferredSize().height);input.requestFocusInWindow();}else commandPopup.setVisible(false);
         });
@@ -1211,7 +1211,7 @@ public final class LocalChat extends JFrame {
         final List<String> pendingAttachments=List.copyOf(sessionState.draftAttachments);
         final String text=AttachmentSupport.message(draft,pendingAttachments);
         if (text.isEmpty()) return;
-        if(draft.startsWith("/")){input.setText("");commandPopup.setVisible(false);executeCommand(draft);return;}
+        if(draft.startsWith("/")){ComposerEditing.setText(input,"");commandPopup.setVisible(false);executeCommand(draft);return;}
         if (busy) return;
         final Provider p = shownProvider;
         final String model = currentModel();
@@ -1291,7 +1291,7 @@ public final class LocalChat extends JFrame {
         if (conversationFile == null) conversationFile = Conversations.newFile(conversationsDir);
 
         for(String path:pendingAttachments)if(!sessionState.attachedPaths.contains(path))sessionState.attachedPaths.add(path);
-        sessionState.draftAttachments.clear();refreshAttachments();input.setText("");
+        sessionState.draftAttachments.clear();refreshAttachments();ComposerEditing.setText(input,"");
         saveConversation();
         transcript.putClientProperty("localchat.followTail",true);int questionOffset=transcript.getDocument().getLength();timeline.bookmarks(sessionState.bookmarks);
         header(t("Tu"), userHeader);
@@ -1442,7 +1442,7 @@ public final class LocalChat extends JFrame {
         }
         // No usable reply: drop the question so the conversation stays valid, and give it back for a retry.
         int removedQuestion=history.indexOf(turn.question);timeline.removeTurn(removedQuestion);sessionState.bookmarks.remove(removedQuestion);history.remove(turn.question);applyGuardMemory(turn,true);
-        if (input.getText().isEmpty()) input.setText(turn.originalDraft);
+        if (input.getText().isEmpty()) ComposerEditing.setText(input,turn.originalDraft);
         for(String path:turn.attachments)if(!sessionState.draftAttachments.contains(path))sessionState.draftAttachments.add(path);refreshAttachments();
         if (error != null) {
             showError(error);
@@ -1563,7 +1563,7 @@ public final class LocalChat extends JFrame {
         if (busy) {setStatus("Opreste generarea inainte de aceasta comanda.",true);return;}
         if(!saveConversation())return;
         if(conversationFile!=null){previousConversation=conversationFile;config.setProperty("session.previous",conversationFile.getFileName().toString());}
-        input.setText("");
+        ComposerEditing.setText(input,"");
         hidePdfPreview();sessionState=new Conversations.State();refreshAttachments();reportModel.removeAllElements();reportBar.setVisible(false);
         history.clear();
         timeline.clear();timeline.bookmarks(sessionState.bookmarks);transcript.putClientProperty("localchat.followTail",true);transcript.setText("");

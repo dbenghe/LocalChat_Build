@@ -52,6 +52,8 @@ if ($LASTEXITCODE) { throw 'Provider/metadata tests failed; distribution was not
 if ($LASTEXITCODE) { throw 'Catalog/probe tests failed; distribution was not changed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/attachment-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.AttachmentTest
 if ($LASTEXITCODE) { throw 'Attachment/drop/session tests failed; distribution was not changed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/composer-shortcuts-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ComposerShortcutsTest
+if ($LASTEXITCODE) { throw 'Composer keyboard/Undo/Redo tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/contextguardtest-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ContextGuardTest
 if ($LASTEXITCODE) { throw 'Context budget/automatic tool-loop compaction tests failed; distribution was not changed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/commandpalettetest-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.CommandPaletteTest

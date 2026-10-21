@@ -649,3 +649,9 @@ Blocul tehnic initial al furnizorului are controlul `Detalii tehnice`, pliat imp
 Din 1.14.1, hover pe reper afiseaza un card compact de 320 x 110 px: titlul intrebarii, un extras scurt din raspuns si iconita de semn de carte in coltul dreapta sus. Iconita comuta marcarea fara salt; titlul/extrasul deschid pozitia discutiei. Pana exista raspuns, extrasul provine din intrebare. Aspectul este adaptat explicit temelor Dark si Light.
 
 Din 1.14.1, zona de raspunsuri, editorul de mesaj si panourile de derulare folosesc borduri FlatLaf rotunjite de 14 px. Campurile si butoanele au colturi de 12 px, inclusiv in dialogurile aplicatiei; schimbarea temei pastreaza stilul si limitele de redimensionare.
+
+### Editarea mesajului (1.14.2)
+
+In caseta de mesaj, Ctrl+A selecteaza tot, Ctrl+C copiaza selectia, Ctrl+X o decupeaza, Ctrl+V o inlocuieste cu textul din clipboard. Ctrl+Z anuleaza editarea; Ctrl+Y sau Ctrl+Shift+Z o refac. Sunt disponibile si Ctrl+Insert (copiere), Shift+Insert (lipire), Shift+Delete (decupare). Meniul contextual include Undo/Redo traduse. Lipirea capturilor/fisierelor ramane o atasare locala, conform regulilor existente.
+
+Undo/Redo privesc numai textul ciornei, fara a anula operatii cu fisiere sau executii. Istoricul editarilor este local sesiunii editorului, limitat si resetat la schimbarea chatului ori trimiterea/restaurarea mesajului; nu se serializeaza si nu amesteca textele conversatiilor. Clipboard-ul temporar blocat are reincercari limitate; textul nu este decupat daca nu a putut fi copiat.

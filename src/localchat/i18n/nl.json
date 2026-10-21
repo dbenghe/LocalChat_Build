@@ -425,5 +425,7 @@
   "Elimina semnul de carte": "Bladwijzer verwijderen",
   "Nicio discutie": "Nog geen vragen",
   "Nu exista: {0}": "Bestaat niet: {0}",
-  "Nu exista: {0}. Calea confirmata PDFCONTROL este: {1}. Foloseste campul results din pdfcontrol_job_status; nu relansa controlul pentru aceasta eroare de cale.": "Bestaat niet: {0}. Het bevestigde PDFCONTROL-pad is: {1}. Gebruik results uit pdfcontrol_job_status; start de controle niet opnieuw wegens deze padfout."
+  "Nu exista: {0}. Calea confirmata PDFCONTROL este: {1}. Foloseste campul results din pdfcontrol_job_status; nu relansa controlul pentru aceasta eroare de cale.": "Bestaat niet: {0}. Het bevestigde PDFCONTROL-pad is: {1}. Gebruik results uit pdfcontrol_job_status; start de controle niet opnieuw wegens deze padfout.",
+  "Anuleaza editarea": "Bewerking ongedaan maken",
+  "Refa editarea": "Bewerking opnieuw uitvoeren"
 }
