@@ -368,5 +368,6 @@
   "Buget local: {0} / {1} tokeni": "Yerel bütçe: {0} / {1} token",
   "Configureaza bugetul local pentru a calcula procentul.": "Yüzdeyi hesaplamak için yerel bütçeyi ayarlayın.",
   "Consum API separat": "Ayrı API kullanımı",
-  "tokeni": "token"
+  "tokeni": "token",
+  "Trage separatorul pentru a redimensiona mesajul. Maxim: aceeasi inaltime ca raspunsurile.": "Mesajın yüksekliğini değiştirmek için ayırıcıyı sürükleyin. En fazla yanıtların yüksekliği kadar."
 }

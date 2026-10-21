@@ -116,6 +116,7 @@ public final class LocalChat extends JFrame {
     private final JLabel chatTitle=new JLabel();
     private PdfPreview pdfPreview;
     private javax.swing.JSplitPane chatSplit;
+    private ComposerSplit composerSplit;
     private boolean markdownDirty;
     private int markdownFrom=Integer.MAX_VALUE;
     private final javax.swing.Timer markdownTimer=new javax.swing.Timer(180,e->formatMarkdown());
@@ -245,7 +246,7 @@ public final class LocalChat extends JFrame {
 
         JPanel chat = new JPanel(new BorderLayout());
         chat.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
-        chat.add(new JScrollPane(transcript));
+        JScrollPane responseScroll=new JScrollPane(transcript);chat.add(responseScroll);
         JPanel chatHeading=new JPanel(new BorderLayout(6,0));chatTitle.putClientProperty("html.disable",true);chatHeading.add(chatTitle);JPanel chatHeadingActions=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT,3,2));for(JButton button:new JButton[]{chatActions,chatSettings}){button.setPreferredSize(new Dimension(29,27));button.setMargin(new Insets(2,3,2,3));chatHeadingActions.add(button);}chatHeading.add(chatHeadingActions,BorderLayout.EAST);chat.add(chatHeading,BorderLayout.NORTH);
         chatActions.addActionListener(e->buildChatActions().show(chatActions,0,chatActions.getHeight()));chatSettings.addActionListener(e->buildQuickSettings().show(chatSettings,0,chatSettings.getHeight()));
 
@@ -264,16 +265,16 @@ public final class LocalChat extends JFrame {
         JPanel compose = new JPanel(new BorderLayout(6, 0));
         compose.setBorder(BorderFactory.createEmptyBorder(6, 8, 2, 8));
         attachmentBar.setPreferredSize(new Dimension(400,43));attachmentBar.setBorder(BorderFactory.createEmptyBorder());attachmentBar.setVisible(false);compose.add(attachmentBar,BorderLayout.NORTH);
-        compose.add(new JScrollPane(input));
+        JScrollPane inputScroll=new JScrollPane(input);compose.add(inputScroll);
         for(JComponent target:new JComponent[]{compose,input,transcript,attachmentItems,attachmentBar})target.setTransferHandler(new AttachmentSupport.FileTransfer(target.getTransferHandler(),()->!busy,this::addAttachments,this::pasteClipboardImage));
         ComposerClipboard.install(input,error->setStatus("Nu pot lipi din clipboard: {0}",true,describe(error)));
-        compose.add(buttons, BorderLayout.SOUTH);
+
         JPanel statusBar = new JPanel(new BorderLayout(12, 0));
         statusBar.setBorder(BorderFactory.createEmptyBorder(2, 10, 6, 10));
         statusBar.add(status);
         statusBar.add(toolsStatus, BorderLayout.EAST);
         JPanel south = new JPanel(new BorderLayout());
-        south.add(compose);
+        south.add(buttons);
         south.add(statusBar, BorderLayout.SOUTH);
 
         JPanel root = new JPanel(new BorderLayout());
@@ -303,7 +304,7 @@ public final class LocalChat extends JFrame {
         workspace.autoThreshold.addChangeListener(e->saveAutoSettings());
         JPanel center=new JPanel(new BorderLayout());
         pdfPreview=new PdfPreview(this::currentWorkDir,this::previewPython,this::reportAction,this::togglePdfPane,this::choosePreviewPdf,this::togglePdfExpansion,this::hidePdfPreview);pdfPreview.setVisible(false);
-        chat.setMinimumSize(new Dimension(380,160));chatSplit=new javax.swing.JSplitPane(javax.swing.JSplitPane.HORIZONTAL_SPLIT,chat,pdfPreview);chatSplit.setResizeWeight(.64);chatSplit.setDividerSize(0);chatSplit.setBorder(null);center.add(chatSplit);center.add(south,BorderLayout.SOUTH);
+        chat.setMinimumSize(new Dimension(380,160));chatSplit=new javax.swing.JSplitPane(javax.swing.JSplitPane.HORIZONTAL_SPLIT,chat,pdfPreview);chatSplit.setResizeWeight(.64);chatSplit.setDividerSize(0);chatSplit.setBorder(null);composerSplit=new ComposerSplit(chatSplit,compose,responseScroll,inputScroll,height->{if(!restoringSelections&&shownProvider!=null){config.setProperty("ui.composer.height",Integer.toString(height));saveConfig();}});center.add(composerSplit);center.add(south,BorderLayout.SOUTH);
         root.add(workspace,BorderLayout.WEST);root.add(center);
         reportBar.setLayout(new BorderLayout());
         JPanel reportHeading=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT,6,3));
@@ -357,7 +358,7 @@ public final class LocalChat extends JFrame {
         workDirField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener(){
             public void insertUpdate(javax.swing.event.DocumentEvent e){hidePdfPreview();refreshWorkFolder();}public void removeUpdate(javax.swing.event.DocumentEvent e){hidePdfPreview();refreshWorkFolder();}public void changedUpdate(javax.swing.event.DocumentEvent e){}
         });
-        restoringSelections=true;try{loadConfig();}finally{restoringSelections=false;}
+        restoringSelections=true;try{loadConfig();composerSplit.restore(config.getProperty("ui.composer.height","144"));}finally{restoringSelections=false;}
         installModelRenderer();
         installedSkills=Skills.load(skillsDir);
         previousConversation=storedPrevious();
@@ -583,7 +584,7 @@ public final class LocalChat extends JFrame {
                 toolsStatus.setText(t("Tool-uri: {0} interne · MCP: {1}", Tools.BUILTIN.size(), mcpSummary.isEmpty() ? t("niciunul") : mcpSummary));
                 toolsStatus.setToolTipText(t("Configurare: {0}", toolsConfigFile));
             } else if (!Boolean.getBoolean("localchat.test")) toolsStatus.setText(t("Pornesc tool-urile…"));
-            chatActions.setToolTipText(t("Actiuni conversatie"));chatSettings.setToolTipText(t("Setari rapide"));if(pdfPreview!=null)pdfPreview.translate();copyReply.setText(t("Copiaza raspunsul"));copyDisplayed.setText(t("Copiaza textul afisat"));copyOriginal.setText(t("Copiaza textul original"));refreshTranscriptDisplay();
+            if(composerSplit!=null)composerSplit.translate();chatActions.setToolTipText(t("Actiuni conversatie"));chatSettings.setToolTipText(t("Setari rapide"));if(pdfPreview!=null)pdfPreview.translate();copyReply.setText(t("Copiaza raspunsul"));copyDisplayed.setText(t("Copiaza textul afisat"));copyOriginal.setText(t("Copiaza textul original"));refreshTranscriptDisplay();
             if(workspace!=null){workspace.translate();refreshDashboard();}
             revalidate();
             repaint();

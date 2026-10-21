@@ -368,5 +368,6 @@
   "Buget local: {0} / {1} tokeni": "Lokaal budget: {0} / {1} tokens",
   "Configureaza bugetul local pentru a calcula procentul.": "Stel het lokale budget in om het percentage te berekenen.",
   "Consum API separat": "Afzonderlijk API-gebruik",
-  "tokeni": "tokens"
+  "tokeni": "tokens",
+  "Trage separatorul pentru a redimensiona mesajul. Maxim: aceeasi inaltime ca raspunsurile.": "Sleep de scheidingslijn om het bericht te vergroten. Maximaal even hoog als de antwoorden."
 }

@@ -1,3 +1,9 @@
+## 1.11.5 - 2026-10-21
+
+- Make the composer taller by default (144-pixel text viewport), with a draggable divider and a 96-pixel minimum when space allows.
+- Cap the editable viewport at the answer viewport height, including attachment/report bars and window resizing. Preserve the chosen height across restarts and theme changes.
+- Keep composer actions and status controls outside the draggable area. Resizing preserves drafts, selections and attachments and makes no API requests.
+
 ## 1.11.4 - 2026-10-20
 
 - Refresh the detached context popup UI on theme changes and opening. Paint its explicit themed surface so a stale light popup delegate cannot leave white behind dark-theme text.

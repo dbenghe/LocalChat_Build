@@ -605,3 +605,5 @@ La erori explicite HTTP 502/503/504, LocalChat reincearca acelasi apel API de ma
 Click pe indicatorul de context din bara de jos deschide un panou live cu procent, bara segmentata si categoriile Sistem, Unelte si Conversatie. Valorile ~ sunt estimari ale contextului activ pentru cererea urmatoare, inclusiv ciorna. Consumul API este disponibil separat prin extindere; o limita necunoscuta nu este afisata ca 0%. Panoul se inchide cu Escape, click in afara sau inca un click pe indicator.
 
 Panoul de context este un card compact, de 360 px latime, cu colturi rotunjite si suprafata explicita Dark/Light, inclusiv la prima deschidere dupa pornire. Sectiunea API se extinde printr-o iconita vectoriala.
+
+Caseta de mesaj este mai inalta implicit. Trage separatorul dintre raspunsuri si mesaj pentru redimensionare: minimum 96 px cand spatiul permite, maximum egala cu zona vizibila a raspunsurilor. Dimensiunea aleasa este memorata; o fereastra mai mica o limiteaza temporar fara a pierde preferinta. Butoanele si bara de stare raman vizibile.
