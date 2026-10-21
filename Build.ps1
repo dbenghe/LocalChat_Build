@@ -70,6 +70,8 @@ if ($LASTEXITCODE) { throw 'PDF card and right preview tests failed' }
 if ($LASTEXITCODE) { throw 'Live context popup tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/composer-split-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ComposerSplitTest
 if ($LASTEXITCODE) { throw 'Composer resize tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/local-memories-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.LocalMemoriesTest
+if ($LASTEXITCODE) { throw 'Local memory tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_owned_layout.py" --package "$PSScriptRoot/pdfcontrol"
 if ($LASTEXITCODE) { throw 'Owned engine layout tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_pdfcontrol_bridge.py" --package "$PSScriptRoot/pdfcontrol" --output "$taskBuild/pdfcontrol-tests"

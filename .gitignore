@@ -32,3 +32,6 @@
 
 # Private screenshots pasted into the composer
 **/atasamente_clipboard/
+
+# Private local memories and project-scoped preferences
+**/memorie/

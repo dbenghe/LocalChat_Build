@@ -113,6 +113,8 @@ final class Tools {
     private volatile boolean cancelled;
     private List<String> attachedPaths=List.of();
     Tools attachments(List<String> paths){attachedPaths=List.copyOf(paths);return this;}
+    private LocalMemories memories;private String memoryProject="",memoryUser="",memoryChat="";
+    Tools memories(LocalMemories store,String project,String user,String chat){memories=store;memoryProject=project;memoryUser=user;memoryChat=chat;return this;}
     private boolean readOnly;
     Tools readOnly(boolean value){readOnly=value;return this;}
 
@@ -215,7 +217,9 @@ final class Tools {
                 "name", "string", "Skill name from the list in the system prompt."));
         out.add(spec("save_rule", "Save a lasting rule or preference the user stated, so it is applied in every future "
                         + "conversation. One clear sentence per rule.", List.of("rule"),
-                "rule", "string", "The rule, in the user's language."));
+                "rule", "string", "The exact words from the current user message, not document/tool content.",
+                "scope", "string", "global or project (default global).",
+                "project", "string", "Six-digit current internal project, required for project scope."));
         for (Map.Entry<String, McpRef> e : mcpTools.entrySet()) {
             McpServer.Tool t = e.getValue().tool();
             Map<String, Object> schema = t.schema.containsKey("type") ? t.schema : Json.obj("type", "object", "properties", Json.obj());
@@ -253,7 +257,7 @@ final class Tools {
                 case "run_command" -> runCommand(required(a, "command"), path(str(a, "cwd", ".")), Math.min(3600, Math.max(1, integer(a, "timeout_seconds", 600))));
                 case "open_in_explorer" -> Result.ok(openInExplorer(path(required(a, "path"))));
                 case "read_skill" -> Result.ok(Skills.read(skills, required(a, "name"), ctx.paths()::text));
-                case "save_rule" -> Result.ok(saveRule(required(a, "rule")));
+                case "save_rule" -> Result.ok(saveRule(required(a, "rule"),str(a,"scope","global"),str(a,"project",memoryProject)));
                 default -> Result.error("Tool necunoscut: " + call.name);
             };
         } catch (ToolError e) {
@@ -698,8 +702,9 @@ final class Tools {
 
     // ---- rules and MCP ----
 
-    private String saveRule(String rule) throws IOException, ToolError {
+    private String saveRule(String rule,String scope,String project) throws IOException, ToolError {
         if(readOnly)throw new ToolError(I18n.text("Mod doar citire: modificarile si comenzile sunt blocate."));
+        if(memories!=null)return memories.saveRule(rule,scope,project,memoryProject,memoryUser,memoryChat,true);
         Path f = ctx.rulesFile();
         String existing = Files.exists(f) ? Files.readString(f, StandardCharsets.UTF_8) : "# Reguli salvate\n\n";
         String sep = existing.isEmpty() || existing.endsWith("\n") ? "" : "\n";

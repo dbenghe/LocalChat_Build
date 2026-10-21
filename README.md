@@ -607,3 +607,15 @@ Click pe indicatorul de context din bara de jos deschide un panou live cu procen
 Panoul de context este un card compact, de 360 px latime, cu colturi rotunjite si suprafata explicita Dark/Light, inclusiv la prima deschidere dupa pornire. Sectiunea API se extinde printr-o iconita vectoriala.
 
 Caseta de mesaj este mai inalta implicit. Trage separatorul dintre raspunsuri si mesaj pentru redimensionare: minimum 96 px cand spatiul permite, maximum egala cu zona vizibila a raspunsurilor. Dimensiunea aleasa este memorata; o fereastra mai mica o limiteaza temporar fara a pierde preferinta. Butoanele si bara de stare raman vizibile.
+
+### Memorii locale
+
+Unelte > Memorii locale permite activarea memoriei, controlul preferintelor automate din conversatii cu unelte, inspectarea si editarea intrarilor, stergerea unei intrari sau a tuturor memoriilor. In instalari noi din surse, memoria este implicit oprita. Memoriile sunt in `memorie/memorii.json`, separat de rezumatul pentru compactarea unui chat si de regulile manuale `reguli.md`.
+
+Cand memoria este activa, mesaje precum `Tine minte ca toate conversatiile le facem in limba romana` sunt salvate imediat, local, fara apel API suplimentar. Declaratii de preferinte precum `Prefer rapoarte PDF` se pot retine automat; optiunea pentru conversatii cu unelte controleaza acest caz. Modul doar citire blocheaza salvarea din chat. Interfata de administrare permite adaugari si modificari explicite.
+
+Exemplu de proiect: `Pentru proiectul 505417, retine ca livrarea asteapta confirmare.` Nota se aplica numai proiectului identificat explicit in mesaj, folderul de lucru sau mesajele utilizatorului din chatul curent. Numerele din raspunsuri sau documente nu selecteaza proiectul. Daca proiectul este ambiguu, foloseste administrarea memoriilor pentru a-l alege explicit. `PROJECT_INFO.md` ramane documentul de verificat pentru starea proiectului; memoria nu autorizeaza operatii si nu modifica acest document automat.
+
+Preferintele globale si notele proiectului curent sunt incluse in sistem, in limita bugetului de context, si functioneaza inclusiv cu Tool-uri dezactivate. Conteaza in estimarea contextului si sunt trimise furnizorului API selectat odata cu cererea. Cererile curente explicite au prioritate. Reguli sau preferinte noi nu se deduc din documente ori rezultate de unelte, iar cheile API/parolele sunt respinse. Nu exista procesare retroactiva automata a tuturor chaturilor si nici inferenta ascunsa pentru extragere. Dupa stergerea memoriilor, istoricul nu le recreeaza automat. Regulile manuale, conversatiile si `PROJECT_INFO.md` se gestioneaza separat.
+
+Referinta de produs pentru controalele de memorie: https://developers.openai.com/codex/memories . LocalChat foloseste propriul depozit si propriile setari; memoria Codex este administrata separat de Codex.

@@ -1,3 +1,11 @@
+## 1.12.0 - 2026-10-21
+
+- Add Tools > Local memories: enable/use local memory, allow automatic preference capture from tool-assisted chats, inspect/edit scoped entries and delete individual/all memories.
+- Store explicit reminders locally without depending on a model response or extra inference. Capture declared preferences only from user messages; require exact user grounding for save_rule. Keep read-only enforcement, project isolation, secret rejection and bounded injection.
+- Apply manual rules and enabled memories in plain chat as well as tool chat. Preserve current user overrides, separately scoped project notes and PROJECT_INFO.md as project evidence.
+- Persist memories in the private memorie/memorii.json store; default off in clean source builds. Deleting memories does not regenerate them from chat history or delete manually managed project files/rules.
+- Includes the pending 1.11.5 bounded composer resizing. Installation remains held at the user's request.
+
 ## 1.11.5 - 2026-10-21
 
 - Make the composer taller by default (144-pixel text viewport), with a draggable divider and a 96-pixel minimum when space allows.
