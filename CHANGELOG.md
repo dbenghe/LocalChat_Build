@@ -9,6 +9,7 @@
 - Refresh the detached context popup UI on theme changes and opening. Paint its explicit themed surface so a stale light popup delegate cannot leave white behind dark-theme text.
 - Reduce the context card to 360 pixels wide, tighter typography and spacing, with rounded corners and a small shadow. API details remain collapsed.
 - Verify actual on-screen popup opening, cold dark startup, theme transitions, API expansion and dismissal, in addition to offscreen rendering.
+- Run the factory catalogue isolation test with a synthetic catalogue in a separate engine/OCR test package, so rebuilding does not require private factory catalogues or install test data.
 
 ## 1.11.3 - 2026-10-20
 

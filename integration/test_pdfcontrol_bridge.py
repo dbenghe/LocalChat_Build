@@ -1,5 +1,5 @@
 """Real stdio MCP, real legacy engine and synthetic PDFs; no model, production data or network service."""
-import argparse,hashlib,json,os,subprocess,sys,time,unittest
+import argparse,hashlib,json,os,shutil,subprocess,sys,time,unittest
 from pathlib import Path
 import pymupdf
 
@@ -16,10 +16,10 @@ def pdf(path,texts):
         doc.save(path)
 
 class Client:
-    def __init__(self):
-        env=dict(os.environ,PDFCONTROL_PACKAGE=str(PACKAGE),PDFCONTROL_PROJECTS_ROOT=str(ROOT),PDFCONTROL_PRODUCTIE_ROOT=str(ROOT))
-        self.log=(OUT/'bridge.stderr.log').open('w',encoding='utf-8')
-        self.process=subprocess.Popen([sys.executable,'-I','-B',str(PACKAGE/'octop_mcp.py')],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=self.log,text=True,encoding='utf-8',env=env)
+    def __init__(self,package=PACKAGE):
+        env=dict(os.environ,PDFCONTROL_PACKAGE=str(package),PDFCONTROL_PROJECTS_ROOT=str(ROOT),PDFCONTROL_PRODUCTIE_ROOT=str(ROOT))
+        self.log=(OUT/('bridge.stderr.log' if package==PACKAGE else 'factory-bridge.stderr.log')).open('w',encoding='utf-8')
+        self.process=subprocess.Popen([sys.executable,'-I','-B',str(package/'octop_mcp.py')],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=self.log,text=True,encoding='utf-8',env=env)
         self.count=0;self.request('initialize',{'protocolVersion':'2025-06-18','capabilities':{},'clientInfo':{'name':'integration-test','version':'1'}})
     def request(self,method,params):
         self.count+=1;self.process.stdin.write(json.dumps({'jsonrpc':'2.0','id':self.count,'method':method,'params':params})+'\n');self.process.stdin.flush()
@@ -182,10 +182,25 @@ class Workflows(unittest.TestCase):
     def test_14_explicit_factory_uses_isolated_original_catalogue(self):
         state=PROJECT/'Controle/PDFCONTROL/project-state.json'
         before=state.read_bytes() if state.exists() else None
-        record=self.client.wait(self.client.start('pdfcontrol_start_check',files=['loose/123456_WA224_V.pdf'],factory='soest'))
+        # Exercise catalogue isolation without requiring or deploying private factory data.
+        package=OUT/'factory-package';package.mkdir(exist_ok=True)
+        for source in PACKAGE.iterdir():
+            if source.is_file() and source.suffix in {'.py','.json'}:
+                shutil.copy2(source,package/source.name)
+        shutil.copytree(PACKAGE/'runtime/ocr-windows-x64',package/'runtime/ocr-windows-x64',dirs_exist_ok=True)
+        catalogue=package/'data_lokaal/catalogus_soest.json';catalogue.parent.mkdir(exist_ok=True)
+        catalogue.write_text(json.dumps({'schema_version':1,'factory':'soest','source':'synthetic-fixture.xlsx',
+            'source_sha256':hashlib.sha256(b'synthetic factory fixture').hexdigest(),
+            'records':[{'code':'MBS_TEST','description':'Synthetic fixture article','category':'import','fields':{},'sheet':'Fixture','row':2}],
+            'excluded_rows':[]}),encoding='utf-8')
+        client=Client(package)
+        try:
+            record=client.wait(client.start('pdfcontrol_start_check',files=['loose/123456_WA224_V.pdf'],factory='soest'))
+        finally:
+            client.close()
         self.artifacts(record);self.assertTrue(record['catalogue']['available']);self.assertEqual(record['catalogue']['factory'],'soest')
         snapshot=Path(record['run_folder'])/'engine/data_lokaal/catalogus_soest.json'
-        self.assertEqual(digest(snapshot),digest(PACKAGE/'data_lokaal/catalogus_soest.json'))
+        self.assertEqual(digest(snapshot),digest(catalogue))
         self.assertEqual(state.read_bytes() if state.exists() else None,before)
         context=Path(record['run_folder'])/'catalog_context/123456/Controle/PDFCONTROL/project-state.json'
         self.assertEqual(json.loads(context.read_text(encoding='utf-8'))['factory'],'soest')
