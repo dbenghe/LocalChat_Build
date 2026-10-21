@@ -62,6 +62,10 @@ if ($LASTEXITCODE) { throw 'Plain chat display/original data tests failed; distr
 if ($LASTEXITCODE) { throw 'Model favorite tests failed; distribution was not changed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/presentation-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ChatPresentationTest
 if ($LASTEXITCODE) { throw 'Markdown and inline PDF presentation tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/navigation-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ChatNavigationTest
+if ($LASTEXITCODE) { throw 'Chat navigation/disclosure tests failed' }
+& "$taskJdk/bin/java.exe" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.PdfResultPathTest
+if ($LASTEXITCODE) { throw 'PDF result path diagnostics tests failed' }
 & "$taskJdk/bin/java.exe" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.MemoryReducerTest
 if ($LASTEXITCODE) { throw 'Adaptive memory reduction tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/inference-retry-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.InferenceRetryTest

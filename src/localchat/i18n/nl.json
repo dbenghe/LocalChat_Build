@@ -416,5 +416,14 @@
   "Normal": "Normaal",
   "MBS: proiecte, skill-uri si PDFCONTROL prin unelte.": "MBS: projecten, skills en PDFCONTROL via tools.",
   "Normal: conversatie fara fisiere, comenzi sau MCP.": "Normaal: gesprek zonder bestandstoegang, opdrachten of MCP.",
-  "Modelul nu a returnat un raspuns final vizibil. Istoricul si actiunile executate sunt pastrate.": "Het model gaf geen zichtbaar eindantwoord. De geschiedenis en uitgevoerde acties blijven bewaard."
+  "Modelul nu a returnat un raspuns final vizibil. Istoricul si actiunile executate sunt pastrate.": "Het model gaf geen zichtbaar eindantwoord. De geschiedenis en uitgevoerde acties blijven bewaard.",
+  "Detalii tehnice": "Technische details",
+  "Deschide detaliile": "Details uitklappen",
+  "Restrange detaliile": "Details inklappen",
+  "Navigare in discutie": "Gesprekstijdlijn",
+  "Adauga semn de carte": "Bladwijzer toevoegen",
+  "Elimina semnul de carte": "Bladwijzer verwijderen",
+  "Nicio discutie": "Nog geen vragen",
+  "Nu exista: {0}": "Bestaat niet: {0}",
+  "Nu exista: {0}. Calea confirmata PDFCONTROL este: {1}. Foloseste campul results din pdfcontrol_job_status; nu relansa controlul pentru aceasta eroare de cale.": "Bestaat niet: {0}. Het bevestigde PDFCONTROL-pad is: {1}. Gebruik results uit pdfcontrol_job_status; start de controle niet opnieuw wegens deze padfout."
 }

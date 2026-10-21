@@ -1,0 +1,71 @@
+package localchat;
+import javax.swing.*;
+import javax.swing.text.*;
+import java.awt.*;
+import java.nio.file.*;
+import java.util.*;
+import java.util.List;
+
+/** Real local history, disclosure, navigation and persistence; no inference. */
+public final class ChatNavigationTest {
+    static int checks;
+    static void check(boolean ok,String why){checks++;if(!ok)throw new AssertionError(why);}
+    static JButton disclosure(JTextPane pane){var doc=pane.getStyledDocument();for(int i=0;i<doc.getLength();){var e=doc.getCharacterElement(i);if(StyleConstants.getComponent(e.getAttributes()) instanceof JButton b)return b;i=e.getEndOffset();}return null;}
+    static String visible(JTextPane pane)throws Exception{return MarkdownChat.visibleText(pane.getStyledDocument(),0,pane.getDocument().getLength());}
+    static void reformat(LocalChat app)throws Exception{FeatureTest.call(app,"formatMarkdown",new Class<?>[]{});}
+    static void boundaries()throws Exception{
+        for(String raw:List.of("<think>Provider supplied details</think>\n[[LOCALCHAT_FINAL]]\nFinal visible", "<think>Provider supplied details\n\n> \"Translated question\"\nFinal visible", "<think>Provider supplied details\n[[LOCALCHAT_FINAL]]\nFinal visible")){
+            var pane=new JTextPane();pane.setEditorKit(new MarkdownChat.Kit());var doc=pane.getStyledDocument();var base=new SimpleAttributeSet();base.addAttribute(MarkdownChat.MARK,true);doc.insertString(0,raw,base);
+            doc.putProperty("localchat.reformat",(Runnable)()->{try{MarkdownChat.apply(doc,base,Color.WHITE);}catch(Exception e){throw new RuntimeException(e);}});
+            MarkdownChat.apply(doc,base,Color.WHITE);check(disclosure(pane)!=null,"technical disclosure present");check(!visible(pane).contains("Provider supplied")&&visible(pane).contains("Final visible"),"only technical text collapsed");
+            disclosure(pane).doClick();check(visible(pane).contains("Provider supplied")&&visible(pane).contains("Final visible"),"expanded details and final both visible");check(!visible(pane).contains("<think>")&&!visible(pane).contains(ReasoningDisplay.FINAL),"wire delimiters stay hidden");
+            disclosure(pane).doClick();check(!visible(pane).contains("Provider supplied"),"collapse restores concise display");check(doc.getText(0,doc.getLength()).equals(raw),"no text or offset changes");
+        }
+        for(String raw:List.of("Plain final answer","<think>Ambiguous completed final answer","```\n<think>literal example</think>\n```")){
+            var pane=new JTextPane();pane.setEditorKit(new MarkdownChat.Kit());var doc=pane.getStyledDocument();var base=new SimpleAttributeSet();base.addAttribute(MarkdownChat.MARK,true);doc.insertString(0,raw,base);MarkdownChat.apply(doc,base,Color.WHITE);check(disclosure(pane)==null,"ordinary or ambiguous final cannot be collapsed");check(!visible(pane).isBlank(),"final remains visible");
+        }
+        for(Object marks:List.of(List.of(-1,0,1,9999,1.5,"2"),"invalid")){var state=Conversations.State.fromJson(Json.obj("bookmarks",marks),3);check(state.bookmarks.equals(marks instanceof List<?>?Set.of(0,1):Set.of()),"invalid bookmark metadata ignored");}
+    }
+    static void nativeTimeline(Path home,String url)throws Exception{
+        LocalChat[] app={null};ChatTimeline[] rail={null};Point[] point={null};
+        FeatureTest.edt(()->{app[0]=AttachmentTest.window(home,url);List<ChatClient.Message> history=FeatureTest.field(app[0],"history");for(int i=0;i<20;i++){history.add(ChatClient.Message.user("Native question "+i));history.add(ChatClient.Message.assistant(("Final answer "+i+". ").repeat(80),List.of(),"Fixture"));}FeatureTest.call(app[0],"renderHistory",new Class<?>[]{});reformat(app[0]);app[0].setAlwaysOnTop(true);app[0].setVisible(true);app[0].toFront();app[0].validate();rail[0]=FeatureTest.field(app[0],"timeline");point[0]=rail[0].getLocationOnScreen();point[0].translate(10,rail[0].markerY(8));});
+        var robot=new Robot();Thread.sleep(700);FeatureTest.edt(()->{point[0]=rail[0].getLocationOnScreen();point[0].translate(10,rail[0].markerY(8));});robot.mouseMove(point[0].x+80,point[0].y);robot.waitForIdle();robot.mouseMove(point[0].x,point[0].y);robot.waitForIdle();Thread.sleep(400);FeatureTest.edt(()->{JPopupMenu preview=FeatureTest.field(rail[0],"preview");check(preview!=null&&preview.isVisible(),"real mouse hover opens short-title preview");check(((JMenuItem)preview.getComponent(0)).getText().contains("Native question 8"),"hover title matches selected turn");});
+        robot.mousePress(java.awt.event.InputEvent.BUTTON1_DOWN_MASK);robot.mouseRelease(java.awt.event.InputEvent.BUTTON1_DOWN_MASK);Thread.sleep(250);
+        FeatureTest.edt(()->{JTextPane pane=FeatureTest.field(app[0],"transcript");check(pane.getCaretPosition()==rail[0].entries.get(8).position().getOffset(),"real mouse click after hover jumps to target");});
+        robot.mouseMove(point[0].x+80,point[0].y+100);robot.waitForIdle();Thread.sleep(100);robot.mouseMove(point[0].x,point[0].y);robot.waitForIdle();Thread.sleep(250);
+        FeatureTest.edt(()->{JPopupMenu preview=FeatureTest.field(rail[0],"preview");check(preview!=null&&preview.isVisible(),"hover opens again after navigation");((JMenuItem)preview.getComponent(1)).doClick();check(FeatureTest.<Conversations.State>field(app[0],"sessionState").bookmarks.contains(16),"preview bookmark action marks the actual turn");app[0].dispose();});
+    }
+    public static void main(String[] args)throws Exception{
+        Path home=Files.createTempDirectory(Files.createDirectories(Path.of(System.getProperty("localchat.home"))),"run-");System.out.println("Navigation QA: "+home);
+        try(var server=new FeatureTest.Server(FeatureTest.sse("data: [DONE]\n\n"))){FeatureTest.edt(()->{
+            boundaries();LocalChat app=AttachmentTest.window(home,server.url());JTextPane pane=FeatureTest.field(app,"transcript");List<ChatClient.Message> history=FeatureTest.field(app,"history");
+            String raw="<think>Provider supplied details</think>\n[[LOCALCHAT_FINAL]]\n**Final visible**.";
+            for(int i=0;i<70;i++){history.add(ChatClient.Message.user("Question "+i+" <html> is plain data"));history.add(ChatClient.Message.assistant(i==0?raw:("Answer "+i+" with practical information. ").repeat(24),List.of(),"Fixture"));}
+            FeatureTest.call(app,"renderHistory",new Class<?>[]{});reformat(app);ChatTimeline timeline=FeatureTest.field(app,"timeline");check(timeline.entries.size()==70,"one marker per question, not per tool step");
+            int anchor=timeline.entries.get(40).position().getOffset();check(anchor>0,"middle marker has actual source offset");
+            var original=FeatureTest.<DefaultStyledDocument>field(app,"originalTranscript");String originalText=original.getText(0,original.getLength());
+            check(disclosure(pane)!=null&&!visible(pane).contains("Provider supplied"),"history collapsed by default");disclosure(pane).doClick();check(visible(pane).contains("Provider supplied"),"history disclosure opens");
+            app.setVisible(true);app.validate();
+            for(int language=0;language<6;language++){((JComboBox<?>)FeatureTest.field(app,"languageBox")).setSelectedIndex(language);for(int theme=0;theme<2;theme++){
+                ((JComboBox<?>)FeatureTest.field(app,"themeBox")).setSelectedIndex(theme);reformat(app);app.validate();check(visible(pane).contains("Provider supplied")&&visible(pane).contains("Final visible"),"expansion survives theme/language");check(timeline.entries.get(40).position().getOffset()==anchor,"anchor stable across presentation refresh");
+                timeline.jump(40);check(pane.getCaretPosition()==anchor,"marker selection jumps exactly to question");var bounds=pane.modelToView2D(anchor);check(bounds!=null&&bounds.getY()>=pane.getVisibleRect().getY()&&bounds.getY()<pane.getVisibleRect().getMaxY(),"selected question actually scrolled into viewport");
+                for(String key:List.of("Detalii tehnice","Deschide detaliile","Restrange detaliile","Navigare in discutie","Adauga semn de carte","Elimina semnul de carte","Nicio discutie"))check(I18n.contains(key)&&!I18n.text(key).isBlank(),"navigation translated");
+                if(language==1){timeline.jump(0);app.validate();var image=new java.awt.image.BufferedImage(app.getWidth(),app.getHeight(),java.awt.image.BufferedImage.TYPE_INT_RGB);var g=image.createGraphics();app.getRootPane().printAll(g);g.dispose();javax.imageio.ImageIO.write(image,"png",home.resolve("navigation-"+theme+".png").toFile());}
+            }}
+            timeline.jump(0);app.validate();
+            int disclosureAt=0;for(int i=0;i<pane.getDocument().getLength();){var element=pane.getStyledDocument().getCharacterElement(i);if(StyleConstants.getComponent(element.getAttributes()) instanceof JButton){disclosureAt=i;break;}i=element.getEndOffset();}
+            var hit=pane.modelToView2D(disclosureAt);check(hit!=null,"disclosure has layout coordinates");
+            var click=new java.awt.event.MouseEvent(pane,java.awt.event.MouseEvent.MOUSE_CLICKED,System.currentTimeMillis(),0,(int)hit.getX()+35,(int)hit.getY()+6,1,false,java.awt.event.MouseEvent.BUTTON1);pane.dispatchEvent(click);
+            check(!visible(pane).contains("Provider supplied"),"click inside painted disclosure actually collapses details");
+            check(Boolean.FALSE.equals(pane.getClientProperty("localchat.followTail")),"timeline browsing disables follow-tail");
+            int browsingCaret=pane.getCaretPosition();FeatureTest.call(app,"appendMarkdown",new Class<?>[]{String.class}," Additional stream text.");reformat(app);check(pane.getCaretPosition()==browsingCaret,"incoming streaming text does not undo a timeline jump");
+            check(original.getText(0,original.getLength()).startsWith(originalText),"disclosures/navigation leave original archive text unchanged");
+            FeatureTest.call(app,"ensureSession",new Class<?>[]{});FeatureTest.call(app,"toggleBookmark",new Class<?>[]{int.class},80);var state=FeatureTest.<Conversations.State>field(app,"sessionState");check(state.bookmarks.equals(Set.of(80)),"bookmark uses archive message index");Path first=FeatureTest.field(app,"conversationFile");var saved=Conversations.load(first);check(saved.state().bookmarks.equals(Set.of(80)),"bookmark saved to disk");check(saved.messages().get(1).content.equals(raw),"raw technical and final content saved intact");
+            Path exported=home.resolve("bookmarked-export.zip");Conversations.export(List.of(saved),exported);try(var zip=new java.util.zip.ZipFile(exported.toFile())){var item=zip.entries().nextElement();try(var stream=zip.getInputStream(item)){var data=Json.parse(new String(stream.readAllBytes(),java.nio.charset.StandardCharsets.UTF_8));check(Conversations.State.fromJson(Json.get(data,"state"),saved.messages().size()).bookmarks.equals(Set.of(80)),"export retains local bookmarks");}}
+
+            FeatureTest.command(app,"/new Other");check(timeline.entries.isEmpty(),"new chat clears navigation");check(FeatureTest.<Conversations.State>field(app,"sessionState").bookmarks.isEmpty(),"new chat has no inherited bookmark");
+            FeatureTest.call(app,"openSession",new Class<?>[]{Conversations.Saved.class},saved);reformat(app);check(timeline.entries.size()==70&&FeatureTest.<Conversations.State>field(app,"sessionState").bookmarks.equals(Set.of(80)),"restored conversation restores only its markers/bookmarks");check(disclosure(pane)!=null&&!visible(pane).contains("Provider supplied"),"reopened details collapsed without losing content");
+            timeline.jump(40);check(pane.getCaretPosition()==timeline.entries.get(40).position().getOffset(),"bookmark target stable after reload");FeatureTest.call(app,"toggleBookmark",new Class<?>[]{int.class},80);check(Conversations.load(first).state().bookmarks.isEmpty(),"bookmark removal persists");check(server.requests.isEmpty(),"navigation, theme, fold, bookmark and reload use no inference");app.dispose();
+        });if(!Boolean.getBoolean("localchat.skipNativeQA"))nativeTimeline(Files.createDirectories(home.resolve("native")),server.url());else System.out.println("Native mouse checks explicitly skipped for locked-desktop development run");System.out.println("PASS: "+checks+" chat navigation/disclosure checks");}finally{FeatureTest.edt(()->{for(var w:Window.getWindows())w.dispose();});}System.exit(0);
+    }
+}

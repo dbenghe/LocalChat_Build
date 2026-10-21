@@ -1,3 +1,12 @@
+## 1.14.0 - 2026-10-21
+
+- Diagnosticheaza calea interna PDFCONTROL ghicita fara engine folosind job.json confirmat, fara redirectionare sau rerulare automata. Agentul foloseste campul results din status.
+
+- Detaliile tehnice delimitate ale furnizorului raman in chat, pliate implicit si deschise prin clic. Raspunsul final ramane vizibil in toate limbile si modurile; originalul este pastrat.
+- Timeline compact in stanga conversatiei, cu titlul intrebarii la hover, salt direct si semne de carte locale per chat. Meniul de navigare include si discutiile foarte lungi.
+- Navigarea, plierea si semnele de carte nu apeleaza API-ul si nu modifica memoria/contextul. Temele Dark/Light si cele sase limbi sunt acoperite.
+
+
 ## 1.13.3 - 2026-10-21
 
 - Stabilize the native popup screenshot test by keeping its own QA window foreground and waiting for native painting, retaining the same color assertions.

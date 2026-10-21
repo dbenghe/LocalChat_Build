@@ -416,5 +416,14 @@
   "Normal": "Normal",
   "MBS: proiecte, skill-uri si PDFCONTROL prin unelte.": "MBS: araçlarla projeler, beceriler ve PDFCONTROL.",
   "Normal: conversatie fara fisiere, comenzi sau MCP.": "Normal: dosya erişimi, komutlar veya MCP olmadan sohbet.",
-  "Modelul nu a returnat un raspuns final vizibil. Istoricul si actiunile executate sunt pastrate.": "Model görünür bir son yanıt döndürmedi. Geçmiş ve tamamlanan işlemler korunur."
+  "Modelul nu a returnat un raspuns final vizibil. Istoricul si actiunile executate sunt pastrate.": "Model görünür bir son yanıt döndürmedi. Geçmiş ve tamamlanan işlemler korunur.",
+  "Detalii tehnice": "Teknik ayrintilar",
+  "Deschide detaliile": "Ayrintilari ac",
+  "Restrange detaliile": "Ayrintilari daralt",
+  "Navigare in discutie": "Sohbet zaman cizelgesi",
+  "Adauga semn de carte": "Yer imi ekle",
+  "Elimina semnul de carte": "Yer imini kaldir",
+  "Nicio discutie": "Henuz soru yok",
+  "Nu exista: {0}": "Mevcut degil: {0}",
+  "Nu exista: {0}. Calea confirmata PDFCONTROL este: {1}. Foloseste campul results din pdfcontrol_job_status; nu relansa controlul pentru aceasta eroare de cale.": "Mevcut degil: {0}. Dogrulanan PDFCONTROL yolu: {1}. pdfcontrol_job_status results alanini kullanin; bu yol hatasi icin kontrolu yeniden baslatmayin."
 }

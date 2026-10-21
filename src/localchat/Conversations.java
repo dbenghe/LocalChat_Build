@@ -25,6 +25,7 @@ final class Conversations {
     static final class State {
         String title="";
         boolean pinned, archived;
+        final java.util.Set<Integer> bookmarks=new java.util.TreeSet<>();
         String draft="",provider="",providerPreset="",model="",baseUrl="";
         final List<String> draftAttachments=new ArrayList<>(),attachedPaths=new ArrayList<>();
         long contextAnchorInput=-1;int contextAnchorCount=-1,contextAnchorThrough=-1;String contextAnchorProfile="",contextAnchorSignature="";
@@ -38,10 +39,11 @@ final class Conversations {
         ContextMemory memory=new ContextMemory();
         TokenUsage.Ledger usage=new TokenUsage.Ledger();
         TokenUsage.Ledger last=new TokenUsage.Ledger();
-        Object toJson() { return Json.obj("responseLanguage",responseLanguage,"translateMessage",translateMessage,"customTitle",title,"pinned",pinned,"archived",archived,"draft",draft,"draftAttachments",draftAttachments,"attachedPaths",attachedPaths,"provider",provider,"providerPreset",providerPreset,"model",model,"baseUrl",baseUrl,"contextLimit",contextLimit,"autoCompact",autoCompact,"autoThreshold",autoThreshold,"responseProfile",responseProfile,"systemPrompt",systemPrompt,"toolsEnabled",toolsEnabled,"streamEnabled",streamEnabled,"summary",memory.summary,
+        Object toJson() { return Json.obj("bookmarks",new ArrayList<>(bookmarks),"responseLanguage",responseLanguage,"translateMessage",translateMessage,"customTitle",title,"pinned",pinned,"archived",archived,"draft",draft,"draftAttachments",draftAttachments,"attachedPaths",attachedPaths,"provider",provider,"providerPreset",providerPreset,"model",model,"baseUrl",baseUrl,"contextLimit",contextLimit,"autoCompact",autoCompact,"autoThreshold",autoThreshold,"responseProfile",responseProfile,"systemPrompt",systemPrompt,"toolsEnabled",toolsEnabled,"streamEnabled",streamEnabled,"summary",memory.summary,
                 "contextAnchorInput",contextAnchorInput,"contextAnchorCount",contextAnchorCount,"contextAnchorThrough",contextAnchorThrough,"contextAnchorProfile",contextAnchorProfile,"contextAnchorSignature",contextAnchorSignature,"compactedThrough",memory.through,"retainedQuestion",memory.question,"usage",usage.toJson(),"lastTurn",last.toJson()); }
         static State fromJson(Object o, int count) {
             State s=new State();
+            Object marks=Json.get(o,"bookmarks");if(marks instanceof List<?> list)for(Object item:list)if(item instanceof Number n && n.doubleValue()==n.intValue() && n.intValue()>=0 && n.intValue()<count)s.bookmarks.add(n.intValue());
             for(String key:List.of("draftAttachments","attachedPaths")){Object values=Json.get(o,key);if(values instanceof List<?> list)for(Object v:list)if(v instanceof String value && !value.isBlank() && !(key.equals("draftAttachments")?s.draftAttachments:s.attachedPaths).contains(value))(key.equals("draftAttachments")?s.draftAttachments:s.attachedPaths).add(value);}
             String t=Json.str(o,"customTitle");if(t!=null)s.title=t;
             s.contextAnchorInput=(Json.get(o,"contextAnchorInput") instanceof Number value?value.longValue():-1);s.contextAnchorCount=(int)(Json.get(o,"contextAnchorCount") instanceof Number value?value.longValue():-1);s.contextAnchorThrough=(int)(Json.get(o,"contextAnchorThrough") instanceof Number value?value.longValue():-1);s.contextAnchorProfile=java.util.Objects.toString(Json.str(o,"contextAnchorProfile"),"");

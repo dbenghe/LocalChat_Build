@@ -416,5 +416,14 @@
   "Normal": "Zwykły",
   "MBS: proiecte, skill-uri si PDFCONTROL prin unelte.": "MBS: projekty, umiejętności i PDFCONTROL przez narzędzia.",
   "Normal: conversatie fara fisiere, comenzi sau MCP.": "Zwykły: rozmowa bez dostępu do plików, poleceń i MCP.",
-  "Modelul nu a returnat un raspuns final vizibil. Istoricul si actiunile executate sunt pastrate.": "Model nie zwrócił widocznej odpowiedzi końcowej. Historia i wykonane działania zostały zachowane."
+  "Modelul nu a returnat un raspuns final vizibil. Istoricul si actiunile executate sunt pastrate.": "Model nie zwrócił widocznej odpowiedzi końcowej. Historia i wykonane działania zostały zachowane.",
+  "Detalii tehnice": "Szczegoly techniczne",
+  "Deschide detaliile": "Rozwin szczegoly",
+  "Restrange detaliile": "Zwin szczegoly",
+  "Navigare in discutie": "Os czasu rozmowy",
+  "Adauga semn de carte": "Dodaj zakladke",
+  "Elimina semnul de carte": "Usun zakladke",
+  "Nicio discutie": "Brak pytan",
+  "Nu exista: {0}": "Nie istnieje: {0}",
+  "Nu exista: {0}. Calea confirmata PDFCONTROL este: {1}. Foloseste campul results din pdfcontrol_job_status; nu relansa controlul pentru aceasta eroare de cale.": "Nie istnieje: {0}. Potwierdzona sciezka PDFCONTROL: {1}. Uzyj results z pdfcontrol_job_status; nie uruchamiaj kontroli ponownie z powodu tego bledu sciezki."
 }

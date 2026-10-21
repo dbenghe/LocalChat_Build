@@ -416,5 +416,14 @@
   "Normal": "Normal",
   "MBS: proiecte, skill-uri si PDFCONTROL prin unelte.": "MBS: proyectos, habilidades y PDFCONTROL mediante herramientas.",
   "Normal: conversatie fara fisiere, comenzi sau MCP.": "Normal: conversación sin acceso a archivos, comandos ni MCP.",
-  "Modelul nu a returnat un raspuns final vizibil. Istoricul si actiunile executate sunt pastrate.": "El modelo no devolvió una respuesta final visible. Se conservan el historial y las acciones realizadas."
+  "Modelul nu a returnat un raspuns final vizibil. Istoricul si actiunile executate sunt pastrate.": "El modelo no devolvió una respuesta final visible. Se conservan el historial y las acciones realizadas.",
+  "Detalii tehnice": "Detalles tecnicos",
+  "Deschide detaliile": "Mostrar detalles",
+  "Restrange detaliile": "Ocultar detalles",
+  "Navigare in discutie": "Linea de tiempo del chat",
+  "Adauga semn de carte": "Anadir marcador",
+  "Elimina semnul de carte": "Quitar marcador",
+  "Nicio discutie": "Todavia no hay preguntas",
+  "Nu exista: {0}": "No existe: {0}",
+  "Nu exista: {0}. Calea confirmata PDFCONTROL este: {1}. Foloseste campul results din pdfcontrol_job_status; nu relansa controlul pentru aceasta eroare de cale.": "No existe: {0}. La ruta confirmada de PDFCONTROL es: {1}. Usa results de pdfcontrol_job_status; no repitas el control por este error de ruta."
 }

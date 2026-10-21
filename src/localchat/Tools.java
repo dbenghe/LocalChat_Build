@@ -465,9 +465,23 @@ final class Tools {
 
     // ---- reading ----
 
+    /** Correct a known legacy typo with job evidence, without reading/redirecting outside the workspace. */
+    private String missingFile(Path path){
+        String plain=I18n.text("Nu exista: {0}",path);
+        try{
+            Path checked=path.getParent(),run=checked==null?null:checked.getParent();
+            if(!path.getFileName().toString().equalsIgnoreCase("resultaten.json")||checked==null||!checked.getFileName().toString().equalsIgnoreCase("checked")||run==null||!run.getFileName().toString().matches("[a-fA-F0-9]{32}")||run.getParent()==null||!run.getParent().getFileName().toString().equalsIgnoreCase("Octop-PDFCONTROL"))return plain;
+            Path actual=run.resolve("engine/checked/resultaten.json"),job=run.resolve("job.json"),scope=ctx.workDir().toRealPath();
+            if(!Files.isRegularFile(actual)||!Files.isRegularFile(job)||!actual.toRealPath().startsWith(scope)||!job.toRealPath().startsWith(scope)||Files.size(job)>1048576)return plain;
+            Object record=Json.parse(Files.readString(job,StandardCharsets.UTF_8));String status=Json.str(record,"status"),result=Json.str(record,"results");
+            if(!List.of("done","partial").contains(status)||!run.getFileName().toString().equals(Json.str(record,"job_id"))||result==null||!Path.of(result).toAbsolutePath().normalize().equals(actual.toAbsolutePath().normalize()))return plain;
+            return I18n.text("Nu exista: {0}. Calea confirmata PDFCONTROL este: {1}. Foloseste campul results din pdfcontrol_job_status; nu relansa controlul pentru aceasta eroare de cale.",path,actual);
+        }catch(IOException|RuntimeException ignored){return plain;}
+    }
+
     private String readFile(Path p, int offset, Integer limit) throws IOException, ToolError {
         if (Files.isDirectory(p)) throw new ToolError("E un folder: " + p + " — foloseste list_dir.");
-        if (!Files.exists(p)) throw new ToolError("Nu exista: " + p);
+        if (!Files.exists(p)) throw new ToolError(missingFile(p));
         String name = p.getFileName().toString().toLowerCase(Locale.ROOT);
         if (name.endsWith(".pdf")) return readPdf(p, offset, limit == null ? 20 : limit);
         String text;

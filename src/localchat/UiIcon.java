@@ -7,7 +7,7 @@ final class UiIcon implements Icon {
     UiIcon(String kind,int size){this.kind=kind;this.size=size;}
     public int getIconWidth(){return size;}public int getIconHeight(){return size;}
     public void paintIcon(Component c,Graphics g,int x,int y){Graphics2D a=(Graphics2D)g.create();a.translate(x,y);a.scale(size/20.0,size/20.0);a.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);a.setColor(c.isEnabled()?c.getForeground():UIManager.getColor("Label.disabledForeground"));a.setStroke(new BasicStroke(1.7f,BasicStroke.CAP_ROUND,BasicStroke.JOIN_ROUND));
-        switch(kind){case "more"->{for(int i=4;i<=16;i+=6)a.fillOval(i-1,9,2,2);}
+        switch(kind){case "chevron-down"->a.drawPolyline(new int[]{5,10,15},new int[]{7,13,7},3);case "chevron-right"->a.drawPolyline(new int[]{7,13,7},new int[]{5,10,15},3);case "timeline"->{for(int i=4;i<=16;i+=6){a.fillOval(2,i-1,3,3);a.drawLine(8,i,18,i);}}case "more"->{for(int i=4;i<=16;i+=6)a.fillOval(i-1,9,2,2);}
         case "sliders"->{a.drawLine(3,5,17,5);a.drawLine(3,10,17,10);a.drawLine(3,15,17,15);a.setStroke(new BasicStroke(3));a.drawLine(7,3,7,7);a.drawLine(13,8,13,12);a.drawLine(8,13,8,17);}
         case "panels"->{a.drawRoundRect(2,3,16,14,2,2);a.drawLine(11,3,11,17);}
         case "expand"->{a.drawPolyline(new int[]{2,2,7},new int[]{7,2,2},3);a.drawPolyline(new int[]{13,18,18},new int[]{2,2,7},3);a.drawPolyline(new int[]{2,2,7},new int[]{13,18,18},3);a.drawPolyline(new int[]{13,18,18},new int[]{18,18,13},3);}
