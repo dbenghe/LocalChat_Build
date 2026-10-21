@@ -400,5 +400,20 @@
   "Stergi toate memoriile locale? Conversatiile, regulile manuale si PROJECT_INFO.md se gestioneaza separat.": "Usunąć całą pamięć lokalną? Czaty, reguły ręczne i PROJECT_INFO.md są zarządzane oddzielnie.",
   "Sunt deja 200 de memorii. Sterge intrarile care nu mai sunt necesare.": "Istnieje już 200 wpisów pamięci. Usuń zbędne wpisy.",
   "Preferintele relevante sunt incluse in contextul trimis modelului API selectat.": "Odpowiednie preferencje są dołączane do kontekstu wysyłanego do wybranego modelu API.",
-  "Selecteaza domeniul General sau Proiect.": "Wybierz zakres Ogólne lub Projekt."
+  "Selecteaza domeniul General sau Proiect.": "Wybierz zakres Ogólne lub Projekt.",
+  "Limba interfetei": "Język interfejsu",
+  "Limba raspunsurilor": "Język odpowiedzi",
+  "Tradu mesajul meu": "Przetłumacz moją wiadomość",
+  "Citat tradus: italic si colorat": "Tłumaczenie: kursywa i kolor",
+  "Automat (memorie sau mesaj)": "Automatycznie (pamięć lub wiadomość)",
+  "Limba fixa a raspunsurilor, indiferent de limba in care scrii. Automat foloseste memoria sau mesajul.": "Stały język odpowiedzi, niezależny od języka wiadomości. Tryb automatyczny korzysta z pamięci lub wiadomości.",
+  "Afiseaza traducerea mesajului tau intre ghilimele, italic si colorat. Foloseste acelasi apel API; originalul ramane in istoric.": "Pokazuje tłumaczenie wiadomości w cudzysłowie, kursywą i kolorem. Używa tego samego wywołania API; oryginał pozostaje w historii.",
+  "Automat · adaptiv": "Automatycznie · adaptacyjnie",
+  "Automat: pana la {0} tokeni. Iesire API: {1}. Bugetul se ajusteaza la contextul liber.": "Automatycznie: do {0} tokenów. Wyjście API: {1}. Budżet zależy od wolnego kontekstu.",
+  "necunoscuta; buget local 16000": "nieznane; lokalny budżet 16000",
+  "Plafon curent: {0} tokeni, limitat si de contextul liber.": "Aktualny limit: {0} tokenów, ograniczony też wolnym kontekstem.",
+  "MBS": "MBS",
+  "Normal": "Zwykły",
+  "MBS: proiecte, skill-uri si PDFCONTROL prin unelte.": "MBS: projekty, umiejętności i PDFCONTROL przez narzędzia.",
+  "Normal: conversatie fara fisiere, comenzi sau MCP.": "Zwykły: rozmowa bez dostępu do plików, poleceń i MCP."
 }

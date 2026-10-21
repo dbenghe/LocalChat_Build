@@ -29,15 +29,16 @@ final class Conversations {
         final List<String> draftAttachments=new ArrayList<>(),attachedPaths=new ArrayList<>();
         long contextAnchorInput=-1;int contextAnchorCount=-1,contextAnchorThrough=-1;String contextAnchorProfile="",contextAnchorSignature="";
         int contextLimit=-1;
-        int responseProfile=1;
+        int responseProfile=3;
         boolean autoCompact;
         int autoThreshold=70;
-        String systemPrompt;
+        String systemPrompt,responseLanguage;
+        Boolean translateMessage;
         Boolean toolsEnabled,streamEnabled;
         ContextMemory memory=new ContextMemory();
         TokenUsage.Ledger usage=new TokenUsage.Ledger();
         TokenUsage.Ledger last=new TokenUsage.Ledger();
-        Object toJson() { return Json.obj("customTitle",title,"pinned",pinned,"archived",archived,"draft",draft,"draftAttachments",draftAttachments,"attachedPaths",attachedPaths,"provider",provider,"providerPreset",providerPreset,"model",model,"baseUrl",baseUrl,"contextLimit",contextLimit,"autoCompact",autoCompact,"autoThreshold",autoThreshold,"responseProfile",responseProfile,"systemPrompt",systemPrompt,"toolsEnabled",toolsEnabled,"streamEnabled",streamEnabled,"summary",memory.summary,
+        Object toJson() { return Json.obj("responseLanguage",responseLanguage,"translateMessage",translateMessage,"customTitle",title,"pinned",pinned,"archived",archived,"draft",draft,"draftAttachments",draftAttachments,"attachedPaths",attachedPaths,"provider",provider,"providerPreset",providerPreset,"model",model,"baseUrl",baseUrl,"contextLimit",contextLimit,"autoCompact",autoCompact,"autoThreshold",autoThreshold,"responseProfile",responseProfile,"systemPrompt",systemPrompt,"toolsEnabled",toolsEnabled,"streamEnabled",streamEnabled,"summary",memory.summary,
                 "contextAnchorInput",contextAnchorInput,"contextAnchorCount",contextAnchorCount,"contextAnchorThrough",contextAnchorThrough,"contextAnchorProfile",contextAnchorProfile,"contextAnchorSignature",contextAnchorSignature,"compactedThrough",memory.through,"retainedQuestion",memory.question,"usage",usage.toJson(),"lastTurn",last.toJson()); }
         static State fromJson(Object o, int count) {
             State s=new State();
@@ -48,10 +49,11 @@ final class Conversations {
             s.providerPreset=java.util.Objects.toString(Json.str(o,"providerPreset"),"");
             s.pinned=Boolean.TRUE.equals(Json.get(o,"pinned"));s.archived=Boolean.TRUE.equals(Json.get(o,"archived"));
             String draft=Json.str(o,"draft"),provider=Json.str(o,"provider"),model=Json.str(o,"model"),url=Json.str(o,"baseUrl");
-            s.responseProfile=(int)Math.max(0,Math.min(2,TokenUsage.number(o,"responseProfile",1)));
+            s.responseProfile=(int)Math.max(0,Math.min(3,TokenUsage.number(o,"responseProfile",3)));
             s.autoCompact=Boolean.TRUE.equals(Json.get(o,"autoCompact"));
             s.autoThreshold=(int)Math.max(30,Math.min(95,TokenUsage.number(o,"autoThreshold",70)));
             s.systemPrompt=Json.str(o,"systemPrompt");
+            String language=Json.str(o,"responseLanguage");if(language!=null)s.responseLanguage=InternationalChat.valid(language);Object translate=Json.get(o,"translateMessage");if(translate instanceof Boolean)s.translateMessage=(Boolean)translate;
             Object tools=Json.get(o,"toolsEnabled"),stream=Json.get(o,"streamEnabled");
             if(tools instanceof Boolean)s.toolsEnabled=(Boolean)tools;if(stream instanceof Boolean)s.streamEnabled=(Boolean)stream;
             if(draft!=null)s.draft=draft;if(provider!=null)s.provider=provider;if(model!=null)s.model=model;if(url!=null)s.baseUrl=url;

@@ -1,3 +1,12 @@
+## 1.13.0 - 2026-10-21
+
+- Add an Automatic response cap using explicit API output limits or a labelled 16000-token local fallback, always bounded by free context; retain existing fixed profile indices.
+- Name the tool-enabled project mode MBS and the general tool-free mode Normal, with per-chat persistence.
+
+- Separate interface language from response language, with six fixed languages and an automatic memory/message mode. Persist choices and the optional user-message translation per chat and in explicit defaults.
+- Request the translated question as a quoted italic paragraph in the same inference, with theme-specific blue text. Keep original user messages, tool access, project IDs, paths and report-language requests unchanged.
+- Preserve response-language display metadata locally per assistant message so Turkish/Spanish and other text retains its characters when the interface is Romanian. Loading or changing selections does not infer or translate old messages.
+
 ## 1.12.1 - 2026-10-21
 
 - Retry transient Windows access-denied locks when replacing settings, with bounded attempts and interruption support. Preserve the existing settings on failure and clean temporary files.

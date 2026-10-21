@@ -400,5 +400,20 @@
   "Stergi toate memoriile locale? Conversatiile, regulile manuale si PROJECT_INFO.md se gestioneaza separat.": "Tüm yerel bellekler silinsin mi? Sohbetler, elle yazılan kurallar ve PROJECT_INFO.md ayrı yönetilir.",
   "Sunt deja 200 de memorii. Sterge intrarile care nu mai sunt necesare.": "Zaten 200 bellek var. Gereksiz kayıtları silin.",
   "Preferintele relevante sunt incluse in contextul trimis modelului API selectat.": "İlgili tercihler seçilen API modeline gönderilen bağlama eklenir.",
-  "Selecteaza domeniul General sau Proiect.": "Genel veya Proje kapsamını seçin."
+  "Selecteaza domeniul General sau Proiect.": "Genel veya Proje kapsamını seçin.",
+  "Limba interfetei": "Arayüz dili",
+  "Limba raspunsurilor": "Yanıt dili",
+  "Tradu mesajul meu": "Mesajımı çevir",
+  "Citat tradus: italic si colorat": "Çeviri: italik ve renkli",
+  "Automat (memorie sau mesaj)": "Otomatik (bellek veya mesaj)",
+  "Limba fixa a raspunsurilor, indiferent de limba in care scrii. Automat foloseste memoria sau mesajul.": "Yazdığınız dilden bağımsız sabit yanıt dili. Otomatik mod belleği veya mesajı izler.",
+  "Afiseaza traducerea mesajului tau intre ghilimele, italic si colorat. Foloseste acelasi apel API; originalul ramane in istoric.": "Mesajınızın çevirisini tırnak içinde, italik ve renkli gösterir. Aynı API çağrısını kullanır; özgün metin geçmişte kalır.",
+  "Automat · adaptiv": "Otomatik · uyarlanabilir",
+  "Automat: pana la {0} tokeni. Iesire API: {1}. Bugetul se ajusteaza la contextul liber.": "Otomatik: en fazla {0} token. API çıkışı: {1}. Kullanılabilir bağlama göre ayarlanır.",
+  "necunoscuta; buget local 16000": "bilinmiyor; yerel bütçe 16000",
+  "Plafon curent: {0} tokeni, limitat si de contextul liber.": "Geçerli sınır: {0} token, kullanılabilir bağlamla da sınırlıdır.",
+  "MBS": "MBS",
+  "Normal": "Normal",
+  "MBS: proiecte, skill-uri si PDFCONTROL prin unelte.": "MBS: araçlarla projeler, beceriler ve PDFCONTROL.",
+  "Normal: conversatie fara fisiere, comenzi sau MCP.": "Normal: dosya erişimi, komutlar veya MCP olmadan sohbet."
 }

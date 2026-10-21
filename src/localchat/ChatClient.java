@@ -65,6 +65,7 @@ final class ChatClient {
 
     /** One entry of the conversation: user text, assistant text plus tool calls, or a tool result. */
     static final class Message {
+        String displayLanguage; // Local display metadata only; omitted from provider payloads.
         final String role; // "user", "assistant" or "tool"
         final String content;
         final List<ToolCall> toolCalls; // assistant only
@@ -93,8 +94,11 @@ final class ChatClient {
             return new Message("tool", text, Collections.emptyList(), callId, isError, null);
         }
 
+        Message withDisplayLanguage(String language){Message copy=new Message(role,content,toolCalls,toolCallId,isError,label);copy.displayLanguage=InternationalChat.valid(language);return copy;}
+
         Map<String, Object> toJson() {
             Map<String, Object> m = Json.obj("role", role, "content", content);
+            if(displayLanguage!=null)m.put("displayLanguage",displayLanguage);
             if (!toolCalls.isEmpty()) {
                 List<Object> calls = new ArrayList<>();
                 for (ToolCall c : toolCalls) calls.add(c.toJson());
@@ -110,8 +114,9 @@ final class ChatClient {
             List<ToolCall> calls = new ArrayList<>();
             Object list = Json.get(o, "tool_calls");
             if (list instanceof List) for (Object c : (List<?>) list) calls.add(ToolCall.fromJson(c));
-            return new Message(Json.str(o, "role"), Json.str(o, "content"), calls, Json.str(o, "tool_call_id"),
+            Message m=new Message(Json.str(o, "role"), Json.str(o, "content"), calls, Json.str(o, "tool_call_id"),
                     Boolean.TRUE.equals(Json.get(o, "is_error")), Json.str(o, "label"));
+            String language=Json.str(o,"displayLanguage");if(language!=null)m.displayLanguage=InternationalChat.valid(language);return m;
         }
     }
 

@@ -159,7 +159,7 @@ public final class FeatureTest {
                 check(((JTextField)field(app,"systemField")).getText().equals("Beta-only instructions"),"other chat system instructions retained");
                 command(app,"/resume "+Conversations.shortId(alpha[0]));
                 check(((Conversations.State)field(app,"sessionState")).memory.summary.equals(summary),"compact memory restored when reopening chat");
-                ((JTextArea)field(app,"input")).setText("continue after compact");call(app,"send",new Class<?>[]{});
+                ((JComboBox<?>)field(app,"responseProfile")).setSelectedIndex(1);((JTextArea)field(app,"input")).setText("continue after compact");call(app,"send",new Class<?>[]{});
                 check(Conversations.load(alpha[0]).messages().size()==originalCount[0]+1,"new question saved before API answer");
             });
             idle(ref[0]);
@@ -339,12 +339,12 @@ public final class FeatureTest {
             JComboBox<String> model=field(app[0],"modelBox");model.setSelectedItem("default-fixture-model");
             ((JTextField)field(app[0],"urlField")).setText("http://127.0.0.1:1/v1");((JTextField)field(app[0],"workDirField")).setText(home.toString());
             ((JPasswordField)field(app[0],"keyField")).setText("fixture-key-not-real");
-            call(app[0],"saveDefaults",new Class<?>[]{});command(app[0],"/new One");
+            ((JComboBox<?>)field(app[0],"responseProfile")).setSelectedIndex(3);call(app[0],"saveDefaults",new Class<?>[]{});command(app[0],"/new One");
             WorkspacePanel panel=field(app[0],"workspace");
             ((JComboBox<?>)field(app[0],"responseProfile")).setSelectedIndex(2);
             Path first=field(app[0],"conversationFile");command(app[0],"/new Two");
             check(((JComboBox<?>)field(app[0],"modelBox")).getSelectedItem().equals("default-fixture-model"),"new chat restores explicitly saved default model");
-            check(((JComboBox<?>)field(app[0],"responseProfile")).getSelectedIndex()==1,"new chat has separate response profile");
+            check(((JComboBox<?>)field(app[0],"responseProfile")).getSelectedIndex()==3,"new chat has separate automatic response profile");
             command(app[0],"/switch "+Conversations.shortId(first));
             check(((JComboBox<?>)field(app[0],"responseProfile")).getSelectedIndex()==2,"resumed chat restores response profile without API call");
             call(app[0],"archiveSession",new Class<?>[]{});check(Conversations.load(first).state().archived,"archive action persists state");

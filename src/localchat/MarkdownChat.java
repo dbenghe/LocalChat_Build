@@ -36,7 +36,7 @@ final class MarkdownChat {
             if(!Boolean.TRUE.equals(e.getAttributes().getAttribute(MARK))){i=end;continue;}
             int start=i;
             while(end<doc.getLength()&&Boolean.TRUE.equals(doc.getCharacterElement(end).getAttributes().getAttribute(MARK)))end=Math.min(doc.getCharacterElement(end).getEndOffset(),doc.getLength());
-            var clean=new SimpleAttributeSet(base);clean.addAttribute(MARK,true);doc.setCharacterAttributes(start,end-start,clean,true);
+            Object language=doc.getCharacterElement(start).getAttributes().getAttribute(InternationalChat.DISPLAY);var clean=new SimpleAttributeSet(base);clean.addAttribute(MARK,true);if(language!=null)clean.addAttribute(InternationalChat.DISPLAY,language);doc.setCharacterAttributes(start,end-start,clean,true);
             var paragraph=new SimpleAttributeSet();StyleConstants.setSpaceAbove(paragraph,2);StyleConstants.setSpaceBelow(paragraph,4);StyleConstants.setLeftIndent(paragraph,0);StyleConstants.setTabSet(paragraph,new TabSet(new TabStop[0]));doc.setParagraphAttributes(start,end-start,paragraph,true);
             format(doc,start,source.getText(start,end-start),background);i=end;
         }
@@ -55,6 +55,7 @@ final class MarkdownChat {
                 if(heading.find()){hide(d,start+offset+lead,heading.end());put(d,start+offset,line.length(),StyleConstants.Bold,true);put(d,start+offset,line.length(),StyleConstants.FontSize,Math.max(15,24-heading.group(1).length()*2));}
                 if(trim.matches("[-*_]{3,}\\s*")){put(d,start+offset,line.length(),StyleConstants.Foreground,Color.GRAY);}
                 if(trim.startsWith("> ")){hide(d,start+offset+lead,2);put(d,start+offset,line.length(),StyleConstants.Italic,true);}
+                if(trim.startsWith("> \"" )||trim.startsWith("> \u201c"))put(d,start+offset,line.length(),StyleConstants.Foreground,InternationalChat.quoteColor(bg));
                 boolean table=line.contains("|") && ((row+1<lines.length&&lines[row+1].matches("\\s*\\|?\\s*:?-{3,}.*")) || (row>0&&lines[row-1].contains("|")));
                 if(table){
                     put(d,start+offset,line.length(),StyleConstants.FontFamily,"Monospaced");

@@ -6,10 +6,11 @@ import java.util.*;
 
 /** Read-only API metadata. Declared maxima, loaded context and input caps are distinct. */
 final class ModelInfo {
-    record Info(long maximum,long loaded,long inputLimit,String source) {
+    record Info(long maximum,long loaded,long inputLimit,long outputLimit,String source) {
+        Info(long maximum,long loaded,long inputLimit,String source){this(maximum,loaded,inputLimit,0,source);}
         Info(long maximum,long loaded,String source){this(maximum,loaded,0,source);}
-        Object json(){return Json.obj("maximum",maximum,"loaded",loaded,"inputLimit",inputLimit,"source",source,"checked",java.time.Instant.now().toString());}
-        static Info from(Object o){return new Info(TokenUsage.number(o,"maximum",0),TokenUsage.number(o,"loaded",0),TokenUsage.number(o,"inputLimit",0),Objects.toString(Json.str(o,"source"),""));}
+        Object json(){return Json.obj("maximum",maximum,"loaded",loaded,"inputLimit",inputLimit,"outputLimit",outputLimit,"source",source,"checked",java.time.Instant.now().toString());}
+        static Info from(Object o){return new Info(TokenUsage.number(o,"maximum",0),TokenUsage.number(o,"loaded",0),TokenUsage.number(o,"inputLimit",0),TokenUsage.number(o,"outputLimit",0),Objects.toString(Json.str(o,"source"),""));}
     }
     static long first(Object row,String... fields){for(String field:fields){Object value=Json.get(row,field);if(value instanceof Number n && Double.isFinite(n.doubleValue()) && n.doubleValue()>0 && n.doubleValue()==n.longValue())return n.longValue();}return 0;}
     static Info parse(Object root,String selected,String source) {
@@ -29,7 +30,8 @@ final class ModelInfo {
                 if(maximum==0)maximum=first(Json.get(row,"top_provider"),"context_length");
                 if(loaded==0)loaded=first(row,"loaded_context_length","loaded_context_window");
                 long input=first(row,"max_input_tokens");if(input==0)input=first(Json.get(row,"limits"),"max_input_tokens");
-                return new Info(maximum,loaded,input,source);
+                long output=0;for(Object limits:new Object[]{row,Json.get(row,"limits"),Json.get(row,"top_provider")}){long cap=first(limits,"max_output_tokens","max_completion_tokens");if(cap>0)output=output>0?Math.min(output,cap):cap;}
+                return new Info(maximum,loaded,input,output,source);
             }
         }
         return new Info(0,0,0,source);
@@ -51,7 +53,7 @@ final class ModelInfo {
                 byte[] bytes=c.getInputStream().readNBytes(4*1024*1024+1);if(bytes.length>4*1024*1024)throw new IOException("Metadata too large");
                 Object data=Json.parse(new String(bytes,StandardCharsets.UTF_8));if(!(Json.get(data,"models") instanceof List)&&!(Json.get(data,"data") instanceof List))throw new IOException("Invalid model catalog");
                 Info info=parse(data,selected,address);valid=info;
-                if(address.equals(catalog)||info.maximum()>0||info.loaded()>0||info.inputLimit()>0)return info;
+                if(address.equals(catalog)||info.maximum()>0||info.loaded()>0||info.inputLimit()>0||info.outputLimit()>0)return info;
             }catch(IOException e){failure=e;}catch(RuntimeException e){failure=new IOException("Invalid metadata",e);}finally{c.disconnect();}
         }
         if(valid!=null)return valid;if(failure!=null)throw failure;return new Info(0,0,"");

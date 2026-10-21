@@ -400,5 +400,20 @@
   "Stergi toate memoriile locale? Conversatiile, regulile manuale si PROJECT_INFO.md se gestioneaza separat.": "Delete all local memories? Chats, manual rules and PROJECT_INFO.md are managed separately.",
   "Sunt deja 200 de memorii. Sterge intrarile care nu mai sunt necesare.": "There are already 200 memories. Delete entries that are no longer needed.",
   "Preferintele relevante sunt incluse in contextul trimis modelului API selectat.": "Relevant preferences are included in context sent to the selected API model.",
-  "Selecteaza domeniul General sau Proiect.": "Select Global or Project scope."
+  "Selecteaza domeniul General sau Proiect.": "Select Global or Project scope.",
+  "Limba interfetei": "Interface language",
+  "Limba raspunsurilor": "Response language",
+  "Tradu mesajul meu": "Translate my message",
+  "Citat tradus: italic si colorat": "Translation: italic and colored",
+  "Automat (memorie sau mesaj)": "Automatic (memory or message)",
+  "Limba fixa a raspunsurilor, indiferent de limba in care scrii. Automat foloseste memoria sau mesajul.": "Fixed response language regardless of your input language. Automatic follows memory or your message.",
+  "Afiseaza traducerea mesajului tau intre ghilimele, italic si colorat. Foloseste acelasi apel API; originalul ramane in istoric.": "Shows your translated message in quotes, italic and colored. Uses the same API call; the original stays in history.",
+  "Automat · adaptiv": "Automatic · adaptive",
+  "Automat: pana la {0} tokeni. Iesire API: {1}. Bugetul se ajusteaza la contextul liber.": "Automatic: up to {0} tokens. API output: {1}. Adjusted to available context.",
+  "necunoscuta; buget local 16000": "unknown; local budget 16000",
+  "Plafon curent: {0} tokeni, limitat si de contextul liber.": "Current cap: {0} tokens, also limited by available context.",
+  "MBS": "MBS",
+  "Normal": "Normal",
+  "MBS: proiecte, skill-uri si PDFCONTROL prin unelte.": "MBS: projects, skills and PDFCONTROL through tools.",
+  "Normal: conversatie fara fisiere, comenzi sau MCP.": "Normal: conversation without file access, commands or MCP."
 }

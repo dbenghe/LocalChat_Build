@@ -400,5 +400,20 @@
   "Stergi toate memoriile locale? Conversatiile, regulile manuale si PROJECT_INFO.md se gestioneaza separat.": "Alle lokale herinneringen verwijderen? Chats, handmatige regels en PROJECT_INFO.md worden apart beheerd.",
   "Sunt deja 200 de memorii. Sterge intrarile care nu mai sunt necesare.": "Er zijn al 200 herinneringen. Verwijder onnodige items.",
   "Preferintele relevante sunt incluse in contextul trimis modelului API selectat.": "Relevante voorkeuren worden als context naar het geselecteerde API-model gestuurd.",
-  "Selecteaza domeniul General sau Proiect.": "Selecteer Algemeen of Project."
+  "Selecteaza domeniul General sau Proiect.": "Selecteer Algemeen of Project.",
+  "Limba interfetei": "Interfacetaal",
+  "Limba raspunsurilor": "Antwoordtaal",
+  "Tradu mesajul meu": "Vertaal mijn bericht",
+  "Citat tradus: italic si colorat": "Vertaling: cursief en gekleurd",
+  "Automat (memorie sau mesaj)": "Automatisch (geheugen of bericht)",
+  "Limba fixa a raspunsurilor, indiferent de limba in care scrii. Automat foloseste memoria sau mesajul.": "Vaste antwoordtaal, ongeacht de taal waarin je schrijft. Automatisch volgt het geheugen of je bericht.",
+  "Afiseaza traducerea mesajului tau intre ghilimele, italic si colorat. Foloseste acelasi apel API; originalul ramane in istoric.": "Toont je vertaalde bericht tussen aanhalingstekens, cursief en gekleurd. Gebruikt dezelfde API-aanroep; het origineel blijft bewaard.",
+  "Automat · adaptiv": "Automatisch · adaptief",
+  "Automat: pana la {0} tokeni. Iesire API: {1}. Bugetul se ajusteaza la contextul liber.": "Automatisch: tot {0} tokens. API-uitvoer: {1}. Het budget volgt de vrije context.",
+  "necunoscuta; buget local 16000": "onbekend; lokaal budget 16000",
+  "Plafon curent: {0} tokeni, limitat si de contextul liber.": "Huidig maximum: {0} tokens, ook beperkt door vrije context.",
+  "MBS": "MBS",
+  "Normal": "Normaal",
+  "MBS: proiecte, skill-uri si PDFCONTROL prin unelte.": "MBS: projecten, skills en PDFCONTROL via tools.",
+  "Normal: conversatie fara fisiere, comenzi sau MCP.": "Normaal: gesprek zonder bestandstoegang, opdrachten of MCP."
 }

@@ -400,5 +400,20 @@
   "Stergi toate memoriile locale? Conversatiile, regulile manuale si PROJECT_INFO.md se gestioneaza separat.": "Stergi toate memoriile locale? Conversatiile, regulile manuale si PROJECT_INFO.md se gestioneaza separat.",
   "Sunt deja 200 de memorii. Sterge intrarile care nu mai sunt necesare.": "Sunt deja 200 de memorii. Sterge intrarile care nu mai sunt necesare.",
   "Preferintele relevante sunt incluse in contextul trimis modelului API selectat.": "Preferintele relevante sunt incluse in contextul trimis modelului API selectat.",
-  "Selecteaza domeniul General sau Proiect.": "Selecteaza domeniul General sau Proiect."
+  "Selecteaza domeniul General sau Proiect.": "Selecteaza domeniul General sau Proiect.",
+  "Limba interfetei": "Limba interfetei",
+  "Limba raspunsurilor": "Limba raspunsurilor",
+  "Tradu mesajul meu": "Tradu mesajul meu",
+  "Citat tradus: italic si colorat": "Citat tradus: italic si colorat",
+  "Automat (memorie sau mesaj)": "Automat (memorie sau mesaj)",
+  "Limba fixa a raspunsurilor, indiferent de limba in care scrii. Automat foloseste memoria sau mesajul.": "Limba fixa a raspunsurilor, indiferent de limba in care scrii. Automat foloseste memoria sau mesajul.",
+  "Afiseaza traducerea mesajului tau intre ghilimele, italic si colorat. Foloseste acelasi apel API; originalul ramane in istoric.": "Afiseaza traducerea mesajului tau intre ghilimele, italic si colorat. Foloseste acelasi apel API; originalul ramane in istoric.",
+  "Automat · adaptiv": "Automat · adaptiv",
+  "Automat: pana la {0} tokeni. Iesire API: {1}. Bugetul se ajusteaza la contextul liber.": "Automat: pana la {0} tokeni. Iesire API: {1}. Bugetul se ajusteaza la contextul liber.",
+  "necunoscuta; buget local 16000": "necunoscuta; buget local 16000",
+  "Plafon curent: {0} tokeni, limitat si de contextul liber.": "Plafon curent: {0} tokeni, limitat si de contextul liber.",
+  "MBS": "MBS",
+  "Normal": "Normal",
+  "MBS: proiecte, skill-uri si PDFCONTROL prin unelte.": "MBS: proiecte, skill-uri si PDFCONTROL prin unelte.",
+  "Normal: conversatie fara fisiere, comenzi sau MCP.": "Normal: conversatie fara fisiere, comenzi sau MCP."
 }

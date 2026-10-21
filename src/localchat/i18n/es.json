@@ -400,5 +400,20 @@
   "Stergi toate memoriile locale? Conversatiile, regulile manuale si PROJECT_INFO.md se gestioneaza separat.": "¿Eliminar todas las memorias locales? Los chats, las reglas manuales y PROJECT_INFO.md se gestionan por separado.",
   "Sunt deja 200 de memorii. Sterge intrarile care nu mai sunt necesare.": "Ya hay 200 memorias. Elimina las entradas que no necesites.",
   "Preferintele relevante sunt incluse in contextul trimis modelului API selectat.": "Las preferencias relevantes se incluyen en el contexto enviado al modelo API seleccionado.",
-  "Selecteaza domeniul General sau Proiect.": "Selecciona el ámbito General o Proyecto."
+  "Selecteaza domeniul General sau Proiect.": "Selecciona el ámbito General o Proyecto.",
+  "Limba interfetei": "Idioma de la interfaz",
+  "Limba raspunsurilor": "Idioma de las respuestas",
+  "Tradu mesajul meu": "Traducir mi mensaje",
+  "Citat tradus: italic si colorat": "Traducción: cursiva y color",
+  "Automat (memorie sau mesaj)": "Automático (memoria o mensaje)",
+  "Limba fixa a raspunsurilor, indiferent de limba in care scrii. Automat foloseste memoria sau mesajul.": "Idioma fijo para responder, independientemente del idioma en que escribas. Automático sigue la memoria o el mensaje.",
+  "Afiseaza traducerea mesajului tau intre ghilimele, italic si colorat. Foloseste acelasi apel API; originalul ramane in istoric.": "Muestra tu mensaje traducido entre comillas, en cursiva y con color. Usa la misma llamada API; conserva el original en el historial.",
+  "Automat · adaptiv": "Automático · adaptable",
+  "Automat: pana la {0} tokeni. Iesire API: {1}. Bugetul se ajusteaza la contextul liber.": "Automático: hasta {0} tokens. Salida API: {1}. Se ajusta al contexto disponible.",
+  "necunoscuta; buget local 16000": "desconocida; presupuesto local 16000",
+  "Plafon curent: {0} tokeni, limitat si de contextul liber.": "Límite actual: {0} tokens, también limitado por el contexto disponible.",
+  "MBS": "MBS",
+  "Normal": "Normal",
+  "MBS: proiecte, skill-uri si PDFCONTROL prin unelte.": "MBS: proyectos, habilidades y PDFCONTROL mediante herramientas.",
+  "Normal: conversatie fara fisiere, comenzi sau MCP.": "Normal: conversación sin acceso a archivos, comandos ni MCP."
 }
