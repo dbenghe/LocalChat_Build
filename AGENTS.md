@@ -68,3 +68,5 @@ Repository-ul utilizatorului este https://github.com/dbenghe/LocalChat_Build (co
 - Din 1.13.1, limba fixa exclude din context numai preferintele globale pentru limba conversatiei, fara stergere si fara pierderea limbii cerute rapoartelor. Un control temporar separat de mesajul original intareste alegerea la transport, este contabilizat in context, reaplicat dupa compactare si exclus din arhiva/export; nu il retine ca intrebare sau instructiune din istoric. Nu adauga inferente sau repetari de unelte pentru a corecta limba.
 
 - Afisarea obisnuita ascunde numai blocul initial think al furnizorului, inclusiv prefixe fragmentate in streaming; pastreaza originalul si offseturile, exemplele literale din cod si copierea explicita a originalului. Copiaza raspunsul returneaza textul final. Nu declara finalizare vizibila daca modelul a trimis numai bloc tehnic.
+
+- Din 1.13.2, pentru think initial neinchis de o ruta streaming, citatul tradus dupa o linie goala si in afara codului marcheaza inceputul finalului vizibil. Aplica aceeasi delimitare la streaming, istoric, copiere si detectarea lipsei finalului; nu retrimite intrebari pentru a repara prezentarea.

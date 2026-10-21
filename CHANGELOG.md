@@ -1,3 +1,8 @@
+## 1.13.2 - 2026-10-21
+
+- Restore final translated answers when compatible streaming routes omit the closing think tag. Recognize the blank-line-separated quoted answer boundary outside code fences, including partial streaming and Windows line endings.
+- Apply the same presentation/copy boundary to saved history without changing original messages or sending another inference. Avoid false missing-final errors for a complete quoted answer.
+
 ## 1.13.1 - 2026-10-21
 
 - Hide leading provider think blocks from normal chat rendering/copying, including streamed prefixes, while preserving raw archive and source-selection offsets. Report a missing visible final answer instead of silent completion.
