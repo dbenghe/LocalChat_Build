@@ -7,14 +7,14 @@ import java.util.regex.*;
 
 /** Presentation only. Source offsets, saved messages and API payloads never change. No HTML execution. */
 final class MarkdownChat {
-    static final String MARK="localchat.markdown", HIDE="localchat.md.hide", TAB="localchat.md.tab";
+    static final String MARK="localchat.markdown", HIDE="localchat.md.hide", TAB="localchat.md.tab", THINK="localchat.md.think";
     static final class Kit extends StyledEditorKit {
         private final ViewFactory factory=e->{
             if(StyleConstants.getComponent(e.getAttributes())!=null)return new ComponentView(e);
             if(e.getName().equals(AbstractDocument.ContentElementName))return new LabelView(e){
                 boolean hidden(){return Boolean.TRUE.equals(getAttributes().getAttribute(HIDE));}
-                public float getPreferredSpan(int axis){return hidden()&&axis==View.X_AXIS?0:super.getPreferredSpan(axis);}
-                public float getMinimumSpan(int axis){return hidden()&&axis==View.X_AXIS?0:super.getMinimumSpan(axis);}
+                public float getPreferredSpan(int axis){return hidden()&&(axis==View.X_AXIS||Boolean.TRUE.equals(getAttributes().getAttribute(THINK)))?0:super.getPreferredSpan(axis);}
+                public float getMinimumSpan(int axis){return hidden()&&(axis==View.X_AXIS||Boolean.TRUE.equals(getAttributes().getAttribute(THINK)))?0:super.getMinimumSpan(axis);}
                 public float getTabbedSpan(float x,TabExpander tabs){
                     if(hidden())return 0;
                     if(Boolean.TRUE.equals(getAttributes().getAttribute(TAB)) && tabs!=null)return Math.max(0,tabs.nextTabStop(x,getStartOffset())-x);
@@ -44,6 +44,8 @@ final class MarkdownChat {
     private static void put(StyledDocument d,int s,int n,Object kind,Object v){if(n<=0)return;var a=new SimpleAttributeSet();a.addAttribute(kind,v);d.setCharacterAttributes(s,n,a,false);}
     private static void hide(StyledDocument d,int s,int n){put(d,s,n,HIDE,true);}
     private static void format(StyledDocument d,int start,String text,Color bg){
+        int technical=ReasoningDisplay.prefixEnd(text);if(technical>0){hide(d,start,technical);put(d,start,technical,THINK,true);var p=new SimpleAttributeSet();StyleConstants.setSpaceAbove(p,0);StyleConstants.setSpaceBelow(p,0);d.setParagraphAttributes(start,technical,p,false);start+=technical;text=text.substring(technical);}
+
         boolean fence=false;int offset=0;boolean[] code=new boolean[text.length()];
         String[] lines=text.split("\n",-1);
         for(int row=0;row<lines.length;row++){

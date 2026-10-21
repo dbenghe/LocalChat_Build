@@ -1,3 +1,11 @@
+## 1.13.1 - 2026-10-21
+
+- Hide leading provider think blocks from normal chat rendering/copying, including streamed prefixes, while preserving raw archive and source-selection offsets. Report a missing visible final answer instead of silent completion.
+
+- Resolve fixed response-language conflicts before inference: omit older global conversation-language preferences from the active memory/rules context without changing stored preferences. Keep report/file language requirements and project notes.
+- Add a temporary per-request language control for providers/models that ignore the system language policy; count it in context and retain the original question/archive through compaction. No additional inference or tool replay.
+- Place a short instruction in the selected language before both MBS and Normal prompts, with explicit precedence over historical answers. Automatic mode still uses saved language preferences.
+
 ## 1.13.0 - 2026-10-21
 
 - Add an Automatic response cap using explicit API output limits or a labelled 16000-token local fallback, always bounded by free context; retain existing fixed profile indices.

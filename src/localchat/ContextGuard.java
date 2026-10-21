@@ -7,6 +7,7 @@ import java.util.*;
 final class ContextGuard {
     record Memory(String summary,int through,String question){}
     final int maximum,replyBudget,threshold;final boolean automatic;
+    String languageControl="";
     String signature="";
     static String signature(String system,List<ChatClient.ToolSpec> tools){try{return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest((system+"\n"+Json.write(tools.stream().map(t->Json.obj("name",t.name,"description",t.description,"schema",t.schema)).toList())).getBytes(java.nio.charset.StandardCharsets.UTF_8)));}catch(java.security.NoSuchAlgorithmException e){throw new IllegalStateException(e);}}
     double scale;long requestRaw,requestEstimate,anchorInput=-1;int requestSourceCount,anchorSourceCount;Memory memory,requestMemory,anchorMemory;
@@ -43,16 +44,18 @@ final class ContextGuard {
             List<ChatClient.Message> original,List<ChatClient.ToolSpec> tools,int step,Agent.Ui ui)throws IOException{
         if(cancelled)throw new InterruptedIOException("Cancelled");
         signature=signature(system,tools);
-        List<ChatClient.Message> active=view(original);
+        List<ChatClient.Message> active=requestView(original);
         long estimate=estimate(system,original,active,tools);
         if(maximum>0 && automatic && (estimate+reserve()+margin()>maximum || (step>0 && ContextMemory.messages(active)>256 && estimate*100L>=(long)maximum*threshold))){
             compact(provider,url,key,model,system,original,active,tools,ui);
-            active=view(original);estimate=estimate(system,original,active,tools);
+            active=requestView(original);estimate=estimate(system,original,active,tools);
         }
         if(cancelled)throw new InterruptedIOException("Cancelled");
         if(maximum>0 && estimate+margin()+1>=maximum)throw new IOException(I18n.text("Cererea nu incape dupa compactare. Pastreaza intrebarea si citeste documentele in fragmente mai mici sau alege un context mai mare."));
         requestRaw=raw(system,active,tools);requestEstimate=estimate;requestSourceCount=original.size();requestMemory=memory;return active;
     }
+    List<ChatClient.Message> requestView(List<ChatClient.Message> original){return languageView(view(original));}
+    private List<ChatClient.Message> languageView(List<ChatClient.Message> messages){if(languageControl.isBlank())return messages;List<ChatClient.Message> copy=new ArrayList<>(messages);for(int i=copy.size()-1;i>=0;i--)if(copy.get(i).role.equals("user")){copy.set(i,copy.get(i).withRequestControl(languageControl));break;}return copy;}
     int outputLimit(){return maximum>0?(int)Math.max(1,Math.min(replyBudget,maximum-requestEstimate-margin())):replyBudget;}
     private void compact(Provider provider,String url,String key,String model,String system,List<ChatClient.Message> original,
             List<ChatClient.Message> active,List<ChatClient.ToolSpec> tools,Agent.Ui ui)throws IOException{
@@ -60,7 +63,7 @@ final class ContextGuard {
         if(lastUser<0)throw new IOException(I18n.text("Cererea nu incape dupa compactare. Pastreaza intrebarea si citeste documentele in fragmente mai mici sau alege un context mai mare."));
         String question=active.get(lastUser).content;
         // Keep the current user message exactly; completed tool pairs become factual memory together.
-        List<ChatClient.Message> kept=List.of(ChatClient.Message.user(question));
+        List<ChatClient.Message> kept=languageView(List.of(ChatClient.Message.user(question)));
         if(predicted(raw(system,kept,tools))+reserve()+margin()>=maximum)
             throw new IOException(I18n.text("Intrebarea si definitiile uneltelor depasesc spatiul disponibil. Scurteaza mesajul sau alege un context mai mare."));
         StringBuilder material=new StringBuilder();for(int i=0;i<active.size();i++)if(i!=lastUser)material.append(Json.write(active.get(i).toJson())).append('\n');
@@ -89,7 +92,7 @@ final class ContextGuard {
         }
         Memory candidate=new Memory(summary,original.size(),question),previous=memory;
         memory=candidate;
-        if(predicted(raw(system,view(original),tools))+reserve()+margin()>=maximum || ContextMemory.messages(view(original))>=ContextMemory.messages(active)){
+        if(predicted(raw(system,requestView(original),tools))+reserve()+margin()>=maximum || ContextMemory.messages(requestView(original))>=ContextMemory.messages(active)){
             memory=previous;
             if(predicted(raw(system,active,tools))+reserve()+margin()<maximum)return;
             throw new IOException(I18n.text("Rezumatul nu reduce contextul; istoricul activ a fost pastrat."));

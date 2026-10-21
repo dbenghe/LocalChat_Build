@@ -415,5 +415,6 @@
   "MBS": "MBS",
   "Normal": "Normal",
   "MBS: proiecte, skill-uri si PDFCONTROL prin unelte.": "MBS: araçlarla projeler, beceriler ve PDFCONTROL.",
-  "Normal: conversatie fara fisiere, comenzi sau MCP.": "Normal: dosya erişimi, komutlar veya MCP olmadan sohbet."
+  "Normal: conversatie fara fisiere, comenzi sau MCP.": "Normal: dosya erişimi, komutlar veya MCP olmadan sohbet.",
+  "Modelul nu a returnat un raspuns final vizibil. Istoricul si actiunile executate sunt pastrate.": "Model görünür bir son yanıt döndürmedi. Geçmiş ve tamamlanan işlemler korunur."
 }

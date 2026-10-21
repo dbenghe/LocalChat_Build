@@ -415,5 +415,6 @@
   "MBS": "MBS",
   "Normal": "Normal",
   "MBS: proiecte, skill-uri si PDFCONTROL prin unelte.": "MBS: projects, skills and PDFCONTROL through tools.",
-  "Normal: conversatie fara fisiere, comenzi sau MCP.": "Normal: conversation without file access, commands or MCP."
+  "Normal: conversatie fara fisiere, comenzi sau MCP.": "Normal: conversation without file access, commands or MCP.",
+  "Modelul nu a returnat un raspuns final vizibil. Istoricul si actiunile executate sunt pastrate.": "The model returned no visible final answer. History and completed actions are preserved."
 }

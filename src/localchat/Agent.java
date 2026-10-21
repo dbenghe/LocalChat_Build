@@ -105,7 +105,7 @@ final class Agent {
     private void publishContext(List<ChatClient.Message> base, Ui ui) {
         List<ChatClient.Message> snapshot = new ArrayList<>(base);
         synchronized (added) { snapshot.addAll(added); }
-        ui.context(List.copyOf(guard==null?snapshot:guard.view(snapshot)));
+        ui.context(List.copyOf(guard==null?snapshot:guard.requestView(snapshot)));
     }
 
     /**

@@ -926,7 +926,7 @@ public final class LocalChat extends JFrame {
         } else {
             Path dir=currentWorkDir();if(dir==null)dir=appDir;
             String system=toolsBox.isSelected()?agentPrompt(dir,installedSkills,pathMap()):plainPrompt();
-            sys=ContextMemory.estimate(system);tools=ContextMemory.tools(dashboardTools());
+            sys=ContextMemory.estimate(system)+ContextMemory.estimate(responseLanguageControl())+(responseLanguageControl().isBlank()?0:12);tools=ContextMemory.tools(dashboardTools());
             messages=ContextMemory.messages(sessionState.memory.view(history));
             String pending=composerMessage();if(!pending.isBlank() && !input.getText().startsWith("/"))messages+=ContextMemory.estimate(pending)+8;
         }
@@ -1241,7 +1241,7 @@ public final class LocalChat extends JFrame {
         int maximum=((Number)workspace.limit.getValue()).intValue();
         Path estimateDir=currentWorkDir();if(estimateDir==null)estimateDir=appDir;
         String estimateSystem=useTools?agentPrompt(estimateDir,installedSkills,pathMap()):plainPrompt();
-        long estimated=ContextMemory.estimate(estimateSystem)+ContextMemory.tools(dashboardTools())
+        long estimated=ContextMemory.estimate(estimateSystem)+ContextMemory.estimate(responseLanguageControl())+12+ContextMemory.tools(dashboardTools())
                 +ContextMemory.messages(sessionState.memory.view(history))+ContextMemory.estimate(text)+8;
         double estimateScale=contextScale();
         long protectedEstimate=(long)Math.ceil(estimated*estimateScale);
@@ -1271,7 +1271,7 @@ public final class LocalChat extends JFrame {
         history.add(turn.question);
         final List<ChatClient.Message> base = sessionState.memory.view(history);
         turn.rawBaseCount=history.size();turn.viewBaseCount=base.size();
-        turn.guard=new ContextGuard(maximum,budget,sessionState.autoCompact,sessionState.autoThreshold,contextScale());turn.agent.guard(turn.guard);
+        turn.guard=new ContextGuard(maximum,budget,sessionState.autoCompact,sessionState.autoThreshold,contextScale());turn.guard.languageControl=responseLanguageControl();turn.agent.guard(turn.guard);
         final String guardProfile=contextProfile();
         if(sessionState.contextAnchorInput>=0 && sessionState.contextAnchorProfile.equals(guardProfile) && sessionState.contextAnchorSignature.equals(ContextGuard.signature(system,tools==null?List.of():tools.specs())) && sessionState.contextAnchorThrough==sessionState.memory.through){
             int prefix=sessionState.memory.summary.isBlank()?0:1+(sessionState.memory.question.isEmpty()?0:1);
@@ -1421,6 +1421,8 @@ public final class LocalChat extends JFrame {
             } else if (error != null) {
                 showError(error);
                 setStatus("Eroare — pasii de pana acum au ramas in conversatie.", true);
+            } else if(produced.get(produced.size()-1).role.equals("assistant")&&produced.get(produced.size()-1).toolCalls.isEmpty()&&ReasoningDisplay.answer(produced.get(produced.size()-1).content).isBlank()){
+                ensureNewline();append(t("Modelul nu a returnat un raspuns final vizibil. Istoricul si actiunile executate sunt pastrate."),errorStyle);setStatus("Modelul nu a returnat un raspuns final vizibil. Istoricul si actiunile executate sunt pastrate.",true);
             } else {
                 setStatus("Gata.", false);
             }
@@ -1481,7 +1483,7 @@ public final class LocalChat extends JFrame {
     }
 
     private String agentPrompt(Path workDir, List<Skills.Skill> skills, PathMap paths) {
-        StringBuilder b = new StringBuilder();
+        StringBuilder b = new StringBuilder(InternationalChat.priority(responseLanguage()));
         b.append("You are an assistant working directly on the user's Windows computer through tools.\n")
                 .append("Today: ").append(LocalDate.now()).append(". Working folder: ").append(workDir)
                 .append(" (relative paths resolve against it).\n")
@@ -1512,10 +1514,10 @@ public final class LocalChat extends JFrame {
             b.append("\nSkills (load with read_skill before using):\n");
             for (Skills.Skill s : skills) b.append("- ").append(s.name()).append(": ").append(s.description()).append('\n');
         }
-        String rules = readRules();
+        String rules = InternationalChat.effectiveRules(readRules(),responseLanguage());
         if (!rules.isBlank()) b.append("\nSaved rules (").append(rulesFile).append("), always apply them:\n").append(rules.trim()).append('\n');
         b.append(memoryPrompt());
-        String user = systemField.getText().trim();
+        String user = InternationalChat.effectiveRules(systemField.getText().trim(),responseLanguage());
         if (!user.isEmpty()) b.append("\nUser instructions:\n").append(user).append('\n');
         b.append(responseLanguagePrompt());
         return b.toString();
@@ -1526,11 +1528,12 @@ public final class LocalChat extends JFrame {
     private String responseLanguage(){return InternationalChat.code(responseLanguageBox.getSelectedIndex());}
     private void selectResponseLanguage(String code){responseLanguageBox.setSelectedIndex(InternationalChat.index(code));}
     private String responseLanguagePrompt(){return InternationalChat.prompt(responseLanguage(),translateMessageBox.isSelected());}
+    private String responseLanguageControl(){return InternationalChat.requestPolicy(responseLanguage(),translateMessageBox.isSelected());}
     private LocalMemories memoryStore;
     private LocalMemories memories(){if(memoryStore==null)memoryStore=new LocalMemories(appDir,config);return memoryStore;}
     private String memoryProject(String latest){return LocalMemories.project(latest,history,currentWorkDir());}
-    private String memoryPrompt(){try{int limit=workspace==null?0:((Number)workspace.limit.getValue()).intValue();return (memories().enabled()?"\nLocalChat local memory is enabled. Only confirmed entries below are persisted. Never claim a new memory was saved unless the app confirms it or save_rule succeeds.\n":"\nLocalChat local memory is disabled. Do not claim to remember across chats. The user can enable it in Tools > Local memories.\n")+memories().prompt(memoryProject(input.getText()),limit>0?Math.max(512,Math.min(8000,limit/2)):4000);}catch(IOException error){setStatus("Memoria locala nu poate fi citita: {0}",true,error.getMessage());return "";}}
-    private String plainPrompt(){StringBuilder b=new StringBuilder("Normal mode: general conversation. No filesystem, command or MCP tools are available. Answer the actual topic; do not start MBS/project workflows for unrelated questions. Apply only relevant general preferences and rules. Project notes and technical rules below are relevant only when the current request explicitly concerns that project/topic. Never claim to have read local files or executed actions in this mode.\n");String rules=readRules();if(!rules.isBlank())b.append("User-authored permanent rules (apply only when relevant to this request; current user requests take precedence):\n").append(rules).append('\n');b.append(memoryPrompt());String user=systemField.getText().strip();if(!user.isEmpty())b.append("\nCurrent system instructions:\n").append(user);b.append(responseLanguagePrompt());return b.toString();}
+    private String memoryPrompt(){try{int limit=workspace==null?0:((Number)workspace.limit.getValue()).intValue();return (memories().enabled()?"\nLocalChat local memory is enabled. Only confirmed entries below are persisted. Never claim a new memory was saved unless the app confirms it or save_rule succeeds.\n":"\nLocalChat local memory is disabled. Do not claim to remember across chats. The user can enable it in Tools > Local memories.\n")+memories().prompt(memoryProject(input.getText()),limit>0?Math.max(512,Math.min(8000,limit/2)):4000,responseLanguage());}catch(IOException error){setStatus("Memoria locala nu poate fi citita: {0}",true,error.getMessage());return "";}}
+    private String plainPrompt(){StringBuilder b=new StringBuilder(InternationalChat.priority(responseLanguage())+"Normal mode: general conversation. No filesystem, command or MCP tools are available. Answer the actual topic; do not start MBS/project workflows for unrelated questions. Apply only relevant general preferences and rules. Project notes and technical rules below are relevant only when the current request explicitly concerns that project/topic. Never claim to have read local files or executed actions in this mode.\n");String rules=InternationalChat.effectiveRules(readRules(),responseLanguage());if(!rules.isBlank())b.append("User-authored permanent rules (apply only when relevant to this request; current user requests take precedence):\n").append(rules).append('\n');b.append(memoryPrompt());String user=InternationalChat.effectiveRules(systemField.getText().strip(),responseLanguage());if(!user.isEmpty())b.append("\nCurrent system instructions:\n").append(user);b.append(responseLanguagePrompt());return b.toString();}
     private javax.swing.JPopupMenu buildModeMenu(){javax.swing.JPopupMenu menu=new javax.swing.JPopupMenu();for(boolean enabled:new boolean[]{true,false}){javax.swing.JRadioButtonMenuItem choice=new javax.swing.JRadioButtonMenuItem(t(enabled?"MBS":"Normal"),toolsBox.isSelected()==enabled);choice.setEnabled(!busy);choice.setToolTipText(t(enabled?"MBS: proiecte, skill-uri si PDFCONTROL prin unelte.":"Normal: conversatie fara fisiere, comenzi sau MCP."));choice.addActionListener(x->{if(busy)return;toolsBox.setSelected(enabled);permissionBox.setEnabled(enabled);saveConfig();saveConversation();refreshDashboard();});menu.add(choice);}return menu;}
     private void showMemories(){if(busy){setStatus("Opreste generarea inainte de aceasta comanda.",true);return;}new MemorySettingsDialog(this,memories(),memoryProject(input.getText()),()->{saveConfig();refreshDashboard();}).setVisible(true);}
 
@@ -1911,6 +1914,7 @@ public final class LocalChat extends JFrame {
         String text="";
         if(current!=null)text=current.stepText.toString();
         if(text.isBlank())for(int i=history.size()-1;i>=0;i--)if("assistant".equals(history.get(i).role)&&!history.get(i).content.isBlank()){text=history.get(i).content;break;}
+        text=ReasoningDisplay.answer(text);
         if(!text.isBlank())java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new java.awt.datatransfer.StringSelection(text),null);
     }
     private void appendMarkdown(String text){appendMarkdown(text,responseLanguage());}

@@ -65,6 +65,7 @@ final class ChatClient {
 
     /** One entry of the conversation: user text, assistant text plus tool calls, or a tool result. */
     static final class Message {
+        String requestControl=""; // Ephemeral wire-only application setting; never archived.
         String displayLanguage; // Local display metadata only; omitted from provider payloads.
         final String role; // "user", "assistant" or "tool"
         final String content;
@@ -93,6 +94,8 @@ final class ChatClient {
         static Message toolResult(String callId, String text, boolean isError) {
             return new Message("tool", text, Collections.emptyList(), callId, isError, null);
         }
+
+        Message withRequestControl(String control){Message copy=new Message(role,content,toolCalls,toolCallId,isError,label);copy.displayLanguage=displayLanguage;copy.requestControl=control;return copy;}
 
         Message withDisplayLanguage(String language){Message copy=new Message(role,content,toolCalls,toolCallId,isError,label);copy.displayLanguage=InternationalChat.valid(language);return copy;}
 
@@ -212,7 +215,7 @@ final class ChatClient {
                     messages.add(a);
                 }
                 case "tool" -> messages.add(Json.obj("role", "tool", "tool_call_id", m.toolCallId, "content", m.content));
-                default -> messages.add(Json.obj("role", "user", "content", m.content));
+                default -> {messages.add(Json.obj("role", "user", "content", m.content));if(!m.requestControl.isBlank())messages.add(Json.obj("role","user","content",m.requestControl));}
             }
         }
         Map<String, Object> body = Json.obj("model", model, "messages", messages, "stream", stream);
@@ -259,6 +262,7 @@ final class ChatClient {
                 content.add(block);
                 messages.add(Json.obj("role", "user", "content", content));
             }
+            if(m.role.equals("user")&&!m.requestControl.isBlank())((List<Object>)messages.get(messages.size()-1).get("content")).add(Json.obj("type","text","text",m.requestControl));
         }
         // Cache the conversation so far: an agent loop resends all of it on every step.
         if (!messages.isEmpty()) {
