@@ -115,6 +115,9 @@ public final class LocalChat extends JFrame {
     private final JButton chatActions=new JButton(new UiIcon("more",18)),chatSettings=new JButton(new UiIcon("sliders",18));
     private final JLabel chatTitle=new JLabel();
     private PdfPreview pdfPreview;
+    private AgentPanel agentPanel;
+    private javax.swing.JSplitPane agentSplit;
+    private final JButton agentsButton=new JButton(new UiIcon("agents",18));
     private javax.swing.JSplitPane chatSplit;
     private ComposerSplit composerSplit;
     private boolean markdownDirty;
@@ -206,7 +209,7 @@ public final class LocalChat extends JFrame {
         final Agent agent;
         final String label;
         final StringBuilder stepText = new StringBuilder(); // text of the model step in progress
-        boolean done;
+        boolean done,agentsOpened;
         boolean requestActive;
         boolean contextIncludesStep;
         String originalDraft;List<String> attachments=List.of();
@@ -257,7 +260,8 @@ public final class LocalChat extends JFrame {
         JPanel chat = new JPanel(new BorderLayout());
         chat.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
         JScrollPane responseScroll=new JScrollPane(transcript);responseScroll.putClientProperty("FlatLaf.style","arc: 14");responseScroll.getVerticalScrollBar().addAdjustmentListener(e->{if(!updatingTranscript){var bar=responseScroll.getVerticalScrollBar();if(bar.getValue()+bar.getVisibleAmount()>=bar.getMaximum()-12)transcript.putClientProperty("localchat.followTail",true);else if(e.getValueIsAdjusting())transcript.putClientProperty("localchat.followTail",false);}});chat.add(responseScroll);chat.add(timeline,BorderLayout.WEST);timelineMenu.addActionListener(e->timeline.menu(timelineMenu));timelineMenu.setToolTipText(t("Navigare in discutie"));
-        JPanel chatHeading=new JPanel(new BorderLayout(6,0));chatTitle.putClientProperty("html.disable",true);chatHeading.add(chatTitle);JPanel chatHeadingActions=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT,3,2));for(JButton button:new JButton[]{timelineMenu,chatActions,chatSettings}){button.setPreferredSize(new Dimension(29,27));button.setMargin(new Insets(2,3,2,3));chatHeadingActions.add(button);}chatHeading.add(chatHeadingActions,BorderLayout.EAST);chat.add(chatHeading,BorderLayout.NORTH);
+        JPanel chatHeading=new JPanel(new BorderLayout(6,0));chatTitle.putClientProperty("html.disable",true);chatHeading.add(chatTitle);JPanel chatHeadingActions=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT,3,2));for(JButton button:new JButton[]{timelineMenu,agentsButton,chatActions,chatSettings}){button.setPreferredSize(new Dimension(29,27));button.setMargin(new Insets(2,3,2,3));chatHeadingActions.add(button);}chatHeading.add(chatHeadingActions,BorderLayout.EAST);chat.add(chatHeading,BorderLayout.NORTH);
+        agentsButton.addActionListener(e->setAgentPaneVisible(!agentPanel.isVisible()));
         chatActions.addActionListener(e->buildChatActions().show(chatActions,0,chatActions.getHeight()));chatSettings.addActionListener(e->buildQuickSettings().show(chatSettings,0,chatSettings.getHeight()));
 
         JPanel buttons = new JPanel(new BorderLayout());
@@ -314,7 +318,7 @@ public final class LocalChat extends JFrame {
         workspace.autoThreshold.addChangeListener(e->saveAutoSettings());
         JPanel center=new JPanel(new BorderLayout());
         pdfPreview=new PdfPreview(this::currentWorkDir,this::previewPython,this::reportAction,this::togglePdfPane,this::choosePreviewPdf,this::togglePdfExpansion,this::hidePdfPreview);pdfPreview.setVisible(false);
-        chat.setMinimumSize(new Dimension(380,160));chatSplit=new javax.swing.JSplitPane(javax.swing.JSplitPane.HORIZONTAL_SPLIT,chat,pdfPreview);chatSplit.setResizeWeight(.64);chatSplit.setDividerSize(0);chatSplit.setBorder(null);composerSplit=new ComposerSplit(chatSplit,compose,responseScroll,inputScroll,height->{if(!restoringSelections&&shownProvider!=null){config.setProperty("ui.composer.height",Integer.toString(height));saveConfig();}});center.add(composerSplit);center.add(south,BorderLayout.SOUTH);
+        chat.setMinimumSize(new Dimension(380,160));chatSplit=new javax.swing.JSplitPane(javax.swing.JSplitPane.HORIZONTAL_SPLIT,chat,pdfPreview);chatSplit.setResizeWeight(.64);chatSplit.setDividerSize(0);chatSplit.setBorder(null);agentPanel=new AgentPanel(()->setAgentPaneVisible(false),this::stop);agentPanel.setVisible(false);agentSplit=new javax.swing.JSplitPane(javax.swing.JSplitPane.HORIZONTAL_SPLIT,chatSplit,agentPanel);agentSplit.setResizeWeight(1);agentSplit.setDividerSize(0);agentSplit.setBorder(null);composerSplit=new ComposerSplit(agentSplit,compose,responseScroll,inputScroll,height->{if(!restoringSelections&&shownProvider!=null){config.setProperty("ui.composer.height",Integer.toString(height));saveConfig();}});center.add(composerSplit);center.add(south,BorderLayout.SOUTH);
         root.add(workspace,BorderLayout.WEST);root.add(center);
         reportBar.setLayout(new BorderLayout());
         JPanel reportHeading=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT,6,3));
@@ -610,7 +614,7 @@ public final class LocalChat extends JFrame {
                 toolsStatus.setText(t("Tool-uri: {0} interne · MCP: {1}", Tools.BUILTIN.size(), mcpSummary.isEmpty() ? t("niciunul") : mcpSummary));
                 toolsStatus.setToolTipText(t("Configurare: {0}", toolsConfigFile));
             } else if (!Boolean.getBoolean("localchat.test")) toolsStatus.setText(t("Pornesc tool-urile…"));
-            if(composerSplit!=null)composerSplit.translate();chatActions.setToolTipText(t("Actiuni conversatie"));chatSettings.setToolTipText(t("Setari rapide"));if(pdfPreview!=null)pdfPreview.translate();copyReply.setText(t("Copiaza raspunsul"));copyDisplayed.setText(t("Copiaza textul afisat"));copyOriginal.setText(t("Copiaza textul original"));refreshTranscriptDisplay();
+            if(composerSplit!=null)composerSplit.translate();chatActions.setToolTipText(t("Actiuni conversatie"));chatSettings.setToolTipText(t("Setari rapide"));if(pdfPreview!=null)pdfPreview.translate();if(agentPanel!=null)agentPanel.translate();agentsButton.setToolTipText(t("Panou agenti"));agentsButton.getAccessibleContext().setAccessibleName(t("Panou agenti"));copyReply.setText(t("Copiaza raspunsul"));copyDisplayed.setText(t("Copiaza textul afisat"));copyOriginal.setText(t("Copiaza textul original"));refreshTranscriptDisplay();
             if(workspace!=null){workspace.translate();refreshDashboard();}
             revalidate();
             repaint();
@@ -658,6 +662,7 @@ public final class LocalChat extends JFrame {
         colorControls(getJMenuBar(), panel, fg, accent);
         timeline.closePreview();timeline.repaint();timelineMenu.setToolTipText(t("Navigare in discutie"));
         commandPopup.theme(dark);contextPopup.theme(dark);SwingUtilities.updateComponentTreeUI(transcriptPopup);colorControls(transcriptPopup,panel,fg,accent);
+        if(agentPanel!=null)agentPanel.theme(dark);
         getContentPane().setBackground(bg);
         transcript.setBackground(panel);
         input.setBackground(panel);
@@ -1091,6 +1096,11 @@ public final class LocalChat extends JFrame {
         if(pdfPreview==null)return;if(!visible){pdfPreview.suspend();expandedPdf=false;pdfPreview.expanded(false);if(chatSplit!=null)chatSplit.getLeftComponent().setVisible(true);}pdfPreview.setVisible(visible);reportBar.setVisible(!visible&&reportModel.getSize()>0);
         if(chatSplit!=null){chatSplit.setDividerSize(visible&&!expandedPdf?6:0);if(visible&&!expandedPdf)chatSplit.setDividerLocation(Math.max(380,chatSplit.getWidth()-380));}revalidate();if(visible)pdfPreview.resume();
     }
+    private void setAgentPaneVisible(boolean visible){
+        if(agentPanel==null)return;agentPanel.setVisible(visible);agentSplit.setDividerSize(visible?6:0);
+        if(visible)agentSplit.setDividerLocation(Math.max(240,agentSplit.getWidth()-315));agentsButton.setSelected(visible);revalidate();repaint();
+    }
+    private void restoreAgentPanel(){if(agentPanel==null||(current!=null&&!current.done))return;agentPanel.restore(history);agentPanel.busy(false);if(agentPanel.count()==0)setAgentPaneVisible(false);}
     private void hidePdfPreview(){if(pdfPreview==null)return;pdfPreview.clear();setPdfPaneVisible(false);}
     private void togglePdfPane(){if(pdfPreview==null)return;setPdfPaneVisible(!pdfPreview.isVisible());}
     private void togglePdfExpansion(){if(pdfPreview==null||!pdfPreview.isVisible())return;expandedPdf=!expandedPdf;chatSplit.getLeftComponent().setVisible(!expandedPdf);chatSplit.setDividerSize(expandedPdf?0:6);pdfPreview.expanded(expandedPdf);if(!expandedPdf)chatSplit.setDividerLocation(Math.max(380,chatSplit.getWidth()-380));revalidate();}
@@ -1345,6 +1355,8 @@ public final class LocalChat extends JFrame {
                 later(turn,()->{turn.contextIncludesStep=false;turn.requestActive=true;requestSystem=ContextMemory.estimate(sys);requestTools=ContextMemory.tools(specs);
                     requestConversation=ContextMemory.messages(conversation);refreshDashboard();});
             }
+            @Override public void agentTask(String id,String title,String task,String model){later(turn,()->{agentPanel.queued(id,title,task,model);agentPanel.busy(true);if(!turn.agentsOpened){turn.agentsOpened=true;setAgentPaneVisible(true);}});}
+            @Override public void agentUpdate(String id,String title,String state){later(turn,()->agentPanel.progress(id,state));agentProgress(title,state);}
             @Override public void agentProgress(String title,String state){later(turn,()->setStatus("Agent {0}: {1}",false,title,state.startsWith("tool:")?t("Rulez {0}…",state.substring(5)):t(switch(state){case "running"->"In curs";case "done"->"Gata.";case "cancelled"->"Anulat";case "partial"->"Rezultat partial";default->"Eroare";})));}
             @Override public void agentRequest(String title){turn.started.incrementAndGet();}
             @Override public void calibration(double scale){later(turn,()->{config.setProperty(guardProfile+".tokenScale",Double.toString(scale));saveConfig();refreshDashboard();});}
@@ -1390,7 +1402,7 @@ public final class LocalChat extends JFrame {
             @Override
             public void toolFinished(ChatClient.ToolCall call, Tools.Result result) {
                 later(turn, () -> {append("    → " + preview(result) + "\n", result.isError ? toolErrorStyle : toolStyle);
-                    if(!result.isError||call.name.equals("run_agents"))addReports(result.text);});
+                    if(call.name.equals("run_agents"))agentPanel.result(result.text);if(!result.isError||call.name.equals("run_agents"))addReports(result.text);});
             }
         };
         Thread worker = new Thread(() -> {
@@ -1458,7 +1470,7 @@ public final class LocalChat extends JFrame {
         refreshDashboard();
         List<ChatClient.Message> produced = turn.agent.collect(turn.stepText.toString(), turn.label);
         if (!produced.isEmpty()) {
-            for(var message:produced)history.add(message.role.equals("assistant")?message.withDisplayLanguage(responseLanguage()):message);applyGuardMemory(turn,false);
+            for(var message:produced)history.add(message.role.equals("assistant")?message.withDisplayLanguage(responseLanguage()):message);applyGuardMemory(turn,false);restoreAgentPanel();
             if (stopped) {
                 ensureNewline();
                 append(t("[Oprit]"), errorStyle);
@@ -1486,7 +1498,7 @@ public final class LocalChat extends JFrame {
             append(stopped ? t("[Oprit]") : t("[Raspuns gol]"), errorStyle);
             setStatus("Niciun raspuns — mesajul tau a fost pus inapoi in caseta de text.", true);
         }
-        saveConversation();refreshDashboard();
+        restoreAgentPanel();saveConversation();refreshDashboard();
     }
 
     private void showError(Exception error) {
@@ -1623,7 +1635,7 @@ public final class LocalChat extends JFrame {
         if(conversationFile!=null){previousConversation=conversationFile;config.setProperty("session.previous",conversationFile.getFileName().toString());}
         ComposerEditing.setText(input,"");
         hidePdfPreview();sessionState=new Conversations.State();refreshAttachments();reportModel.removeAllElements();reportBar.setVisible(false);
-        history.clear();
+        history.clear();restoreAgentPanel();
         timeline.clear();timeline.bookmarks(sessionState.bookmarks);transcript.putClientProperty("localchat.followTail",true);transcript.setText("");
         conversationFile = null;
         workspace.select(null);
@@ -1678,6 +1690,7 @@ public final class LocalChat extends JFrame {
     }
 
     private void renderHistory() {
+        restoreAgentPanel();
         timeline.clear();timeline.bookmarks(sessionState.bookmarks);transcript.putClientProperty("localchat.followTail",true);transcript.setText("");
         Map<String, ChatClient.Message> results = new HashMap<>();
         for (ChatClient.Message m : history) if (m.role.equals("tool")) results.put(m.toolCallId, m);

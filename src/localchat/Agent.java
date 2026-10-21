@@ -29,6 +29,8 @@ final class Agent {
         default void retry(boolean compaction,int next,int total,int status){}
         default void usage(TokenUsage usage) {}
         default void agentProgress(String title,String state) {}
+        default void agentTask(String id,String title,String task,String model) {}
+        default void agentUpdate(String id,String title,String state) {agentProgress(title,state);}
         default void agentRequest(String title) {}
         default void request(String system, List<ChatClient.Message> conversation, List<ChatClient.ToolSpec> tools) throws IOException {}
     }

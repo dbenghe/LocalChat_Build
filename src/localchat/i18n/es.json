@@ -465,5 +465,19 @@
   "Copiat folderul {0} → {1} ({2} fisiere copiate, {3} identice omise; SHA-256 verificat).": "Carpeta copiada {0} → {1} ({2} archivos copiados, {3} identicos omitidos; SHA-256 verificado).",
   "Rezultat partial": "Resultado parcial",
   "Anulat inainte de confirmarea rezultatului; verifica starea reala inainte de repetarea operatiei.": "Cancelado antes de confirmar el resultado; verifica el estado real antes de repetir la operacion.",
-  "Skill: cale corectata dupa structura instalata.\nCale ceruta: {0}\nCale folosita: {1}": "Skill: ruta corregida segun la estructura instalada.\nRuta solicitada: {0}\nRuta utilizada: {1}"
+  "Skill: cale corectata dupa structura instalata.\nCale ceruta: {0}\nCale folosita: {1}": "Skill: ruta corregida segun la estructura instalada.\nRuta solicitada: {0}\nRuta utilizada: {1}",
+  "Agenti": "Agentes",
+  "Ascunde panoul agentilor": "Ocultar panel de agentes",
+  "Opreste tura": "Detener turno",
+  "Niciun agent pornit in aceasta conversatie.": "No se han iniciado agentes en esta conversacion.",
+  "Panou agenti": "Panel de agentes",
+  "In asteptare": "En espera",
+  "Stare neconfirmata": "Estado sin confirmar",
+  "Termen depasit": "Tiempo agotado",
+  "Porneste agentii din prompt sau prin /agents, in profilul MBS.": "Inicia agentes desde el mensaje o /agents en el perfil MBS.",
+  "Rezultatul operatiilor inca in curs nu este confirmat.": "El resultado de las operaciones en curso no esta confirmado.",
+  "Detalii agent": "Detalles del agente",
+  "Sarcina": "Tarea",
+  "Rezultat": "Resultado",
+  "Diagnostic": "Diagnostico"
 }

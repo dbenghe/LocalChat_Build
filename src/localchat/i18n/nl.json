@@ -465,5 +465,19 @@
   "Copiat folderul {0} → {1} ({2} fisiere copiate, {3} identice omise; SHA-256 verificat).": "Map gekopieerd {0} → {1} ({2} bestanden gekopieerd, {3} identieke overgeslagen; SHA-256 gecontroleerd).",
   "Rezultat partial": "Gedeeltelijk resultaat",
   "Anulat inainte de confirmarea rezultatului; verifica starea reala inainte de repetarea operatiei.": "Geannuleerd voordat het resultaat bevestigd werd; controleer de werkelijke toestand voordat je de actie herhaalt.",
-  "Skill: cale corectata dupa structura instalata.\nCale ceruta: {0}\nCale folosita: {1}": "Skill: pad gecorrigeerd op basis van de geinstalleerde structuur.\nGevraagd pad: {0}\nGebruikt pad: {1}"
+  "Skill: cale corectata dupa structura instalata.\nCale ceruta: {0}\nCale folosita: {1}": "Skill: pad gecorrigeerd op basis van de geinstalleerde structuur.\nGevraagd pad: {0}\nGebruikt pad: {1}",
+  "Agenti": "Agenten",
+  "Ascunde panoul agentilor": "Agentenpaneel verbergen",
+  "Opreste tura": "Beurt stoppen",
+  "Niciun agent pornit in aceasta conversatie.": "Geen agenten gestart in dit gesprek.",
+  "Panou agenti": "Agentenpaneel",
+  "In asteptare": "In wachtrij",
+  "Stare neconfirmata": "Status niet bevestigd",
+  "Termen depasit": "Tijdslimiet bereikt",
+  "Porneste agentii din prompt sau prin /agents, in profilul MBS.": "Start agenten via je bericht of /agents in het MBS-profiel.",
+  "Rezultatul operatiilor inca in curs nu este confirmat.": "Het resultaat van nog lopende acties is niet bevestigd.",
+  "Detalii agent": "Agentdetails",
+  "Sarcina": "Taak",
+  "Rezultat": "Resultaat",
+  "Diagnostic": "Diagnose"
 }

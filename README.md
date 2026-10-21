@@ -679,3 +679,7 @@ Limite: maximum 3 sarcini intr-un lot, 2 simultan, 2 loturi distincte pe tura, 1
 La «continua», indexul factual local al actiunilor si caile returnate raman disponibile separat de rezumat. Aplicatia opreste repetarea fara progres a citirilor. Pentru fisiere deja copiate, copy_path verifica hashul si omite identicele; diferentele nu autorizeaza suprascrierea. O operatie SMB blocata in Files.copy nu poate fi intrerupta instantaneu, dar anularea nu este declarata succes.
 
 Pentru un build intr-o sesiune fara desktop interactiv se poate folosi `Build.ps1 -SkipDeploy -SkipNativeQA`. Aceasta omite explicit testele cu tastatura/mouse/captura native; nu reprezinta verificare a lor. Buildul implicit pastreaza testele native obligatorii.
+
+### Panoul agentilor
+
+Iconita cu agenti din antet deschide/inchide panoul lateral. Panoul apare automat numai cand `run_agents` porneste efectiv sarcinile; simpla afirmatie a modelului nu creeaza carduri. Cardurile arata modelul, sarcina, starea live si detalii pliabile pentru rezultat sau diagnostic. Sunt pastrate ultimele 18 sarcini ale conversatiei; istoricul integral ramane in chat si in arhivele private. Reluarea citeste dovezile salvate fara inferenta. „Opreste tura” opreste intreaga cerere, iar operatiile fara confirmare raman marcate astfel. Panoul PDF ramane disponibil separat.

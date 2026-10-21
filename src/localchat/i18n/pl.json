@@ -465,5 +465,19 @@
   "Copiat folderul {0} → {1} ({2} fisiere copiate, {3} identice omise; SHA-256 verificat).": "Skopiowano folder {0} → {1} ({2} plikow skopiowano, {3} identyczne pominieto; SHA-256 zweryfikowano).",
   "Rezultat partial": "Wynik czesciowy",
   "Anulat inainte de confirmarea rezultatului; verifica starea reala inainte de repetarea operatiei.": "Anulowano przed potwierdzeniem wyniku; sprawdz faktyczny stan przed powtorzeniem operacji.",
-  "Skill: cale corectata dupa structura instalata.\nCale ceruta: {0}\nCale folosita: {1}": "Skill: sciezka poprawiona wedlug zainstalowanej struktury.\nZadana sciezka: {0}\nUzyta sciezka: {1}"
+  "Skill: cale corectata dupa structura instalata.\nCale ceruta: {0}\nCale folosita: {1}": "Skill: sciezka poprawiona wedlug zainstalowanej struktury.\nZadana sciezka: {0}\nUzyta sciezka: {1}",
+  "Agenti": "Agenci",
+  "Ascunde panoul agentilor": "Ukryj panel agentow",
+  "Opreste tura": "Zatrzymaj ture",
+  "Niciun agent pornit in aceasta conversatie.": "Nie uruchomiono agentow w tej rozmowie.",
+  "Panou agenti": "Panel agentow",
+  "In asteptare": "W kolejce",
+  "Stare neconfirmata": "Stan niepotwierdzony",
+  "Termen depasit": "Przekroczono czas",
+  "Porneste agentii din prompt sau prin /agents, in profilul MBS.": "Uruchom agentow w wiadomosci lub przez /agents w profilu MBS.",
+  "Rezultatul operatiilor inca in curs nu este confirmat.": "Wynik trwajacych operacji nie jest potwierdzony.",
+  "Detalii agent": "Szczegoly agenta",
+  "Sarcina": "Zadanie",
+  "Rezultat": "Wynik",
+  "Diagnostic": "Diagnostyka"
 }

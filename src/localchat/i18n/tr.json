@@ -465,5 +465,19 @@
   "Copiat folderul {0} → {1} ({2} fisiere copiate, {3} identice omise; SHA-256 verificat).": "Klasor kopyalandi {0} → {1} ({2} dosya kopyalandi, {3} ayni dosya atlandi; SHA-256 dogrulandi).",
   "Rezultat partial": "Kismi sonuc",
   "Anulat inainte de confirmarea rezultatului; verifica starea reala inainte de repetarea operatiei.": "Sonuc dogrulanmadan iptal edildi; islemi tekrarlamadan once gercek durumu kontrol edin.",
-  "Skill: cale corectata dupa structura instalata.\nCale ceruta: {0}\nCale folosita: {1}": "Skill: yol kurulu yapiya gore duzeltildi.\nIstenen yol: {0}\nKullanilan yol: {1}"
+  "Skill: cale corectata dupa structura instalata.\nCale ceruta: {0}\nCale folosita: {1}": "Skill: yol kurulu yapiya gore duzeltildi.\nIstenen yol: {0}\nKullanilan yol: {1}",
+  "Agenti": "Ajanlar",
+  "Ascunde panoul agentilor": "Ajan panelini gizle",
+  "Opreste tura": "Turu durdur",
+  "Niciun agent pornit in aceasta conversatie.": "Bu konusmada ajan baslatilmadi.",
+  "Panou agenti": "Ajan paneli",
+  "In asteptare": "Sirada",
+  "Stare neconfirmata": "Dogrulanmamis durum",
+  "Termen depasit": "Sure asildi",
+  "Porneste agentii din prompt sau prin /agents, in profilul MBS.": "MBS profilinde mesajinizdan veya /agents ile ajanlari baslatin.",
+  "Rezultatul operatiilor inca in curs nu este confirmat.": "Devam eden islemlerin sonucu dogrulanmadi.",
+  "Detalii agent": "Ajan ayrintilari",
+  "Sarcina": "Gorev",
+  "Rezultat": "Sonuc",
+  "Diagnostic": "Tani"
 }

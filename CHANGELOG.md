@@ -1,3 +1,9 @@
+## 1.17.0 - 2026-10-21
+
+- Panou lateral de agenti cu iconita in antetul conversatiei; se deschide la pornirea reala a sarcinilor, poate fi ascuns/redeschis si redimensionat, separat de previzualizarea PDF.
+- Carduri compacte cu colturi rotunjite, titlu, model, sarcina, stare live si detalii pliabile pentru rezultate/diagnostic. Suporta sase limbi si temele Dark/Light, inclusiv titluri duplicate prin ID-uri separate.
+- Rezultatele loturilor sunt reconstruite din istoricul local la reluarea conversatiei, fara apeluri API sau amestec intre chaturi. Stop pastreaza sarcinile si dovezile partiale, fara a prezenta operatiile neconfirmate ca finalizate. Butonul din panou opreste intreaga tura.
+
 ## 1.16.1 - 2026-10-21
 
 - read_skill afiseaza calea SKILL.md si inventarul exact al resurselor inaintea instructiunilor; reamintirea unui skill deja citit pastreaza aceste cai fara a retrimite procedura completa.

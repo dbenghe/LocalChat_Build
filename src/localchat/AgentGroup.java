@@ -19,6 +19,8 @@ final class AgentGroup {
     private volatile boolean cancelled;
     private final Map<String,Tools.Result> completed=new HashMap<>();
     private int groupsStarted;
+    private record Pending(String group,String model,List<State> states){}
+    private volatile Pending pending=new Pending("","",List.of());
 
     AgentGroup(Supplier<Tools> factory,Path archiveDir,int contextLimit,int outputLimit,boolean autoCompact,int threshold){
         this.factory=Objects.requireNonNull(factory);this.archiveDir=Objects.requireNonNull(archiveDir);
@@ -29,7 +31,7 @@ final class AgentGroup {
         var task=Json.obj("type","object","properties",Json.obj("title",Json.obj("type","string","maxLength",100),"task",Json.obj("type","string","maxLength",12000)),"required",List.of("title","task"),"additionalProperties",false);
         return new ChatClient.ToolSpec("run_agents","Run 1-3 explicitly user-requested independent tasks with the current provider and model; at most two execute concurrently. Each child receives only its own task and the current system instructions, fresh tools under the same permissions, a 16-step cap, and a 180-second group deadline. No recursive delegation. Use only when the user explicitly asks for agents/parallel delegated work. Return actual outcomes and private local archives; verify each result before claiming completion.",Json.obj("type","object","properties",Json.obj("tasks",Json.obj("type","array","minItems",1,"maxItems",MAX_TASKS,"items",task)),"required",List.of("tasks"),"additionalProperties",false));
     }
-    String pendingEvidence(){return Json.write(Json.obj("status",cancelled?"cancelled":"pending","completion_pending",true,"agent_archive_directory",archiveDir.toString()));}
+    String pendingEvidence(){Pending view=pending;List<Object> tasks=new ArrayList<>();for(State state:view.states)tasks.add(state.result!=null?state.result:state.interrupted(cancelled?"cancelled":"pending"));return Json.write(Json.obj("group_id",view.group,"model",view.model,"tasks",tasks,"status",cancelled?"cancelled":"pending","completion_pending",true,"agent_archive_directory",archiveDir.toString()));}
     void cancel(){cancelled=true;for(Agent child:children)child.cancel();ExecutorService running=executor;if(running!=null)running.shutdownNow();}
 
     private record Task(String title,String text){}
@@ -37,7 +39,7 @@ final class AgentGroup {
         final Task task;final List<Object> outcomes=Collections.synchronizedList(new ArrayList<>());final Map<String,Object> deliveries=Collections.synchronizedMap(new LinkedHashMap<>()),pendingJobs=Collections.synchronizedMap(new LinkedHashMap<>());volatile boolean failedPdf,incompletePdf;final StringBuffer partial=new StringBuffer();
         volatile Agent child;volatile Map<String,Object> result;volatile String stop="";
         State(Task task){this.task=task;}
-        Map<String,Object> interrupted(String reason){return Json.obj("title",task.title,"task",clip(task.text,1000),"status","cancelled","answer",clip(ReasoningDisplay.answer(partial.toString()),4000),"completed_tool_count",outcomes.size(),"completed_tools",toolSummary(new ArrayList<>(outcomes)),"error",reason,"completion_pending",child!=null&&result==null,"deliveries",deliverySummary(deliveries),"verified_delivery_count",deliveries.size(),"deliveries_truncated",deliveryTruncated(deliveries),"pending_jobs",pendingSummary(pendingJobs),"pending_job_count",pendingJobs.size(),"pending_jobs_truncated",pendingJobs.size()>16);}
+        Map<String,Object> interrupted(String reason){return Json.obj("title",task.title,"task",clip(task.text,1000),"status",reason.equals("pending")?"unconfirmed":"cancelled","answer",clip(ReasoningDisplay.answer(partial.toString()),4000),"completed_tool_count",outcomes.size(),"completed_tools",toolSummary(snapshot(outcomes)),"error",reason,"completion_pending",child!=null&&result==null,"deliveries",deliverySummary(deliveries),"verified_delivery_count",deliveries.size(),"deliveries_truncated",deliveryTruncated(deliveries),"pending_jobs",pendingSummary(pendingJobs),"pending_job_count",pendingJobs.size(),"pending_jobs_truncated",pendingJobs.size()>16);}
     }
     private static List<Task> tasks(ChatClient.ToolCall call){
         if(!"run_agents".equals(call.name)||!(Json.get(call.args,"tasks") instanceof List<?> rows)||rows.isEmpty()||rows.size()>MAX_TASKS)return List.of();
@@ -56,6 +58,8 @@ final class AgentGroup {
         boolean timedOut=false;
         try{
             for(Task task:tasks)states.add(new State(task));
+            pending=new Pending(group,model,List.copyOf(states));
+            for(int i=0;i<tasks.size();i++){Task task=tasks.get(i);parentUi.agentTask(group+"-"+(i+1),task.title,task.text,model);}
             for(int i=0;i<tasks.size();i++){final int index=i;State state=states.get(i);try{futures.add(pool.submit(()->{var result=execute(group,index,state,provider,url,key,model,label,system,parentUi);state.result=result;return result;}));}catch(RejectedExecutionException e){if(cancelled)break;throw e;}}
             waitForTasks:for(var future:futures)while(true){
                 if(cancelled){break waitForTasks;}
@@ -88,11 +92,11 @@ final class AgentGroup {
             child=new Agent(factory.get()).maxSteps(CHILD_STEPS);state.child=child;children.add(child);child.outputLimit(outputLimit);
             child.guard(new ContextGuard(contextLimit,outputLimit,autoCompact,threshold,1.25));active.add(child);
             if(cancelled){child.cancel();return notStarted(task,"cancelled","cancelled");}
-            parentUi.agentProgress(task.title,"running");
+            parentUi.agentUpdate(group+"-"+(index+1),task.title,"running");
             Agent.Ui ui=new Agent.Ui(){
                 public void text(String delta){partial.append(delta);}
                 public void step(){partial.setLength(0);}
-                public void toolStarted(ChatClient.ToolCall c){parentUi.agentProgress(task.title,"tool:"+c.name);}
+                public void toolStarted(ChatClient.ToolCall c){parentUi.agentUpdate(group+"-"+(index+1),task.title,"tool:"+c.name);}
                 public void toolFinished(ChatClient.ToolCall c,Tools.Result r){state.outcomes.add(Json.obj("name",c.name,"success",!r.isError,"result",clip(r.text,3000),"truncated",r.text.length()>3000));if(!r.isError)recordPdfEvidence(state,c.name,r.text);}
                 public void usage(TokenUsage u){parentUi.usage(u);}
                 public void request(String s,List<ChatClient.Message> messages,List<ChatClient.ToolSpec> tools){parentUi.agentRequest(task.title);}
@@ -103,7 +107,7 @@ final class AgentGroup {
         }catch(Exception e){error=e.getClass().getSimpleName();if(e instanceof ChatClient.HttpFailure h)error+=" HTTP "+h.status;stopped=cancelled||Thread.currentThread().isInterrupted();}
         finally{if(child!=null){messages=child.collect(partial.toString(),childLabel);active.remove(child);}}
         String answer="";for(int i=messages.size()-1;i>=0;i--){var m=messages.get(i);if(m.role.equals("assistant")&&m.toolCalls.isEmpty()){answer=ReasoningDisplay.answer(m.content).strip();break;}}
-        List<Object> outcomes=new ArrayList<>(state.outcomes);
+        List<Object> outcomes=snapshot(state.outcomes);
         boolean hasActions=outcomes.stream().anyMatch(o->Boolean.TRUE.equals(Json.get(o,"success")));
         boolean toolErrors=state.failedPdf||state.incompletePdf||outcomes.stream().anyMatch(o->Boolean.FALSE.equals(Json.get(o,"success")));
         boolean pendingJobs=!state.pendingJobs.isEmpty();
@@ -116,7 +120,7 @@ final class AgentGroup {
             try{Files.writeString(temp,Json.write(Json.obj("group_id",group,"title",task.title,"task",task.text,"status",status,"model",model,"messages",archiveMessages(task.text,messages))),StandardCharsets.UTF_8);try{Files.move(temp,file,StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING);}catch(AtomicMoveNotSupportedException e){Files.move(temp,file,StandardCopyOption.REPLACE_EXISTING);}}finally{Files.deleteIfExists(temp);}
             result.put("archive",file.toString());
         }catch(IOException e){result.put("archive_error",e.getClass().getSimpleName());}
-        parentUi.agentProgress(task.title,status);return result;
+        parentUi.agentUpdate(group+"-"+(index+1),task.title,status);return result;
     }
     private static final Set<String> PDF_OUTPUT_TOOLS=Set.of("pdfcontrol_job_status","pdfcontrol_start_check","pdfcontrol_start_compare","pdfcontrol_start_pairs","pdfcontrol_start_extract","pdfcontrol_start_workflow","pdfcontrol_regenerate_report");
     private static void recordPdfEvidence(State state,String tool,String text){
@@ -142,5 +146,6 @@ final class AgentGroup {
     private static boolean deliveryTruncated(Map<String,Object> deliveries){var summary=deliverySummary(deliveries);return summary.size()<deliveries.size()||summary.stream().anyMatch(row->Boolean.TRUE.equals(Json.get(row,"artifacts_truncated")));}
     private static List<Object> archiveMessages(String task,List<ChatClient.Message> messages){List<Object> out=new ArrayList<>();out.add(ChatClient.Message.user(task).toJson());for(var m:messages)out.add(m.toJson());return out;}
     private static List<Object> toolSummary(List<Object> outcomes){List<Object> summary=new ArrayList<>();for(Object outcome:outcomes.subList(Math.max(0,outcomes.size()-8),outcomes.size())){String text=Objects.toString(Json.str(outcome,"result"),"");summary.add(Json.obj("name",Json.str(outcome,"name"),"success",Json.get(outcome,"success"),"result",clip(text,600),"truncated",text.length()>600||Boolean.TRUE.equals(Json.get(outcome,"truncated"))));}return summary;}
+    private static List<Object> snapshot(List<Object> values){synchronized(values){return new ArrayList<>(values);}}
     private static String clip(String value,int limit){return value.length()<=limit?value:value.substring(0,limit);}
 }

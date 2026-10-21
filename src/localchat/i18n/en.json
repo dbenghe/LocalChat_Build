@@ -465,5 +465,19 @@
   "Copiat folderul {0} → {1} ({2} fisiere copiate, {3} identice omise; SHA-256 verificat).": "Folder copied {0} → {1} ({2} files copied, {3} identical files skipped; SHA-256 verified).",
   "Rezultat partial": "Partial result",
   "Anulat inainte de confirmarea rezultatului; verifica starea reala inainte de repetarea operatiei.": "Cancelled before result confirmation; verify the actual state before repeating the operation.",
-  "Skill: cale corectata dupa structura instalata.\nCale ceruta: {0}\nCale folosita: {1}": "Skill: path corrected from the installed layout.\nRequested path: {0}\nUsed path: {1}"
+  "Skill: cale corectata dupa structura instalata.\nCale ceruta: {0}\nCale folosita: {1}": "Skill: path corrected from the installed layout.\nRequested path: {0}\nUsed path: {1}",
+  "Agenti": "Agents",
+  "Ascunde panoul agentilor": "Hide agents panel",
+  "Opreste tura": "Stop turn",
+  "Niciun agent pornit in aceasta conversatie.": "No agents started in this conversation.",
+  "Panou agenti": "Agents panel",
+  "In asteptare": "Queued",
+  "Stare neconfirmata": "Unconfirmed status",
+  "Termen depasit": "Timed out",
+  "Porneste agentii din prompt sau prin /agents, in profilul MBS.": "Start agents from your message or /agents in the MBS profile.",
+  "Rezultatul operatiilor inca in curs nu este confirmat.": "The outcome of operations still in progress is unconfirmed.",
+  "Detalii agent": "Agent details",
+  "Sarcina": "Task",
+  "Rezultat": "Result",
+  "Diagnostic": "Diagnostic"
 }
