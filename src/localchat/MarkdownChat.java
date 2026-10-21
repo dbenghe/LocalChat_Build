@@ -7,7 +7,7 @@ import java.util.regex.*;
 
 /** Presentation only. Source offsets, saved messages and API payloads never change. No HTML execution. */
 final class MarkdownChat {
-    static final String MARK="localchat.markdown", HIDE="localchat.md.hide", TAB="localchat.md.tab", THINK="localchat.md.think";
+    static final String MARK="localchat.markdown", HIDE="localchat.md.hide", TAB="localchat.md.tab", THINK="localchat.md.think", COMPLETE="localchat.md.complete";
     static final class Kit extends StyledEditorKit {
         private final ViewFactory factory=e->{
             if(StyleConstants.getComponent(e.getAttributes())!=null)return new ComponentView(e);
@@ -36,7 +36,7 @@ final class MarkdownChat {
             if(!Boolean.TRUE.equals(e.getAttributes().getAttribute(MARK))){i=end;continue;}
             int start=i;
             while(end<doc.getLength()&&Boolean.TRUE.equals(doc.getCharacterElement(end).getAttributes().getAttribute(MARK)))end=Math.min(doc.getCharacterElement(end).getEndOffset(),doc.getLength());
-            Object language=doc.getCharacterElement(start).getAttributes().getAttribute(InternationalChat.DISPLAY);var clean=new SimpleAttributeSet(base);clean.addAttribute(MARK,true);if(language!=null)clean.addAttribute(InternationalChat.DISPLAY,language);doc.setCharacterAttributes(start,end-start,clean,true);
+            Object complete=doc.getCharacterElement(start).getAttributes().getAttribute(COMPLETE);Object language=doc.getCharacterElement(start).getAttributes().getAttribute(InternationalChat.DISPLAY);var clean=new SimpleAttributeSet(base);clean.addAttribute(MARK,true);if(complete!=null)clean.addAttribute(COMPLETE,complete);if(language!=null)clean.addAttribute(InternationalChat.DISPLAY,language);doc.setCharacterAttributes(start,end-start,clean,true);
             var paragraph=new SimpleAttributeSet();StyleConstants.setSpaceAbove(paragraph,2);StyleConstants.setSpaceBelow(paragraph,4);StyleConstants.setLeftIndent(paragraph,0);StyleConstants.setTabSet(paragraph,new TabSet(new TabStop[0]));doc.setParagraphAttributes(start,end-start,paragraph,true);
             format(doc,start,source.getText(start,end-start),background);i=end;
         }
@@ -44,7 +44,7 @@ final class MarkdownChat {
     private static void put(StyledDocument d,int s,int n,Object kind,Object v){if(n<=0)return;var a=new SimpleAttributeSet();a.addAttribute(kind,v);d.setCharacterAttributes(s,n,a,false);}
     private static void hide(StyledDocument d,int s,int n){put(d,s,n,HIDE,true);}
     private static void format(StyledDocument d,int start,String text,Color bg){
-        int technical=ReasoningDisplay.prefixEnd(text);if(technical>0){hide(d,start,technical);put(d,start,technical,THINK,true);var p=new SimpleAttributeSet();StyleConstants.setSpaceAbove(p,0);StyleConstants.setSpaceBelow(p,0);d.setParagraphAttributes(start,technical,p,false);start+=technical;text=text.substring(technical);}
+        int technical=ReasoningDisplay.prefixEnd(text,!Boolean.FALSE.equals(d.getCharacterElement(start).getAttributes().getAttribute(COMPLETE)));if(technical>0){hide(d,start,technical);put(d,start,technical,THINK,true);var p=new SimpleAttributeSet();StyleConstants.setSpaceAbove(p,0);StyleConstants.setSpaceBelow(p,0);d.setParagraphAttributes(start,technical,p,false);start+=technical;text=text.substring(technical);}
 
         boolean fence=false;int offset=0;boolean[] code=new boolean[text.length()];
         String[] lines=text.split("\n",-1);

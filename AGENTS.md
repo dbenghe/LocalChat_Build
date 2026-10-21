@@ -70,3 +70,5 @@ Repository-ul utilizatorului este https://github.com/dbenghe/LocalChat_Build (co
 - Afisarea obisnuita ascunde numai blocul initial think al furnizorului, inclusiv prefixe fragmentate in streaming; pastreaza originalul si offseturile, exemplele literale din cod si copierea explicita a originalului. Copiaza raspunsul returneaza textul final. Nu declara finalizare vizibila daca modelul a trimis numai bloc tehnic.
 
 - Din 1.13.2, pentru think initial neinchis de o ruta streaming, citatul tradus dupa o linie goala si in afara codului marcheaza inceputul finalului vizibil. Aplica aceeasi delimitare la streaming, istoric, copiere si detectarea lipsei finalului; nu retrimite intrebari pentru a repara prezentarea.
+
+- Din 1.13.3, nu ascunde integral un raspuns terminat doar fiindca lipsesc delimitatoarele think/citat. Foloseste marcajul final explicit in ambele moduri, pastrand fallback vizibil pentru text ambiguu complet; streaming-ul incomplet poate astepta finalul. Starea de finalizare este numai prezentare. Modul Automat transmite preferintele lingvistice relevante fara a fixa limba din istoricul asistentului; cererea explicita curenta ramane prioritara.

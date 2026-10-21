@@ -1,3 +1,11 @@
+## 1.13.3 - 2026-10-21
+
+- Stabilize the native popup screenshot test by keeping its own QA window foreground and waiting for native painting, retaining the same color assertions.
+
+- Keep completed undelimited provider text visible when neither a closing think tag nor a translated quote exists; avoid discarding a real automatic-language answer. Keep incomplete streaming technical text hidden until a known final boundary or completion.
+- Request an explicit final-answer marker in both language modes. Remove it only in presentation/copying, preserve originals and support older quoted answers.
+- Carry relevant saved language preferences in automatic mode's temporary request control so earlier replies in another language do not select the output language.
+
 ## 1.13.2 - 2026-10-21
 
 - Restore final translated answers when compatible streaming routes omit the closing think tag. Recognize the blank-line-separated quoted answer boundary outside code fences, including partial streaming and Windows line endings.

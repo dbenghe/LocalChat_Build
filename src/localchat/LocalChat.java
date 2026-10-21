@@ -1407,6 +1407,7 @@ public final class LocalChat extends JFrame {
             String probeState=null;int code=0;if(error!=null){var match=java.util.regex.Pattern.compile("HTTP ([0-9]{3})").matcher(java.util.Objects.toString(error.getMessage(),""));if(match.find()){code=Integer.parseInt(match.group(1));probeState=switch(code){case 403,404->"unavailable";case 401->"auth";case 429->"rate";default->"transport";};}}
             if(probeState!=null)try{var prior=turn.modelCache.get(turn.modelId);turn.modelCache.put(turn.modelId,new ModelCatalog.Probe(probeState,code,0,System.currentTimeMillis(),TokenUsage.UNKNOWN,prior.fresh()?prior.toolVerified():null));modelBox.repaint();}catch(IOException ignored){}
         }
+        completeResponseDisplay();
         turn.done = true;
         current = null;
         setBusy(false);
@@ -1528,7 +1529,7 @@ public final class LocalChat extends JFrame {
     private String responseLanguage(){return InternationalChat.code(responseLanguageBox.getSelectedIndex());}
     private void selectResponseLanguage(String code){responseLanguageBox.setSelectedIndex(InternationalChat.index(code));}
     private String responseLanguagePrompt(){return InternationalChat.prompt(responseLanguage(),translateMessageBox.isSelected());}
-    private String responseLanguageControl(){return InternationalChat.requestPolicy(responseLanguage(),translateMessageBox.isSelected());}
+    private String responseLanguageControl(){StringBuilder preferences=new StringBuilder();if(responseLanguage().equals("auto")){try{if(memories().enabled())for(var entry:memories().all())if(entry.project().isEmpty()&&InternationalChat.conversationLanguageRule(entry.text())&&preferences.length()+entry.text().length()<2000)preferences.append(entry.text()).append('\n');}catch(IOException ignored){}for(String source:new String[]{readRules(),systemField.getText()})for(String line:source.lines().toList())if(InternationalChat.conversationLanguageRule(line)&&preferences.length()+line.length()<2000)preferences.append(line).append('\n');}return InternationalChat.requestPolicy(responseLanguage(),translateMessageBox.isSelected(),preferences.toString());}
     private LocalMemories memoryStore;
     private LocalMemories memories(){if(memoryStore==null)memoryStore=new LocalMemories(appDir,config);return memoryStore;}
     private String memoryProject(String latest){return LocalMemories.project(latest,history,currentWorkDir());}
@@ -1917,8 +1918,10 @@ public final class LocalChat extends JFrame {
         text=ReasoningDisplay.answer(text);
         if(!text.isBlank())java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new java.awt.datatransfer.StringSelection(text),null);
     }
-    private void appendMarkdown(String text){appendMarkdown(text,responseLanguage());}
-    private void appendMarkdown(String text,String language){markdownFrom=Math.min(markdownFrom,transcript.getDocument().getLength());var attributes=new SimpleAttributeSet(body);attributes.addAttribute(MarkdownChat.MARK,true);if(language!=null)attributes.addAttribute(InternationalChat.DISPLAY,language);append(text,attributes);markdownDirty=true;}
+    private void appendMarkdown(String text){appendMarkdown(text,responseLanguage(),false);}
+    private void appendMarkdown(String text,String language){appendMarkdown(text,language,true);}
+    private void appendMarkdown(String text,String language,boolean completed){markdownFrom=Math.min(markdownFrom,transcript.getDocument().getLength());var attributes=new SimpleAttributeSet(body);attributes.addAttribute(MarkdownChat.MARK,true);attributes.addAttribute(MarkdownChat.COMPLETE,completed);if(language!=null)attributes.addAttribute(InternationalChat.DISPLAY,language);append(text,attributes);markdownDirty=true;}
+    private void completeResponseDisplay(){for(var document:java.util.List.of(originalTranscript,transcript.getStyledDocument()))for(int at=0;at<document.getLength();){var e=document.getCharacterElement(at);int end=Math.min(document.getLength(),e.getEndOffset());if(Boolean.TRUE.equals(e.getAttributes().getAttribute(MarkdownChat.MARK))){var a=new SimpleAttributeSet();a.addAttribute(MarkdownChat.COMPLETE,true);document.setCharacterAttributes(at,end-at,a,false);}at=end;}markdownFrom=0;markdownDirty=true;formatMarkdown();}
     private void formatMarkdown(){
         if(!markdownDirty)return;markdownDirty=false;
         try{MarkdownChat.apply(transcript.getStyledDocument(),body,transcript.getBackground(),markdownFrom,originalTranscript);markdownFrom=Integer.MAX_VALUE;}catch(BadLocationException ignored){}
