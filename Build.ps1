@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$DistributionPath = (Join-Path (Split-Path $PSScriptRoot -Parent) 'LocalChat'),
     [switch]$SkipDeploy,
     [switch]$SkipNativeQA
@@ -57,6 +57,8 @@ if ($LASTEXITCODE) { throw 'Catalog/probe tests failed; distribution was not cha
 if ($LASTEXITCODE) { throw 'Profile model suitability tests failed' }
 & "$taskJdk/bin/java.exe" "-Dlocalchat.home=$taskBuild/work-progress-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.WorkProgressTest
 if ($LASTEXITCODE) { throw 'Continuity/loop/provider isolation tests failed' }
+& "$taskJdk/bin/java.exe" "-Dlocalchat.home=$taskBuild/skill-progress-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.SkillProgressTest
+if ($LASTEXITCODE) { throw 'Skill resource/progress regression tests failed' }
 & "$taskJdk/bin/java.exe" "-Dlocalchat.home=$taskBuild/copy-resume-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.CopyResumeTest
 if ($LASTEXITCODE) { throw 'Verified resumable copy tests failed' }
 & "$taskJdk/bin/java.exe" "-Dlocalchat.home=$taskBuild/agent-group-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.AgentGroupTest

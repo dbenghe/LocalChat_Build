@@ -464,5 +464,6 @@
   "Fisier deja identic (SHA-256 verificat), fara recopie: {0} → {1}": "Fisier deja identic (SHA-256 verificat), fara recopie: {0} → {1}",
   "Copiat folderul {0} → {1} ({2} fisiere copiate, {3} identice omise; SHA-256 verificat).": "Copiat folderul {0} → {1} ({2} fisiere copiate, {3} identice omise; SHA-256 verificat).",
   "Rezultat partial": "Rezultat partial",
-  "Anulat inainte de confirmarea rezultatului; verifica starea reala inainte de repetarea operatiei.": "Anulat inainte de confirmarea rezultatului; verifica starea reala inainte de repetarea operatiei."
+  "Anulat inainte de confirmarea rezultatului; verifica starea reala inainte de repetarea operatiei.": "Anulat inainte de confirmarea rezultatului; verifica starea reala inainte de repetarea operatiei.",
+  "Skill: cale corectata dupa structura instalata.\nCale ceruta: {0}\nCale folosita: {1}": "Skill: cale corectata dupa structura instalata.\nCale ceruta: {0}\nCale folosita: {1}"
 }

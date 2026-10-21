@@ -464,5 +464,6 @@
   "Fisier deja identic (SHA-256 verificat), fara recopie: {0} → {1}": "Bestand al identiek (SHA-256 gecontroleerd), niet opnieuw gekopieerd: {0} → {1}",
   "Copiat folderul {0} → {1} ({2} fisiere copiate, {3} identice omise; SHA-256 verificat).": "Map gekopieerd {0} → {1} ({2} bestanden gekopieerd, {3} identieke overgeslagen; SHA-256 gecontroleerd).",
   "Rezultat partial": "Gedeeltelijk resultaat",
-  "Anulat inainte de confirmarea rezultatului; verifica starea reala inainte de repetarea operatiei.": "Geannuleerd voordat het resultaat bevestigd werd; controleer de werkelijke toestand voordat je de actie herhaalt."
+  "Anulat inainte de confirmarea rezultatului; verifica starea reala inainte de repetarea operatiei.": "Geannuleerd voordat het resultaat bevestigd werd; controleer de werkelijke toestand voordat je de actie herhaalt.",
+  "Skill: cale corectata dupa structura instalata.\nCale ceruta: {0}\nCale folosita: {1}": "Skill: pad gecorrigeerd op basis van de geinstalleerde structuur.\nGevraagd pad: {0}\nGebruikt pad: {1}"
 }

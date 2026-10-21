@@ -487,6 +487,11 @@ final class Tools {
     }
 
     private String readRequestedFile(Path requested,int offset,Integer limit)throws IOException,ToolError{
+        Path skillFile=Skills.misplacedReference(skills,requested);
+        if(skillFile!=null){
+            String content=readFile(readable(skillFile.toString()),offset,limit);
+            return I18n.text("Skill: cale corectata dupa structura instalata.\nCale ceruta: {0}\nCale folosita: {1}",requested,skillFile)+"\n"+content;
+        }
         Path actual=Files.exists(requested)?null:confirmedPdfResult(requested);
         if(actual==null)return readFile(requested,offset,limit);
         // Apply the normal access and secret-file checks to the confirmed target, then report the real read.

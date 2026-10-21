@@ -464,5 +464,6 @@
   "Fisier deja identic (SHA-256 verificat), fara recopie: {0} → {1}": "Plik juz identyczny (SHA-256 zweryfikowano), bez ponownej kopii: {0} → {1}",
   "Copiat folderul {0} → {1} ({2} fisiere copiate, {3} identice omise; SHA-256 verificat).": "Skopiowano folder {0} → {1} ({2} plikow skopiowano, {3} identyczne pominieto; SHA-256 zweryfikowano).",
   "Rezultat partial": "Wynik czesciowy",
-  "Anulat inainte de confirmarea rezultatului; verifica starea reala inainte de repetarea operatiei.": "Anulowano przed potwierdzeniem wyniku; sprawdz faktyczny stan przed powtorzeniem operacji."
+  "Anulat inainte de confirmarea rezultatului; verifica starea reala inainte de repetarea operatiei.": "Anulowano przed potwierdzeniem wyniku; sprawdz faktyczny stan przed powtorzeniem operacji.",
+  "Skill: cale corectata dupa structura instalata.\nCale ceruta: {0}\nCale folosita: {1}": "Skill: sciezka poprawiona wedlug zainstalowanej struktury.\nZadana sciezka: {0}\nUzyta sciezka: {1}"
 }

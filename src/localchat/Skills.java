@@ -48,17 +48,33 @@ final class Skills {
         }
         Path file = skill.file();
         Path dir = file.getParent();
-        StringBuilder b = new StringBuilder("Skill: " + skill.name() + "\nFolder: " + dir + "\n\n");
-        b.append(translatePaths.apply(Files.readString(file, StandardCharsets.UTF_8)));
-        List<String> others = new ArrayList<>();
+        StringBuilder b = new StringBuilder("Skill: " + skill.name() + "\nFolder: " + dir + "\nSKILL_FILE: " + file + "\nSKILL_RESOURCES:\n");
         try (Stream<Path> files = Files.walk(dir, 3)) {
-            files.filter(Files::isRegularFile).filter(p -> !p.equals(file)).forEach(p -> others.add(dir.relativize(p).toString()));
+            files.filter(Files::isRegularFile).filter(p -> !p.equals(file)).sorted()
+                .forEach(p -> b.append("- ").append(p).append('\n'));
         }
-        if (!others.isEmpty()) {
-            b.append("\n\nAlte fisiere ale skill-ului (citeste-le cu read_file):\n");
-            for (String o : others) b.append("- ").append(dir.resolve(o)).append('\n');
-        }
+        b.append("\nSKILL_CONTENT:\n").append(translatePaths.apply(Files.readString(file, StandardCharsets.UTF_8)));
+
         return b.toString();
+    }
+
+    /** Keep exact installed paths visible when a repeated skill load is suppressed. */
+    static String resourceIndex(String loaded) {
+        int boundary=loaded.indexOf("\nSKILL_CONTENT:\n");
+        String index=boundary>=0?loaded.substring(0,boundary):loaded.lines().limit(3).collect(java.util.stream.Collectors.joining("\n"));
+        return index.length()>6000?index.substring(0,6000):index;
+    }
+
+    /** Recover only a misplaced immediate references/file when the exact root file exists. */
+    static Path misplacedReference(List<Skill> skills,Path requested) {
+        if(Files.exists(requested,java.nio.file.LinkOption.NOFOLLOW_LINKS))return null;
+        for(Skill skill:skills)try {
+            Path dir=skill.file().toAbsolutePath().normalize().getParent();
+            if(!dir.resolve("references").equals(requested.getParent()))continue;
+            Path actual=dir.resolve(requested.getFileName());
+            if(Files.isRegularFile(actual)&&actual.toRealPath().startsWith(dir.toRealPath()))return actual;
+        }catch(IOException ignored){}
+        return null;
     }
 
     private static Skill parse(Path file) {

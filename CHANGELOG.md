@@ -1,3 +1,9 @@
+## 1.16.1 - 2026-10-21
+
+- read_skill afiseaza calea SKILL.md si inventarul exact al resurselor inaintea instructiunilor; reamintirea unui skill deja citit pastreaza aceste cai fara a retrimite procedura completa.
+- read_file recupereaza explicit un fisier plasat gresit in references numai daca acelasi nume exista la radacina skillului instalat, fara iesire din skill, fara aliasuri sau modificari. Pastreaza permisiunile, protectia cheilor, paginarea si fisierele existente; nota de corectie este disponibila in sase limbi.
+- Protectia contra buclelor recunoaste citirea reusita a unui document sau a unei pagini noi ca progres. Inventarierea repetata, aceeasi pagina, erorile si reamintirea skillului nu reseteaza contorul; ciclurile fara progres raman limitate.
+
 ## 1.16.0 - 2026-10-21
 
 - Selectia modelelor se adapteaza profilului MBS/Normal pentru fiecare furnizor, inclusiv API-uri adaugate ulterior. MBS afiseaza implicit modele cu suport pentru unelte declarat/verificat; Normal include modele de chat fara unelte. Catalogul permite afisarea tuturor cu motivul clasificarii, in toate cele sase limbi.
