@@ -82,6 +82,8 @@ if ($LASTEXITCODE) { throw 'Composer resize tests failed' }
 if ($LASTEXITCODE) { throw 'International chat tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/local-memories-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.LocalMemoriesTest
 if ($LASTEXITCODE) { throw 'Local memory tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/normal-mode-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.NormalModeTest
+if ($LASTEXITCODE) { throw 'Clean Normal mode isolation tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_owned_layout.py" --package "$PSScriptRoot/pdfcontrol"
 if ($LASTEXITCODE) { throw 'Owned engine layout tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_pdfcontrol_bridge.py" --package "$PSScriptRoot/pdfcontrol" --output "$taskBuild/pdfcontrol-tests"

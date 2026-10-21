@@ -427,5 +427,9 @@
   "Nu exista: {0}": "Bestaat niet: {0}",
   "Nu exista: {0}. Calea confirmata PDFCONTROL este: {1}. Foloseste campul results din pdfcontrol_job_status; nu relansa controlul pentru aceasta eroare de cale.": "Bestaat niet: {0}. Het bevestigde PDFCONTROL-pad is: {1}. Gebruik results uit pdfcontrol_job_status; start de controle niet opnieuw wegens deze padfout.",
   "Anuleaza editarea": "Bewerking ongedaan maken",
-  "Refa editarea": "Bewerking opnieuw uitvoeren"
+  "Refa editarea": "Bewerking opnieuw uitvoeren",
+  "Mod schimbat: context nou; istoricul ramane vizibil.": "Modus gewijzigd: nieuwe context; de geschiedenis blijft zichtbaar.",
+  "Normal: fara unelte, reguli MBS sau memorii salvate. Schimbarea modului incepe un context nou.": "Normaal: zonder tools, MBS-regels of opgeslagen herinneringen. Een moduswijziging begint een nieuwe context.",
+  "Automat (in functie de mod)": "Automatisch (volgens modus)",
+  "Normal: Automat foloseste limba mesajului; o limba fixa are prioritate. Memoriile salvate nu sunt folosite.": "Normaal: Automatisch gebruikt de taal van het bericht; een vaste taal heeft voorrang. Opgeslagen herinneringen worden niet gebruikt."
 }

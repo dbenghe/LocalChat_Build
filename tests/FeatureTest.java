@@ -129,7 +129,7 @@ public final class FeatureTest {
                 command(app,"/new Beta");beta[0]=field(app,"conversationFile");
                 check(((List<?>)field(app,"history")).isEmpty(),"new session does not inherit history");
                 ((JComboBox<?>)field(app,"modelBox")).setSelectedItem("beta-model");command(app,"/context 32000");
-                ((JTextField)field(app,"systemField")).setText("Beta-only instructions");((JCheckBox)field(app,"toolsBox")).setSelected(true);
+                ((JCheckBox)field(app,"toolsBox")).setSelected(true);call(app,"prepareModeContext",new Class<?>[]{});((JTextField)field(app,"systemField")).setText("Beta-only instructions");
                 ((JTextArea)field(app,"input")).setText("draft-beta");
                 command(app,"/switch "+Conversations.shortId(alpha[0]));
                 check(((JTextArea)field(app,"input")).getText().equals("draft-alpha"),"draft restored per chat");
@@ -419,7 +419,7 @@ public final class FeatureTest {
                 String changedProfile=(String)call(app[0],"contextProfile",new Class<?>[]{});Properties changedConfig=field(app[0],"config");
                 check(((WorkspacePanel)field(app[0],"workspace")).limit.getValue().equals(32768) && changedConfig.getProperty(changedProfile+".limitSource","").equals("fallback") && !changedConfig.containsKey(changedProfile+".metadata"),"late metadata never becomes another model's context; local working fallback is separate");
                 server.delay=0;((JComboBox<String>)field(app[0],"modelBox")).setSelectedItem("auto-model");call(app[0],"refreshDashboard",new Class<?>[]{});
-                ((JComboBox<String>)field(app[0],"responseProfile")).setSelectedIndex(2);((JCheckBox)field(app[0],"streamBox")).setSelected(false);((JCheckBox)field(app[0],"toolsBox")).setSelected(false);
+                ((JComboBox<String>)field(app[0],"responseProfile")).setSelectedIndex(2);((JCheckBox)field(app[0],"streamBox")).setSelected(false);((JCheckBox)field(app[0],"toolsBox")).setSelected(false);call(app[0],"prepareModeContext",new Class<?>[]{});
                 ((JComboBox<String>)field(app[0],"permissionBox")).setSelectedIndex(2);((JTextField)field(app[0],"systemField")).setText("saved full defaults");
                 WorkspacePanel panel=field(app[0],"workspace");panel.autoCompact.doClick();panel.autoThreshold.setValue(55);
                 call(app[0],"saveDefaults",new Class<?>[]{});command(app[0],"/new Short title");

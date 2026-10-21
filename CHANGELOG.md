@@ -1,3 +1,10 @@
+## 1.15.0 - 2026-10-21
+
+- Testele cu taste/clicuri native asteapta stabilizarea focusului si procesarea evenimentelor dupa schimbarea temei sau deschiderea cardului, pastrand verificarile functionale.
+- Normal devine conversatie curata: fara unelte, skill-uri, reguli permanente MBS, memorii globale/de proiect sau capturare automata de memorii. Limba fixa ramane prioritara; Automat urmeaza mesajul curent.
+- Schimbarea MBS/Normal delimiteaza contextul activ, rezumatul compactat si ancorele de consum, fara a sterge arhiva, ciorna sau semnele de carte. Conversatiile Normal vechi primesc o delimitare la prima deschidere, pentru a exclude contaminarea MBS anterioara.
+- Prompturile de sistem editabile sunt separate intre moduri si pastrate la reluare. Compactarea si estimarea de context folosesc numai segmentul activ; regulile si memoriile MBS raman disponibile in modul MBS.
+
 ## 1.14.2 - 2026-10-21
 
 - Adauga Undo/Redo in caseta mesajului: Ctrl+Z, Ctrl+Y si Ctrl+Shift+Z, inclusiv in meniul contextual tradus. Lipirea peste selectie se anuleaza intr-un singur pas.

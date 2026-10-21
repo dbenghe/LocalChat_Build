@@ -427,5 +427,9 @@
   "Nu exista: {0}": "Does not exist: {0}",
   "Nu exista: {0}. Calea confirmata PDFCONTROL este: {1}. Foloseste campul results din pdfcontrol_job_status; nu relansa controlul pentru aceasta eroare de cale.": "Does not exist: {0}. The confirmed PDFCONTROL path is: {1}. Use results from pdfcontrol_job_status; do not rerun the check for this path error.",
   "Anuleaza editarea": "Undo edit",
-  "Refa editarea": "Redo edit"
+  "Refa editarea": "Redo edit",
+  "Mod schimbat: context nou; istoricul ramane vizibil.": "Mode changed: fresh context; the history remains visible.",
+  "Normal: fara unelte, reguli MBS sau memorii salvate. Schimbarea modului incepe un context nou.": "Normal: no tools, MBS rules or saved memories. Changing mode starts a fresh context.",
+  "Automat (in functie de mod)": "Automatic (by mode)",
+  "Normal: Automat foloseste limba mesajului; o limba fixa are prioritate. Memoriile salvate nu sunt folosite.": "Normal: Automatic uses the message language; a fixed language takes priority. Saved memories are not used."
 }

@@ -427,5 +427,9 @@
   "Nu exista: {0}": "Nie istnieje: {0}",
   "Nu exista: {0}. Calea confirmata PDFCONTROL este: {1}. Foloseste campul results din pdfcontrol_job_status; nu relansa controlul pentru aceasta eroare de cale.": "Nie istnieje: {0}. Potwierdzona sciezka PDFCONTROL: {1}. Uzyj results z pdfcontrol_job_status; nie uruchamiaj kontroli ponownie z powodu tego bledu sciezki.",
   "Anuleaza editarea": "Cofnij edycje",
-  "Refa editarea": "Ponow edycje"
+  "Refa editarea": "Ponow edycje",
+  "Mod schimbat: context nou; istoricul ramane vizibil.": "Tryb zmieniony: nowy kontekst; historia pozostaje widoczna.",
+  "Normal: fara unelte, reguli MBS sau memorii salvate. Schimbarea modului incepe un context nou.": "Normalny: bez narzędzi, reguł MBS i zapisanej pamięci. Zmiana trybu rozpoczyna nowy kontekst.",
+  "Automat (in functie de mod)": "Automatycznie (według trybu)",
+  "Normal: Automat foloseste limba mesajului; o limba fixa are prioritate. Memoriile salvate nu sunt folosite.": "Normalny: Automatycznie używa języka wiadomości; stały język ma pierwszeństwo. Zapisana pamięć nie jest używana."
 }
