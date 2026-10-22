@@ -532,5 +532,7 @@
   "Nu pot restaura alegerea fabricii. Apasa Trimite pentru reverificare.": "Nie można przywrócić wyboru fabryki. Wyślij, aby sprawdzić ponownie.",
   "Verificarea fabricii a fost oprita. Ciorna este pastrata.": "Sprawdzanie fabryki zatrzymane. Szkic zachowany.",
   "Folder de proiect neconfirmat": "Folder projektu niepotwierdzony",
-  "Panou agenti: {0} in lucru, {1} in asteptare": "Panel agentów: {0} pracuje, {1} oczekuje"
+  "Panou agenti: {0} in lucru, {1} in asteptare": "Panel agentów: {0} pracuje, {1} oczekuje",
+  "Poti bifa mai multe optiuni.": "Możesz zaznaczyć kilka opcji.",
+  "Ce actiuni alegi?": "Które działania wybierasz?"
 }

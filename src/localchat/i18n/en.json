@@ -532,5 +532,7 @@
   "Nu pot restaura alegerea fabricii. Apasa Trimite pentru reverificare.": "Cannot restore the factory choice. Press Send to check again.",
   "Verificarea fabricii a fost oprita. Ciorna este pastrata.": "Factory check stopped. The draft is preserved.",
   "Folder de proiect neconfirmat": "Project folder unconfirmed",
-  "Panou agenti: {0} in lucru, {1} in asteptare": "Agent panel: {0} working, {1} queued"
+  "Panou agenti: {0} in lucru, {1} in asteptare": "Agent panel: {0} working, {1} queued",
+  "Poti bifa mai multe optiuni.": "You can select multiple options.",
+  "Ce actiuni alegi?": "Which actions do you choose?"
 }

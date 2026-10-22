@@ -1,3 +1,10 @@
+# 1.21.0 — 2026-10-22
+
+- Interactive composer cards support independent action checkboxes, exclusive choices and a free-text alternative. No defaults; multi-selection and qualifiers persist per conversation. Submitted answers distinguish selected and unselected actions.
+- Optional next-step proposals are selectable cards with an explicit Send button and free response, grounded by model instructions in confirmed progress, loaded skill procedures and permitted rules/memories. The separate composer remains editable; selection never inserts or sends text automatically. Existing optional Tab acceptance remains undoable.
+- Compatibility fallback presents explicit unanswered prose questions, literal alternatives and pending numbered action lists as cards without another inference. Explicit next-step headings can become optional proposals. Quoted/code examples and ordinary completed lists are excluded; raw history is preserved.
+- Wrapped option labels, six-language UI and Dark/Light regression coverage. No change to PDFCONTROL or provider credentials. Normal remains free of MBS tool injection.
+
 # 1.20.1 — 2026-10-22
 
 - Shared theme-aware status icon palette: slate draft, blue in progress, amber partial, green completed and purple restarted. Applied to chat toolbar, sidebar, status menus and notifications, including disabled in-progress toolbar icons; labels and shapes remain distinct.

@@ -719,3 +719,9 @@ Fabrica si folderul alese se salveaza per chat, sunt reverificate la urmatoarea 
 Iconitele chatului folosesc aceleasi culori in lista, coltul chatului, meniuri si notificari: Draft gri-albastrui, In lucru albastru, Partial auriu, Finalizat verde, Repornit mov. Formele si textele pastreaza sensul si fara distingerea culorilor. Paletele sunt adaptate separat pentru Dark si Light.
 
 Iconita Panou agenti pulseaza discret numai cand exista sarcini live puse in coada sau in lucru in conversatia curenta. Insigna arata numarul celor in lucru (sau numarul in asteptare daca niciunul nu ruleaza); tooltipul distinge ambele numere. Incheierea sarcinilor, Stop si schimbarea chatului opresc pulsul. Rezultatele arhivate pastreaza culoarea rezultatului, fara animatie si fara reluarea agentilor. Inchiderea panoului pastreaza indicatorul activ in bara. Animatia nu apeleaza modelul si se opreste la inchiderea ferestrei.
+
+## Carduri interactive de chat (1.21.0)
+
+Intrebarile apar in carduri imediat deasupra casetei de mesaj: alege o varianta sau bifeaza mai multe actiuni independente, adauga optional un raspuns propriu si apasa **Trimite raspunsurile**. Nu exista optiuni preselectate. Textul scris intre timp in editor ramane editabil si este inclus doar la trimiterea explicita.
+
+Pasii urmatori propusi pe baza progresului, procedurii skillului si regulilor relevante sunt tot optiuni selectabile, cu alternativa libera. Alegerea nu modifica automat ciorna si nu executa nimic. Tab in editorul gol poate accepta optional prima sugestie ca text editabil, anulabil cu Undo. Modelele sunt instruite sa foloseasca `localchat_interaction`; pentru anumite intrebari clasice exista recuperare locala fara o cerere API suplimentara. Aceasta nu garanteaza respectarea instructiunilor de catre orice model.

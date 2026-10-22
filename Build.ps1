@@ -59,6 +59,8 @@ if ($LASTEXITCODE) { throw 'Factory/project location preflight tests failed' }
 if ($LASTEXITCODE) { throw 'Hotfolder/status/notification tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/composer-assist-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ComposerAssistTest
 if ($LASTEXITCODE) { throw 'Composer interaction regression tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/interaction-cards-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.InteractionCardsTest
+if ($LASTEXITCODE) { throw 'Interactive checkbox/next-action card tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/catalog-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ModelCatalogTest
 if ($LASTEXITCODE) { throw 'Catalog/probe tests failed; distribution was not changed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/model-suitability-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ModelSuitabilityTest

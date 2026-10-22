@@ -532,5 +532,7 @@
   "Nu pot restaura alegerea fabricii. Apasa Trimite pentru reverificare.": "Fabrika seçimi geri yüklenemedi. Yeniden kontrol için Gönder düğmesine basın.",
   "Verificarea fabricii a fost oprita. Ciorna este pastrata.": "Fabrika kontrolü durduruldu. Taslak korundu.",
   "Folder de proiect neconfirmat": "Proje klasörü doğrulanmadı",
-  "Panou agenti: {0} in lucru, {1} in asteptare": "Ajan paneli: {0} çalışıyor, {1} bekliyor"
+  "Panou agenti: {0} in lucru, {1} in asteptare": "Ajan paneli: {0} çalışıyor, {1} bekliyor",
+  "Poti bifa mai multe optiuni.": "Birden fazla seçenek işaretleyebilirsin.",
+  "Ce actiuni alegi?": "Hangi işlemleri seçiyorsun?"
 }
