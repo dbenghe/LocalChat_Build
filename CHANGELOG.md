@@ -1,3 +1,11 @@
+# 1.23.0 — 2026-10-22
+- Consultarea altui chat in timpul lucrului deschide o fereastra independenta; Chat nou permite o a doua sesiune fara oprirea primeia. Marcajul colorat si bold indica executiile live in listele tuturor ferestrelor.
+- Istoricul, ciorna, coada, uneltele si consumul raman separate. Un chat deja deschis este focalizat, nu deschis pentru scriere de doua ori; acelasi proiect MBS asteapta terminarea executiei existente.
+- Alternative din furnizorii/modelele salvate, filtrate dupa profil si dovezi locale, inclusiv dupa HTTP 429. Alegerea nu trimite mesaje si nu repeta operatii; cost zero apare numai cand ambele preturi sunt explicit zero in catalog.
+- Metadate de cereri simultane declarate pentru fiecare model; LM Studio citeste GET /api/v1/models si loaded_instances.config.parallel, fara schimbarea parametrilor de incarcare. Lipsa informatiilor ramane necunoscuta.
+- Folderul de lucru salvat recent are prioritate fata de vechiul default.workdir. Enter/iesirea din camp si alegerea folderului persista preferinta; salvarile ferestrelor se combina fara restaurarea unor setari vechi sau a furnizorilor stersi.
+- Memoria locala serializeaza scrierile intre ferestre. Aspectul global ramane comun, iar limba raspunsurilor ramane per chat.
+
 # 1.22.0 — 2026-10-22
 
 - File drops work over chat viewports and dynamically created cards as well as the composer. Attachments, screenshots and text can be prepared while the model is busy; references remain separate from the active request. Explorer drops negotiate COPY, never move the source.

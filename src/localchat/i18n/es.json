@@ -559,5 +559,19 @@
   "Corectez formatul apelului de unealta: {0}/2.": "Corrigiendo el formato de la herramienta: {0}/2.",
   "Modelul a trimis apeluri de unelte ca text de trei ori. Niciun apel XML nu a fost executat; actiunile confirmate sunt pastrate.": "El modelo envió tres veces llamadas como texto. No se ejecutó ninguna llamada XML; se conservan las acciones confirmadas.",
   "Python multiliniar: salveaza codul cu write_file intr-un fisier .py, apoi ruleaza fisierul cu cwd corect. Comanda nu a fost executata.": "Python multilínea: guarda el código con write_file en un archivo .py y ejecútalo con cwd correcto. El comando no se ejecutó.",
-  "Contextul cozii difera (model, profil sau folder). Editeaza mesajul pentru noua selectie.": "El contexto de la cola cambió (modelo, perfil o carpeta). Edita el mensaje para la nueva selección."
+  "Contextul cozii difera (model, profil sau folder). Editeaza mesajul pentru noua selectie.": "El contexto de la cola cambió (modelo, perfil o carpeta). Edita el mensaje para la nueva selección.",
+  "Cereri simultane": "Solicitudes simultáneas",
+  "Cost": "Coste",
+  "Cost zero declarat in catalog": "Coste cero declarado en el catálogo",
+  "Cost declarat in catalog": "Coste declarado en el catálogo",
+  "Cost necunoscut": "Coste desconocido",
+  "Cereri simultane declarate: {0}": "Solicitudes simultáneas declaradas: {0}",
+  "Chat in lucru — continua independent de selectie": "Chat activo — continúa independientemente de la selección",
+  "Acest proiect lucreaza deja in alt chat. Revino la acel chat sau asteapta terminarea.": "Este proyecto ya está activo en otro chat. Vuelve a ese chat o espera a que termine.",
+  "Conversatia este deja deschisa in alta fereastra.": "Este chat ya está abierto en otra ventana.",
+  "Alege optional alt furnizor sau model. Selectia nu trimite mesajul; limitele contului pot fi comune.": "Elige opcionalmente otro proveedor o modelo. La selección no envía el mensaje; los límites de cuenta pueden compartirse.",
+  "Furnizor si model": "Proveedor y modelo",
+  "Alege o optiune salvata sau foloseste selectoarele Furnizor si Model.": "Elige una opción guardada o usa los selectores Proveedor y Modelo.",
+  "Selectia este pregatita. Apasa Trimite cand vrei sa continui; operatiile nu sunt retrimise automat.": "La selección está lista. Pulsa Enviar para continuar; las operaciones no se reenvían automáticamente.",
+  "Alternative furnizori si modele": "Proveedores y modelos alternativos"
 }

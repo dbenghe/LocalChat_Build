@@ -735,3 +735,17 @@ Clopotelul este sus-dreapta, langa Tema. **Unelte > Hotfolder proiecte** activea
 **Unelte > Notificare lunara cataloage** pregateste o singura notificare/chat draft la prima utilizare MBS a fiecarei luni. Descarci listele noi si pornesti tu compararea din draft. Cataloagele fiecarei fabrici si arhivele lor sunt date private. Instrumentul local `pdfcontrol/catalogue_update.py` ofera previzualizare, comparatie si aplicare cu arhiva; codurile absente necesita verificare explicita.
 
 Daca un furnizor scrie apelurile de unelte ca XML in raspuns, aplicatia cere cel mult de doua ori formatul nativ. XML-ul nu se executa. Costul eventualelor cereri suplimentare intra in consumul chatului; daca modelul continua sa greseasca, tura se opreste cu istoricul pastrat.
+
+## Chaturi simultane (1.23.0)
+In timpul unei executii, selectarea altui chat sau „Conversatie noua” deschide o fereastra separata din aceeasi aplicatie. Chatul care lucreaza ramane bold si colorat in sidebar. Selectarea unui chat deja deschis focalizeaza fereastra lui. Fiecare fereastra are propriile mesaje, ciorna, coada, model si contabilizare. Stop si inchiderea ferestrei se aplica doar sesiunii respective. Acelasi proiect MBS nu se proceseaza simultan in doua ferestre; agentii unui chat raman mecanismul pentru impartirea acelui proiect.
+
+Limitele serverului sunt distincte de numarul ferestrelor. LM Studio poate procesa cereri in paralel prin continuous batching: metadatele native loaded_instances[].config.parallel descriu configuratia instantei incarcate. Cand sunt mai multe instante si modelul nu identifica una exact, se afiseaza minimul cunoscut numai daca toate instantele declara limita. Aplicatia nu incarca/descarca modele si nu schimba setarea „Max Concurrent Predictions”.
+Surse: [parallel requests](https://lmstudio.ai/docs/app/advanced/parallel-requests), [GET models](https://lmstudio.ai/docs/developer/rest/list).
+
+Catalogul si linia de metadate afiseaza cererile simultane declarate sau „necunoscut”. Furnizorii cloud nu publica obligatoriu limita contului prin catalog; HTTP 429 nu demonstreaza o limita numerica si nu face modelul incompatibil.
+
+„Unelte > Alternative furnizori si modele” si cardul dupa HTTP 429 propun selectii salvate compatibile cu profilul. Prioritatea tine cont de alt furnizor, capabilitati declarate, acces testat si preturile declarate. Nu este un clasament al inteligentei si nu garanteaza cota disponibila. Cost zero necesita pret explicit zero pentru intrare si iesire; altfel costul ramane necunoscut. Alegerea doar pregateste selectia si pastreaza ciorna; apesi Trimite explicit, fara retrimitere automata a operatiilor deja executate.
+
+Folderul de lucru se salveaza privat in setari.properties prin alegere, Enter sau iesirea din camp. Valoarea recenta are prioritate la pornire si chat nou; conversatiile reluate isi pastreaza propriul folder. Nu exista cale PRODUCTIE fixa in cod. Salvarile dintre ferestre combina doar preferintele schimbate. Functia de ferestre independente este coordonata in acelasi proces LocalChat; lansarea a doua copii separate prin BAT nu ofera aceasta coordonare.
+
+Catalogul LM Studio pastreaza ID-urile reale ale instantelor incarcate, inclusiv aliasurile personalizate, cu limita fiecareia. Monitorizarea hotfolderului se executa o singura data, din prima fereastra deschisa, pentru Folderul de lucru al acesteia; inchiderea ei transfera monitorizarea urmatoarei ferestre. Celelalte chaturi isi pastreaza propriile foldere de executie.

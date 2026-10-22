@@ -559,5 +559,19 @@
   "Corectez formatul apelului de unealta: {0}/2.": "Repairing tool call format: {0}/2.",
   "Modelul a trimis apeluri de unelte ca text de trei ori. Niciun apel XML nu a fost executat; actiunile confirmate sunt pastrate.": "The model sent tool calls as text three times. No XML call was executed; confirmed actions are preserved.",
   "Python multiliniar: salveaza codul cu write_file intr-un fisier .py, apoi ruleaza fisierul cu cwd corect. Comanda nu a fost executata.": "Multiline Python: save the code with write_file in a .py file, then run it with the correct cwd. The command was not executed.",
-  "Contextul cozii difera (model, profil sau folder). Editeaza mesajul pentru noua selectie.": "The queue context differs (model, profile or folder). Edit the message for the new selection."
+  "Contextul cozii difera (model, profil sau folder). Editeaza mesajul pentru noua selectie.": "The queue context differs (model, profile or folder). Edit the message for the new selection.",
+  "Cereri simultane": "Concurrent requests",
+  "Cost": "Cost",
+  "Cost zero declarat in catalog": "Zero cost declared in catalog",
+  "Cost declarat in catalog": "Cost declared in catalog",
+  "Cost necunoscut": "Unknown cost",
+  "Cereri simultane declarate: {0}": "Declared concurrent requests: {0}",
+  "Chat in lucru — continua independent de selectie": "Chat running — continues independently of selection",
+  "Acest proiect lucreaza deja in alt chat. Revino la acel chat sau asteapta terminarea.": "This project is already running in another chat. Return to that chat or wait for completion.",
+  "Conversatia este deja deschisa in alta fereastra.": "This chat is already open in another window.",
+  "Alege optional alt furnizor sau model. Selectia nu trimite mesajul; limitele contului pot fi comune.": "Optionally choose another provider or model. Selection does not send the message; account limits may be shared.",
+  "Furnizor si model": "Provider and model",
+  "Alege o optiune salvata sau foloseste selectoarele Furnizor si Model.": "Choose a saved option or use the Provider and Model selectors.",
+  "Selectia este pregatita. Apasa Trimite cand vrei sa continui; operatiile nu sunt retrimise automat.": "Selection is ready. Press Send when you want to continue; operations are not automatically resent.",
+  "Alternative furnizori si modele": "Alternative providers and models"
 }

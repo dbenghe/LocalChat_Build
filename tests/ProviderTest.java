@@ -18,10 +18,11 @@ public final class ProviderTest {
         final java.net.ServerSocket socket=new java.net.ServerSocket(0,10,InetAddress.getByName("127.0.0.1"));
         final List<String> requests=Collections.synchronizedList(new ArrayList<>());final List<String> headers=Collections.synchronizedList(new ArrayList<>());
         volatile Object body=Json.obj("data",List.of(Json.obj("id","model-a","context_length",131072,"max_input_tokens",120000)));
+        volatile boolean nativeApi;
         volatile int status=200;volatile Throwable error;
         Catalog()throws Exception{Thread worker=new Thread(()->{try{while(!socket.isClosed())try(Socket c=socket.accept()){
             var reader=new BufferedReader(new InputStreamReader(c.getInputStream(),StandardCharsets.US_ASCII));String request=reader.readLine();requests.add(request);String line;while((line=reader.readLine())!=null&&!line.isEmpty())headers.add(line);
-            int code=request.startsWith("GET /v1/models ")?status:404;byte[] data=Json.write(body).getBytes(StandardCharsets.UTF_8);var out=c.getOutputStream();out.write(("HTTP/1.1 "+code+" Fixture\r\nContent-Length: "+data.length+"\r\nConnection: close\r\n\r\n").getBytes(StandardCharsets.US_ASCII));out.write(data);
+            int code=(request.startsWith("GET /v1/models ")||nativeApi&&request.startsWith("GET /api/v1/models "))?status:404;byte[] data=Json.write(body).getBytes(StandardCharsets.UTF_8);var out=c.getOutputStream();out.write(("HTTP/1.1 "+code+" Fixture\r\nContent-Length: "+data.length+"\r\nConnection: close\r\n\r\n").getBytes(StandardCharsets.US_ASCII));out.write(data);
         }}catch(SocketException e){if(!socket.isClosed())error=e;}catch(Throwable e){error=e;}},"provider-catalog-fixture");worker.setDaemon(true);worker.start();}
         String url(){return "http://127.0.0.1:"+socket.getLocalPort()+"/v1";}
         public void close()throws Exception{socket.close();if(error!=null)throw new Exception(error);}
@@ -74,7 +75,7 @@ public final class ProviderTest {
         try(Catalog catalog=new Catalog()){
             catalog.body=Json.obj("data",List.of(Json.obj("id","model-a")));
             FeatureTest.edt(()->{var ctor=LocalChat.class.getDeclaredConstructor();ctor.setAccessible(true);app[0]=ctor.newInstance();set(app[0],Provider.ANTHROPIC,catalog.url(),"model-a","fixture-anthropic");((WorkspacePanel)FeatureTest.field(app[0],"workspace")).limit.setValue(42000);FeatureTest.call(app[0],"inspectModel",new Class<?>[]{});});FeatureTest.metadataIdle(app[0]);
-            FeatureTest.edt(()->{check(((JLabel)FeatureTest.field(app[0],"modelMetadata")).getText().equals(I18n.text("API-ul nu comunică limita de context · Buget local: {0}",42000)),"missing API context is explained in current language");check(((WorkspacePanel)FeatureTest.field(app[0],"workspace")).limit.getValue().equals(42000),"unknown metadata preserves manual working budget");app[0].dispose();});
+            FeatureTest.edt(()->{check(((JLabel)FeatureTest.field(app[0],"modelMetadata")).getText().equals(I18n.text("API-ul nu comunică limita de context · Buget local: {0}",42000)+" · "+ModelCatalog.concurrency(0)),"missing API context is explained in current language");check(((WorkspacePanel)FeatureTest.field(app[0],"workspace")).limit.getValue().equals(42000),"unknown metadata preserves manual working budget");app[0].dispose();});
         }
     }
     public static void main(String[] args)throws Exception{Path home=Path.of(System.getProperty("localchat.home"));Files.createDirectories(home);try{metadata();profiles(home);System.out.println("PASS: "+checks+" provider/profile and external metadata checks; no inference requests");}finally{FeatureTest.edt(()->{for(var window:java.awt.Window.getWindows())window.dispose();});}System.exit(0);}

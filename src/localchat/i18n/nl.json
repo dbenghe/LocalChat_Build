@@ -559,5 +559,19 @@
   "Corectez formatul apelului de unealta: {0}/2.": "Toolaanroepformaat herstellen: {0}/2.",
   "Modelul a trimis apeluri de unelte ca text de trei ori. Niciun apel XML nu a fost executat; actiunile confirmate sunt pastrate.": "Het model stuurde driemaal toolaanroepen als tekst. Geen XML-aanroep is uitgevoerd; bevestigde acties blijven bewaard.",
   "Python multiliniar: salveaza codul cu write_file intr-un fisier .py, apoi ruleaza fisierul cu cwd corect. Comanda nu a fost executata.": "Meerregelige Python: sla de code met write_file op als .py en voer het bestand uit met de juiste cwd. Opdracht niet uitgevoerd.",
-  "Contextul cozii difera (model, profil sau folder). Editeaza mesajul pentru noua selectie.": "De wachtrijcontext verschilt (model, profiel of map). Bewerk het bericht voor de nieuwe selectie."
+  "Contextul cozii difera (model, profil sau folder). Editeaza mesajul pentru noua selectie.": "De wachtrijcontext verschilt (model, profiel of map). Bewerk het bericht voor de nieuwe selectie.",
+  "Cereri simultane": "Gelijktijdige aanvragen",
+  "Cost": "Kosten",
+  "Cost zero declarat in catalog": "Nulkosten opgegeven in catalogus",
+  "Cost declarat in catalog": "Kosten opgegeven in catalogus",
+  "Cost necunoscut": "Kosten onbekend",
+  "Cereri simultane declarate: {0}": "Opgegeven gelijktijdige aanvragen: {0}",
+  "Chat in lucru — continua independent de selectie": "Chat actief — gaat door ongeacht selectie",
+  "Acest proiect lucreaza deja in alt chat. Revino la acel chat sau asteapta terminarea.": "Dit project is al actief in een andere chat. Ga terug naar die chat of wacht tot deze klaar is.",
+  "Conversatia este deja deschisa in alta fereastra.": "Dit gesprek is al geopend in een ander venster.",
+  "Alege optional alt furnizor sau model. Selectia nu trimite mesajul; limitele contului pot fi comune.": "Kies eventueel een andere provider of ander model. De keuze verzendt geen bericht; accountlimieten kunnen gedeeld zijn.",
+  "Furnizor si model": "Provider en model",
+  "Alege o optiune salvata sau foloseste selectoarele Furnizor si Model.": "Kies een opgeslagen optie of gebruik de keuzelijsten Provider en Model.",
+  "Selectia este pregatita. Apasa Trimite cand vrei sa continui; operatiile nu sunt retrimise automat.": "De keuze is klaar. Klik op Verzenden om verder te gaan; bewerkingen worden niet automatisch opnieuw verzonden.",
+  "Alternative furnizori si modele": "Alternatieve providers en modellen"
 }

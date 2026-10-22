@@ -559,5 +559,19 @@
   "Corectez formatul apelului de unealta: {0}/2.": "Araç çağrısı biçimi düzeltiliyor: {0}/2.",
   "Modelul a trimis apeluri de unelte ca text de trei ori. Niciun apel XML nu a fost executat; actiunile confirmate sunt pastrate.": "Model araç çağrılarını üç kez metin olarak gönderdi. Hiçbir XML çağrısı yürütülmedi; doğrulanan işlemler korundu.",
   "Python multiliniar: salveaza codul cu write_file intr-un fisier .py, apoi ruleaza fisierul cu cwd corect. Comanda nu a fost executata.": "Çok satırlı Python: kodu write_file ile .py dosyasına kaydet, doğru cwd ile çalıştır. Komut yürütülmedi.",
-  "Contextul cozii difera (model, profil sau folder). Editeaza mesajul pentru noua selectie.": "Kuyruk bağlamı farklı (model, profil veya klasör). Yeni seçim için mesajı düzenle."
+  "Contextul cozii difera (model, profil sau folder). Editeaza mesajul pentru noua selectie.": "Kuyruk bağlamı farklı (model, profil veya klasör). Yeni seçim için mesajı düzenle.",
+  "Cereri simultane": "Eşzamanlı istekler",
+  "Cost": "Maliyet",
+  "Cost zero declarat in catalog": "Katalogda sıfır maliyet belirtilmiş",
+  "Cost declarat in catalog": "Katalogda maliyet belirtilmiş",
+  "Cost necunoscut": "Maliyet bilinmiyor",
+  "Cereri simultane declarate: {0}": "Bildirilen eşzamanlı istekler: {0}",
+  "Chat in lucru — continua independent de selectie": "Sohbet çalışıyor — seçimden bağımsız devam eder",
+  "Acest proiect lucreaza deja in alt chat. Revino la acel chat sau asteapta terminarea.": "Bu proje başka bir sohbette çalışıyor. O sohbete dönün veya tamamlanmasını bekleyin.",
+  "Conversatia este deja deschisa in alta fereastra.": "Bu sohbet zaten başka bir pencerede açık.",
+  "Alege optional alt furnizor sau model. Selectia nu trimite mesajul; limitele contului pot fi comune.": "İsterseniz başka bir sağlayıcı veya model seçin. Seçim mesajı göndermez; hesap sınırları ortak olabilir.",
+  "Furnizor si model": "Sağlayıcı ve model",
+  "Alege o optiune salvata sau foloseste selectoarele Furnizor si Model.": "Kayıtlı bir seçenek seçin veya Sağlayıcı ve Model alanlarını kullanın.",
+  "Selectia este pregatita. Apasa Trimite cand vrei sa continui; operatiile nu sunt retrimise automat.": "Seçim hazır. Devam etmek için Gönder'e basın; işlemler otomatik yeniden gönderilmez.",
+  "Alternative furnizori si modele": "Alternatif sağlayıcılar ve modeller"
 }

@@ -559,5 +559,19 @@
   "Corectez formatul apelului de unealta: {0}/2.": "Corectez formatul apelului de unealta: {0}/2.",
   "Modelul a trimis apeluri de unelte ca text de trei ori. Niciun apel XML nu a fost executat; actiunile confirmate sunt pastrate.": "Modelul a trimis apeluri de unelte ca text de trei ori. Niciun apel XML nu a fost executat; actiunile confirmate sunt pastrate.",
   "Python multiliniar: salveaza codul cu write_file intr-un fisier .py, apoi ruleaza fisierul cu cwd corect. Comanda nu a fost executata.": "Python multiliniar: salveaza codul cu write_file intr-un fisier .py, apoi ruleaza fisierul cu cwd corect. Comanda nu a fost executata.",
-  "Contextul cozii difera (model, profil sau folder). Editeaza mesajul pentru noua selectie.": "Contextul cozii difera (model, profil sau folder). Editeaza mesajul pentru noua selectie."
+  "Contextul cozii difera (model, profil sau folder). Editeaza mesajul pentru noua selectie.": "Contextul cozii difera (model, profil sau folder). Editeaza mesajul pentru noua selectie.",
+  "Cereri simultane": "Cereri simultane",
+  "Cost": "Cost",
+  "Cost zero declarat in catalog": "Cost zero declarat in catalog",
+  "Cost declarat in catalog": "Cost declarat in catalog",
+  "Cost necunoscut": "Cost necunoscut",
+  "Cereri simultane declarate: {0}": "Cereri simultane declarate: {0}",
+  "Chat in lucru — continua independent de selectie": "Chat in lucru — continua independent de selectie",
+  "Acest proiect lucreaza deja in alt chat. Revino la acel chat sau asteapta terminarea.": "Acest proiect lucreaza deja in alt chat. Revino la acel chat sau asteapta terminarea.",
+  "Conversatia este deja deschisa in alta fereastra.": "Conversatia este deja deschisa in alta fereastra.",
+  "Alege optional alt furnizor sau model. Selectia nu trimite mesajul; limitele contului pot fi comune.": "Alege optional alt furnizor sau model. Selectia nu trimite mesajul; limitele contului pot fi comune.",
+  "Furnizor si model": "Furnizor si model",
+  "Alege o optiune salvata sau foloseste selectoarele Furnizor si Model.": "Alege o optiune salvata sau foloseste selectoarele Furnizor si Model.",
+  "Selectia este pregatita. Apasa Trimite cand vrei sa continui; operatiile nu sunt retrimise automat.": "Selectia este pregatita. Apasa Trimite cand vrei sa continui; operatiile nu sunt retrimise automat.",
+  "Alternative furnizori si modele": "Alternative furnizori si modele"
 }

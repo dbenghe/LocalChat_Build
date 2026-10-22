@@ -86,7 +86,7 @@ public final class UiTest {
                 JLabel status=field(app,"status");
                 check(status.getText().equals(I18n.text("Rulez {0}…","read_file")),"translated dynamic status");
                 check(transcript.getText().equals(before),"streaming transcript preserved");
-                check(send.isEnabled() && stop.isEnabled() && !newChat.isEnabled(),"busy controls retain Stop and allow queue submission");
+                check(send.isEnabled() && stop.isEnabled() && newChat.isEnabled(),"busy controls retain Stop, allow queue submission and independent new chat");
                 Color errorColor=StyleConstants.getForeground(transcript.getStyledDocument().getCharacterElement(before.length()-2).getAttributes());
                 check(errorColor.equals(new Color(mode==1?0xFF9C9C:0xB42332)),"existing errors recolored");
                 check(key.getEchoChar()!=0,"API key remains masked");

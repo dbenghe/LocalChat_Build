@@ -89,6 +89,50 @@ public final class LocalChat extends JFrame {
     private final Path conversationsDir = appDir.resolve("conversatii");
     private final Path toolsConfigFile = appDir.resolve("unelte.json");
     private final Properties config = new Properties();
+    private final Properties configBaseline=new Properties();
+    private static final List<LocalChat> WINDOWS=new ArrayList<>();
+    private boolean secondaryWindow;
+    private List<ProviderAlternatives.Choice> alternativeChoices=List.of();
+    private String activeProject="";
+    private static Path canonical(Path path){return path==null?null:path.toAbsolutePath().normalize();}
+    private LocalChat owner(Path file){if(file==null)return null;for(LocalChat window:WINDOWS)if(window!=this&&window.appDir.equals(appDir)&&canonical(file).equals(canonical(window.conversationFile)))return window;return null;}
+    @Override public void dispose(){if(current!=null||compactClient!=null)stop();WINDOWS.remove(this);refreshRunning();super.dispose();}
+    private void openSeparate(Conversations.Saved saved){
+        LocalChat existing=saved==null?null:owner(saved.file());if(existing!=null){existing.setVisible(true);existing.toFront();existing.requestFocus();workspace.select(conversationFile);return;}
+        if(!saveConfig())return;LocalChat child=new LocalChat(true);
+        if(saved!=null)child.openSession(saved);
+        child.setLocation(getX()+32,getY()+24);child.setVisible(true);workspace.select(conversationFile);
+        if(saved==null)child.offerAlternatives();
+    }
+    private void refreshRunning(){
+        Set<Path> files=new java.util.HashSet<>();for(LocalChat window:WINDOWS)if(window.appDir.equals(appDir)&&window.busy&&window.conversationFile!=null)files.add(canonical(window.conversationFile));
+        for(LocalChat window:WINDOWS)if(window.appDir.equals(appDir)&&window.workspace!=null)window.workspace.running(files);
+    }
+    private boolean parallelBlocked(String draft,Path folder){
+        String project=toolsBox.isSelected()?ProjectLocations.project(draft,folder,sessionState.factoryProject):"";
+        for(LocalChat window:WINDOWS)if(window!=this&&window.appDir.equals(appDir)&&window.busy&&toolsBox.isSelected()&&window.toolsBox.isSelected()){
+            String other=window.activeProject.isBlank()?window.sessionState.factoryProject:window.activeProject;
+            if(!project.isBlank()&&project.equals(other)||(project.isBlank()||other.isBlank())&&java.util.Objects.equals(canonical(folder),canonical(window.currentWorkDir()))){setStatus("Acest proiect lucreaza deja in alt chat. Revino la acel chat sau asteapta terminarea.",true);return true;}
+        }return false;
+    }
+    private void broadcastAppearance(){for(LocalChat window:List.copyOf(WINDOWS))if(window!=this&&window.appDir.equals(appDir)){window.theme=theme;window.applyLanguage();window.applyTheme();}}
+    private void offerAlternatives(){
+        if(busy||composerAssist.waiting())return;
+        alternativeChoices=ProviderAlternatives.choices(config,appDir,shownSelection,currentModel(),toolsBox.isSelected());
+        if(alternativeChoices.isEmpty())return;
+        composerAssist.presentLocal(new ComposerAssist.Request(t("Alege optional alt furnizor sau model. Selectia nu trimite mesajul; limitele contului pot fi comune."),List.of(new ComposerAssist.Question("provider-alternative",t("Furnizor si model"),alternativeChoices.stream().map(ProviderAlternatives.Choice::label).toList())),List.of()),"provider-alternative");
+    }
+    private boolean selectAlternative(){
+        String answer=composerAssist.value("provider-alternative");if(answer.isBlank())return false;
+        var choice=alternativeChoices.stream().filter(c->c.label().equals(answer)).findFirst().orElse(null);
+        if(choice==null){setStatus("Alege o optiune salvata sau foloseste selectoarele Furnizor si Model.",true);return true;}
+        Properties latest=new Properties();try(InputStream in=Files.newInputStream(configFile)){latest.load(in);}catch(IOException e){setStatus("Nu pot citi setarile: {0}",true,describe(e));return true;}
+        if(choice.selection() instanceof SavedProviders.Entry e&&!SavedProviders.present(latest,e)){setStatus("Furnizorul selectat nu mai este disponibil.",true);return true;}
+        config.clear();config.putAll(latest);configBaseline.clear();configBaseline.putAll(latest);
+        if(choice.selection() instanceof SavedProviders.Entry e){for(var item:SavedProviders.list(config))if(item.id().equals(e.id())){boolean found=false;for(int i=0;i<providerBox.getItemCount();i++)if(providerBox.getItemAt(i).equals(item))found=true;if(!found)providerBox.addItem(item);}}
+        selectingSavedProvider=true;try{providerBox.setSelectedItem(choice.selection());showProvider(choice.selection());}finally{selectingSavedProvider=false;}modelBox.setSelectedItem(choice.model());composerAssist.clear();alternativeChoices=List.of();saveConfig();refreshDashboard();
+        setStatus("Selectia este pregatita. Apasa Trimite cand vrei sa continui; operatiile nu sunt retrimise automat.",false);return true;
+    }
     private final List<ChatClient.Message> history = new ArrayList<>();
     private final Mcp mcp = new Mcp();
     private final Set<Tools.Access> alwaysAllowed = Collections.synchronizedSet(EnumSet.noneOf(Tools.Access.class));
@@ -239,9 +283,9 @@ public final class LocalChat extends JFrame {
     }
     private Hotfolder hotfolder;
     private boolean hotfolderScanning;private long hotfolderLastScan;
-    private final javax.swing.Timer hotfolderTimer=new javax.swing.Timer(10000,e->{scanHotfolder();checkMonthlyCatalogues();});
+    private final javax.swing.Timer hotfolderTimer=new javax.swing.Timer(10000,e->{if(WINDOWS.stream().filter(w->w.appDir.equals(appDir)).findFirst().orElse(this)==this){scanHotfolder();checkMonthlyCatalogues();}});
     private void configureHotfolder(){
-        if(busy)return;JCheckBox enabled=new JCheckBox(t("Activeaza hotfolder (doar drafturi)"),Boolean.parseBoolean(config.getProperty("hotfolder.enabled","false")));JPanel panel=new JPanel(new BorderLayout(5,8));panel.add(enabled,BorderLayout.NORTH);panel.add(new JLabel(t("Hotfolderul urmareste Folderul de lucru: {0}",workDirField.getText().strip())));if(JOptionPane.showConfirmDialog(this,panel,t("Hotfolder proiecte"),JOptionPane.OK_CANCEL_OPTION)!=JOptionPane.OK_OPTION)return;try{Properties next=new Properties();next.putAll(config);next.setProperty("hotfolder.enabled",Boolean.toString(enabled.isSelected()));next.remove("hotfolder.path");SettingsStore.save(configFile,next);config.putAll(next);config.remove("hotfolder.path");hotfolder=null;scanHotfolder();refreshDashboard();}catch(IOException|RuntimeException e){setStatus("Nu pot configura hotfolder: {0}",true,describe(e));}
+        if(busy)return;JCheckBox enabled=new JCheckBox(t("Activeaza hotfolder (doar drafturi)"),Boolean.parseBoolean(config.getProperty("hotfolder.enabled","false")));JPanel panel=new JPanel(new BorderLayout(5,8));panel.add(enabled,BorderLayout.NORTH);panel.add(new JLabel(t("Hotfolderul urmareste Folderul de lucru: {0}",workDirField.getText().strip())));if(JOptionPane.showConfirmDialog(this,panel,t("Hotfolder proiecte"),JOptionPane.OK_CANCEL_OPTION)!=JOptionPane.OK_OPTION)return;try{Properties next=new Properties();next.putAll(config);next.setProperty("hotfolder.enabled",Boolean.toString(enabled.isSelected()));next.remove("hotfolder.path");SettingsStore.merge(configFile,next,configBaseline);config.putAll(next);config.remove("hotfolder.path");hotfolder=null;scanHotfolder();refreshDashboard();}catch(IOException|RuntimeException e){setStatus("Nu pot configura hotfolder: {0}",true,describe(e));}
     }
     private void scanHotfolder(){
         if(hotfolderScanning||!Boolean.parseBoolean(config.getProperty("hotfolder.enabled","false")))return;
@@ -253,7 +297,7 @@ public final class LocalChat extends JFrame {
         String project=change.folder().toString();String prompt=Hotfolder.prompt(change);String event=ModelCatalog.hash(project+change.signature());
         List<Conversations.Saved> chats=Conversations.list(conversationsDir);
         if(chats.stream().anyMatch(c->c.state().hotfolderEvent.equals(event)))return;
-        Conversations.Saved reusable=chats.stream().filter(c->!c.file().equals(conversationFile)&&!c.state().archived&&c.messages().isEmpty()&&c.state().projectStatus.equals("draft")&&c.state().hotfolderProject.equals(project)).findFirst().orElse(null);
+        Conversations.Saved reusable=chats.stream().filter(c->!c.file().equals(conversationFile)&&owner(c.file())==null&&!c.state().archived&&c.messages().isEmpty()&&c.state().projectStatus.equals("draft")&&c.state().hotfolderProject.equals(project)).findFirst().orElse(null);
         Conversations.State draft=reusable==null?new Conversations.State():reusable.state();
         if(reusable==null){draft.toolsEnabled=true;draft.contextMode="mbs";draft.systemPrompt=defaultSystemPrompt("mbs");draft.mbsSystemPrompt=defaultSystemPrompt("mbs");draft.normalSystemPrompt=defaultSystemPrompt("normal");draft.provider=shownProvider.name();draft.providerPreset=SavedProviders.id(shownSelection);draft.model=currentModel();draft.baseUrl=currentUrl();draft.streamEnabled=streamBox.isSelected();draft.responseProfile=responseProfile.getSelectedIndex();draft.responseLanguage=responseLanguage();draft.translateMessage=translateMessageBox.isSelected();draft.autoCompact=sessionState.autoCompact;draft.autoThreshold=sessionState.autoThreshold;draft.title=change.project()+" — "+t(change.fresh()?"Proiect nou":"Actualizare proiect");}
         draft.draft=draft.draft.isBlank()?prompt:draft.draft+"\n\n"+prompt;draft.projectStatus="draft";draft.unread=true;draft.hotfolderProject=project;draft.hotfolderEvent=event;
@@ -290,8 +334,10 @@ public final class LocalChat extends JFrame {
     private final JButton timelineMenu=new JButton(new UiIcon("timeline",16));
     private void toggleBookmark(int message){if(message<0||message>=history.size()||!history.get(message).role.equals("user"))return;boolean previous=sessionState.bookmarks.contains(message);if(previous)sessionState.bookmarks.remove(message);else sessionState.bookmarks.add(message);if(!saveConversation()){if(previous)sessionState.bookmarks.add(message);else sessionState.bookmarks.remove(message);}timeline.bookmarks(sessionState.bookmarks);}
 
-    private LocalChat() {
+    private LocalChat(){this(false);}
+    private LocalChat(boolean secondary) {
         super("LocalChat " + AppVersion.VALUE + " — ChatGPT · Claude · API");
+        secondaryWindow=secondary;
         transcript.setEditorKit(new MarkdownChat.Kit());
         transcript.setEditable(false);
         transcript.getDocument().putProperty("localchat.original",originalTranscript);
@@ -433,6 +479,7 @@ public final class LocalChat extends JFrame {
             public void removeUpdate(javax.swing.event.DocumentEvent e){if(!restoringSelections){suggestCommands();refreshDashboard();}}
             public void changedUpdate(javax.swing.event.DocumentEvent e){}
         });
+        workDirField.addActionListener(e->persistWorkDir());workDirField.addFocusListener(new java.awt.event.FocusAdapter(){public void focusLost(java.awt.event.FocusEvent e){persistWorkDir();}});
         workDirField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener(){
             public void insertUpdate(javax.swing.event.DocumentEvent e){hidePdfPreview();refreshWorkFolder();}public void removeUpdate(javax.swing.event.DocumentEvent e){hidePdfPreview();refreshWorkFolder();}public void changedUpdate(javax.swing.event.DocumentEvent e){}
         });
@@ -451,13 +498,13 @@ public final class LocalChat extends JFrame {
         languageBox.addActionListener(e -> {
             if (changingAppearance) return;
             I18n.setLanguage(I18n.CODES[languageBox.getSelectedIndex()]);
-            applyLanguage();
+            applyLanguage();broadcastAppearance();
             saveConfig();
         });
         themeBox.addActionListener(e -> {
             if (changingAppearance) return;
             theme = themeBox.getSelectedIndex() == 1 ? "dark" : "light";
-            applyTheme();
+            applyTheme();broadcastAppearance();
             saveConfig();
         });
         responseLanguageBox.addActionListener(e->{if(changingAppearance||restoringSelections)return;translateMessageBox.setEnabled(!busy&&!responseLanguage().equals("auto"));saveConfig();saveConversation();refreshDashboard();});
@@ -469,7 +516,7 @@ public final class LocalChat extends JFrame {
             Object previous=shownSelection;showProvider(p);if(!selectingSavedProvider&&previous instanceof SavedProviders.Entry entry&&!SavedProviders.present(config,entry))providerBox.removeItem(entry);
         });
 
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowOpened(WindowEvent e) {
@@ -485,13 +532,13 @@ public final class LocalChat extends JFrame {
                 if(compactClient!=null)compactClient.cancel();
                 mcp.closeAll();
             }
-            @Override public void windowClosed(WindowEvent e){factoryGeneration++;resolvingFactory=false;hotfolderTimer.stop();hotfolder=null;agentsButton.disposeActivity();dashboardTimer.stop();markdownTimer.stop();if(pdfPreview!=null)pdfPreview.clear();busyIndicator.active(false);}
+            @Override public void windowClosed(WindowEvent e){if(current!=null||compactClient!=null)stop();WINDOWS.remove(LocalChat.this);refreshRunning();factoryGeneration++;resolvingFactory=false;hotfolderTimer.stop();hotfolder=null;agentsButton.disposeActivity();dashboardTimer.stop();markdownTimer.stop();if(pdfPreview!=null)pdfPreview.clear();busyIndicator.active(false);}
         });
         setSize(1320, 880);
         setMinimumSize(new Dimension(1080, 650));
         setLocationRelativeTo(null);
         setStatus("Alege furnizorul, pune cheia API si scrie un mesaj.  Enter = trimite,  Shift+Enter = rand nou.", false);
-        refreshDashboard();
+        WINDOWS.add(this);refreshDashboard();refreshRunning();
         if (!Boolean.getBoolean("localchat.test")) {reloadTools();dashboardTimer.start();hotfolderTimer.start();}
     }
 
@@ -592,6 +639,7 @@ public final class LocalChat extends JFrame {
             if (dir != null) openFolder(dir);
             else setStatus("Folderul de lucru nu exista.", true);
         }));
+        tools.add(item("Alternative furnizori si modele",null,e->offerAlternatives()));
         tools.add(item("Deschide Downloads", null, e -> openDownloads()));
         tools.add(item("Deschide folderul aplicatiei", null, e -> openFolder(appDir)));
         bar.add(tools);
@@ -787,7 +835,8 @@ public final class LocalChat extends JFrame {
     private void ensureSession() {if(conversationFile==null)conversationFile=Conversations.newFile(conversationsDir);}
 
     private void openSession(Conversations.Saved selected) {
-        if(busy){setStatus("Opreste generarea inainte de aceasta comanda.",true);return;}
+        if(selected==null)return;if(conversationFile!=null&&conversationFile.equals(selected.file()))return;
+        if(busy||owner(selected.file())!=null){openSeparate(selected);return;}
         try {
             // Reload from disk so the sidebar never restores a stale snapshot.
             if(conversationFile!=null && conversationFile.equals(selected.file()))return;
@@ -853,6 +902,7 @@ public final class LocalChat extends JFrame {
         downloadsButton.setPreferredSize(new Dimension(Math.min(310,downloadsButton.getFontMetrics(downloadsButton.getFont()).stringWidth(label)+40),26));
     }
     private void showPdfControl() {
+        if(parallelBlocked(input.getText(),currentWorkDir()))return;
         if(busy){setStatus("Opreste generarea inainte de aceasta comanda.",true);return;}
         if(permissionBox.getSelectedIndex()==2){setStatus("Mod doar citire: modificarile si comenzile sunt blocate.",true);return;}
         McpServer server=mcp.servers().stream().filter(s->s.tools().stream().anyMatch(tool->tool.name.equals("pdfcontrol_start_workflow"))).findFirst().orElse(null);
@@ -890,7 +940,7 @@ public final class LocalChat extends JFrame {
         selectSavedProvider(saved);if(!saveConfig())throw new IllegalStateException(t("Modificarile furnizorului nu au putut fi salvate."));refreshDashboard();
     }
     private void commitProviderSettings(Properties updated){
-        try{SettingsStore.save(configFile,updated);}catch(IOException error){throw new java.io.UncheckedIOException(error);}
+        try{SettingsStore.merge(configFile,updated,configBaseline);}catch(IOException error){throw new java.io.UncheckedIOException(error);}
         config.clear();config.putAll(updated);
     }
     private void renameNamedProvider(String name){
@@ -1029,6 +1079,7 @@ public final class LocalChat extends JFrame {
     }
 
     private void refreshDashboard() {
+        refreshRunning();
         refreshQueue();if(workspace!=null&&Boolean.parseBoolean(config.getProperty("hotfolder.enabled","false"))){String detail=hotfolderLastScan==0?t("Hotfolder: asteapta prima scanare"):t("Hotfolder: ultima scanare {0}",java.time.Instant.ofEpochMilli(hotfolderLastScan).atZone(java.time.ZoneId.systemDefault()).toLocalTime().withNano(0).toString());workspace.notifications.setToolTipText(t("Notificari: {0}",workspace.notifications.getText().isBlank()?"0":workspace.notifications.getText())+" — "+detail+" — "+workDirField.getText().strip());}
         projectStatusButton.setIcon(ProjectStatus.icon(sessionState.projectStatus));projectStatusButton.setDisabledIcon(projectStatusButton.getIcon());projectStatusButton.setToolTipText(t("Status proiect")+": "+ProjectStatus.label(sessionState.projectStatus));projectStatusButton.setEnabled(!busy);
         filterModelOptions();
@@ -1079,6 +1130,7 @@ public final class LocalChat extends JFrame {
         if(config.getProperty(profile+".limitSource","").equals("automatic"))modelMetadata.setText(modelMetadata.getText()+t(" · buget recomandat automat"));
         if(config.getProperty(profile+".limitSource","").equals("fallback"))modelMetadata.setText(t("Buget local de lucru: {0} · Limita reala API: necunoscuta",configured));
         applyBudgetButton.setVisible(recommendedModelBudget()>0);applyBudgetButton.setEnabled(!busy);applyBudgetButton.setToolTipText(ModelInfo.recommendedBudget(currentUrl())>0?t("Buget local de 180000 tokeni, sub limita de intrare de aproximativ 200K publicata de GonkaRouter. Nu este context confirmat de API. Sursa: https://gonkarouter.io/pricing"):t("Buget local recomandat: {0}. Bazat pe documentatia modelului, nu pe o limita confirmata a serverului. {1}",recommendedModelBudget(),currentCatalogEntry().source()));
+        modelMetadata.setText(modelMetadata.getText()+" · "+ModelCatalog.concurrency(info.parallel()>0?info.parallel():currentCatalogEntry().parallel()));
         modelMetadata.setToolTipText(metadata.isBlank()?t("Verifica metadatele serverului. Nu deducem limita din numele modelului."):t("Metadate memorate: {0}",metadata));
         String title=sessionState.title.isBlank()?Conversations.title(history):sessionState.title;
         setTitle("LocalChat "+AppVersion.VALUE+" — "+(title.isBlank()?"ChatGPT · Claude · API":title));
@@ -1124,7 +1176,7 @@ public final class LocalChat extends JFrame {
                 long users=history.stream().filter(m->"user".equals(m.role)).count(),tools=history.stream().filter(m->"tool".equals(m.role)).count();
                 notice(t("Mesaje: {0} · Intrebari: {1} · Rezultate tool: {2}",history.size(),users,tools)+"\n"+usageText(sessionState.usage));
             }
-            case "/new" -> {newChat();if(!arg.isBlank()){sessionState.title=arg;ensureSession();saveConversation();}refreshDashboard();}
+            case "/new" -> {boolean separate=busy;newChat();if(!separate&&!arg.isBlank()){sessionState.title=arg;ensureSession();saveConversation();}refreshDashboard();}
             case "/title" -> {if(arg.isBlank())renameSession();else{sessionState.title=arg;ensureSession();saveConversation();refreshDashboard();}}
             case "/pin" -> pinSession();
             case "/list" -> {refreshSessions();workspace.search.setText(arg);StringBuilder text=new StringBuilder();for(int i=0;i<workspace.sessions.size();i++){
@@ -1202,7 +1254,7 @@ public final class LocalChat extends JFrame {
     }
     private void restoreAgentPanel(){if(agentPanel==null||(current!=null&&!current.done))return;agentPanel.restore(history);agentPanel.busy(false);if(agentPanel.count()==0)setAgentPaneVisible(false);}
     private void restoreComposerAssist(){if(composerAssist==null||(current!=null&&!current.done))return;if(!sessionState.factoryPending.isBlank()){try{presentFactoryQuestion(ProjectLocations.parse(sessionState.factoryPending));return;}catch(RuntimeException ignored){sessionState.factoryPending="";}}composerAssist.restore(history.subList(Math.min(sessionState.memory.start,history.size()),history.size()),sessionState.interactionState);}
-    private void submitInteraction(String answer){if(busy)return;if(!sessionState.factoryPending.isBlank()){answerFactory();return;}String draft=input.getText();String combined=answer+(draft.isBlank()?"":"\n\n"+draft);ComposerEditing.setText(input,combined);sessionState.interactionReplyDraft=true;send();}
+    private void submitInteraction(String answer){if(busy)return;if(selectAlternative())return;if(!sessionState.factoryPending.isBlank()){answerFactory();return;}String draft=input.getText();String combined=answer+(draft.isBlank()?"":"\n\n"+draft);ComposerEditing.setText(input,combined);sessionState.interactionReplyDraft=true;send();}
     private void hidePdfPreview(){if(pdfPreview==null)return;pdfPreview.clear();setPdfPaneVisible(false);}
     private void togglePdfPane(){if(pdfPreview==null)return;setPdfPaneVisible(!pdfPreview.isVisible());}
     private void togglePdfExpansion(){if(pdfPreview==null||!pdfPreview.isVisible())return;expandedPdf=!expandedPdf;chatSplit.getLeftComponent().setVisible(!expandedPdf);chatSplit.setDividerSize(expandedPdf?0:6);pdfPreview.expanded(expandedPdf);if(!expandedPdf)chatSplit.setDividerLocation(Math.max(380,chatSplit.getWidth()-380));revalidate();}
@@ -1357,6 +1409,9 @@ public final class LocalChat extends JFrame {
         if (busy) return;
         if(composerAssist.waiting()){setStatus("Completeaza alegerile; mesajul tau ramane in asteptare. Poti inchide propunerile pentru a trimite doar mesajul.",false);return;}
         if(shownSelection instanceof SavedProviders.Entry entry&&!SavedProviders.present(config,entry)){setStatus("Furnizorul acestei conversatii a fost sters. Alege un furnizor disponibil.",true);return;}
+        if(shownSelection instanceof SavedProviders.Entry selected&&configBaseline.containsKey(selected.prefix()+".name")){
+            try{Properties latest=new Properties();try(InputStream in=Files.newInputStream(configFile)){latest.load(in);}if(!SavedProviders.present(latest,selected)){setStatus("Furnizorul acestei conversatii a fost sters. Alege un furnizor disponibil.",true);return;}}catch(IOException error){setStatus("Nu pot citi setarile: {0}",true,describe(error));return;}
+        }
         final Provider p = shownProvider;
         final String model = currentModel();
         final String url = currentUrl();
@@ -1386,6 +1441,7 @@ public final class LocalChat extends JFrame {
             setStatus("Alege un folder de lucru care exista (sau debifeaza Tool-uri).", true);
             return;
         }
+        if(parallelBlocked(draft,workDir))return;
         if(useTools&&checkFactory(draft,workDir))return;
         prepareModeContext();
         int remembered=0;String memoryFailure=null;String memoryDraft=sessionState.interactionReplyDraft?"":draft;
@@ -1444,6 +1500,7 @@ public final class LocalChat extends JFrame {
         }
         sessionState.projectStatus="in_progress";
         factoryChecked="";
+        activeProject=useTools?ProjectLocations.project(draft,workDir,sessionState.factoryProject):"";
         current = turn;
         if(queueOwner==sessionState&&!queueDispatchId.isBlank()){sessionState.queue.removeIf(q->q.id().equals(queueDispatchId)&&q.text().equals(draft)&&q.attachments().equals(pendingAttachments));queueDispatchId="";queueOwner=null;}
         if (conversationFile == null) conversationFile = Conversations.newFile(conversationsDir);
@@ -1627,6 +1684,7 @@ public final class LocalChat extends JFrame {
         String msg = describe(error);
         append(t("[Eroare] ") + msg, errorStyle);
         String lower = msg.toLowerCase(Locale.ROOT);
+        if(lower.contains("http 429"))SwingUtilities.invokeLater(()->{if(!busy)offerAlternatives();});
         if (streamBox.isSelected() && lower.contains("stream")) {
             append("\n" + t("Sfat: debifeaza „Streaming” si incearca din nou."), errorStyle);
         }
@@ -1756,7 +1814,7 @@ public final class LocalChat extends JFrame {
     // ---- conversations ----
 
     private void newChat() {
-        if (busy) {setStatus("Opreste generarea inainte de aceasta comanda.",true);return;}
+        if (busy) {openSeparate(null);return;}
         if(!saveConversation())return;
         if(conversationFile!=null){previousConversation=conversationFile;config.setProperty("session.previous",conversationFile.getFileName().toString());}
         ComposerEditing.setText(input,"");
@@ -1770,7 +1828,7 @@ public final class LocalChat extends JFrame {
         if(!defaultProvider.isBlank()) {
             try{providerBox.setSelectedItem(SavedProviders.resolve(config,config.getProperty("default.providerPreset",""),Provider.valueOf(defaultProvider)));}catch(IllegalArgumentException ignored){}
             modelBox.setSelectedItem(config.getProperty("default.model",currentModel()));urlField.setText(config.getProperty("default.url",currentUrl()));
-            workDirField.setText(pathMap().path(config.getProperty("default.workdir",workDirField.getText())));
+
         }
         applyDefaultSelections();
         setStatus("Conversatie noua.", false);
@@ -1780,6 +1838,7 @@ public final class LocalChat extends JFrame {
 
     private boolean saveConversation() {
         if (conversationFile == null) return true;
+        if(owner(conversationFile)!=null){setStatus("Conversatia este deja deschisa in alta fereastra.",true);return false;}
         try {
             if(shownProvider!=null && workspace!=null && !contextProfile().equals(contextProfile))refreshDashboard();
             if(!busy)prepareModeContext();
@@ -1791,7 +1850,7 @@ public final class LocalChat extends JFrame {
             if(shownProvider!=null){sessionState.provider=shownProvider.name();sessionState.providerPreset=SavedProviders.id(shownSelection);sessionState.model=currentModel();sessionState.baseUrl=currentUrl();}
             if(workspace!=null)sessionState.contextLimit=((Number)workspace.limit.getValue()).intValue();
             Conversations.save(conversationFile, workDirField.getText().trim(), history,sessionState);
-            refreshSessions();workspace.select(conversationFile);return true;
+            refreshSessions();workspace.select(conversationFile);for(LocalChat other:WINDOWS)if(other!=this&&other.appDir.equals(appDir)&&other.workspace!=null)other.refreshSessions();return true;
         } catch (IOException e) {
             setStatus("Nu pot salva conversatia: {0}", true, e.getMessage());return false;
         }
@@ -1951,6 +2010,7 @@ public final class LocalChat extends JFrame {
         }
     }
 
+    private void persistWorkDir(){if(restoringSelections||busy||currentWorkDir()==null)return;configBaseline.remove("workdir");if(saveConfig())saveConversation();}
     private void chooseWorkDir() {
         JFileChooser chooser = new JFileChooser();
         chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -1959,7 +2019,7 @@ public final class LocalChat extends JFrame {
         if (dir != null) chooser.setCurrentDirectory(dir.toFile());
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             workDirField.setText(chooser.getSelectedFile().getAbsolutePath());
-            saveConfig();
+            persistWorkDir();
         }
     }
 
@@ -2027,6 +2087,9 @@ public final class LocalChat extends JFrame {
 
     private void loadModels() {
         if(unavailableProvider()){setStatus("Furnizorul acestei conversatii a fost sters. Alege un furnizor disponibil.",true);return;}
+        if(shownSelection instanceof SavedProviders.Entry selected&&configBaseline.containsKey(selected.prefix()+".name")){
+            try{Properties latest=new Properties();try(InputStream in=Files.newInputStream(configFile)){latest.load(in);}if(!SavedProviders.present(latest,selected)){setStatus("Furnizorul acestei conversatii a fost sters. Alege un furnizor disponibil.",true);return;}}catch(IOException error){setStatus("Nu pot citi setarile: {0}",true,describe(error));return;}
+        }
         final Provider p = shownProvider;final Object selection=shownSelection;final String prefix=SavedProviders.prefix(selection);
         final String url = currentUrl();
         final String key = currentKey(p);
@@ -2065,11 +2128,11 @@ public final class LocalChat extends JFrame {
 
     private void setBusy(boolean b) {
         responseLanguageBox.setEnabled(!b);translateMessageBox.setEnabled(!b&&!responseLanguage().equals("auto"));
-        busy = b;if(agentPanel!=null)agentPanel.busy(b);if(composerAssist!=null)composerAssist.busy(b);busyIndicator.active(b);pdfControlButton.setEnabled(!b);
+        busy = b;if(!b)activeProject="";refreshRunning();if(agentPanel!=null)agentPanel.busy(b);if(composerAssist!=null)composerAssist.busy(b);busyIndicator.active(b);pdfControlButton.setEnabled(!b);
         bottomModel.setEnabled(!b);bottomApproval.setEnabled(!b);bottomMode.setEnabled(!b);responseProfile.setEnabled(!b);inspectModel.setEnabled(!b && !inspectingModel);
         sendButton.setEnabled(true);attachButton.setEnabled(true);sendButton.setToolTipText(t(b?"Adauga mesajul in coada":"Trimite"));sendButton.getAccessibleContext().setAccessibleName(sendButton.getToolTipText());refreshAttachments();
         stopButton.setEnabled(b);
-        newChatButton.setEnabled(!b);
+        newChatButton.setEnabled(true);
         favoriteModelButton.setEnabled(!b);providerBox.setEnabled(!b);saveProviderButton.setEnabled(!b);manageProviderButton.setEnabled(!b);applyBudgetButton.setEnabled(!b);modelBox.setEnabled(!b);urlField.setEnabled(!b);keyField.setEnabled(!b);
         toolsBox.setEnabled(!b);workDirField.setEnabled(!b);chooseDirButton.setEnabled(!b);systemField.setEnabled(!b);
         permissionBox.setEnabled(!b && toolsBox.isSelected());loadModelsButton.setEnabled(!b);
@@ -2257,7 +2320,7 @@ public final class LocalChat extends JFrame {
     private void loadConfig() {
         if (Files.isRegularFile(configFile)) {
             try (InputStream in = Files.newInputStream(configFile)) {
-                config.load(in);
+                config.load(in);configBaseline.putAll(config);
             } catch (IOException e) {
                 setStatus("Nu pot citi setarile: {0}", true, e.getMessage());
             }
@@ -2265,7 +2328,7 @@ public final class LocalChat extends JFrame {
         for(var saved:SavedProviders.list(config))providerBox.addItem(saved);
         systemField.setText(config.getProperty("system", ""));
         streamBox.setSelected(!"false".equals(config.getProperty("stream")));
-        workDirField.setText(config.getProperty("workdir", ""));
+        workDirField.setText(pathMap().path(config.getProperty("workdir",config.getProperty("default.workdir", ""))));
         toolsBox.setSelected(!"false".equals(config.getProperty("tools")));
         permissionBox.setSelectedIndex("read".equals(config.getProperty("permission"))?2:"auto".equals(config.getProperty("permission")) ? 1 : 0);
         try{responseProfile.setSelectedIndex(Math.max(0,Math.min(3,Integer.parseInt(config.getProperty("response.profile","3")))));}catch(NumberFormatException ignored){responseProfile.setSelectedIndex(3);}
@@ -2281,7 +2344,7 @@ public final class LocalChat extends JFrame {
         String def=config.getProperty("default.provider","");
         if(!def.isBlank())try{Provider d=Provider.valueOf(def);Object preferred=SavedProviders.resolve(config,config.getProperty("default.providerPreset",""),d);providerBox.setSelectedItem(preferred);showProvider(preferred);
             modelBox.setSelectedItem(config.getProperty("default.model",currentModel()));urlField.setText(config.getProperty("default.url",currentUrl()));
-            workDirField.setText(pathMap().path(config.getProperty("default.workdir",workDirField.getText())));
+
         }catch(IllegalArgumentException ignored){}
         applyDefaultSelections();
     }
@@ -2300,7 +2363,7 @@ public final class LocalChat extends JFrame {
         config.setProperty("response.profile",Integer.toString(responseProfile.getSelectedIndex()));
         config.setProperty("permission", permissionBox.getSelectedIndex()==2?"read":permissionBox.getSelectedIndex() == 1 ? "auto" : "ask");
         try {
-            SettingsStore.save(configFile, config);
+            SettingsStore.merge(configFile, config,configBaseline);
             return true;
         } catch (IOException e) {
             setStatus("Nu pot salva setarile in {0}: {1}", true, configFile, e.getMessage());return false;

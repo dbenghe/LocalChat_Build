@@ -24,6 +24,9 @@ final class WorkspacePanel extends JPanel {
     private final JButton fresh=new JButton(),rename=new JButton(),pin=new JButton(),remove=new JButton();
     private List<Conversations.Saved> all=List.of();
     private boolean refreshing;
+    private Set<Path> runningFiles=Set.of();
+    void running(Set<Path> files){if(!files.equals(runningFiles)){runningFiles=Set.copyOf(files);list.repaint();}}
+
     Consumer<String> statusChange=value->{};
     final JButton notifications=new JButton();
     private final javax.swing.Timer notificationPulse=new javax.swing.Timer(700,e->{notifications.putClientProperty("JButton.buttonType",Boolean.TRUE.equals(notifications.getClientProperty("pulse"))?null:"roundRect");notifications.putClientProperty("pulse",!Boolean.TRUE.equals(notifications.getClientProperty("pulse")));notifications.setForeground(Boolean.TRUE.equals(notifications.getClientProperty("pulse"))?new Color(getBackground().getRed()<128?0x32BBCB:0x137585):UIManager.getColor("Label.foreground"));});
@@ -50,7 +53,7 @@ final class WorkspacePanel extends JPanel {
         list.setCellRenderer(new DefaultListCellRenderer(){
             @Override public Component getListCellRendererComponent(JList<?> l,Object value,int index,boolean selected,boolean focus) {
                 Conversations.Saved s=(Conversations.Saved)value;
-                JLabel label=(JLabel)super.getListCellRendererComponent(l,(s.state().unread?"\u2022 ":"")+(s.state().pinned?"* ":"")+s.title(),index,selected,focus);label.putClientProperty("html.disable",true);label.setIcon(ProjectStatus.icon(s.state().projectStatus));label.setToolTipText(ProjectStatus.label(s.state().projectStatus));return label;
+                JLabel label=(JLabel)super.getListCellRendererComponent(l,(s.state().unread?"\u2022 ":"")+(s.state().pinned?"* ":"")+s.title(),index,selected,focus);label.putClientProperty("html.disable",true);boolean live=runningFiles.contains(s.file().toAbsolutePath().normalize());label.setFont(label.getFont().deriveFont(live?Font.BOLD:Font.PLAIN));label.setIcon(ProjectStatus.icon(live?"in_progress":s.state().projectStatus));if(live&&!selected)label.setForeground(new Color(StatusColors.dark(l)?0x5ED5CB:0x087B72));label.setToolTipText(live?I18n.text("Chat in lucru — continua independent de selectie"):ProjectStatus.label(s.state().projectStatus));return label;
             }});
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         list.addListSelectionListener(e->{if(!refreshing && !e.getValueIsAdjusting() && list.getSelectedValue()!=null)open.accept(list.getSelectedValue());});

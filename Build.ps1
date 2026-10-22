@@ -47,6 +47,8 @@ $taskTests = (Get-ChildItem -LiteralPath "$PSScriptRoot/tests" -Filter '*.java')
 if ($LASTEXITCODE) { throw 'Test compilation failed' }
 & "$taskJdk/bin/java.exe" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.SettingsStoreTest
 if ($LASTEXITCODE) { throw 'Settings persistence tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/concurrent-chat-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ConcurrentChatsTest
+if ($LASTEXITCODE) { throw 'Concurrent chat/session/metadata tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.UiTest
 if ($LASTEXITCODE) { throw 'Tests failed; distribution was not changed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.FeatureTest
