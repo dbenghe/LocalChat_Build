@@ -81,6 +81,10 @@ if ($LASTEXITCODE) { throw 'Catalog/probe tests failed; distribution was not cha
 if ($LASTEXITCODE) { throw 'Profile model suitability tests failed' }
 & "$taskJdk/bin/java.exe" "-Dlocalchat.home=$taskBuild/work-progress-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.WorkProgressTest
 if ($LASTEXITCODE) { throw 'Continuity/loop/provider isolation tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/discovery-recovery-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.DiscoveryRecoveryTest
+if ($LASTEXITCODE) { throw 'Repeated discovery recovery tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/sidebar-navigation-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.SidebarNavigationTest
+if ($LASTEXITCODE) { throw 'Sidebar filter and click coalescing tests failed' }
 & "$taskJdk/bin/java.exe" "-Dlocalchat.home=$taskBuild/skill-progress-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.SkillProgressTest
 if ($LASTEXITCODE) { throw 'Skill resource/progress regression tests failed' }
 & "$taskJdk/bin/java.exe" "-Dlocalchat.home=$taskBuild/copy-resume-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.CopyResumeTest

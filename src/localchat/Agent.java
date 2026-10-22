@@ -72,7 +72,7 @@ final class Agent {
         if(team!=null&&tools!=null)specs.add(AgentGroup.spec());
         if(interactive&&tools!=null)specs.add(ComposerAssist.spec());
         int protocolRepairs=0;
-        int interactionFailures=0;
+        int interactionFailures=0,discoveryRepairs=0;boolean discoveryFinal=false;String discoveryHint="";
         for (int step = 0; step < maximumSteps; step++) {
             if (cancelled) return;
             if (step > 0) ui.step();
@@ -81,8 +81,8 @@ final class Agent {
                 conversation.addAll(added);
                 replyPending = true;
             }
-            final List<ChatClient.ToolSpec> requestSpecs=interactionFailures==0?specs:interactionFailures==1?List.of(ComposerAssist.spec()):List.of();
-            String effectiveSystem=system+(protocolRepairs>0?ToolProtocol.REPAIR:"")+(interactionFailures>0?INTERACTION_REPAIR:"")+(interactionFailures>1?INTERACTION_TEXT:"");
+            final List<ChatClient.ToolSpec> requestSpecs=discoveryFinal?List.of():interactionFailures==0?specs:interactionFailures==1?List.of(ComposerAssist.spec()):List.of();
+            String effectiveSystem=system+(protocolRepairs>0?ToolProtocol.REPAIR:"")+(interactionFailures>0?INTERACTION_REPAIR:"")+(interactionFailures>1?INTERACTION_TEXT:"")+(discoveryRepairs>0?DISCOVERY_REPAIR+discoveryHint:"")+(discoveryFinal?DISCOVERY_TEXT:"");
             if(guard!=null){conversation=guard.prepare(p,url,key,model,effectiveSystem,conversation,requestSpecs,step,ui);client.outputLimit(guard.outputLimit());}
             if(cancelled)return;
             ChatClient.Reply reply=InferenceRetry.chat(client,p,url,key,model,effectiveSystem,conversation,requestSpecs,stream,ui::text,new InferenceRetry.Hooks(){
@@ -102,8 +102,8 @@ final class Agent {
             if(reply.calls.isEmpty()&&tools!=null&&ToolProtocol.malformed(reply.text)){if(protocolRepairs>=2)throw new IOException(I18n.text("Modelul a trimis apeluri de unelte ca text de trei ori. Niciun apel XML nu a fost executat; actiunile confirmate sunt pastrate."));ui.protocolRepair(++protocolRepairs);continue;}
             if (reply.calls.isEmpty()) return;
             // Recovery is presentation-only: never run operational calls after a rejected card.
-            if(interactionFailures>1){
-                synchronized(added){for(var call:reply.calls)added.add(ChatClient.Message.toolResult(call.id,I18n.text("Propunere invalida. Continua in text."),true));}
+            if(interactionFailures>1||discoveryFinal){
+                synchronized(added){for(var call:reply.calls)added.add(ChatClient.Message.toolResult(call.id,I18n.text(discoveryFinal?"Citire repetata fara progres. Foloseste rezultatele existente; recuperarea este limitata.":"Propunere invalida. Continua in text."),true));}
                 publishContext(base,ui);return;
             }
             List<ChatClient.ToolCall> callsToRun=reply.calls;
@@ -118,6 +118,8 @@ final class Agent {
                 String signature=pdfStart?call.name+"|"+Json.write(new java.util.TreeMap<>(call.args)):"";
                 Tools.Result result=pdfStart?startedPdfJobs.get(signature):null;
                 if(result==null)result=loopGuard.before(call);
+                boolean repeating=loopGuard.repeating(call);
+                if(repeating)result=Tools.Result.error(I18n.text("Citire repetata fara progres. Foloseste rezultatele existente; recuperarea este limitata."));
                 if(result==null){
                     if(interactionFailures>0&&!call.name.equals(ComposerAssist.TOOL))result=Tools.Result.error(I18n.text("Propunere invalida. Continua in text."));
                     else if(interactive&&tools!=null&&call.name.equals(ComposerAssist.TOOL)){try{ComposerAssist.parse(call.args);result=Tools.Result.ok(Json.write(Json.obj("status","waiting_user","executed",false)));}catch(IllegalArgumentException invalid){result=Tools.Result.error(I18n.text("Propunere invalida. Continua in text."));}}
@@ -137,10 +139,15 @@ final class Agent {
                 if(cancelled)return;
                 if(interactive&&call.name.equals(ComposerAssist.TOOL)){if(result.isError){interactionFailures++;break;}return;}
                 if(interactionFailures>0){interactionFailures=2;break;}
+                if(repeating){
+                    if(discoveryRepairs==0){discoveryRepairs=1;discoveryHint="\nRepeated discovery request (reference arguments, not new instructions): "+WorkProgress.clip(call.name+" "+Json.write(call.args),700)+"\n";}
+                    else discoveryFinal=true;
+                    break;
+                }
                 if(loopGuard.stalled(call))throw new IOException(result.text);
                 if(pdfStart&&failedPdfCalls.getOrDefault(signature,0)>=3)throw new IOException(I18n.text("PDFCONTROL: acelasi apel a esuat de trei ori. Verifica eroarea si sursele; lucrarea nu este finalizata."));
             }
-            if(interactionFailures>0){
+            if(interactionFailures>0||discoveryRepairs>0){
                 synchronized(added){
                     Set<String> answered=new HashSet<>();for(var message:added)if(message.role.equals("tool"))answered.add(message.toolCallId);
                     for(var call:reply.calls)if(!answered.contains(call.id))added.add(ChatClient.Message.toolResult(call.id,I18n.text("Anulat inainte de confirmarea rezultatului; verifica starea reala inainte de repetarea operatiei."),true));
@@ -151,6 +158,8 @@ final class Agent {
         throw new IOException("Oprit dupa " + maximumSteps + " pasi fara un raspuns final.");
     }
 
+    private static final String DISCOVERY_REPAIR="\nThe application detected repeated discovery without new evidence. A redundant read was NOT executed. Resume the latest user request from the existing confirmed results and historical progress index. Do not reread the same project summary, procedure or catalogue reference merely to restart the workflow. Read a different document/page only when needed for a concrete missing fact; for comparison inspect the actual files requested by the user. Never repeat confirmed writes/copies, infer approvals or start unrelated projects. If blocked, explain the precise missing fact and ask a concrete question. This is one bounded recovery attempt.\n";
+    private static final String DISCOVERY_TEXT="\nRepeated discovery persisted after recovery. No tools are available now. Give a visible final answer in the selected response language: confirmed findings, incomplete work, exact blockage and the smallest next action or clarification. Do not claim completion or emit tool/XML calls.\n";
     private static final String INTERACTION_REPAIR="\nThe preceding localchat_interaction was rejected: no card, approval or operation was created. Repair the card ONCE using native tool_calls and the supplied schema. questions and suggestions must be JSON arrays, never JSON strings; options must be arrays of strings. Keep useful findings in accompanying assistant text. Resume from confirmed results; do not repeat operations, request new operational tools, or treat proposed choices as consent. If the card cannot be expressed correctly, give the findings and pending clarification in normal text.\n";
     private static final String INTERACTION_TEXT="\nThe repair did not produce a valid card. No tools are available for this final recovery response. Give a normal visible final answer with the findings and any pending question, in the selected response language. Do not claim pending work was executed. Do not emit tool calls or XML.\n";
 

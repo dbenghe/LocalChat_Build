@@ -580,5 +580,9 @@
   "OpenAI": "OpenAI",
   "Cheia API nu este acceptata de furnizor. Verifica cheia in configuratia acestui API.": "Sağlayıcı API anahtarını kabul etmiyor. Bu API yapılandırmasındaki anahtarı kontrol edin.",
   "Suportul MBS nu este confirmat. Modelele pot fi inspectate si testate; nu sunt declarate compatibile automat.": "MBS desteği doğrulanmadı. Modeller incelenip test edilebilir; uyumluluk otomatik varsayılmaz.",
-  "Aceasta este o cheie Grok/Cursor Agents. API-ul api.x.ai necesita o cheie de inferenta xAI.": "Bu bir Grok/Cursor Agents anahtarıdır. api.x.ai API'si bir xAI çıkarım anahtarı gerektirir."
+  "Aceasta este o cheie Grok/Cursor Agents. API-ul api.x.ai necesita o cheie de inferenta xAI.": "Bu bir Grok/Cursor Agents anahtarıdır. api.x.ai API'si bir xAI çıkarım anahtarı gerektirir.",
+  "Citire repetata fara progres. Foloseste rezultatele existente; recuperarea este limitata.": "İlerleme olmadan tekrarlanan okuma. Mevcut sonuçları kullanın; kurtarma sınırlıdır.",
+  "Reseteaza filtrele": "Filtreleri sıfırla",
+  "Lista este filtrata; conversatiile raman salvate.": "Liste filtrelendi; konuşmalar kayıtlı kalır.",
+  "Afiseaza numai conversatiile arhivate": "Yalnızca arşivlenmiş konuşmaları göster"
 }

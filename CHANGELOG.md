@@ -1,3 +1,9 @@
+# 1.23.4 — 2026-10-22
+
+- Citirile repetitive declanseaza o singura recuperare ghidata, apoi constatari si blocaj in text fara unelte daca modelul persista. Nu repeta operatiile confirmate; pastreaza arhiva si Stop.
+- Navigarea cu mouse-ul asteapta terminarea secventei de clicuri si deschide chatul o singura data. Tastatura si navigarea programatica raman directe.
+- Lista filtrata goala explica pastrarea conversatiilor si ofera resetarea filtrelor. Optiunea Arhivate explica faptul ca afiseaza exclusiv arhiva, in toate cele sase limbi.
+
 # 1.23.3 — 2026-10-22
 
 - Alegerea explicita a fabricii ramane prioritara dupa reverificarea locatiilor, inclusiv cand aceeasi ciorna compara doua fabrici. Schimbarea ciornei sau contextului cere o noua verificare.

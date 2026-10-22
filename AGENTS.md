@@ -109,3 +109,5 @@ Repository-ul utilizatorului este https://github.com/dbenghe/LocalChat_Build (co
 - Din 1.23.2, cardurile invalide au o singura reparare structurata, apoi fallback in text fara unelte operationale. Nu executa JSON/XML deteriorat, nu repeta actiuni confirmate si nu inventa aprobari. Siblingii neexecutati au rezultate explicite inaintea urmatoarei inferente; pastreaza arhiva si Stop.
 
 - Din 1.23.3, cardurile compacte pastreaza valorile originale, ciorna si selectie explicita, cu layout responsiv Dark/Light. Alegerea fabricii confirma doar ciorna/contextul curent, se reverifica pe locatiile disponibile si nu este anulata de o comparatie intre doua fabrici in aceeasi ciorna.
+
+- Din 1.23.4, detectarea repetitiilor de discovery permite o singura recuperare ghidata, apoi fallback fara unelte; arhiva si Stop raman intacte. Secventele de clicuri se grupeaza intr-o singura navigare, iar filtrele nu modifica starea arhivata sau fisierele chatului. Lista filtrata goala explica situatia si permite resetarea in sase limbi.

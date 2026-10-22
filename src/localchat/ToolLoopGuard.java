@@ -23,5 +23,6 @@ final class ToolLoopGuard {
   boolean document=call.name.equals("read_file")||call.name.endsWith("pdfcontrol_read_document");
   if(document&&!result.isError&&evidence.add(signature(call)+"|"+ModelCatalog.hash(result.text)))counts.clear();
  }
+ boolean repeating(ChatClient.ToolCall call){return read(call.name)&&!Set.of("run_agents",ComposerAssist.TOOL).contains(call.name)&&counts.getOrDefault(signature(call),0)>=3;}
  boolean stalled(ChatClient.ToolCall call){return read(call.name)&&counts.getOrDefault(signature(call),0)>=5;}
 }

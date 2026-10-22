@@ -762,3 +762,5 @@ Surse: [xAI REST](https://docs.x.ai/developers/rest-api-reference/inference), [C
 Cardurile interactive invalide au o reparare limitata, apoi raspuns in text. Recuperarea foloseste rezultatele deja confirmate si nu executa operatii sau aprobari implicite.
 
 Cardurile de alegere sunt compacte (maximum 720 px), cu optiuni aliniate si derulare pentru continut extins. Alegerea fabricii din card are prioritate pentru ciorna curenta, chiar daca aceasta compara doua fabrici.
+
+Filtrul Arhivate afiseaza numai arhiva. Cand un filtru ascunde toate chaturile, Reseteaza filtrele revine la lista activa, fara modificarea istoricului. Citirile repetitive au o recuperare ghidata limitata, apoi raspuns cu constatari si blocaj fara unelte daca modelul persista.

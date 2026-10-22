@@ -580,5 +580,9 @@
   "OpenAI": "OpenAI",
   "Cheia API nu este acceptata de furnizor. Verifica cheia in configuratia acestui API.": "Dostawca nie akceptuje klucza API. Sprawdź klucz w konfiguracji tego API.",
   "Suportul MBS nu este confirmat. Modelele pot fi inspectate si testate; nu sunt declarate compatibile automat.": "Obsługa MBS nie jest potwierdzona. Modele można przeglądać i testować; zgodność nie jest zakładana.",
-  "Aceasta este o cheie Grok/Cursor Agents. API-ul api.x.ai necesita o cheie de inferenta xAI.": "To jest klucz Grok/Cursor Agents. API api.x.ai wymaga klucza wnioskowania xAI."
+  "Aceasta este o cheie Grok/Cursor Agents. API-ul api.x.ai necesita o cheie de inferenta xAI.": "To jest klucz Grok/Cursor Agents. API api.x.ai wymaga klucza wnioskowania xAI.",
+  "Citire repetata fara progres. Foloseste rezultatele existente; recuperarea este limitata.": "Powtarzany odczyt bez postępu. Użyj istniejących wyników; odzyskiwanie jest ograniczone.",
+  "Reseteaza filtrele": "Resetuj filtry",
+  "Lista este filtrata; conversatiile raman salvate.": "Lista jest filtrowana; rozmowy pozostają zapisane.",
+  "Afiseaza numai conversatiile arhivate": "Pokaż tylko zarchiwizowane rozmowy"
 }
