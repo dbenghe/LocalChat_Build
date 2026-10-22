@@ -53,6 +53,8 @@ if ($LASTEXITCODE) { throw 'Feature tests failed; distribution was not changed' 
 if ($LASTEXITCODE) { throw 'Provider/metadata tests failed; distribution was not changed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/provider-management-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ProviderManagementTest
 if ($LASTEXITCODE) { throw 'Provider management regression tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/project-location-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ProjectLocationsTest
+if ($LASTEXITCODE) { throw 'Factory/project location preflight tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/hotfolder-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.HotfolderTest
 if ($LASTEXITCODE) { throw 'Hotfolder/status/notification tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/composer-assist-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ComposerAssistTest

@@ -518,5 +518,18 @@
   "Hotfolder: {0}": "Hotfolder: {0}",
   "Hotfolder: {0} proiecte cu drafturi noi.": "Hotfolder: {0} proiecte cu drafturi noi.",
   "Proiect nou": "Proiect nou",
-  "Actualizare proiect": "Actualizare proiect"
+  "Actualizare proiect": "Actualizare proiect",
+  "Fabrica de confirmat": "Fabrica de confirmat",
+  "Proiectul {0} nu a fost gasit. Alege fabrica pentru continuare.": "Proiectul {0} nu a fost gasit. Alege fabrica pentru continuare.",
+  "Proiectul {0} apare in mai multe locatii. Alege fabrica si folderul.": "Proiectul {0} apare in mai multe locatii. Alege fabrica si folderul.",
+  "Locatii neverificate: {0}": "Locatii neverificate: {0}",
+  "Unde procesez proiectul {0}?": "Unde procesez proiectul {0}?",
+  "Confirma fabrica pentru locatia {0}.": "Confirma fabrica pentru locatia {0}.",
+  "Care este fabrica proiectului {0}?": "Care este fabrica proiectului {0}?",
+  "Verific locatiile proiectului {0}...": "Verific locatiile proiectului {0}...",
+  "Mesajul s-a modificat. Verifica-l si apasa Trimite.": "Mesajul s-a modificat. Verifica-l si apasa Trimite.",
+  "Alege fabrica pentru proiect inainte de procesare.": "Alege fabrica pentru proiect inainte de procesare.",
+  "Nu pot restaura alegerea fabricii. Apasa Trimite pentru reverificare.": "Nu pot restaura alegerea fabricii. Apasa Trimite pentru reverificare.",
+  "Verificarea fabricii a fost oprita. Ciorna este pastrata.": "Verificarea fabricii a fost oprita. Ciorna este pastrata.",
+  "Folder de proiect neconfirmat": "Folder de proiect neconfirmat"
 }

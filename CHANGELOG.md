@@ -1,3 +1,9 @@
+# 1.20.0 — 2026-10-22
+
+- Deterministic MBS project-location preflight before model inference. Scan configured private roots read-only; multiple server folders require an explicit choice in the composer card. Unreachable roots remain unverified rather than absent.
+- Per-chat factory/root/folder selection and pending clarification persistence. Explicit user destination overrides previous selection; unknown factory roots require confirmation rather than inferring identity from the mapped drive/share.
+- Bounded background discovery, Stop/draft-change protection and no source/network modifications. Normal remains unaffected. Root mappings are private configuration, excluded from Git.
+
 # 1.19.0 — 2026-10-22
 
 - Optional persisted project hotfolder: baseline at first enable, stable new/changed source files create local MBS drafts, grouped per project. No inference or automatic sending. Exact project paths work when the working directory is PRODUCTIE or its parent.

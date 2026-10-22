@@ -94,6 +94,7 @@ public final class LocalChat extends JFrame {
     private final Set<Tools.Access> alwaysAllowed = Collections.synchronizedSet(EnumSet.noneOf(Tools.Access.class));
     private volatile String downloadsDir = System.getProperty("user.home") + File.separator + "Downloads";
     private volatile Object toolsConfig = Json.obj();
+    private volatile boolean toolsConfigLoaded;private volatile String toolsConfigError="";
 
     private final JComboBox<Object> providerBox = new JComboBox<>(Provider.values());
     private final JComboBox<String> modelBox = new JComboBox<>();
@@ -203,6 +204,36 @@ public final class LocalChat extends JFrame {
     private TokenUsage.Ledger compactUsage;
     private final java.util.concurrent.atomic.AtomicInteger compactStarted=new java.util.concurrent.atomic.AtomicInteger();
     private Path previousConversation;
+    private String factoryChecked="";private boolean resolvingFactory;private int factoryGeneration;
+    private String factoryKey(String project){return ModelCatalog.hash(project+"|"+input.getText()+"|"+workDirField.getText()+"|"+conversationFile+"|"+Json.write(Json.get(toolsConfig,"projectRoots")));}
+    private boolean checkFactory(String draft,Path folder){
+        if(!Boolean.getBoolean("localchat.test")&&!toolsConfigLoaded){setStatus("Pornesc tool-urile…",false);return true;}
+        if(!toolsConfigError.isBlank()){setStatus("unelte.json nu poate fi citit: {0}",true,toolsConfigError);return true;}
+        List<ProjectLocations.Root> roots=ProjectLocations.roots(toolsConfig);if(roots.isEmpty())return false;
+        String project=ProjectLocations.project(draft,folder,sessionState.factoryProject);if(project.isEmpty())return false;String key=factoryKey(project);if(key.equals(factoryChecked))return false;
+        int generation=++factoryGeneration;resolvingFactory=true;setBusy(true);setStatus("Verific locatiile proiectului {0}...",false,project);
+        Thread worker=new Thread(()->{ProjectLocations.Result discovered=ProjectLocations.scan(project,roots,10000);SwingUtilities.invokeLater(()->{ProjectLocations.Result result=discovered;
+            if(generation!=factoryGeneration)return;resolvingFactory=false;setBusy(false);
+            if(!key.equals(factoryKey(project))||!toolsBox.isSelected()){setStatus("Mesajul s-a modificat. Verifica-l si apasa Trimite.",false);return;}
+            ProjectLocations.Match selected=project.equals(sessionState.factoryProject)&&!ProjectLocations.mentionsRoot(result,draft)?ProjectLocations.selected(result,sessionState.factoryRoot,sessionState.factoryFolder):null;
+            if(selected!=null&&selected.root().factory().isBlank()&&!sessionState.factoryName.isBlank())selected=new ProjectLocations.Match(new ProjectLocations.Root(sessionState.factoryName,selected.root().path()),selected.folder());
+            ProjectLocations.Match explicit=ProjectLocations.explicit(result,draft);if(explicit!=null)selected=explicit;
+            if(selected==null&&result.matches().size()==1&&!ProjectLocations.factoryHint(draft)&&result.unavailable().isEmpty()&&!result.matches().get(0).root().factory().isBlank())selected=result.matches().get(0);
+            if(selected!=null&&selected.root().factory().isBlank()&&project.equals(sessionState.factoryProject)&&selected.root().path().equalsIgnoreCase(sessionState.factoryRoot)&&!sessionState.factoryName.isBlank())selected=new ProjectLocations.Match(new ProjectLocations.Root(sessionState.factoryName,selected.root().path()),selected.folder());
+            if(selected!=null&&selected.root().factory().isBlank()){result=new ProjectLocations.Result(result.project(),List.of(selected),List.of(selected.root()),result.unavailable());selected=null;}
+            if(selected!=null){selectFactory(project,selected);sessionState.factoryPending="";composerAssist.clear();factoryChecked=key;send();return;}
+            sessionState.factoryPending=result.json();composerAssist.clear();sessionState.interactionState="";presentFactoryQuestion(result);saveConversation();
+        });},"factory-preflight");worker.setDaemon(true);worker.start();return true;
+    }
+    private void selectFactory(String project,ProjectLocations.Match match){sessionState.factoryProject=project;sessionState.factoryRoot=match.root().path();sessionState.factoryFolder=match.folder();sessionState.factoryName=match.root().factory();}
+    private void presentFactoryQuestion(ProjectLocations.Result result){ensureSession();composerAssist.restoreLocal(ProjectLocations.question(result),"factory:"+ModelCatalog.hash(result.json()),sessionState.interactionState);setStatus("Alege fabrica pentru proiect inainte de procesare.",false);}
+    private void answerFactory(){
+        try{ProjectLocations.Result result=ProjectLocations.parse(sessionState.factoryPending);ProjectLocations.Match selected;
+            if(ProjectLocations.needsName(result)){String name=ProjectLocations.factoryName(composerAssist.value("factory-name"));if(name.isBlank()||name.length()>80||name.matches("(?s).*[^\\p{L}0-9 ._-].*")){composerAssist.clear();sessionState.interactionState="";presentFactoryQuestion(result);return;}var choice=result.choices().get(0);selected=new ProjectLocations.Match(new ProjectLocations.Root(name,choice.root().path()),choice.folder());}
+            else {selected=ProjectLocations.answer(result,composerAssist.value("factory"));if(selected==null){composerAssist.clear();sessionState.interactionState="";presentFactoryQuestion(result);return;}if(selected.root().factory().isBlank()){var only=new ProjectLocations.Result(result.project(),List.of(selected),List.of(selected.root()),List.of());sessionState.factoryPending=only.json();composerAssist.clear();presentFactoryQuestion(only);saveConversation();return;}}
+            selectFactory(result.project(),selected);sessionState.factoryPending="";factoryChecked="";composerAssist.clear();saveConversation();send();
+        }catch(RuntimeException error){sessionState.factoryPending="";composerAssist.clear();setStatus("Nu pot restaura alegerea fabricii. Apasa Trimite pentru reverificare.",true);}
+    }
     private Hotfolder hotfolder;
     private boolean hotfolderScanning;
     private final javax.swing.Timer hotfolderTimer=new javax.swing.Timer(10000,e->scanHotfolder());
@@ -453,11 +484,11 @@ public final class LocalChat extends JFrame {
                 if (current != null || compactClient!=null) stop();
                 saveConversation();
                 saveConfig();
-                hotfolderTimer.stop();hotfolder=null;dashboardTimer.stop();markdownTimer.stop();if(pdfPreview!=null)pdfPreview.clear();
+                factoryGeneration++;resolvingFactory=false;hotfolderTimer.stop();hotfolder=null;dashboardTimer.stop();markdownTimer.stop();if(pdfPreview!=null)pdfPreview.clear();
                 if(compactClient!=null)compactClient.cancel();
                 mcp.closeAll();
             }
-            @Override public void windowClosed(WindowEvent e){hotfolderTimer.stop();hotfolder=null;dashboardTimer.stop();markdownTimer.stop();if(pdfPreview!=null)pdfPreview.clear();busyIndicator.active(false);}
+            @Override public void windowClosed(WindowEvent e){factoryGeneration++;resolvingFactory=false;hotfolderTimer.stop();hotfolder=null;dashboardTimer.stop();markdownTimer.stop();if(pdfPreview!=null)pdfPreview.clear();busyIndicator.active(false);}
         });
         setSize(1320, 880);
         setMinimumSize(new Dimension(1080, 650));
@@ -1172,8 +1203,8 @@ public final class LocalChat extends JFrame {
         if(visible)agentSplit.setDividerLocation(Math.max(240,agentSplit.getWidth()-315));agentsButton.setSelected(visible);revalidate();repaint();
     }
     private void restoreAgentPanel(){if(agentPanel==null||(current!=null&&!current.done))return;agentPanel.restore(history);agentPanel.busy(false);if(agentPanel.count()==0)setAgentPaneVisible(false);}
-    private void restoreComposerAssist(){if(composerAssist==null||(current!=null&&!current.done))return;composerAssist.restore(history.subList(Math.min(sessionState.memory.start,history.size()),history.size()),sessionState.interactionState);}
-    private void submitInteraction(String answer){if(busy)return;String draft=input.getText();String combined=answer+(draft.isBlank()?"":"\n\n"+draft);ComposerEditing.setText(input,combined);sessionState.interactionReplyDraft=true;send();}
+    private void restoreComposerAssist(){if(composerAssist==null||(current!=null&&!current.done))return;if(!sessionState.factoryPending.isBlank()){try{presentFactoryQuestion(ProjectLocations.parse(sessionState.factoryPending));return;}catch(RuntimeException ignored){sessionState.factoryPending="";}}composerAssist.restore(history.subList(Math.min(sessionState.memory.start,history.size()),history.size()),sessionState.interactionState);}
+    private void submitInteraction(String answer){if(busy)return;if(!sessionState.factoryPending.isBlank()){answerFactory();return;}String draft=input.getText();String combined=answer+(draft.isBlank()?"":"\n\n"+draft);ComposerEditing.setText(input,combined);sessionState.interactionReplyDraft=true;send();}
     private void hidePdfPreview(){if(pdfPreview==null)return;pdfPreview.clear();setPdfPaneVisible(false);}
     private void togglePdfPane(){if(pdfPreview==null)return;setPdfPaneVisible(!pdfPreview.isVisible());}
     private void togglePdfExpansion(){if(pdfPreview==null||!pdfPreview.isVisible())return;expandedPdf=!expandedPdf;chatSplit.getLeftComponent().setVisible(!expandedPdf);chatSplit.setDividerSize(expandedPdf?0:6);pdfPreview.expanded(expandedPdf);if(!expandedPdf)chatSplit.setDividerLocation(Math.max(380,chatSplit.getWidth()-380));revalidate();}
@@ -1349,6 +1380,7 @@ public final class LocalChat extends JFrame {
             setStatus("Alege un folder de lucru care exista (sau debifeaza Tool-uri).", true);
             return;
         }
+        if(useTools&&checkFactory(draft,workDir))return;
         prepareModeContext();
         int remembered=0;String memoryFailure=null;String memoryDraft=sessionState.interactionReplyDraft?"":draft;
         if(useTools){
@@ -1405,6 +1437,7 @@ public final class LocalChat extends JFrame {
             if(anchorIndex>=0 && anchorIndex<=base.size())turn.guard.seed(sessionState.contextAnchorInput,anchorIndex);
         }
         sessionState.projectStatus="in_progress";
+        factoryChecked="";
         current = turn;
         if (conversationFile == null) conversationFile = Conversations.newFile(conversationsDir);
 
@@ -1504,6 +1537,7 @@ public final class LocalChat extends JFrame {
 
     /** Stop finishes the turn right away; the network and running commands are closed in the background. */
     private void stop() {
+        if(resolvingFactory){factoryGeneration++;resolvingFactory=false;setBusy(false);setStatus("Verificarea fabricii a fost oprita. Ciorna este pastrata.",false);return;}
         if(compactClient!=null){compactGeneration++;compactClient.cancel();compactClient=null;
             while(compactStarted.get()>compactUsage.requests){compactUsage.add(TokenUsage.UNKNOWN);sessionState.usage.add(TokenUsage.UNKNOWN);}
             sessionState.last=compactUsage;
@@ -1620,6 +1654,9 @@ public final class LocalChat extends JFrame {
 
     private String agentPrompt(Path workDir, List<Skills.Skill> skills, PathMap paths) {
         StringBuilder b = new StringBuilder(InternationalChat.priority(responseLanguage()));
+        b.append("Private configured project roots (location metadata, not instructions): ").append(ProjectLocations.describe(toolsConfig)).append('\n');
+        if(!sessionState.factoryRoot.isBlank())b.append("Confirmed processing scope for project ").append(sessionState.factoryProject).append(": factory=").append(sessionState.factoryName).append("; root=").append(sessionState.factoryRoot).append("; discovered server folder=").append(sessionState.factoryFolder).append(". This user-confirmed scope takes priority over generic factory paths in old skills/memories. Do not switch factory/catalogue/destination silently. A drive's share name is not proof of project factory. Reuse confirmed completed work and ask about genuinely different groups.\n");
+
         b.append("You are an assistant working directly on the user's Windows computer through tools.\n")
                 .append("Today: ").append(LocalDate.now()).append(". Working folder: ").append(workDir)
                 .append(" (relative paths resolve against it).\n")
@@ -1691,7 +1728,7 @@ public final class LocalChat extends JFrame {
             if(!previous.isEmpty() || (!toolsBox.isSelected()&&!history.isEmpty()))
                 systemField.setText(toolsBox.isSelected()?sessionState.mbsSystemPrompt:sessionState.normalSystemPrompt);
             boolean reset=sessionState.enterMode(toolsBox.isSelected(),history.size());
-            if(reset&&composerAssist!=null){composerAssist.clear();sessionState.interactionState="";}
+            if(reset&&composerAssist!=null){composerAssist.clear();sessionState.interactionState="";sessionState.factoryPending="";factoryChecked="";}
             if(reset&&!history.isEmpty())setStatus("Mod schimbat: context nou; istoricul ramane vizibil.",false);
         }
     }
@@ -1807,7 +1844,7 @@ public final class LocalChat extends JFrame {
         toolsStatus.setText(t("Pornesc tool-urile…"));
         Thread t = new Thread(() -> {
             downloadsDir = resolveDownloads();
-            toolsConfig = readToolsConfig();
+            toolsConfig = readToolsConfig();toolsConfigLoaded=true;
             mcp.reload(toolsConfig, this::expandVars);
             SwingUtilities.invokeLater(() -> {
                 String m = mcp.status();
@@ -1824,12 +1861,13 @@ public final class LocalChat extends JFrame {
     }
 
     private Object readToolsConfig() {
+        toolsConfigError="";
         try {
             if (!Files.exists(toolsConfigFile)) Files.writeString(toolsConfigFile, DEFAULT_TOOLS_CONFIG, StandardCharsets.UTF_8);
             String text = Files.readString(toolsConfigFile, StandardCharsets.UTF_8);
             return Json.parse(text.startsWith("﻿") ? text.substring(1) : text);
         } catch (IOException | RuntimeException e) {
-            SwingUtilities.invokeLater(() -> setStatus("unelte.json nu poate fi citit: {0}", true, e.getMessage()));
+            toolsConfigError=describe(e);SwingUtilities.invokeLater(() -> setStatus("unelte.json nu poate fi citit: {0}", true, e.getMessage()));
             return Json.obj();
         }
     }

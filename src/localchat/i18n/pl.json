@@ -518,5 +518,18 @@
   "Hotfolder: {0}": "Folder monitorowany: {0}",
   "Hotfolder: {0} proiecte cu drafturi noi.": "Folder monitorowany: {0} projektów z nowymi szkicami.",
   "Proiect nou": "Nowy projekt",
-  "Actualizare proiect": "Aktualizacja projektu"
+  "Actualizare proiect": "Aktualizacja projektu",
+  "Fabrica de confirmat": "Fabryka do potwierdzenia",
+  "Proiectul {0} nu a fost gasit. Alege fabrica pentru continuare.": "Nie znaleziono projektu {0}. Wybierz fabrykę.",
+  "Proiectul {0} apare in mai multe locatii. Alege fabrica si folderul.": "Projekt {0} istnieje w kilku lokalizacjach. Wybierz fabrykę i folder.",
+  "Locatii neverificate: {0}": "Niesprawdzone lokalizacje: {0}",
+  "Unde procesez proiectul {0}?": "Gdzie przetworzyć projekt {0}?",
+  "Confirma fabrica pentru locatia {0}.": "Potwierdź fabrykę dla lokalizacji {0}.",
+  "Care este fabrica proiectului {0}?": "Jaka jest fabryka projektu {0}?",
+  "Verific locatiile proiectului {0}...": "Sprawdzanie lokalizacji projektu {0}...",
+  "Mesajul s-a modificat. Verifica-l si apasa Trimite.": "Wiadomość zmieniła się. Sprawdź ją i wyślij.",
+  "Alege fabrica pentru proiect inainte de procesare.": "Wybierz fabrykę przed przetwarzaniem projektu.",
+  "Nu pot restaura alegerea fabricii. Apasa Trimite pentru reverificare.": "Nie można przywrócić wyboru fabryki. Wyślij, aby sprawdzić ponownie.",
+  "Verificarea fabricii a fost oprita. Ciorna este pastrata.": "Sprawdzanie fabryki zatrzymane. Szkic zachowany.",
+  "Folder de proiect neconfirmat": "Folder projektu niepotwierdzony"
 }

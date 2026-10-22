@@ -36,13 +36,17 @@ final class ComposerAssist extends JPanel {
  void busy(boolean value){busy=value;send.setEnabled(!value&&ready());for(Component c:components(this))if(c instanceof JRadioButton||c instanceof JTextField)c.setEnabled(!value);}
  private static java.util.List<Component> components(Container parent){java.util.List<Component> all=new ArrayList<>();for(Component c:parent.getComponents()){all.add(c);if(c instanceof Container box)all.addAll(components(box));}return all;}
  void dismiss(){dismissed=true;input.ghost("");setVisible(false);revalidate();}
- void present(Object raw,String identity){Request next=parse(raw);if(!key.equals(identity)){answers.clear();custom.clear();dismissed=false;key=identity;}request=next;render();}
+ void present(Object raw,String identity){presentLocal(parse(raw),identity);}
+ void presentLocal(Request next,String identity){if(!key.equals(identity)){answers.clear();custom.clear();dismissed=false;key=identity;}request=next;render();}
  void restore(List<ChatClient.Message> history,String saved){
   String identity="";Request next=null;int boundary=-1;for(int i=history.size()-1;i>=0;i--)if(history.get(i).role.equals("user")){boundary=i;break;}
   Set<String> confirmed=new HashSet<>();for(var message:history)if(message.role.equals("tool")&&!message.isError)try{if("waiting_user".equals(Json.str(Json.parse(message.content),"status")))confirmed.add(message.toolCallId);}catch(RuntimeException ignored){}
   for(int i=history.size()-1;i>boundary;i--){var m=history.get(i);if(!m.role.equals("assistant"))continue;for(var call:m.toolCalls)if(call.name.equals(TOOL)&&confirmed.contains(call.id))try{next=parse(call.args);identity=call.id;}catch(RuntimeException ignored){}if(next!=null)break;if(m.toolCalls.isEmpty()&&!m.content.isBlank()){next=detect(ReasoningDisplay.answer(m.content));if(next!=null){identity="legacy-"+ModelCatalog.hash(m.content+boundary);break;}}}
-  if(next==null){clear();return;}boolean same=key.equals(identity);request=next;if(!same){key=identity;answers.clear();custom.clear();dismissed=false;try{Object state=Json.parse(saved);if(key.equals(Json.str(state,"key"))){dismissed=Boolean.TRUE.equals(Json.get(state,"dismissed"));for(Question q:request.questions){answers.put(q.id,Objects.toString(Json.str(state,"answers",q.id),""));custom.put(q.id,Objects.toString(Json.str(state,"custom",q.id),""));}}}catch(RuntimeException ignored){}}render();
+  restoreLocal(next,identity,saved);
  }
+ void restoreLocal(Request next,String identity,String saved){if(next==null){clear();return;}boolean same=key.equals(identity);request=next;if(!same){key=identity;answers.clear();custom.clear();dismissed=false;try{Object state=Json.parse(saved);if(key.equals(Json.str(state,"key"))){dismissed=Boolean.TRUE.equals(Json.get(state,"dismissed"));for(Question q:request.questions){answers.put(q.id,Objects.toString(Json.str(state,"answers",q.id),""));custom.put(q.id,Objects.toString(Json.str(state,"custom",q.id),""));}}}catch(RuntimeException ignored){}}render();
+ }
+ String value(String id){String value=custom.getOrDefault(id,"").strip();return value.isEmpty()?answers.getOrDefault(id,""):value;}
  String snapshot(){return Json.write(Json.obj("key",key,"dismissed",dismissed,"answers",answers,"custom",custom));}
  boolean acceptFirst(){if(busy||request==null||dismissed||!request.questions.isEmpty()||request.suggestions.isEmpty()||!input.getText().isEmpty())return false;accept(request.suggestions.get(0));return true;}
  private void accept(String suggestion){if(busy)return;String separator=input.getText().isEmpty()?"":"\n\n";ComposerEditing.edit(input,()->{input.setCaretPosition(input.getDocument().getLength());input.replaceSelection(separator+suggestion);});dismiss();input.requestFocusInWindow();}

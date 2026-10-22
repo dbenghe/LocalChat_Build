@@ -518,5 +518,18 @@
   "Hotfolder: {0}": "Hotfolder: {0}",
   "Hotfolder: {0} proiecte cu drafturi noi.": "Hotfolder: {0} projects with new drafts.",
   "Proiect nou": "New project",
-  "Actualizare proiect": "Project update"
+  "Actualizare proiect": "Project update",
+  "Fabrica de confirmat": "Factory unconfirmed",
+  "Proiectul {0} nu a fost gasit. Alege fabrica pentru continuare.": "Project {0} was not found. Choose the factory to continue.",
+  "Proiectul {0} apare in mai multe locatii. Alege fabrica si folderul.": "Project {0} appears in several locations. Choose the factory and folder.",
+  "Locatii neverificate: {0}": "Unverified locations: {0}",
+  "Unde procesez proiectul {0}?": "Where should project {0} be processed?",
+  "Confirma fabrica pentru locatia {0}.": "Confirm the factory for location {0}.",
+  "Care este fabrica proiectului {0}?": "Which factory belongs to project {0}?",
+  "Verific locatiile proiectului {0}...": "Checking locations for project {0}...",
+  "Mesajul s-a modificat. Verifica-l si apasa Trimite.": "The message changed. Review it and press Send.",
+  "Alege fabrica pentru proiect inainte de procesare.": "Choose the project factory before processing.",
+  "Nu pot restaura alegerea fabricii. Apasa Trimite pentru reverificare.": "Cannot restore the factory choice. Press Send to check again.",
+  "Verificarea fabricii a fost oprita. Ciorna este pastrata.": "Factory check stopped. The draft is preserved.",
+  "Folder de proiect neconfirmat": "Project folder unconfirmed"
 }

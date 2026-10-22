@@ -518,5 +518,18 @@
   "Hotfolder: {0}": "İzleme klasörü: {0}",
   "Hotfolder: {0} proiecte cu drafturi noi.": "İzleme klasörü: {0} proje için yeni taslaklar.",
   "Proiect nou": "Yeni proje",
-  "Actualizare proiect": "Proje güncellemesi"
+  "Actualizare proiect": "Proje güncellemesi",
+  "Fabrica de confirmat": "Fabrika doğrulanmalı",
+  "Proiectul {0} nu a fost gasit. Alege fabrica pentru continuare.": "{0} projesi bulunamadı. Devam etmek için fabrikayı seçin.",
+  "Proiectul {0} apare in mai multe locatii. Alege fabrica si folderul.": "{0} projesi birden fazla konumda. Fabrika ve klasörü seçin.",
+  "Locatii neverificate: {0}": "Doğrulanmamış konumlar: {0}",
+  "Unde procesez proiectul {0}?": "{0} projesi nerede işlensin?",
+  "Confirma fabrica pentru locatia {0}.": "{0} konumu için fabrikayı doğrulayın.",
+  "Care este fabrica proiectului {0}?": "{0} projesi hangi fabrikaya ait?",
+  "Verific locatiile proiectului {0}...": "{0} projesinin konumları kontrol ediliyor...",
+  "Mesajul s-a modificat. Verifica-l si apasa Trimite.": "Mesaj değişti. Kontrol edip Gönder düğmesine basın.",
+  "Alege fabrica pentru proiect inainte de procesare.": "İşlemeden önce projenin fabrikasını seçin.",
+  "Nu pot restaura alegerea fabricii. Apasa Trimite pentru reverificare.": "Fabrika seçimi geri yüklenemedi. Yeniden kontrol için Gönder düğmesine basın.",
+  "Verificarea fabricii a fost oprita. Ciorna este pastrata.": "Fabrika kontrolü durduruldu. Taslak korundu.",
+  "Folder de proiect neconfirmat": "Proje klasörü doğrulanmadı"
 }

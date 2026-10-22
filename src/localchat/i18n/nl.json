@@ -518,5 +518,18 @@
   "Hotfolder: {0}": "Hotfolder: {0}",
   "Hotfolder: {0} proiecte cu drafturi noi.": "Hotfolder: {0} projecten met nieuwe concepten.",
   "Proiect nou": "Nieuw project",
-  "Actualizare proiect": "Projectupdate"
+  "Actualizare proiect": "Projectupdate",
+  "Fabrica de confirmat": "Fabriek bevestigen",
+  "Proiectul {0} nu a fost gasit. Alege fabrica pentru continuare.": "Project {0} niet gevonden. Kies de fabriek om verder te gaan.",
+  "Proiectul {0} apare in mai multe locatii. Alege fabrica si folderul.": "Project {0} staat op meerdere locaties. Kies fabriek en map.",
+  "Locatii neverificate: {0}": "Niet gecontroleerde locaties: {0}",
+  "Unde procesez proiectul {0}?": "Waar moet project {0} worden verwerkt?",
+  "Confirma fabrica pentru locatia {0}.": "Bevestig de fabriek voor locatie {0}.",
+  "Care este fabrica proiectului {0}?": "Welke fabriek hoort bij project {0}?",
+  "Verific locatiile proiectului {0}...": "Projectlocaties voor {0} controleren...",
+  "Mesajul s-a modificat. Verifica-l si apasa Trimite.": "Het bericht is gewijzigd. Controleer het en klik op Verzenden.",
+  "Alege fabrica pentru proiect inainte de procesare.": "Kies eerst de fabriek voor dit project.",
+  "Nu pot restaura alegerea fabricii. Apasa Trimite pentru reverificare.": "Fabriekskeuze herstellen mislukt. Klik op Verzenden om opnieuw te controleren.",
+  "Verificarea fabricii a fost oprita. Ciorna este pastrata.": "Fabriekscontrole gestopt. Het concept is bewaard.",
+  "Folder de proiect neconfirmat": "Projectmap niet bevestigd"
 }
