@@ -26,6 +26,7 @@ final class Conversations {
         String title="";
         boolean pinned, archived;
         final java.util.Set<Integer> bookmarks=new java.util.TreeSet<>();
+        String interactionState="";boolean interactionReplyDraft;
         String draft="",provider="",providerPreset="",model="",baseUrl="";
         final List<String> draftAttachments=new ArrayList<>(),attachedPaths=new ArrayList<>();
         long contextAnchorInput=-1;int contextAnchorCount=-1,contextAnchorThrough=-1;String contextAnchorProfile="",contextAnchorSignature="";
@@ -47,10 +48,10 @@ final class Conversations {
         ContextMemory memory=new ContextMemory();
         TokenUsage.Ledger usage=new TokenUsage.Ledger();
         TokenUsage.Ledger last=new TokenUsage.Ledger();
-        Object toJson() { return Json.obj("contextMode",contextMode,"activeContextStart",memory.start,"mbsSystemPrompt",mbsSystemPrompt,"normalSystemPrompt",normalSystemPrompt,"bookmarks",new ArrayList<>(bookmarks),"responseLanguage",responseLanguage,"translateMessage",translateMessage,"customTitle",title,"pinned",pinned,"archived",archived,"draft",draft,"draftAttachments",draftAttachments,"attachedPaths",attachedPaths,"provider",provider,"providerPreset",providerPreset,"model",model,"baseUrl",baseUrl,"contextLimit",contextLimit,"autoCompact",autoCompact,"autoThreshold",autoThreshold,"responseProfile",responseProfile,"systemPrompt",systemPrompt,"toolsEnabled",toolsEnabled,"streamEnabled",streamEnabled,"summary",memory.summary,
+        Object toJson() { return Json.obj("contextMode",contextMode,"activeContextStart",memory.start,"mbsSystemPrompt",mbsSystemPrompt,"normalSystemPrompt",normalSystemPrompt,"bookmarks",new ArrayList<>(bookmarks),"responseLanguage",responseLanguage,"translateMessage",translateMessage,"customTitle",title,"pinned",pinned,"archived",archived,"draft",draft,"interactionState",interactionState,"interactionReplyDraft",interactionReplyDraft,"draftAttachments",draftAttachments,"attachedPaths",attachedPaths,"provider",provider,"providerPreset",providerPreset,"model",model,"baseUrl",baseUrl,"contextLimit",contextLimit,"autoCompact",autoCompact,"autoThreshold",autoThreshold,"responseProfile",responseProfile,"systemPrompt",systemPrompt,"toolsEnabled",toolsEnabled,"streamEnabled",streamEnabled,"summary",memory.summary,
                 "contextAnchorInput",contextAnchorInput,"contextAnchorCount",contextAnchorCount,"contextAnchorThrough",contextAnchorThrough,"contextAnchorProfile",contextAnchorProfile,"contextAnchorSignature",contextAnchorSignature,"compactedThrough",memory.through,"retainedQuestion",memory.question,"usage",usage.toJson(),"lastTurn",last.toJson()); }
         static State fromJson(Object o, int count) {
-            State s=new State();
+            State s=new State();s.interactionState=java.util.Objects.toString(Json.str(o,"interactionState"),"");s.interactionReplyDraft=Boolean.TRUE.equals(Json.get(o,"interactionReplyDraft"));
             s.contextMode=java.util.Objects.toString(Json.str(o,"contextMode"),"");
             if(!java.util.Set.of("mbs","normal").contains(s.contextMode))s.contextMode="";
             s.memory.start=(int)Math.max(0,Math.min(count,TokenUsage.number(o,"activeContextStart",0)));s.memory.through=s.memory.start;

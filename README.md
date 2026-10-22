@@ -683,3 +683,11 @@ Pentru un build intr-o sesiune fara desktop interactiv se poate folosi `Build.ps
 ### Panoul agentilor
 
 Iconita cu agenti din antet deschide/inchide panoul lateral. Panoul apare automat numai cand `run_agents` porneste efectiv sarcinile; simpla afirmatie a modelului nu creeaza carduri. Cardurile arata modelul, sarcina, starea live si detalii pliabile pentru rezultat sau diagnostic. Sunt pastrate ultimele 18 sarcini ale conversatiei; istoricul integral ramane in chat si in arhivele private. Reluarea citeste dovezile salvate fara inferenta. „Opreste tura” opreste intreaga cerere, iar operatiile fara confirmare raman marcate astfel. Panoul PDF ramane disponibil separat.
+
+### Furnizori si propuneri in editor
+
+Langa selectorul Furnizor, `+` salveaza configuratia curenta sub un nume nou. Meniul `…` permite salvarea modificarilor, redenumirea sau stergerea unui furnizor salvat. Redenumirea pastreaza identitatea, modelele si favoritele; stergerea elimina cheia si configuratia proprie, pastrand istoricul. Protocoalele standard raman disponibile ca sabloane.
+
+In MBS, modelul poate prezenta clarificari prin `localchat_interaction`, folosind acelasi context, skill-uri si memorii permise ca raspunsul curent. Formularul afiseaza cel mult trei intrebari, optiuni si raspuns liber. Poti continua sa scrii in editor: textul ramane in asteptare pana trimiti raspunsurile sau inchizi formularul. Nicio optiune nu este preselectata si nicio propunere nu executa singura o operatie. Propunerile sunt generate in tura curenta, fara inferente separate in fundal; memoria permanenta ramane o functie separata, nu antrenarea automata a modelului.
+
+O sugestie discreta poate fi acceptata cu Tab cand editorul este gol; textul poate fi modificat si trimis ulterior cu Enter. Butoanele de sugestie pastreaza textul deja scris si adauga propunerea la el. Ctrl+Z anuleaza inserarea. Formularele partial completate sunt pastrate per chat. Modelul trebuie sa suporte unelte pentru protocolul structurat MBS; pentru raspunsuri clasice exista o preluare locala limitata la confirmari numerotate da/nu explicite. Normal ramane fara unelte si fara memorii MBS.

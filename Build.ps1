@@ -51,6 +51,10 @@ if ($LASTEXITCODE) { throw 'Tests failed; distribution was not changed' }
 if ($LASTEXITCODE) { throw 'Feature tests failed; distribution was not changed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/provider-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ProviderTest
 if ($LASTEXITCODE) { throw 'Provider/metadata tests failed; distribution was not changed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/provider-management-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ProviderManagementTest
+if ($LASTEXITCODE) { throw 'Provider management regression tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/composer-assist-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ComposerAssistTest
+if ($LASTEXITCODE) { throw 'Composer interaction regression tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/catalog-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ModelCatalogTest
 if ($LASTEXITCODE) { throw 'Catalog/probe tests failed; distribution was not changed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/model-suitability-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ModelSuitabilityTest

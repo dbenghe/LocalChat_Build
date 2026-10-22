@@ -37,6 +37,8 @@ final class Agent {
 
     private int maximumSteps=MAX_STEPS;
     Agent maxSteps(int count){maximumSteps=Math.max(1,Math.min(MAX_STEPS,count));return this;}
+    private boolean interactive;
+    Agent interactions(boolean value){interactive=value;return this;}
     private AgentGroup team;
     Agent group(AgentGroup value){team=value;return this;}
     private static final Object MUTATION_LOCK=new Object();
@@ -67,6 +69,7 @@ final class Agent {
              List<ChatClient.Message> base, boolean stream, Ui ui) throws IOException {
         List<ChatClient.ToolSpec> specs = new ArrayList<>(tools == null ? Collections.emptyList() : tools.specs());
         if(team!=null&&tools!=null)specs.add(AgentGroup.spec());
+        if(interactive&&tools!=null)specs.add(ComposerAssist.spec());
         for (int step = 0; step < maximumSteps; step++) {
             if (cancelled) return;
             if (step > 0) ui.step();
@@ -92,7 +95,9 @@ final class Agent {
             }
             publishContext(base, ui);
             if (reply.calls.isEmpty()) return;
-            for (ChatClient.ToolCall call : reply.calls) {
+            List<ChatClient.ToolCall> callsToRun=reply.calls;
+            if(interactive&&tools!=null){var interaction=reply.calls.stream().filter(c->c.name.equals(ComposerAssist.TOOL)).findFirst();if(interaction.isPresent())callsToRun=List.of(interaction.get());}
+            for (ChatClient.ToolCall call : callsToRun) {
                 if (cancelled) return;
                 ui.toolStarted(call);
                 boolean pdfStart=call.name.contains("pdfcontrol_start_")||call.name.endsWith("pdfcontrol_regenerate_report");
@@ -100,7 +105,8 @@ final class Agent {
                 Tools.Result result=pdfStart?startedPdfJobs.get(signature):null;
                 if(result==null)result=loopGuard.before(call);
                 if(result==null){
-                    if(team!=null&&call.name.equals("run_agents"))result=team.run(call,p,url,key,model,label,system,ui);
+                    if(interactive&&tools!=null&&call.name.equals(ComposerAssist.TOOL)){try{ComposerAssist.parse(call.args);result=Tools.Result.ok(Json.write(Json.obj("status","waiting_user","executed",false)));}catch(IllegalArgumentException invalid){result=Tools.Result.error(I18n.text("Propunere invalida. Continua in text."));}}
+                    else if(team!=null&&call.name.equals("run_agents"))result=team.run(call,p,url,key,model,label,system,ui);
                     else if(tools==null)result=Tools.Result.error("Tool-urile sunt dezactivate in aplicatie.");
                     else if(isMutation(call.name)){synchronized(MUTATION_LOCK){if(cancelled)return;result=tools.execute(call);}}
                     else result=tools.execute(call);
@@ -114,6 +120,7 @@ final class Agent {
                 publishContext(base, ui);
                 ui.toolFinished(call, result);
                 if(cancelled)return;
+                if(interactive&&call.name.equals(ComposerAssist.TOOL)){if(result.isError)throw new IOException(result.text);return;}
                 if(loopGuard.stalled(call))throw new IOException(result.text);
                 if(pdfStart&&failedPdfCalls.getOrDefault(signature,0)>=3)throw new IOException(I18n.text("PDFCONTROL: acelasi apel a esuat de trei ori. Verifica eroarea si sursele; lucrarea nu este finalizata."));
             }

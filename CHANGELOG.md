@@ -1,3 +1,11 @@
+## 1.18.0 - 2026-10-22
+
+- Formular de clarificari in zona mesajului, cu maximum trei intrebari, optiuni fara preselectare si camp liber. localchat_interaction foloseste contextul turei MBS, regulile si memoriile permise; opreste tura fara a executa alte apeluri din acelasi raspuns. Mesajul scris intre timp este pastrat si inclus numai la trimiterea explicita a raspunsurilor. Normal ramane fara unelte; intrebarile numerotate da/nu pot fi preluate local din raspunsurile clasice.
+- Sugestii optionale de pas urmator, afisate discret in editor si acceptate cu Tab sau prin buton, fara trimitere automata ori cerere API suplimentara pentru predictie. Tab nu inlocuieste o ciorna existenta, iar acceptarea este reversibila prin Undo. Intrebarile partial completate si inchiderea propunerilor sunt separate per conversatie si restaurate fara inferenta. Raspunsurile formularului nu sunt capturate automat ca reguli permanente din textul intrebarilor generate de model.
+- Controale compacte langa Furnizor: + pentru adaugare si meniu pentru salvarea modificarilor, redenumire si stergere a furnizorilor salvati. Actiunile sunt traduse in sase limbi si respecta temele Dark/Light.
+- Redenumirea pastreaza ID-ul, cheia, modelele, favoritele si asocierile conversatiilor. Numele duplicate sunt respinse fara suprascrierea altui furnizor.
+- Stergerea confirmata elimina configuratia si cheia furnizorului si dezleaga selectia implicita aferenta, pastrand ceilalti furnizori si istoricul. Chaturile cu un furnizor eliminat se deschid fara cheie si fara apeluri catre acel API; cer o selectie disponibila inainte de trimitere. Salvarile ulterioare nu recreeaza configuratia stearsa.
+
 ## 1.17.0 - 2026-10-21
 
 - Panou lateral de agenti cu iconita in antetul conversatiei; se deschide la pornirea reala a sarcinilor, poate fi ascuns/redeschis si redimensionat, separat de previzualizarea PDF.
