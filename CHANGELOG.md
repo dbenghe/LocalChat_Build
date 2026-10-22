@@ -1,3 +1,9 @@
+# 1.20.1 — 2026-10-22
+
+- Shared theme-aware status icon palette: slate draft, blue in progress, amber partial, green completed and purple restarted. Applied to chat toolbar, sidebar, status menus and notifications, including disabled in-progress toolbar icons; labels and shapes remain distinct.
+- Agent toolbar icon shows live working/queued counts and a subtle pulse only while actual current-chat child tasks are queued or running. It remains visible when the panel is hidden; Stop, terminal states, chat changes and disposal stop animation. Historical pending work never restarts the pulse.
+- Agent card status icons and colours use the same semantic palette, including errors, cancellations and unconfirmed results. Six localized accessible activity tooltips; no additional inference or changes to stored data.
+
 # 1.20.0 — 2026-10-22
 
 - Deterministic MBS project-location preflight before model inference. Scan configured private roots read-only; multiple server folders require an explicit choice in the composer card. Unreachable roots remain unverified rather than absent.

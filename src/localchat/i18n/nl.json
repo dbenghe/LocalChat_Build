@@ -531,5 +531,6 @@
   "Alege fabrica pentru proiect inainte de procesare.": "Kies eerst de fabriek voor dit project.",
   "Nu pot restaura alegerea fabricii. Apasa Trimite pentru reverificare.": "Fabriekskeuze herstellen mislukt. Klik op Verzenden om opnieuw te controleren.",
   "Verificarea fabricii a fost oprita. Ciorna este pastrata.": "Fabriekscontrole gestopt. Het concept is bewaard.",
-  "Folder de proiect neconfirmat": "Projectmap niet bevestigd"
+  "Folder de proiect neconfirmat": "Projectmap niet bevestigd",
+  "Panou agenti: {0} in lucru, {1} in asteptare": "Agentpaneel: {0} bezig, {1} in de wachtrij"
 }

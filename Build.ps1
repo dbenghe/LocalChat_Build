@@ -75,6 +75,8 @@ if ($LASTEXITCODE) { throw 'Runtime parallel agent tests failed' }
 if ($LASTEXITCODE) { throw 'Verified child-agent PDF artifact tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/agent-integration-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.AgentIntegrationTest
 if ($LASTEXITCODE) { throw 'Chat to runtime-agent integration tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/status-activity-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.StatusActivityTest
+if ($LASTEXITCODE) { throw 'Status colour/agent activity tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/agent-panel-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.AgentPanelTest
 if ($LASTEXITCODE) { throw 'Agent side-panel regression tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/attachment-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.AttachmentTest

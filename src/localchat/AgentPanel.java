@@ -13,7 +13,11 @@ final class AgentPanel extends JPanel {
     private final JLabel heading=new JLabel(),empty=new JLabel();
     final JButton close=new JButton(new UiIcon("close",14));
     final JButton stop=new JButton();
-    private boolean dark,busy;
+    private boolean dark,busy;private Runnable changed=()->{};
+    void onChange(Runnable listener){changed=listener;changed.run();}
+    int runningCount(){return busy?(int)rows.values().stream().filter(row->row.state.equals("running")||row.state.startsWith("tool:")).count():0;}
+    int waitingCount(){return busy?(int)rows.values().stream().filter(row->row.state.equals("queued")||row.state.equals("pending")).count():0;}
+    String summaryState(){if(runningCount()>0)return "running";if(waitingCount()>0)return "pending";if(rows.isEmpty())return "draft";for(String state:List.of("failed","partial","unconfirmed","cancelled"))if(rows.values().stream().anyMatch(row->row.state.equals(state)||state.equals("unconfirmed")&&active(row.state)))return state;return rows.values().stream().allMatch(row->row.state.equals("done"))?"done":"unconfirmed";}
     private static final class Row {
         String id,title,task,model,state="queued",answer="",error="";boolean pending,expanded;
         Row(String id,String title,String task,String model){this.id=id;this.title=title;this.task=task;this.model=model;}
@@ -29,7 +33,7 @@ final class AgentPanel extends JPanel {
     }
     void queued(String id,String title,String task,String model){rows.putIfAbsent(id,new Row(id,title,task,model));trim();rebuild();}
     void progress(String id,String state){Row row=rows.get(id);if(row!=null){row.state=state;rebuild();}}
-    void busy(boolean value){busy=value;stop.setEnabled(value&&rows.values().stream().anyMatch(row->active(row.state)));}
+    void busy(boolean value){busy=value;stop.setEnabled(value&&rows.values().stream().anyMatch(row->active(row.state)));changed.run();}
     int count(){return rows.size();}
     String state(String id){return rows.containsKey(id)?rows.get(id).state:"";}
     String task(String id){return rows.containsKey(id)?rows.get(id).task:"";}
@@ -50,7 +54,8 @@ final class AgentPanel extends JPanel {
     private void trim(){while(rows.size()>MAX_ROWS)rows.remove(rows.keySet().iterator().next());}
     private static boolean active(String state){return Set.of("queued","running","pending").contains(state)||state.startsWith("tool:");}
     private String label(Row row){if(row.error.equals("group_deadline"))return I18n.text("Termen depasit");return row.state.startsWith("tool:")?I18n.text("Rulez {0}…",row.state.substring(5)):I18n.text(switch(row.state){case "queued"->"In asteptare";case "running"->"In curs";case "done"->"Gata.";case "partial"->"Rezultat partial";case "cancelled"->"Anulat";case "failed"->"Eroare";default->"Stare neconfirmata";});}
-    private Color statusColor(Row row){return new Color(row.state.equals("done")?(dark?0x83D5A4:0x176B3C):row.state.equals("failed")?(dark?0xFF9C9C:0xB42332):row.state.equals("partial")?(dark?0xE8C178:0x805900):(dark?0x9ABFF4:0x245C9B));}
+    private Color statusColor(Row row){return StatusColors.color(row.state,dark);}
+
     private static JLabel plain(String text){JLabel label=new JLabel(text);label.putClientProperty("html.disable",true);return label;}
     private JTextArea text(String value,int font){JTextArea text=new JTextArea(value){public Dimension getPreferredSize(){int width=Math.max(155,AgentPanel.this.getWidth()>0?AgentPanel.this.getWidth()-54:255);setSize(width,Short.MAX_VALUE);Dimension size=super.getPreferredSize();size.width=width;return size;}};text.setEditable(false);text.setLineWrap(true);text.setWrapStyleWord(true);text.setOpaque(false);text.setFont(getFont().deriveFont((float)font));text.setForeground(new Color(dark?0xEDF1F7:0x202733));text.setBorder(null);return text;}
     private void rebuild(){
@@ -61,7 +66,7 @@ final class AgentPanel extends JPanel {
                 public Dimension getMaximumSize(){return new Dimension(Integer.MAX_VALUE,getPreferredSize().height);}
                 protected void paintComponent(Graphics g){Graphics2D a=(Graphics2D)g.create();a.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);a.setColor(new Color(dark?0x282E38:0xEDF1F7));a.fillRoundRect(0,0,getWidth(),getHeight(),14,14);a.dispose();}
             };card.setOpaque(false);card.setBorder(BorderFactory.createEmptyBorder(9,10,9,10));card.setAlignmentX(LEFT_ALIGNMENT);
-            JPanel top=new JPanel(new BorderLayout(4,3));top.setOpaque(false);JLabel title=plain(row.title);title.setFont(getFont().deriveFont(Font.BOLD,12f));title.setForeground(new Color(dark?0xEDF1F7:0x202733));top.add(title,BorderLayout.NORTH);JLabel state=plain("● "+label(row));state.setFont(getFont().deriveFont(11f));state.setForeground(statusColor(row));top.add(state);card.add(top,BorderLayout.NORTH);
+            JPanel top=new JPanel(new BorderLayout(4,3));top.setOpaque(false);JLabel title=plain(row.title);title.setFont(getFont().deriveFont(Font.BOLD,12f));title.setForeground(new Color(dark?0xEDF1F7:0x202733));top.add(title,BorderLayout.NORTH);JLabel state=plain(label(row));state.setIcon(StatusColors.icon(row.state,14));state.setBackground(new Color(dark?0x282E38:0xEDF1F7));state.setFont(getFont().deriveFont(11f));state.setForeground(statusColor(row));top.add(state);card.add(top,BorderLayout.NORTH);
             JPanel body=new JPanel();body.setOpaque(false);body.setLayout(new BoxLayout(body,BoxLayout.Y_AXIS));if(!row.model.isBlank())body.add(text(row.model,11));body.add(text(shorten(row.task,155),12));
             if(row.pending)body.add(text(I18n.text("Rezultatul operatiilor inca in curs nu este confirmat."),11));
             JToggleButton details=new JToggleButton(I18n.text("Detalii agent"),row.expanded);details.setMargin(new Insets(2,5,2,5));details.setBackground(new Color(dark?0x343D4B:0xFFFFFF));details.setForeground(new Color(dark?0xEDF1F7:0x202733));details.setFont(getFont().deriveFont(11f));details.setAlignmentX(LEFT_ALIGNMENT);details.addActionListener(e->{row.expanded=details.isSelected();rebuild();});body.add(Box.createVerticalStrut(5));body.add(details);

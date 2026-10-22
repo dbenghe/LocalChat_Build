@@ -531,5 +531,6 @@
   "Alege fabrica pentru proiect inainte de procesare.": "Alege fabrica pentru proiect inainte de procesare.",
   "Nu pot restaura alegerea fabricii. Apasa Trimite pentru reverificare.": "Nu pot restaura alegerea fabricii. Apasa Trimite pentru reverificare.",
   "Verificarea fabricii a fost oprita. Ciorna este pastrata.": "Verificarea fabricii a fost oprita. Ciorna este pastrata.",
-  "Folder de proiect neconfirmat": "Folder de proiect neconfirmat"
+  "Folder de proiect neconfirmat": "Folder de proiect neconfirmat",
+  "Panou agenti: {0} in lucru, {1} in asteptare": "Panou agenti: {0} in lucru, {1} in asteptare"
 }

@@ -118,7 +118,7 @@ public final class LocalChat extends JFrame {
     private PdfPreview pdfPreview;
     private AgentPanel agentPanel;
     private javax.swing.JSplitPane agentSplit;
-    private final JButton agentsButton=new JButton(new UiIcon("agents",18));
+    private final AgentActivityButton agentsButton=new AgentActivityButton();
     private javax.swing.JSplitPane chatSplit;
     private ComposerSplit composerSplit;
     private boolean markdownDirty;
@@ -382,7 +382,7 @@ public final class LocalChat extends JFrame {
         workspace.autoThreshold.addChangeListener(e->saveAutoSettings());
         JPanel center=new JPanel(new BorderLayout());
         pdfPreview=new PdfPreview(this::currentWorkDir,this::previewPython,this::reportAction,this::togglePdfPane,this::choosePreviewPdf,this::togglePdfExpansion,this::hidePdfPreview);pdfPreview.setVisible(false);
-        chat.setMinimumSize(new Dimension(380,160));chatSplit=new javax.swing.JSplitPane(javax.swing.JSplitPane.HORIZONTAL_SPLIT,chat,pdfPreview);chatSplit.setResizeWeight(.64);chatSplit.setDividerSize(0);chatSplit.setBorder(null);agentPanel=new AgentPanel(()->setAgentPaneVisible(false),this::stop);agentPanel.setVisible(false);agentSplit=new javax.swing.JSplitPane(javax.swing.JSplitPane.HORIZONTAL_SPLIT,chatSplit,agentPanel);agentSplit.setResizeWeight(1);agentSplit.setDividerSize(0);agentSplit.setBorder(null);composerSplit=new ComposerSplit(agentSplit,compose,responseScroll,inputScroll,height->{if(!restoringSelections&&shownProvider!=null){config.setProperty("ui.composer.height",Integer.toString(height));saveConfig();}});center.add(composerSplit);center.add(south,BorderLayout.SOUTH);
+        chat.setMinimumSize(new Dimension(380,160));chatSplit=new javax.swing.JSplitPane(javax.swing.JSplitPane.HORIZONTAL_SPLIT,chat,pdfPreview);chatSplit.setResizeWeight(.64);chatSplit.setDividerSize(0);chatSplit.setBorder(null);agentPanel=new AgentPanel(()->setAgentPaneVisible(false),this::stop);agentPanel.onChange(()->agentsButton.activity(agentPanel.runningCount(),agentPanel.waitingCount(),agentPanel.summaryState()));agentPanel.setVisible(false);agentSplit=new javax.swing.JSplitPane(javax.swing.JSplitPane.HORIZONTAL_SPLIT,chatSplit,agentPanel);agentSplit.setResizeWeight(1);agentSplit.setDividerSize(0);agentSplit.setBorder(null);composerSplit=new ComposerSplit(agentSplit,compose,responseScroll,inputScroll,height->{if(!restoringSelections&&shownProvider!=null){config.setProperty("ui.composer.height",Integer.toString(height));saveConfig();}});center.add(composerSplit);center.add(south,BorderLayout.SOUTH);
         root.add(workspace,BorderLayout.WEST);root.add(center);
         reportBar.setLayout(new BorderLayout());
         JPanel reportHeading=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT,6,3));
@@ -484,11 +484,11 @@ public final class LocalChat extends JFrame {
                 if (current != null || compactClient!=null) stop();
                 saveConversation();
                 saveConfig();
-                factoryGeneration++;resolvingFactory=false;hotfolderTimer.stop();hotfolder=null;dashboardTimer.stop();markdownTimer.stop();if(pdfPreview!=null)pdfPreview.clear();
+                factoryGeneration++;resolvingFactory=false;hotfolderTimer.stop();hotfolder=null;agentsButton.disposeActivity();dashboardTimer.stop();markdownTimer.stop();if(pdfPreview!=null)pdfPreview.clear();
                 if(compactClient!=null)compactClient.cancel();
                 mcp.closeAll();
             }
-            @Override public void windowClosed(WindowEvent e){factoryGeneration++;resolvingFactory=false;hotfolderTimer.stop();hotfolder=null;dashboardTimer.stop();markdownTimer.stop();if(pdfPreview!=null)pdfPreview.clear();busyIndicator.active(false);}
+            @Override public void windowClosed(WindowEvent e){factoryGeneration++;resolvingFactory=false;hotfolderTimer.stop();hotfolder=null;agentsButton.disposeActivity();dashboardTimer.stop();markdownTimer.stop();if(pdfPreview!=null)pdfPreview.clear();busyIndicator.active(false);}
         });
         setSize(1320, 880);
         setMinimumSize(new Dimension(1080, 650));
@@ -685,7 +685,7 @@ public final class LocalChat extends JFrame {
                 toolsStatus.setText(t("Tool-uri: {0} interne · MCP: {1}", Tools.BUILTIN.size(), mcpSummary.isEmpty() ? t("niciunul") : mcpSummary));
                 toolsStatus.setToolTipText(t("Configurare: {0}", toolsConfigFile));
             } else if (!Boolean.getBoolean("localchat.test")) toolsStatus.setText(t("Pornesc tool-urile…"));
-            if(composerSplit!=null)composerSplit.translate();chatActions.setToolTipText(t("Actiuni conversatie"));chatSettings.setToolTipText(t("Setari rapide"));if(pdfPreview!=null)pdfPreview.translate();if(agentPanel!=null)agentPanel.translate();agentsButton.setToolTipText(t("Panou agenti"));agentsButton.getAccessibleContext().setAccessibleName(t("Panou agenti"));copyReply.setText(t("Copiaza raspunsul"));copyDisplayed.setText(t("Copiaza textul afisat"));copyOriginal.setText(t("Copiaza textul original"));refreshTranscriptDisplay();
+            if(composerSplit!=null)composerSplit.translate();chatActions.setToolTipText(t("Actiuni conversatie"));chatSettings.setToolTipText(t("Setari rapide"));if(pdfPreview!=null)pdfPreview.translate();if(agentPanel!=null)agentPanel.translate();agentsButton.translate();copyReply.setText(t("Copiaza raspunsul"));copyDisplayed.setText(t("Copiaza textul afisat"));copyOriginal.setText(t("Copiaza textul original"));refreshTranscriptDisplay();
             if(workspace!=null){workspace.translate();refreshDashboard();}
             revalidate();
             repaint();
@@ -1032,7 +1032,7 @@ public final class LocalChat extends JFrame {
     }
 
     private void refreshDashboard() {
-        projectStatusButton.setIcon(ProjectStatus.icon(sessionState.projectStatus));projectStatusButton.setToolTipText(t("Status proiect")+": "+ProjectStatus.label(sessionState.projectStatus));projectStatusButton.setEnabled(!busy);
+        projectStatusButton.setIcon(ProjectStatus.icon(sessionState.projectStatus));projectStatusButton.setDisabledIcon(projectStatusButton.getIcon());projectStatusButton.setToolTipText(t("Status proiect")+": "+ProjectStatus.label(sessionState.projectStatus));projectStatusButton.setEnabled(!busy);
         filterModelOptions();
         if(chatTitle!=null)chatTitle.setText(sessionState==null||sessionState.title.isBlank()?t("Conversatie"):sessionState.title);
         refreshFavoriteButton();
@@ -2055,7 +2055,7 @@ public final class LocalChat extends JFrame {
 
     private void setBusy(boolean b) {
         responseLanguageBox.setEnabled(!b);translateMessageBox.setEnabled(!b&&!responseLanguage().equals("auto"));
-        busy = b;if(composerAssist!=null)composerAssist.busy(b);busyIndicator.active(b);pdfControlButton.setEnabled(!b);
+        busy = b;if(agentPanel!=null)agentPanel.busy(b);if(composerAssist!=null)composerAssist.busy(b);busyIndicator.active(b);pdfControlButton.setEnabled(!b);
         bottomModel.setEnabled(!b);bottomApproval.setEnabled(!b);bottomMode.setEnabled(!b);responseProfile.setEnabled(!b);inspectModel.setEnabled(!b && !inspectingModel);
         sendButton.setEnabled(!b);attachButton.setEnabled(!b);refreshAttachments();
         stopButton.setEnabled(b);
