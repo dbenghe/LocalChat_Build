@@ -573,5 +573,12 @@
   "Furnizor si model": "Provider and model",
   "Alege o optiune salvata sau foloseste selectoarele Furnizor si Model.": "Choose a saved option or use the Provider and Model selectors.",
   "Selectia este pregatita. Apasa Trimite cand vrei sa continui; operatiile nu sunt retrimise automat.": "Selection is ready. Press Send when you want to continue; operations are not automatically resent.",
-  "Alternative furnizori si modele": "Alternative providers and models"
+  "Alternative furnizori si modele": "Alternative providers and models",
+  "Protocol API": "API protocol",
+  "Compatibil OpenAI": "OpenAI compatible",
+  "Compatibil Anthropic": "Anthropic compatible",
+  "OpenAI": "OpenAI",
+  "Cheia API nu este acceptata de furnizor. Verifica cheia in configuratia acestui API.": "The provider does not accept the API key. Check the key in this API configuration.",
+  "Suportul MBS nu este confirmat. Modelele pot fi inspectate si testate; nu sunt declarate compatibile automat.": "MBS support is unconfirmed. Models can be inspected and tested; compatibility is not assumed.",
+  "Aceasta este o cheie Grok/Cursor Agents. API-ul api.x.ai necesita o cheie de inferenta xAI.": "This is a Grok/Cursor Agents key. The api.x.ai API requires an xAI inference key."
 }

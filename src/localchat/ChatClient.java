@@ -458,18 +458,13 @@ final class ChatClient {
     }
 
     private static HttpURLConnection open(Provider p, String url, String apiKey, String method) throws IOException {
-        HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
+        ProviderHeaders.validateKey(url,apiKey);HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
         c.setRequestMethod(method);
         c.setConnectTimeout(30_000);
         c.setReadTimeout(600_000);
         c.setRequestProperty("Content-Type", "application/json");
         ProviderHeaders.apply(c);
-        if (p.format == Provider.Format.ANTHROPIC) {
-            c.setRequestProperty("x-api-key", apiKey);
-            c.setRequestProperty("anthropic-version", ANTHROPIC_VERSION);
-        } else if (!apiKey.isEmpty()) {
-            c.setRequestProperty("Authorization", "Bearer " + apiKey);
-        }
+        ProviderHeaders.authenticate(c,p,apiKey);
         return c;
     }
 

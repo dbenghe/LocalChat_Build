@@ -39,7 +39,7 @@ final class ModelCatalogDialog extends JDialog {
         stop.addActionListener(e->{cancellation.cancel();stop.setEnabled(false);});choose.addActionListener(e->{var entry=selected();if(entry!=null){cancellation.cancel();use.accept(entry);dispose();}});
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);addWindowListener(new WindowAdapter(){public void windowClosing(WindowEvent e){cancellation.cancel();dispose();}});refresh();
     }
-    void configureProfile(boolean mbs,boolean filtered,Consumer<Boolean> preference){this.profileConfigured=true;this.mbs=mbs;this.profilePreference=preference;profileOnly.setVisible(true);profileOnly.setSelected(filtered);setTitle(getTitle()+" · "+(mbs?"MBS":"Normal"));refresh();}
+    void configureProfile(boolean mbs,boolean filtered,Consumer<Boolean> preference){this.profileConfigured=true;this.mbs=mbs;this.profilePreference=preference;profileOnly.setVisible(true);boolean any=entries.stream().anyMatch(e->ModelSuitability.listed(e,cache.get(e.id()),base,mbs,true));profileOnly.setSelected(filtered&&any);if(filtered&&!any&&mbs)progress.setText(I18n.text("Suportul MBS nu este confirmat. Modelele pot fi inspectate si testate; nu sunt declarate compatibile automat."));setTitle(getTitle()+" · "+(mbs?"MBS":"Normal"));refresh();}
     ModelSuitability.Decision suitability(ModelCatalog.Entry e){return ModelSuitability.assess(e,cache.get(e.id()),base,mbs);}
     void configureFavorites(Predicate<String> favorite,Consumer<String> toggle){this.favorite=favorite;this.toggleFavorite=toggle;refresh();}
     ModelCatalog.Entry selected(){int row=table.getSelectedRow();return row>=0&&row<visible.size()?visible.get(row):null;}

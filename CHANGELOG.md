@@ -1,3 +1,11 @@
+# 1.23.1 — 2026-10-22
+
+- Butonul + deschide un formular independent pentru nume, protocol, URL si cheie, fara mostenirea configuratiei furnizorului curent.
+- Modelele si selectia memorata pastreaza provenienta endpointului. Schimbarea URL-ului nu promoveaza lista veche, iar un catalog incarcat cu succes inlocuieste selectia care nu mai exista.
+- Cand niciun model nu are suport MBS declarat, catalogul permite inspectarea tuturor si selectorul pastreaza modelele de chat neconfirmate cu avertisment. Modelele explicit incompatibile/specializate nu devin compatibile automat.
+- Autentificarea xAI foloseste Bearer inclusiv pentru formatul Anthropic compatibil. Cheile Grok/Cursor Agents introduse pe api.x.ai sunt diagnosticate local, fara transmitere; erorile de catalog nu reproduc cheia din raspunsul serverului.
+- Formulare, explicatii si diagnostice in cele sase limbi, cu teme Light/Dark. Cererile de modele ramase in fundal nu suprascriu statusul altui furnizor.
+
 # 1.23.0 — 2026-10-22
 - Consultarea altui chat in timpul lucrului deschide o fereastra independenta; Chat nou permite o a doua sesiune fara oprirea primeia. Marcajul colorat si bold indica executiile live in listele tuturor ferestrelor.
 - Istoricul, ciorna, coada, uneltele si consumul raman separate. Un chat deja deschis este focalizat, nu deschis pentru scriere de doua ori; acelasi proiect MBS asteapta terminarea executiei existente.

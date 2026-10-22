@@ -480,7 +480,7 @@
   "Sarcina": "Zadanie",
   "Rezultat": "Wynik",
   "Diagnostic": "Diagnostyka",
-  "Adauga furnizor": "Dodaj dostawce",
+  "Adauga furnizor": "Dodaj dostawcę",
   "Gestioneaza furnizorul": "Zarzadzaj dostawca",
   "Salveaza modificarile furnizorului": "Zapisz zmiany dostawcy",
   "Redenumeste furnizorul…": "Zmien nazwe dostawcy…",
@@ -573,5 +573,12 @@
   "Furnizor si model": "Dostawca i model",
   "Alege o optiune salvata sau foloseste selectoarele Furnizor si Model.": "Wybierz zapisaną opcję lub użyj pól Dostawca i Model.",
   "Selectia este pregatita. Apasa Trimite cand vrei sa continui; operatiile nu sunt retrimise automat.": "Wybór jest gotowy. Naciśnij Wyślij, aby kontynuować; operacje nie są wysyłane ponownie automatycznie.",
-  "Alternative furnizori si modele": "Alternatywni dostawcy i modele"
+  "Alternative furnizori si modele": "Alternatywni dostawcy i modele",
+  "Protocol API": "Protokół API",
+  "Compatibil OpenAI": "Zgodny z OpenAI",
+  "Compatibil Anthropic": "Zgodny z Anthropic",
+  "OpenAI": "OpenAI",
+  "Cheia API nu este acceptata de furnizor. Verifica cheia in configuratia acestui API.": "Dostawca nie akceptuje klucza API. Sprawdź klucz w konfiguracji tego API.",
+  "Suportul MBS nu este confirmat. Modelele pot fi inspectate si testate; nu sunt declarate compatibile automat.": "Obsługa MBS nie jest potwierdzona. Modele można przeglądać i testować; zgodność nie jest zakładana.",
+  "Aceasta este o cheie Grok/Cursor Agents. API-ul api.x.ai necesita o cheie de inferenta xAI.": "To jest klucz Grok/Cursor Agents. API api.x.ai wymaga klucza wnioskowania xAI."
 }

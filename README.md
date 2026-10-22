@@ -749,3 +749,12 @@ Catalogul si linia de metadate afiseaza cererile simultane declarate sau „necu
 Folderul de lucru se salveaza privat in setari.properties prin alegere, Enter sau iesirea din camp. Valoarea recenta are prioritate la pornire si chat nou; conversatiile reluate isi pastreaza propriul folder. Nu exista cale PRODUCTIE fixa in cod. Salvarile dintre ferestre combina doar preferintele schimbate. Functia de ferestre independente este coordonata in acelasi proces LocalChat; lansarea a doua copii separate prin BAT nu ofera aceasta coordonare.
 
 Catalogul LM Studio pastreaza ID-urile reale ale instantelor incarcate, inclusiv aliasurile personalizate, cu limita fiecareia. Monitorizarea hotfolderului se executa o singura data, din prima fereastra deschisa, pentru Folderul de lucru al acesteia; inchiderea ei transfera monitorizarea urmatoarei ferestre. Celelalte chaturi isi pastreaza propriile foldere de executie.
+
+
+## Adaugarea unui API si catalogul de modele (1.23.1)
+Butonul + de la Furnizor deschide un formular gol: nume, protocol, URL si cheie. Pentru un API OpenAI compatibil alege „Compatibil OpenAI”. Modelele se incarca separat prin „Incarca modele”; configuratia altui API nu este copiata. Meniul ... actualizeaza/redenumeste/sterge furnizorul existent. Modelele introduse explicit raman permise; modelele unui endpoint vechi nu sunt transferate la alt URL.
+
+Daca API-ul nu declara suportul pentru unelte si nu exista modele MBS confirmate, lista nu dispare: modelele de chat neconfirmate pot fi inspectate si testate. Marcajul „MBS neconfirmat” nu garanteaza compatibilitatea. Catalogul poate arata toate intrarile; modelele specializate si cele explicit fara unelte raman delimitate dupa profil. Incarcarea manuala poate rula probe scurte numai daca optiunea de testare este bifata; probele consuma API, iar diagnosticul acestei corectii a folosit numai GET, fara inferenta externa.
+
+Pentru xAI: URL https://api.x.ai/v1, protocol Compatibil OpenAI, cheie de inferenta creata in https://console.x.ai/. API-ul xAI are autentificare Bearer. Cheile Grok/Cursor Agents apartin unui API distinct si nu sunt chei xAI de inferenta. LocalChat explica nepotrivirea, fara sa schimbe automat destinatia si fara sa afiseze cheia in erori.
+Surse: [xAI REST](https://docs.x.ai/developers/rest-api-reference/inference), [Cursor APIs](https://cursor.com/docs/api).

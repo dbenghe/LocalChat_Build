@@ -921,8 +921,9 @@ public final class LocalChat extends JFrame {
     }
 
     private void saveProviderDialog() {
-        if(busy)return;String name=JOptionPane.showInputDialog(this,t("Nume furnizor"),"");
-        if(name==null)return;try{if(SavedProviders.list(config).stream().anyMatch(entry->entry.name().equalsIgnoreCase(name.strip())))throw new IllegalArgumentException(t("Exista deja un furnizor cu acest nume. Alege alt nume."));saveNamedProvider(name);setStatus("Furnizor salvat: {0}",false,name);}catch(RuntimeException error){setStatus("Nu pot salva furnizorul: {0}",true,describe(error));}
+        if(busy)return;ProviderEditor editor=new ProviderEditor();
+        if(JOptionPane.showConfirmDialog(this,editor,t("Adauga furnizor"),JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE)!=JOptionPane.OK_OPTION)return;
+        try{createNamedProvider(editor.name.getText(),(Provider)editor.protocol.getSelectedItem(),editor.url.getText().strip(),new String(editor.key.getPassword()).strip());setStatus("Furnizor salvat: {0}",false,editor.name.getText().strip());}catch(RuntimeException error){setStatus("Nu pot salva furnizorul: {0}",true,describe(error));}
     }
     private javax.swing.JPopupMenu providerMenu(){
         javax.swing.JPopupMenu menu=new javax.swing.JPopupMenu();boolean saved=shownSelection instanceof SavedProviders.Entry entry&&SavedProviders.present(config,entry);
@@ -933,10 +934,17 @@ public final class LocalChat extends JFrame {
     private void selectSavedProvider(SavedProviders.Entry saved){
         selectingSavedProvider=true;try{for(int i=providerBox.getItemCount()-1;i>=0;i--)if(providerBox.getItemAt(i) instanceof SavedProviders.Entry entry&&entry.id().equals(saved.id()))providerBox.removeItemAt(i);providerBox.addItem(saved);providerBox.setSelectedItem(saved);}finally{selectingSavedProvider=false;}
     }
+    private void createNamedProvider(String name,Provider protocol,String base,String key){
+        if(busy)return;if(SavedProviders.list(config).stream().anyMatch(e->e.name().equalsIgnoreCase(name.strip())))throw new IllegalArgumentException(t("Exista deja un furnizor cu acest nume. Alege alt nume."));
+        Properties updated=new Properties();updated.putAll(config);var saved=SavedProviders.save(updated,name,protocol,base,key,"");updated.setProperty(saved.prefix()+".models","[]");updated.setProperty(saved.prefix()+".modelsUrl",base);updated.setProperty(saved.prefix()+".modelUrl",base);
+        commitProviderSettings(updated);selectSavedProvider(saved);if(!saveConfig())throw new IllegalStateException(t("Modificarile furnizorului nu au putut fi salvate."));refreshDashboard();
+    }
     private void saveNamedProvider(String name) {
         if(busy)return;String oldPrefix=SavedProviders.prefix(shownSelection);
-        String models=currentUrl().equals(config.getProperty(oldPrefix+".url",""))?config.getProperty(oldPrefix+".models","[]"):Json.write(currentModel().isBlank()?List.of():List.of(currentModel()));
-        var saved=SavedProviders.save(config,name,shownProvider,currentUrl(),currentKey(shownProvider),currentModel());config.setProperty(saved.prefix()+".models",models);
+        List<String> savedModels=new ArrayList<>(ProviderModels.ids(config,oldPrefix,currentUrl()));
+        String selectedModel=currentModel().equals(config.getProperty(oldPrefix+".model",""))?ProviderModels.model(config,oldPrefix,currentUrl()):currentModel();
+        if(!selectedModel.isBlank()&&!savedModels.contains(selectedModel))savedModels.add(selectedModel);String models=Json.write(savedModels);
+        var saved=SavedProviders.save(config,name,shownProvider,currentUrl(),currentKey(shownProvider),selectedModel);config.setProperty(saved.prefix()+".models",models);config.setProperty(saved.prefix()+".modelsUrl",currentUrl());config.setProperty(saved.prefix()+".modelUrl",currentUrl());
         selectSavedProvider(saved);if(!saveConfig())throw new IllegalStateException(t("Modificarile furnizorului nu au putut fi salvate."));refreshDashboard();
     }
     private void commitProviderSettings(Properties updated){
@@ -2028,9 +2036,9 @@ public final class LocalChat extends JFrame {
         return modelCaches.computeIfAbsent(identity,ignored->new ModelCatalog.Cache(appDir,prefix,shownProvider,base,key));
     }
     private List<ModelCatalog.Entry> catalogEntries() {
-        String prefix=SavedProviders.prefix(shownSelection),base=currentUrl(),raw=config.getProperty(prefix+".catalog",""),models=config.getProperty(prefix+".models","");String identity=prefix+"|"+base+"|"+raw+"|"+models+"|"+config.getProperty(prefix+".catalogUrl","");
-        if(!identity.equals(catalogFactsKey)){List<String> ids=new ArrayList<>();try{Object saved=Json.parse(models.isBlank()?"[]":models);if(saved instanceof List<?> list)for(Object id:list)if(id instanceof String text&&!text.isBlank())ids.add(text);}catch(RuntimeException ignored){}
-            if(ids.isEmpty())for(int i=0;i<modelBox.getItemCount();i++){String id=modelBox.getItemAt(i);if(id!=null&&!id.isBlank())ids.add(id);}catalogFacts=ModelCatalog.saved(config,prefix,base,ids);catalogFactsKey=identity;
+        String prefix=SavedProviders.prefix(shownSelection),base=currentUrl(),raw=config.getProperty(prefix+".catalog",""),models=config.getProperty(prefix+".models","");String identity=prefix+"|"+base+"|"+raw+"|"+models+"|"+config.getProperty(prefix+".catalogUrl","")+"|"+config.getProperty(prefix+".modelsUrl","");
+        if(!identity.equals(catalogFactsKey)){List<String> ids=new ArrayList<>(ProviderModels.ids(config,prefix,base));
+            if(ids.isEmpty()&&ProviderModels.rawIds(config,prefix).isEmpty())for(int i=0;i<modelBox.getItemCount();i++){String id=modelBox.getItemAt(i);if(id!=null&&!id.isBlank())ids.add(id);}catalogFacts=ModelCatalog.saved(config,prefix,base,ids);catalogFactsKey=identity;
         }return catalogFacts;
     }
     private ModelCatalog.Entry currentCatalogEntry() {
@@ -2064,12 +2072,16 @@ public final class LocalChat extends JFrame {
     private ModelSuitability.Decision modelDecision(String id){ModelCatalog.Entry entry=catalogEntries().stream().filter(e->e.id().equals(id)).findFirst().orElseGet(()->ModelCatalog.entry(Json.obj("id",id),currentUrl()));return ModelSuitability.assess(entry,currentModelCache().get(id),currentUrl(),toolsBox.isSelected());}
     private void filterModelOptions(){
         if(restoringSelections||shownSelection==null)return;
-        String keep=currentModel();var entries=catalogEntries();var cache=currentModelCache();
+        String keep=currentModel();String prefix=SavedProviders.prefix(shownSelection);
+        if(keep.equals(config.getProperty(prefix+".model",""))&&!keep.isBlank()&&ProviderModels.model(config,prefix,currentUrl()).isBlank()){modelBox.setSelectedItem("");keep="";catalogFactsKey="";}
+        var entries=catalogEntries();var cache=currentModelCache();
         String identity=SavedProviders.prefix(shownSelection)+"|"+currentUrl()+"|"+toolsBox.isSelected()+"|"+profileModelFilter()+"|"+keep+"|"+config.getProperty(ModelFavorites.key(SavedProviders.prefix(shownSelection),currentUrl()),"")+"|"+entries.stream().map(e->e.id()+ModelSuitability.assess(e,cache.get(e.id()),currentUrl(),toolsBox.isSelected()).toString()).toList();
         if(identity.equals(modelFilterKey))return;modelFilterKey=identity;
         List<String> ids=entries.stream().filter(e->ModelSuitability.listed(e,cache.get(e.id()),currentUrl(),toolsBox.isSelected(),profileModelFilter())).map(ModelCatalog.Entry::id).toList();
+        boolean unconfirmed=ids.isEmpty()&&toolsBox.isSelected()&&profileModelFilter();
+        if(unconfirmed)ids=entries.stream().filter(e->ModelSuitability.assess(e,cache.get(e.id()),currentUrl(),true).allowed()).map(ModelCatalog.Entry::id).toList();
         boolean prior=restoringSelections;restoringSelections=true;try{modelBox.removeAllItems();for(String id:ModelFavorites.order(config,SavedProviders.prefix(shownSelection),currentUrl(),ids))modelBox.addItem(id);if(!keep.isBlank()&&!ids.contains(keep))modelBox.addItem(keep);modelBox.setSelectedItem(keep);}finally{restoringSelections=prior;}
-        modelBox.setToolTipText(I18n.text("Modele filtrate dupa profil. Catalogul permite afisarea tuturor; modelul curent si favoritele nu sunt sterse."));
+        modelBox.setToolTipText(I18n.text(unconfirmed?"Suportul MBS nu este confirmat. Modelele pot fi inspectate si testate; nu sunt declarate compatibile automat.":"Modele filtrate dupa profil. Catalogul permite afisarea tuturor; modelul curent si favoritele nu sunt sterse."));
     }
     private void reorderFavoriteModels(){modelFilterKey="";filterModelOptions();refreshFavoriteButton();}
     private void installModelRenderer(){modelBox.setRenderer(new javax.swing.DefaultListCellRenderer(){
@@ -2106,18 +2118,19 @@ public final class LocalChat extends JFrame {
                         setStatus("Serverul nu a intors niciun model.", true);
                         return;
                     }
-                    config.setProperty(prefix+".models",Json.write(ids));config.setProperty(prefix+".catalog",Json.write(catalog.stream().map(ModelCatalog.Entry::json).toList()));config.setProperty(prefix+".catalogUrl",url);
+                    config.setProperty(prefix+".models",Json.write(ids));config.setProperty(prefix+".modelsUrl",url);config.setProperty(prefix+".modelUrl",url);config.setProperty(prefix+".catalog",Json.write(catalog.stream().map(ModelCatalog.Entry::json).toList()));config.setProperty(prefix+".catalogUrl",url);
                     String keep = currentModel();
                     modelBox.removeAllItems();
                     for (String id : ModelFavorites.order(config,prefix,url,ids)) modelBox.addItem(id);
-                    modelBox.setSelectedItem(keep.isEmpty() ? ids.get(0) : keep);
+                    modelBox.setSelectedItem(ids.contains(keep)?keep:ids.stream().filter(id->ModelSuitability.assess(catalog.stream().filter(e->e.id().equals(id)).findFirst().orElseThrow(),currentModelCache().get(id),url,toolsBox.isSelected()).suggested()).findFirst().orElse(ids.get(0)));
                     setStatus("{0} modele disponibile — alege din lista.", false, ids.size());
                     saveConfig();inspectModel();
                     showModelCatalog(config.getProperty(prefix+".probeOnLoad","true").equals("true"));
                 });
             } catch (Exception e) {
                 SwingUtilities.invokeLater(() -> {
-                    loadModelsButton.setEnabled(true);
+                    loadModelsButton.setEnabled(!busy);
+                    if(!java.util.Objects.equals(shownSelection,selection)||!currentUrl().equals(url)||!currentKey(p).equals(key))return;
                     setStatus("Nu am putut incarca modelele: {0}", true, describe(e));
                 });
             }
@@ -2295,6 +2308,7 @@ public final class LocalChat extends JFrame {
     /** Remembers what is in the fields for this provider, so switching back restores it. */
     private void stashProvider(Provider p) {
         if(shownSelection==null||(shownSelection instanceof SavedProviders.Entry entry&&!SavedProviders.present(config,entry)))return;String prefix=SavedProviders.prefix(shownSelection);
+        ProviderModels.rememberRoute(config,prefix,currentUrl(),currentModel());
         config.setProperty(prefix + ".key", new String(keyField.getPassword()).trim());
         config.setProperty(prefix + ".model", currentModel());
         config.setProperty(prefix + ".url", urlField.getText().trim());
@@ -2307,11 +2321,12 @@ public final class LocalChat extends JFrame {
                 ? t("Optionala pentru API-uri locale (Ollama, LM Studio)")
                 : t("Lasa gol ca sa se foloseasca variabila de mediu {0}", p.keyEnvVar));
         urlField.setText(config.getProperty(prefix + ".url", p.defaultUrl));
-        String model = config.getProperty(prefix + ".model", "");
-        if (model.isEmpty() && selection instanceof Provider) model = p.models[0];
+        String model = ProviderModels.model(config,prefix,currentUrl());
+        boolean presetRoute=selection instanceof Provider&&ProviderModels.matches(currentUrl(),p.defaultUrl);
+        if (model.isEmpty() && presetRoute) model = p.models[0];
         modelBox.removeAllItems();
-        java.util.LinkedHashSet<String> models=new java.util.LinkedHashSet<>(selection instanceof Provider?Arrays.asList(p.models):Collections.emptyList());
-        try{Object saved=Json.parse(config.getProperty(prefix+".models","[]"));if(saved instanceof List)for(Object m:(List<?>)saved)if(m instanceof String)models.add((String)m);}catch(RuntimeException ignored){}
+        java.util.LinkedHashSet<String> models=new java.util.LinkedHashSet<>(presetRoute?Arrays.asList(p.models):Collections.emptyList());
+        models.addAll(ProviderModels.ids(config,prefix,currentUrl()));
         for (String m : ModelFavorites.order(config,prefix,currentUrl(),models)) modelBox.addItem(m);
         if (!models.contains(model)) modelBox.addItem(model);
         modelBox.setSelectedItem(model);

@@ -12,8 +12,8 @@ final class ProviderAlternatives {
   for(Object selection:providers){
    String prefix=SavedProviders.prefix(selection),base=config.getProperty(prefix+".url",""),key=config.getProperty(prefix+".key","");Provider protocol=SavedProviders.protocol(selection);
    if(base.isBlank()||key.isBlank()&&protocol!=Provider.CUSTOM)continue;
-   Set<String> ids=new LinkedHashSet<>();String selected=config.getProperty(prefix+".model","");if(!selected.isBlank())ids.add(selected);
-   try{Object rows=Json.parse(config.getProperty(prefix+".models","[]"));if(rows instanceof List<?> list)for(Object id:list)if(id instanceof String s&&!s.isBlank())ids.add(s);}catch(RuntimeException ignored){}
+   Set<String> ids=new LinkedHashSet<>();String selected=ProviderModels.model(config,prefix,base);if(!selected.isBlank())ids.add(selected);
+   ids.addAll(ProviderModels.ids(config,prefix,base));
    var cache=new ModelCatalog.Cache(home,prefix,protocol,base,key);
    for(var entry:ModelCatalog.saved(config,prefix,base,new ArrayList<>(ids))){
     if(selection.equals(current)&&entry.id().equals(model))continue;

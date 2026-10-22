@@ -43,16 +43,15 @@ final class ModelInfo {
     static long recommendedBudget(String base){try{return "api.gonkarouter.io".equalsIgnoreCase(URI.create(base).getHost())?180000:0;}catch(RuntimeException e){return 0;}}
     static Info fetch(String base,String key,String selected)throws IOException{return fetch(base,key,selected,Provider.CUSTOM);}
     static Info fetch(String base,String key,String selected,Provider protocol)throws IOException {
-        URI uri=URI.create(base);String path=Objects.toString(uri.getPath(),"").replaceFirst("/v1/?$","").replaceFirst("/$","");
+        ProviderHeaders.validateKey(base,key);URI uri=URI.create(base);String path=Objects.toString(uri.getPath(),"").replaceFirst("/v1/?$","").replaceFirst("/$","");
         String prefix=uri.getScheme()+"://"+uri.getRawAuthority()+path;String catalog=base.replaceFirst("/+$","")+"/models";
         List<String> urls=local(base)?List.of(prefix+"/api/v1/models",prefix+"/api/v0/models",catalog):List.of(catalog);
         IOException failure=null;Info valid=null;
         for(String address:urls) {
             HttpURLConnection c=(HttpURLConnection)new URL(address).openConnection();
             c.setConnectTimeout(5000);c.setReadTimeout(10000);c.setInstanceFollowRedirects(false);
-            if(!key.isBlank()) {if(protocol.format==Provider.Format.ANTHROPIC)c.setRequestProperty("x-api-key",key);else c.setRequestProperty("Authorization","Bearer "+key);}
-            if(protocol.format==Provider.Format.ANTHROPIC)c.setRequestProperty("anthropic-version",ChatClient.ANTHROPIC_VERSION);
-            try {int status=c.getResponseCode();if(status!=200)throw new IOException("HTTP "+status);
+            ProviderHeaders.authenticate(c,protocol,key);
+            try {int status=c.getResponseCode();if(status!=200)throw ProviderHeaders.metadataError(c,status);
                 byte[] bytes=c.getInputStream().readNBytes(4*1024*1024+1);if(bytes.length>4*1024*1024)throw new IOException("Metadata too large");
                 Object data=Json.parse(new String(bytes,StandardCharsets.UTF_8));if(!(Json.get(data,"models") instanceof List)&&!(Json.get(data,"data") instanceof List))throw new IOException("Invalid model catalog");
                 Info info=parse(data,selected,address);valid=info;
