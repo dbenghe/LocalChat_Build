@@ -586,5 +586,9 @@
   "Lista este filtrata; conversatiile raman salvate.": "Lista este filtrata; conversatiile raman salvate.",
   "Afiseaza numai conversatiile arhivate": "Afiseaza numai conversatiile arhivate",
   "Am adaugat un email nou in proiectul {0}.": "Am adaugat un email nou in proiectul {0}.",
-  "Am adaugat emailuri noi in proiectul {0}.": "Am adaugat emailuri noi in proiectul {0}."
+  "Am adaugat emailuri noi in proiectul {0}.": "Am adaugat emailuri noi in proiectul {0}.",
+  "Recuperez dupa citiri repetitive; operatiile confirmate raman pastrate.": "Recuperez dupa citiri repetitive; operatiile confirmate raman pastrate.",
+  "Pregatesc rezultatul partial; limita de recuperare a fost atinsa.": "Pregatesc rezultatul partial; limita de recuperare a fost atinsa.",
+  "Rezultat partial: modelul nu a incheiat verificarea ceruta.": "Rezultat partial: modelul nu a incheiat verificarea ceruta.",
+  "LocalChat: recuperarea nu a produs un raspuns final utilizabil. Verificarea ramane incompleta.\nUltimul apel repetat: {0}\nIstoricul si rezultatele uneltelor sunt pastrate. Poti schimba modelul in aceeasi conversatie si continua pasul ramas.": "LocalChat: recuperarea nu a produs un raspuns final utilizabil. Verificarea ramane incompleta.\nUltimul apel repetat: {0}\nIstoricul si rezultatele uneltelor sunt pastrate. Poti schimba modelul in aceeasi conversatie si continua pasul ramas."
 }

@@ -1,3 +1,9 @@
+# 1.23.6 — 2026-10-22
+
+- Recuperarea din bucle permite cel mult sase pasi suplimentari de unelte, apoi cere un rezultat partial fara unelte. Nu reporneste actiunile confirmate.
+- Daca modelul raspunde gol sau continua sa ceara unelte dupa fallback, LocalChat afiseaza si salveaza un diagnostic propriu, cu starea incompleta si ultimul apel repetat.
+- Statusuri explicite de recuperare si rezultat partial, cu suspendarea cozii. Un raspuns gol dupa recuperare nu mai este afisat ca Gata. Texte in toate cele sase limbi.
+
 # 1.23.5 — 2026-10-22
 
 - Hotfolderul reutilizeaza conversatia proiectului dupa folderul local exact, inclusiv conversatii procesate, deschise sau arhivate; nu asociaza fabrici diferite numai dupa numarul proiectului.

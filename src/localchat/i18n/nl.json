@@ -586,5 +586,9 @@
   "Lista este filtrata; conversatiile raman salvate.": "De lijst is gefilterd; gesprekken blijven opgeslagen.",
   "Afiseaza numai conversatiile arhivate": "Toon alleen gearchiveerde gesprekken",
   "Am adaugat un email nou in proiectul {0}.": "Ik heb een nieuwe e-mail toegevoegd aan project {0}.",
-  "Am adaugat emailuri noi in proiectul {0}.": "Ik heb nieuwe e-mails toegevoegd aan project {0}."
+  "Am adaugat emailuri noi in proiectul {0}.": "Ik heb nieuwe e-mails toegevoegd aan project {0}.",
+  "Recuperez dupa citiri repetitive; operatiile confirmate raman pastrate.": "Herstel na herhaalde leesacties; bevestigde acties blijven bewaard.",
+  "Pregatesc rezultatul partial; limita de recuperare a fost atinsa.": "Gedeeltelijk resultaat voorbereiden; herstellimiet bereikt.",
+  "Rezultat partial: modelul nu a incheiat verificarea ceruta.": "Gedeeltelijk resultaat: het model heeft de gevraagde controle niet afgerond.",
+  "LocalChat: recuperarea nu a produs un raspuns final utilizabil. Verificarea ramane incompleta.\nUltimul apel repetat: {0}\nIstoricul si rezultatele uneltelor sunt pastrate. Poti schimba modelul in aceeasi conversatie si continua pasul ramas.": "LocalChat: herstel leverde geen bruikbaar eindantwoord op. De controle blijft onvolledig.\nLaatste herhaalde aanroep: {0}\nDe geschiedenis en toolresultaten blijven bewaard. Je kunt in hetzelfde gesprek een ander model kiezen en de resterende stap voortzetten."
 }

@@ -586,5 +586,9 @@
   "Lista este filtrata; conversatiile raman salvate.": "Lista jest filtrowana; rozmowy pozostają zapisane.",
   "Afiseaza numai conversatiile arhivate": "Pokaż tylko zarchiwizowane rozmowy",
   "Am adaugat un email nou in proiectul {0}.": "Dodano nową wiadomość e-mail do projektu {0}.",
-  "Am adaugat emailuri noi in proiectul {0}.": "Dodano nowe wiadomości e-mail do projektu {0}."
+  "Am adaugat emailuri noi in proiectul {0}.": "Dodano nowe wiadomości e-mail do projektu {0}.",
+  "Recuperez dupa citiri repetitive; operatiile confirmate raman pastrate.": "Odzyskiwanie po powtarzanych odczytach; potwierdzone działania są zachowane.",
+  "Pregatesc rezultatul partial; limita de recuperare a fost atinsa.": "Przygotowywanie wyniku częściowego; osiągnięto limit odzyskiwania.",
+  "Rezultat partial: modelul nu a incheiat verificarea ceruta.": "Wynik częściowy: model nie zakończył żądanej weryfikacji.",
+  "LocalChat: recuperarea nu a produs un raspuns final utilizabil. Verificarea ramane incompleta.\nUltimul apel repetat: {0}\nIstoricul si rezultatele uneltelor sunt pastrate. Poti schimba modelul in aceeasi conversatie si continua pasul ramas.": "LocalChat: odzyskiwanie nie dało użytecznej odpowiedzi końcowej. Weryfikacja pozostaje niepełna.\nOstatnie powtórzone wywołanie: {0}\nHistoria i wyniki narzędzi są zachowane. Możesz zmienić model w tej samej rozmowie i kontynuować pozostały krok."
 }

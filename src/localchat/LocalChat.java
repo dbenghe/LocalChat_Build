@@ -1561,6 +1561,7 @@ public final class LocalChat extends JFrame {
             @Override public void context(List<ChatClient.Message> conversation) {
                 later(turn,()->{requestConversation=ContextMemory.messages(conversation);turn.contextIncludesStep=true;refreshDashboard();});
             }
+            @Override public void discoveryRecovery(boolean finalResponse){later(turn,()->setStatus(finalResponse?"Pregatesc rezultatul partial; limita de recuperare a fost atinsa.":"Recuperez dupa citiri repetitive; operatiile confirmate raman pastrate.",false));}
             @Override public void protocolRepair(int attempt){later(turn,()->setStatus("Corectez formatul apelului de unealta: {0}/2.",false,attempt));}
             @Override public void usage(TokenUsage value) {
                 later(turn,()->{turn.requestActive=false;turn.usage.add(value);sessionState.usage.add(value);refreshDashboard();});
@@ -1674,12 +1675,13 @@ public final class LocalChat extends JFrame {
             } else if (error != null) {
                 showError(error);
                 setStatus("Eroare — pasii de pana acum au ramas in conversatie.", true);
+            } else if(turn.agent.recoveryIncomplete()){setStatus("Rezultat partial: modelul nu a incheiat verificarea ceruta.",true);
             } else if(produced.get(produced.size()-1).role.equals("assistant")&&produced.get(produced.size()-1).toolCalls.isEmpty()&&ReasoningDisplay.answer(produced.get(produced.size()-1).content).isBlank()){
                 ensureNewline();append(t("Modelul nu a returnat un raspuns final vizibil. Istoricul si actiunile executate sunt pastrate."),errorStyle);setStatus("Modelul nu a returnat un raspuns final vizibil. Istoricul si actiunile executate sunt pastrate.",true);
             } else {
                 setStatus("Gata.", false);
             }
-            if(composerAssist.waiting())setStatus("Astept raspunsurile tale; ciorna ramane editabila.",false);if(stopped||error!=null||composerAssist.waiting()||produced.stream().noneMatch(m->m.role.equals("assistant")&&!ReasoningDisplay.answer(m.content).isBlank()))sessionState.queuePaused=true;saveConversation();refreshDashboard();Conversations.State queueState=sessionState;SwingUtilities.invokeLater(()->{if(sessionState==queueState&&!sessionState.queuePaused)dispatchQueue();});
+            if(composerAssist.waiting())setStatus("Astept raspunsurile tale; ciorna ramane editabila.",false);if(stopped||error!=null||turn.agent.recoveryIncomplete()||composerAssist.waiting()||produced.stream().noneMatch(m->m.role.equals("assistant")&&!ReasoningDisplay.answer(m.content).isBlank()))sessionState.queuePaused=true;saveConversation();refreshDashboard();Conversations.State queueState=sessionState;SwingUtilities.invokeLater(()->{if(sessionState==queueState&&!sessionState.queuePaused)dispatchQueue();});
             return;
         }
         sessionState.queuePaused=true;

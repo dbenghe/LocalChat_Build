@@ -586,5 +586,9 @@
   "Lista este filtrata; conversatiile raman salvate.": "Liste filtrelendi; konuşmalar kayıtlı kalır.",
   "Afiseaza numai conversatiile arhivate": "Yalnızca arşivlenmiş konuşmaları göster",
   "Am adaugat un email nou in proiectul {0}.": "{0} projesine yeni bir e-posta ekledim.",
-  "Am adaugat emailuri noi in proiectul {0}.": "{0} projesine yeni e-postalar ekledim."
+  "Am adaugat emailuri noi in proiectul {0}.": "{0} projesine yeni e-postalar ekledim.",
+  "Recuperez dupa citiri repetitive; operatiile confirmate raman pastrate.": "Tekrarlanan okumalardan kurtarılıyor; onaylanan işlemler korunur.",
+  "Pregatesc rezultatul partial; limita de recuperare a fost atinsa.": "Kısmi sonuç hazırlanıyor; kurtarma sınırına ulaşıldı.",
+  "Rezultat partial: modelul nu a incheiat verificarea ceruta.": "Kısmi sonuç: model istenen kontrolü tamamlamadı.",
+  "LocalChat: recuperarea nu a produs un raspuns final utilizabil. Verificarea ramane incompleta.\nUltimul apel repetat: {0}\nIstoricul si rezultatele uneltelor sunt pastrate. Poti schimba modelul in aceeasi conversatie si continua pasul ramas.": "LocalChat: kurtarma kullanılabilir bir son yanıt üretmedi. Kontrol tamamlanmadı.\nSon tekrarlanan çağrı: {0}\nGeçmiş ve araç sonuçları korunur. Aynı konuşmada modeli değiştirip kalan adıma devam edebilirsiniz."
 }

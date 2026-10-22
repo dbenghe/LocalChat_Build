@@ -586,5 +586,9 @@
   "Lista este filtrata; conversatiile raman salvate.": "The list is filtered; conversations remain saved.",
   "Afiseaza numai conversatiile arhivate": "Show archived conversations only",
   "Am adaugat un email nou in proiectul {0}.": "I added a new email to project {0}.",
-  "Am adaugat emailuri noi in proiectul {0}.": "I added new emails to project {0}."
+  "Am adaugat emailuri noi in proiectul {0}.": "I added new emails to project {0}.",
+  "Recuperez dupa citiri repetitive; operatiile confirmate raman pastrate.": "Recovering from repeated reads; confirmed operations remain preserved.",
+  "Pregatesc rezultatul partial; limita de recuperare a fost atinsa.": "Preparing partial results; the recovery limit was reached.",
+  "Rezultat partial: modelul nu a incheiat verificarea ceruta.": "Partial result: the model did not finish the requested check.",
+  "LocalChat: recuperarea nu a produs un raspuns final utilizabil. Verificarea ramane incompleta.\nUltimul apel repetat: {0}\nIstoricul si rezultatele uneltelor sunt pastrate. Poti schimba modelul in aceeasi conversatie si continua pasul ramas.": "LocalChat: recovery did not produce a usable final answer. The check remains incomplete.\nLast repeated call: {0}\nHistory and tool results remain preserved. You can switch models in the same conversation and continue the remaining step."
 }

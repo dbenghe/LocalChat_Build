@@ -85,6 +85,8 @@ if ($LASTEXITCODE) { throw 'Profile model suitability tests failed' }
 if ($LASTEXITCODE) { throw 'Continuity/loop/provider isolation tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/discovery-recovery-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.DiscoveryRecoveryTest
 if ($LASTEXITCODE) { throw 'Repeated discovery recovery tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/recovery-final-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.RecoveryFinalTest
+if ($LASTEXITCODE) { throw 'Recovery final visibility and budget tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/sidebar-navigation-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.SidebarNavigationTest
 if ($LASTEXITCODE) { throw 'Sidebar filter and click coalescing tests failed' }
 & "$taskJdk/bin/java.exe" "-Dlocalchat.home=$taskBuild/skill-progress-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.SkillProgressTest

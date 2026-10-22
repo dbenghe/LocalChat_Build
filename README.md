@@ -766,3 +766,5 @@ Cardurile de alegere sunt compacte (maximum 720 px), cu optiuni aliniate si deru
 Filtrul Arhivate afiseaza numai arhiva. Cand un filtru ascunde toate chaturile, Reseteaza filtrele revine la lista activa, fara modificarea istoricului. Citirile repetitive au o recuperare ghidata limitata, apoi raspuns cu constatari si blocaj fara unelte daca modelul persista.
 
 Hotfolderul actualizeaza chatul existent al aceluiasi folder local, il marcheaza Repornit si pregateste o notificare. Daca chatul este deschis, ciorna noua ramane separat pana la accesare. Nici actualizarea, nici deschiderea nu trimit automat cereri. MSG/EML sunt identificate ca emailuri numai dupa extensie.
+
+Recuperarea dupa repetitii are maximum sase pasi suplimentari. Daca modelul nu produce finalul, apare un mesaj LocalChat cu starea incompleta; coada ramane suspendata. Aceasta protectie nu garanteaza executia corecta a sarcinii de catre orice model.

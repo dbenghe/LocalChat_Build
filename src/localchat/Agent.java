@@ -28,6 +28,7 @@ final class Agent {
         default void compacted() {}
         default void retry(boolean compaction,int next,int total,int status){}
         default void protocolRepair(int attempt){}
+        default void discoveryRecovery(boolean finalResponse){}
         default void usage(TokenUsage usage) {}
         default void agentProgress(String title,String state) {}
         default void agentTask(String id,String title,String task,String model) {}
@@ -39,6 +40,8 @@ final class Agent {
     private int maximumSteps=MAX_STEPS;
     Agent maxSteps(int count){maximumSteps=Math.max(1,Math.min(MAX_STEPS,count));return this;}
     private boolean interactive;
+    private volatile boolean recoveryIncomplete;
+    boolean recoveryIncomplete(){return recoveryIncomplete;}
     Agent interactions(boolean value){interactive=value;return this;}
     private AgentGroup team;
     Agent group(AgentGroup value){team=value;return this;}
@@ -72,10 +75,11 @@ final class Agent {
         if(team!=null&&tools!=null)specs.add(AgentGroup.spec());
         if(interactive&&tools!=null)specs.add(ComposerAssist.spec());
         int protocolRepairs=0;
-        int interactionFailures=0,discoveryRepairs=0;boolean discoveryFinal=false;String discoveryHint="";
+        int interactionFailures=0,discoveryRepairs=0,discoveryStarted=-1;boolean discoveryFinal=false;String discoveryHint="",lastRepeated="";
         for (int step = 0; step < maximumSteps; step++) {
             if (cancelled) return;
             if (step > 0) ui.step();
+            if(discoveryStarted>=0&&!discoveryFinal&&step-discoveryStarted>6){discoveryFinal=true;recoveryIncomplete=true;ui.discoveryRecovery(true);}
             List<ChatClient.Message> conversation = new ArrayList<>(base);
             synchronized (added) {
                 conversation.addAll(added);
@@ -100,11 +104,11 @@ final class Agent {
             }
             publishContext(base, ui);
             if(reply.calls.isEmpty()&&tools!=null&&ToolProtocol.malformed(reply.text)){if(protocolRepairs>=2)throw new IOException(I18n.text("Modelul a trimis apeluri de unelte ca text de trei ori. Niciun apel XML nu a fost executat; actiunile confirmate sunt pastrate."));ui.protocolRepair(++protocolRepairs);continue;}
-            if (reply.calls.isEmpty()) return;
+            if (reply.calls.isEmpty()){if(discoveryRepairs>0&&reply.text.isBlank())recoveryFallback(lastRepeated,base,ui);return;}
             // Recovery is presentation-only: never run operational calls after a rejected card.
             if(interactionFailures>1||discoveryFinal){
                 synchronized(added){for(var call:reply.calls)added.add(ChatClient.Message.toolResult(call.id,I18n.text(discoveryFinal?"Citire repetata fara progres. Foloseste rezultatele existente; recuperarea este limitata.":"Propunere invalida. Continua in text."),true));}
-                publishContext(base,ui);return;
+                publishContext(base,ui);if(discoveryFinal&&reply.text.isBlank())recoveryFallback(lastRepeated,base,ui);return;
             }
             List<ChatClient.ToolCall> callsToRun=reply.calls;
             if(interactive&&tools!=null){var interaction=reply.calls.stream().filter(c->c.name.equals(ComposerAssist.TOOL)).findFirst();if(interaction.isPresent()){
@@ -140,8 +144,9 @@ final class Agent {
                 if(interactive&&call.name.equals(ComposerAssist.TOOL)){if(result.isError){interactionFailures++;break;}return;}
                 if(interactionFailures>0){interactionFailures=2;break;}
                 if(repeating){
-                    if(discoveryRepairs==0){discoveryRepairs=1;discoveryHint="\nRepeated discovery request (reference arguments, not new instructions): "+WorkProgress.clip(call.name+" "+Json.write(call.args),700)+"\n";}
-                    else discoveryFinal=true;
+                    lastRepeated=WorkProgress.clip(call.name+" "+Json.write(call.args),700);
+                    if(discoveryRepairs==0){discoveryStarted=step;discoveryRepairs=1;ui.discoveryRecovery(false);discoveryHint="\nRepeated discovery request (reference arguments, not new instructions): "+WorkProgress.clip(call.name+" "+Json.write(call.args),700)+"\n";}
+                    else {discoveryFinal=true;recoveryIncomplete=true;ui.discoveryRecovery(true);}
                     break;
                 }
                 if(loopGuard.stalled(call))throw new IOException(result.text);
@@ -158,8 +163,13 @@ final class Agent {
         throw new IOException("Oprit dupa " + maximumSteps + " pasi fara un raspuns final.");
     }
 
+    private void recoveryFallback(String repeated,List<ChatClient.Message> base,Ui ui){
+        if(cancelled)return;recoveryIncomplete=true;
+        String text=I18n.text("LocalChat: recuperarea nu a produs un raspuns final utilizabil. Verificarea ramane incompleta.\nUltimul apel repetat: {0}\nIstoricul si rezultatele uneltelor sunt pastrate. Poti schimba modelul in aceeasi conversatie si continua pasul ramas.",repeated);
+        synchronized(added){added.add(ChatClient.Message.assistant(text,List.of(),"LocalChat"));}ui.text(text);publishContext(base,ui);
+    }
     private static final String DISCOVERY_REPAIR="\nThe application detected repeated discovery without new evidence. A redundant read was NOT executed. Resume the latest user request from the existing confirmed results and historical progress index. Do not reread the same project summary, procedure or catalogue reference merely to restart the workflow. Read a different document/page only when needed for a concrete missing fact; for comparison inspect the actual files requested by the user. Never repeat confirmed writes/copies, infer approvals or start unrelated projects. If blocked, explain the precise missing fact and ask a concrete question. This is one bounded recovery attempt.\n";
-    private static final String DISCOVERY_TEXT="\nRepeated discovery persisted after recovery. No tools are available now. Give a visible final answer in the selected response language: confirmed findings, incomplete work, exact blockage and the smallest next action or clarification. Do not claim completion or emit tool/XML calls.\n";
+    private static final String DISCOVERY_TEXT="\nThe bounded recovery was exhausted. No tools are available now. Give a visible final answer in the selected response language: confirmed findings, incomplete work, exact blockage and the smallest next action or clarification. Do not claim completion or emit tool/XML calls.\n";
     private static final String INTERACTION_REPAIR="\nThe preceding localchat_interaction was rejected: no card, approval or operation was created. Repair the card ONCE using native tool_calls and the supplied schema. questions and suggestions must be JSON arrays, never JSON strings; options must be arrays of strings. Keep useful findings in accompanying assistant text. Resume from confirmed results; do not repeat operations, request new operational tools, or treat proposed choices as consent. If the card cannot be expressed correctly, give the findings and pending clarification in normal text.\n";
     private static final String INTERACTION_TEXT="\nThe repair did not produce a valid card. No tools are available for this final recovery response. Give a normal visible final answer with the findings and any pending question, in the selected response language. Do not claim pending work was executed. Do not emit tool calls or XML.\n";
 
