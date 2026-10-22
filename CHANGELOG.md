@@ -1,3 +1,10 @@
+# 1.23.3 — 2026-10-22
+
+- Alegerea explicita a fabricii ramane prioritara dupa reverificarea locatiilor, inclusiv cand aceeasi ciorna compara doua fabrici. Schimbarea ciornei sau contextului cere o noua verificare.
+- Carduri de clarificare compacte, limitate la 720 px, aliniate cu editorul, cu fundal unitar si colturi rotunjite in ambele teme.
+- Numerele si selectorii sunt aliniati la primul rand al optiunii; numerotarea deja inclusa in text nu se dubleaza vizual. Valorile originale trimise raman intacte.
+- Optiunile lungi se infasoara dupa latimea disponibila, iar continutul extins se deruleaza intr-o zona compacta. Ciorna, selectiile si raspunsul liber raman separate.
+
 # 1.23.2 — 2026-10-22
 
 - Un card interactiv invalid nu mai opreste imediat tura: o singura reparare structurata, apoi raspuns in text daca repararea esueaza.

@@ -28,6 +28,13 @@ public final class ProjectLocationsTest {
   try(var server=new FeatureTest.Server(FeatureTest.json(FeatureTest.answer("must not be sent",10,1)))){
    FeatureTest.edt(()->{app[0]=AttachmentTest.window(home.resolve("loading-app"),server.url());configure(app[0],config(a,b));AttachmentTest.input(app[0]).setText("Continua proiectul 507045");System.setProperty("localchat.test","false");try{FeatureTest.call(app[0],"send",new Class<?>[]{});}finally{System.setProperty("localchat.test","true");}check(server.requests.isEmpty()&&!FeatureTest.<Boolean>field(app[0],"busy"),"startup cannot bypass root configuration loading");var error=LocalChat.class.getDeclaredField("toolsConfigError");error.setAccessible(true);error.set(app[0],"invalid fixture configuration");FeatureTest.call(app[0],"send",new Class<?>[]{});check(server.requests.isEmpty()&&AttachmentTest.input(app[0]).getText().contains("507045"),"invalid configuration blocks MBS without losing draft");app[0].dispose();});
   }
+  try(var server=new FeatureTest.Server(FeatureTest.json(FeatureTest.answer("Compared both catalogues in selected factory",20,4)))){
+   FeatureTest.edt(()->{app[0]=AttachmentTest.window(home.resolve("comparison-app"),server.url());configure(app[0],config(a,b));});
+   String prompt="Continua proiectul 507045, de la analiza listelor de import Soest si Veenoord.";
+   NormalModeTest.ask(app[0],prompt);
+   FeatureTest.edt(()->{check(server.requests.isEmpty()&&FeatureTest.<ComposerAssist>field(app[0],"composerAssist").waiting(),"comparison mentioning both factories asks once");choose(app[0],"veenoord");});FeatureTest.idle(app[0]);
+   FeatureTest.edt(()->{check(server.requests.size()==1&&!FeatureTest.<ComposerAssist>field(app[0],"composerAssist").waiting(),"explicit Veenoord selection must survive both factory names in same draft");check(AttachmentTest.state(app[0]).factoryName.equals("veenoord"),"comparison remains scoped to selected factory");check(NormalModeTest.history(app[0]).stream().filter(m->m.role.equals("user")).findFirst().orElseThrow().content.equals(prompt),"factory choice does not rewrite comparison prompt");app[0].dispose();});
+  }
   for(String language:I18n.CODES){I18n.setLanguage(language);check(ProjectLocations.question(result).message().contains("507045"),"localized factory question "+language);}
   System.out.println("PASS: "+checks+" factory preflight checks; duplicate IDs, root errors, no guessing, explicit choices, persistence, Stop and Normal isolation");System.exit(0);
  }

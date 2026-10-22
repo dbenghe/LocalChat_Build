@@ -69,6 +69,8 @@ if ($LASTEXITCODE) { throw 'Composer interaction regression tests failed' }
 if ($LASTEXITCODE) { throw 'Interactive checkbox/next-action card tests failed' }
 & "$taskJdk/bin/java.exe" "-Dlocalchat.home=$taskBuild/interaction-recovery-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.InteractionRecoveryTest
 if ($LASTEXITCODE) { throw 'Invalid interaction recovery tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/compact-cards-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.CompactCardsTest
+if ($LASTEXITCODE) { throw 'Compact interaction card layout tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/queue-notification-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.QueueNotificationsTest
 if ($LASTEXITCODE) { throw 'Queue/local monthly notification/drop tests failed' }
 & "$taskJdk/bin/java.exe" "-Dlocalchat.home=$taskBuild/tool-protocol-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ToolProtocolTest

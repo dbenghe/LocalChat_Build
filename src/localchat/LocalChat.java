@@ -250,22 +250,23 @@ public final class LocalChat extends JFrame {
     private TokenUsage.Ledger compactUsage;
     private final java.util.concurrent.atomic.AtomicInteger compactStarted=new java.util.concurrent.atomic.AtomicInteger();
     private Path previousConversation;
-    private String factoryChecked="";private boolean resolvingFactory;private int factoryGeneration;
+    private String factoryChecked="",factoryAnswerKey="";private boolean resolvingFactory;private int factoryGeneration;
     private String factoryKey(String project){return ModelCatalog.hash(project+"|"+input.getText()+"|"+workDirField.getText()+"|"+conversationFile+"|"+Json.write(Json.get(toolsConfig,"projectRoots")));}
     private boolean checkFactory(String draft,Path folder){
         if(!Boolean.getBoolean("localchat.test")&&!toolsConfigLoaded){setStatus("Pornesc tool-urile…",false);return true;}
         if(!toolsConfigError.isBlank()){setStatus("unelte.json nu poate fi citit: {0}",true,toolsConfigError);return true;}
         List<ProjectLocations.Root> roots=ProjectLocations.roots(toolsConfig);if(roots.isEmpty())return false;
         String project=ProjectLocations.project(draft,folder,sessionState.factoryProject);if(project.isEmpty())return false;String key=factoryKey(project);if(key.equals(factoryChecked))return false;
+        boolean answeredForDraft=key.equals(factoryAnswerKey);
         int generation=++factoryGeneration;resolvingFactory=true;setBusy(true);setStatus("Verific locatiile proiectului {0}...",false,project);
         Thread worker=new Thread(()->{ProjectLocations.Result discovered=ProjectLocations.scan(project,roots,10000);SwingUtilities.invokeLater(()->{ProjectLocations.Result result=discovered;
             if(generation!=factoryGeneration)return;resolvingFactory=false;setBusy(false);
             if(!queuedAuthorized()){sessionState.queuePaused=true;refreshQueue();return;}
             if(!key.equals(factoryKey(project))||!toolsBox.isSelected()){setStatus("Mesajul s-a modificat. Verifica-l si apasa Trimite.",false);return;}
-            ProjectLocations.Match selected=project.equals(sessionState.factoryProject)&&!ProjectLocations.mentionsRoot(result,draft)?ProjectLocations.selected(result,sessionState.factoryRoot,sessionState.factoryFolder):null;
+            ProjectLocations.Match selected=project.equals(sessionState.factoryProject)&&(!ProjectLocations.mentionsRoot(result,draft)||answeredForDraft)?ProjectLocations.selected(result,sessionState.factoryRoot,sessionState.factoryFolder):null;
             if(selected!=null&&selected.root().factory().isBlank()&&!sessionState.factoryName.isBlank())selected=new ProjectLocations.Match(new ProjectLocations.Root(sessionState.factoryName,selected.root().path()),selected.folder());
-            ProjectLocations.Match explicit=ProjectLocations.explicit(result,draft);if(explicit!=null)selected=explicit;
-            if(selected==null&&result.matches().size()==1&&!ProjectLocations.factoryHint(draft)&&result.unavailable().isEmpty()&&!result.matches().get(0).root().factory().isBlank())selected=result.matches().get(0);
+            ProjectLocations.Match explicit=ProjectLocations.explicit(result,draft);if(explicit!=null&&!answeredForDraft)selected=explicit;
+            if(selected==null&&!answeredForDraft&&result.matches().size()==1&&!ProjectLocations.factoryHint(draft)&&result.unavailable().isEmpty()&&!result.matches().get(0).root().factory().isBlank())selected=result.matches().get(0);
             if(selected!=null&&selected.root().factory().isBlank()&&project.equals(sessionState.factoryProject)&&selected.root().path().equalsIgnoreCase(sessionState.factoryRoot)&&!sessionState.factoryName.isBlank())selected=new ProjectLocations.Match(new ProjectLocations.Root(sessionState.factoryName,selected.root().path()),selected.folder());
             if(selected!=null&&selected.root().factory().isBlank()){result=new ProjectLocations.Result(result.project(),List.of(selected),List.of(selected.root()),result.unavailable());selected=null;}
             if(selected!=null){selectFactory(project,selected);sessionState.factoryPending="";composerAssist.clear();factoryChecked=key;send();return;}
@@ -278,7 +279,7 @@ public final class LocalChat extends JFrame {
         try{ProjectLocations.Result result=ProjectLocations.parse(sessionState.factoryPending);ProjectLocations.Match selected;
             if(ProjectLocations.needsName(result)){String name=ProjectLocations.factoryName(composerAssist.value("factory-name"));if(name.isBlank()||name.length()>80||name.matches("(?s).*[^\\p{L}0-9 ._-].*")){composerAssist.clear();sessionState.interactionState="";presentFactoryQuestion(result);return;}var choice=result.choices().get(0);selected=new ProjectLocations.Match(new ProjectLocations.Root(name,choice.root().path()),choice.folder());}
             else {selected=ProjectLocations.answer(result,composerAssist.value("factory"));if(selected==null){composerAssist.clear();sessionState.interactionState="";presentFactoryQuestion(result);return;}if(selected.root().factory().isBlank()){var only=new ProjectLocations.Result(result.project(),List.of(selected),List.of(selected.root()),List.of());sessionState.factoryPending=only.json();composerAssist.clear();presentFactoryQuestion(only);saveConversation();return;}}
-            selectFactory(result.project(),selected);sessionState.factoryPending="";factoryChecked="";composerAssist.clear();saveConversation();send();
+            selectFactory(result.project(),selected);sessionState.factoryPending="";factoryChecked="";composerAssist.clear();saveConversation();factoryAnswerKey=factoryKey(result.project());send();
         }catch(RuntimeException error){sessionState.factoryPending="";composerAssist.clear();setStatus("Nu pot restaura alegerea fabricii. Apasa Trimite pentru reverificare.",true);}
     }
     private Hotfolder hotfolder;
@@ -385,7 +386,7 @@ public final class LocalChat extends JFrame {
         status.setFont(status.getFont().deriveFont(11f));toolsStatus.setFont(toolsStatus.getFont().deriveFont(11f));
         JPanel compose = new JPanel(new BorderLayout(6, 0));
         compose.setBorder(BorderFactory.createEmptyBorder(6, 8, 2, 8));
-        attachmentBar.setPreferredSize(new Dimension(400,43));attachmentBar.setBorder(BorderFactory.createEmptyBorder());attachmentBar.setVisible(false);composerAssist=new ComposerAssist(input,this::submitInteraction);JPanel composerContext=new JPanel();composerContext.setLayout(new javax.swing.BoxLayout(composerContext,javax.swing.BoxLayout.Y_AXIS));composerContext.add(attachmentBar);composerContext.add(composerAssist);compose.add(composerContext,BorderLayout.NORTH);
+        attachmentBar.setPreferredSize(new Dimension(400,43));attachmentBar.setBorder(BorderFactory.createEmptyBorder());attachmentBar.setVisible(false);composerAssist=new ComposerAssist(input,this::submitInteraction);JPanel composerContext=new JPanel();composerContext.setLayout(new javax.swing.BoxLayout(composerContext,javax.swing.BoxLayout.Y_AXIS));attachmentBar.setAlignmentX(Component.LEFT_ALIGNMENT);composerContext.setOpaque(false);composerContext.add(attachmentBar);composerContext.add(composerAssist);compose.add(composerContext,BorderLayout.NORTH);
         JScrollPane inputScroll=new JScrollPane(input);inputScroll.putClientProperty("FlatLaf.style","arc: 14");compose.add(inputScroll);
         for(JComponent target:new JComponent[]{chat,compose})AttachmentSupport.installDropTree(target,()->true,this::addAttachments,this::pasteClipboardImage);
         ComposerClipboard.install(input,error->setStatus("Nu pot lipi din clipboard: {0}",true,describe(error)));
@@ -1507,7 +1508,7 @@ public final class LocalChat extends JFrame {
             if(anchorIndex>=0 && anchorIndex<=base.size())turn.guard.seed(sessionState.contextAnchorInput,anchorIndex);
         }
         sessionState.projectStatus="in_progress";
-        factoryChecked="";
+        factoryChecked="";factoryAnswerKey="";
         activeProject=useTools?ProjectLocations.project(draft,workDir,sessionState.factoryProject):"";
         current = turn;
         if(queueOwner==sessionState&&!queueDispatchId.isBlank()){sessionState.queue.removeIf(q->q.id().equals(queueDispatchId)&&q.text().equals(draft)&&q.attachments().equals(pendingAttachments));queueDispatchId="";queueOwner=null;}
@@ -1804,7 +1805,7 @@ public final class LocalChat extends JFrame {
             if(!previous.isEmpty() || (!toolsBox.isSelected()&&!history.isEmpty()))
                 systemField.setText(toolsBox.isSelected()?sessionState.mbsSystemPrompt:sessionState.normalSystemPrompt);
             boolean reset=sessionState.enterMode(toolsBox.isSelected(),history.size());
-            if(reset&&composerAssist!=null){composerAssist.clear();sessionState.interactionState="";sessionState.factoryPending="";factoryChecked="";}
+            if(reset&&composerAssist!=null){composerAssist.clear();sessionState.interactionState="";sessionState.factoryPending="";factoryChecked="";factoryAnswerKey="";}
             if(reset&&!history.isEmpty())setStatus("Mod schimbat: context nou; istoricul ramane vizibil.",false);
         }
     }

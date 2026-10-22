@@ -760,3 +760,5 @@ Pentru xAI: URL https://api.x.ai/v1, protocol Compatibil OpenAI, cheie de infere
 Surse: [xAI REST](https://docs.x.ai/developers/rest-api-reference/inference), [Cursor APIs](https://cursor.com/docs/api).
 
 Cardurile interactive invalide au o reparare limitata, apoi raspuns in text. Recuperarea foloseste rezultatele deja confirmate si nu executa operatii sau aprobari implicite.
+
+Cardurile de alegere sunt compacte (maximum 720 px), cu optiuni aliniate si derulare pentru continut extins. Alegerea fabricii din card are prioritate pentru ciorna curenta, chiar daca aceasta compara doua fabrici.
