@@ -503,5 +503,20 @@
   "Completeaza alegerile; mesajul tau ramane in asteptare. Poti inchide propunerile pentru a trimite doar mesajul.": "Secimleri tamamlayin; mesajiniz bekler. Yalnizca mesaji gondermek icin onerileri kapatin.",
   "Astept raspunsurile tale; ciorna ramane editabila.": "Yanitlariniz bekleniyor; taslak duzenlenebilir.",
   "Alegeri si propuneri": "Secimler ve oneriler",
-  "Disponibile in zona de scriere.": "Mesaj alaninda kullanilabilir."
+  "Disponibile in zona de scriere.": "Mesaj alaninda kullanilabilir.",
+  "Draft": "Taslak",
+  "In lucru": "Devam ediyor",
+  "Partial": "Kısmi",
+  "Repornit": "Yeniden başlatıldı",
+  "Status proiect": "Proje durumu",
+  "Notificari: {0}": "Bildirimler: {0}",
+  "Nicio notificare noua": "Yeni bildirim yok",
+  "Hotfolder proiecte": "Proje izleme klasörü",
+  "Activeaza hotfolder (doar drafturi)": "İzleme klasörünü aç (yalnızca taslaklar)",
+  "Foloseste folderul de lucru": "Çalışma klasörünü kullan",
+  "Nu pot configura hotfolder: {0}": "İzleme klasörü ayarlanamadı: {0}",
+  "Hotfolder: {0}": "İzleme klasörü: {0}",
+  "Hotfolder: {0} proiecte cu drafturi noi.": "İzleme klasörü: {0} proje için yeni taslaklar.",
+  "Proiect nou": "Yeni proje",
+  "Actualizare proiect": "Proje güncellemesi"
 }

@@ -503,5 +503,20 @@
   "Completeaza alegerile; mesajul tau ramane in asteptare. Poti inchide propunerile pentru a trimite doar mesajul.": "Vul de keuzes in; je bericht blijft klaarstaan. Sluit de voorstellen om alleen je bericht te sturen.",
   "Astept raspunsurile tale; ciorna ramane editabila.": "Wacht op je antwoorden; het concept blijft bewerkbaar.",
   "Alegeri si propuneri": "Keuzes en voorstellen",
-  "Disponibile in zona de scriere.": "Beschikbaar bij het berichtveld."
+  "Disponibile in zona de scriere.": "Beschikbaar bij het berichtveld.",
+  "Draft": "Concept",
+  "In lucru": "Bezig",
+  "Partial": "Gedeeltelijk",
+  "Repornit": "Hervat",
+  "Status proiect": "Projectstatus",
+  "Notificari: {0}": "Meldingen: {0}",
+  "Nicio notificare noua": "Geen nieuwe meldingen",
+  "Hotfolder proiecte": "Project-hotfolder",
+  "Activeaza hotfolder (doar drafturi)": "Hotfolder inschakelen (alleen concepten)",
+  "Foloseste folderul de lucru": "Werkmap gebruiken",
+  "Nu pot configura hotfolder: {0}": "Hotfolder instellen mislukt: {0}",
+  "Hotfolder: {0}": "Hotfolder: {0}",
+  "Hotfolder: {0} proiecte cu drafturi noi.": "Hotfolder: {0} projecten met nieuwe concepten.",
+  "Proiect nou": "Nieuw project",
+  "Actualizare proiect": "Projectupdate"
 }

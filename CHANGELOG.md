@@ -1,3 +1,10 @@
+# 1.19.0 — 2026-10-22
+
+- Optional persisted project hotfolder: baseline at first enable, stable new/changed source files create local MBS drafts, grouped per project. No inference or automatic sending. Exact project paths work when the working directory is PRODUCTIE or its parent.
+- Local notification bell with unread count and subtle pulse, direct access to pending chats, persistent workflow status icons and context menus. Completion is user-confirmed rather than inferred from a model response.
+- Rounded clarification card above the composer with numbered visible choices, free answers, explicit submission, pending message preservation and existing Tab/Undo suggestion support.
+- Six interface languages and both themes; source inventory is private, persisted and excludes generated reports, journals, temporary locks and linked folders outside the project.
+
 ## 1.18.0 - 2026-10-22
 
 - Formular de clarificari in zona mesajului, cu maximum trei intrebari, optiuni fara preselectare si camp liber. localchat_interaction foloseste contextul turei MBS, regulile si memoriile permise; opreste tura fara a executa alte apeluri din acelasi raspuns. Mesajul scris intre timp este pastrat si inclus numai la trimiterea explicita a raspunsurilor. Normal ramane fara unelte; intrebarile numerotate da/nu pot fi preluate local din raspunsurile clasice.

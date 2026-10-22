@@ -503,5 +503,20 @@
   "Completeaza alegerile; mesajul tau ramane in asteptare. Poti inchide propunerile pentru a trimite doar mesajul.": "Completeaza alegerile; mesajul tau ramane in asteptare. Poti inchide propunerile pentru a trimite doar mesajul.",
   "Astept raspunsurile tale; ciorna ramane editabila.": "Astept raspunsurile tale; ciorna ramane editabila.",
   "Alegeri si propuneri": "Alegeri si propuneri",
-  "Disponibile in zona de scriere.": "Disponibile in zona de scriere."
+  "Disponibile in zona de scriere.": "Disponibile in zona de scriere.",
+  "Draft": "Draft",
+  "In lucru": "In lucru",
+  "Partial": "Partial",
+  "Repornit": "Repornit",
+  "Status proiect": "Status proiect",
+  "Notificari: {0}": "Notificari: {0}",
+  "Nicio notificare noua": "Nicio notificare noua",
+  "Hotfolder proiecte": "Hotfolder proiecte",
+  "Activeaza hotfolder (doar drafturi)": "Activeaza hotfolder (doar drafturi)",
+  "Foloseste folderul de lucru": "Foloseste folderul de lucru",
+  "Nu pot configura hotfolder: {0}": "Nu pot configura hotfolder: {0}",
+  "Hotfolder: {0}": "Hotfolder: {0}",
+  "Hotfolder: {0} proiecte cu drafturi noi.": "Hotfolder: {0} proiecte cu drafturi noi.",
+  "Proiect nou": "Proiect nou",
+  "Actualizare proiect": "Actualizare proiect"
 }

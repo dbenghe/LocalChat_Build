@@ -38,3 +38,6 @@
 
 # Private child-agent tasks, results and complete local histories
 **/agent-runs/
+
+# Private source metadata inventory for the optional project hotfolder
+**/hotfolder.json

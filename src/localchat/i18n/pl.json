@@ -503,5 +503,20 @@
   "Completeaza alegerile; mesajul tau ramane in asteptare. Poti inchide propunerile pentru a trimite doar mesajul.": "Uzupelnij wybor; wiadomosc pozostaje w oczekiwaniu. Zamknij propozycje, aby wyslac sama wiadomosc.",
   "Astept raspunsurile tale; ciorna ramane editabila.": "Oczekiwanie na odpowiedzi; szkic pozostaje edytowalny.",
   "Alegeri si propuneri": "Wybor i propozycje",
-  "Disponibile in zona de scriere.": "Dostepne przy polu wiadomosci."
+  "Disponibile in zona de scriere.": "Dostepne przy polu wiadomosci.",
+  "Draft": "Szkic",
+  "In lucru": "W toku",
+  "Partial": "Częściowo",
+  "Repornit": "Wznowiono",
+  "Status proiect": "Status projektu",
+  "Notificari: {0}": "Powiadomienia: {0}",
+  "Nicio notificare noua": "Brak nowych powiadomień",
+  "Hotfolder proiecte": "Folder monitorowany projektów",
+  "Activeaza hotfolder (doar drafturi)": "Włącz monitorowanie (tylko szkice)",
+  "Foloseste folderul de lucru": "Użyj folderu roboczego",
+  "Nu pot configura hotfolder: {0}": "Nie można skonfigurować folderu: {0}",
+  "Hotfolder: {0}": "Folder monitorowany: {0}",
+  "Hotfolder: {0} proiecte cu drafturi noi.": "Folder monitorowany: {0} projektów z nowymi szkicami.",
+  "Proiect nou": "Nowy projekt",
+  "Actualizare proiect": "Aktualizacja projektu"
 }

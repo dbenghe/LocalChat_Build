@@ -503,5 +503,20 @@
   "Completeaza alegerile; mesajul tau ramane in asteptare. Poti inchide propunerile pentru a trimite doar mesajul.": "Complete the choices; your message stays pending. Dismiss the suggestions to send only your message.",
   "Astept raspunsurile tale; ciorna ramane editabila.": "Waiting for your answers; the draft stays editable.",
   "Alegeri si propuneri": "Choices and suggestions",
-  "Disponibile in zona de scriere.": "Available in the composer."
+  "Disponibile in zona de scriere.": "Available in the composer.",
+  "Draft": "Draft",
+  "In lucru": "In progress",
+  "Partial": "Partial",
+  "Repornit": "Restarted",
+  "Status proiect": "Project status",
+  "Notificari: {0}": "Notifications: {0}",
+  "Nicio notificare noua": "No new notifications",
+  "Hotfolder proiecte": "Project hotfolder",
+  "Activeaza hotfolder (doar drafturi)": "Enable hotfolder (drafts only)",
+  "Foloseste folderul de lucru": "Use working folder",
+  "Nu pot configura hotfolder: {0}": "Cannot configure hotfolder: {0}",
+  "Hotfolder: {0}": "Hotfolder: {0}",
+  "Hotfolder: {0} proiecte cu drafturi noi.": "Hotfolder: {0} projects with new drafts.",
+  "Proiect nou": "New project",
+  "Actualizare proiect": "Project update"
 }

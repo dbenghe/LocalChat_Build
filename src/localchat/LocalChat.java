@@ -203,6 +203,36 @@ public final class LocalChat extends JFrame {
     private TokenUsage.Ledger compactUsage;
     private final java.util.concurrent.atomic.AtomicInteger compactStarted=new java.util.concurrent.atomic.AtomicInteger();
     private Path previousConversation;
+    private Hotfolder hotfolder;
+    private boolean hotfolderScanning;
+    private final javax.swing.Timer hotfolderTimer=new javax.swing.Timer(10000,e->scanHotfolder());
+    private void configureHotfolder(){
+        if(busy)return;String selectedWork=workDirField.getText().strip();
+        JCheckBox enabled=new JCheckBox(t("Activeaza hotfolder (doar drafturi)"),Boolean.parseBoolean(config.getProperty("hotfolder.enabled","false")));
+        JTextField path=new JTextField(config.getProperty("hotfolder.path",selectedWork),38);
+        JButton use=new JButton(t("Foloseste folderul de lucru"));use.addActionListener(e->path.setText(selectedWork));
+        JPanel panel=new JPanel(new BorderLayout(5,8));panel.add(enabled,BorderLayout.NORTH);panel.add(path);panel.add(use,BorderLayout.SOUTH);
+        if(JOptionPane.showConfirmDialog(this,panel,t("Hotfolder proiecte"),JOptionPane.OK_CANCEL_OPTION)!=JOptionPane.OK_OPTION)return;
+        try{Path selected=Path.of(path.getText().strip()).toAbsolutePath().normalize();if(enabled.isSelected()){selected=selected.toRealPath();if(!Files.isDirectory(selected))throw new IOException(t("Folderul de lucru nu exista."));}Properties next=new Properties();next.putAll(config);next.setProperty("hotfolder.enabled",Boolean.toString(enabled.isSelected()));next.setProperty("hotfolder.path",selected.toString());SettingsStore.save(configFile,next);config.putAll(next);hotfolder=new Hotfolder(appDir.resolve("hotfolder.json"),30000);scanHotfolder();}catch(IOException|RuntimeException e){setStatus("Nu pot configura hotfolder: {0}",true,describe(e));}
+    }
+    private void scanHotfolder(){
+        if(hotfolderScanning||busy||!Boolean.parseBoolean(config.getProperty("hotfolder.enabled","false")))return;
+        String folder=config.getProperty("hotfolder.path","");if(folder.isBlank())return;
+        if(hotfolder==null)hotfolder=new Hotfolder(appDir.resolve("hotfolder.json"),30000);Hotfolder watcher=hotfolder;hotfolderScanning=true;
+        Thread worker=new Thread(()->{try{var changes=watcher.scan(Path.of(folder),System.currentTimeMillis());SwingUtilities.invokeLater(()->{try{if(hotfolder!=watcher||!folder.equals(config.getProperty("hotfolder.path"))||!Boolean.parseBoolean(config.getProperty("hotfolder.enabled","false"))||busy)return;for(var change:changes){createHotfolderDraft(change);watcher.acknowledge(change);}if(!changes.isEmpty()){refreshSessions();setStatus("Hotfolder: {0} proiecte cu drafturi noi.",false,changes.size());}}catch(IOException|RuntimeException e){setStatus("Hotfolder: {0}",true,describe(e));}finally{hotfolderScanning=false;}});}catch(IOException|RuntimeException e){SwingUtilities.invokeLater(()->{hotfolderScanning=false;setStatus("Hotfolder: {0}",true,describe(e));});}},"hotfolder-inventory");worker.setDaemon(true);worker.start();
+    }
+    private void createHotfolderDraft(Hotfolder.Change change)throws IOException{
+        String project=change.folder().toString();String prompt=Hotfolder.prompt(change);String event=ModelCatalog.hash(project+change.signature());
+        List<Conversations.Saved> chats=Conversations.list(conversationsDir);
+        if(chats.stream().anyMatch(c->c.state().hotfolderEvent.equals(event)))return;
+        Conversations.Saved reusable=chats.stream().filter(c->!c.file().equals(conversationFile)&&!c.state().archived&&c.messages().isEmpty()&&c.state().projectStatus.equals("draft")&&c.state().hotfolderProject.equals(project)).findFirst().orElse(null);
+        Conversations.State draft=reusable==null?new Conversations.State():reusable.state();
+        if(reusable==null){draft.toolsEnabled=true;draft.contextMode="mbs";draft.systemPrompt=defaultSystemPrompt("mbs");draft.mbsSystemPrompt=defaultSystemPrompt("mbs");draft.normalSystemPrompt=defaultSystemPrompt("normal");draft.provider=shownProvider.name();draft.providerPreset=SavedProviders.id(shownSelection);draft.model=currentModel();draft.baseUrl=currentUrl();draft.streamEnabled=streamBox.isSelected();draft.responseProfile=responseProfile.getSelectedIndex();draft.responseLanguage=responseLanguage();draft.translateMessage=translateMessageBox.isSelected();draft.autoCompact=sessionState.autoCompact;draft.autoThreshold=sessionState.autoThreshold;draft.title=change.project()+" — "+t(change.fresh()?"Proiect nou":"Actualizare proiect");}
+        draft.draft=draft.draft.isBlank()?prompt:draft.draft+"\n\n"+prompt;draft.projectStatus="draft";draft.unread=true;draft.hotfolderProject=project;draft.hotfolderEvent=event;
+        Conversations.save(reusable==null?Conversations.newFile(conversationsDir):reusable.file(),project,List.of(),draft);
+    }
+    private void changeProjectStatus(String value){if(busy)return;String old=sessionState.projectStatus;sessionState.projectStatus=ProjectStatus.valid(value);ensureSession();if(!saveConversation())sessionState.projectStatus=old;refreshDashboard();}
+
 
     /** One question and everything the model did to answer it. Only touched on the UI thread. */
     private static final class Turn {
@@ -228,6 +258,7 @@ public final class LocalChat extends JFrame {
     }
 
     private final ChatTimeline timeline=new ChatTimeline(transcript,originalTranscript,this::toggleBookmark);
+    private final JButton projectStatusButton=new JButton();
     private final JButton timelineMenu=new JButton(new UiIcon("timeline",16));
     private void toggleBookmark(int message){if(message<0||message>=history.size()||!history.get(message).role.equals("user"))return;boolean previous=sessionState.bookmarks.contains(message);if(previous)sessionState.bookmarks.remove(message);else sessionState.bookmarks.add(message);if(!saveConversation()){if(previous)sessionState.bookmarks.add(message);else sessionState.bookmarks.remove(message);}timeline.bookmarks(sessionState.bookmarks);}
 
@@ -261,8 +292,9 @@ public final class LocalChat extends JFrame {
         JPanel chat = new JPanel(new BorderLayout());
         chat.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
         JScrollPane responseScroll=new JScrollPane(transcript);responseScroll.putClientProperty("FlatLaf.style","arc: 14");responseScroll.getVerticalScrollBar().addAdjustmentListener(e->{if(!updatingTranscript){var bar=responseScroll.getVerticalScrollBar();if(bar.getValue()+bar.getVisibleAmount()>=bar.getMaximum()-12)transcript.putClientProperty("localchat.followTail",true);else if(e.getValueIsAdjusting())transcript.putClientProperty("localchat.followTail",false);}});chat.add(responseScroll);chat.add(timeline,BorderLayout.WEST);timelineMenu.addActionListener(e->timeline.menu(timelineMenu));timelineMenu.setToolTipText(t("Navigare in discutie"));
-        JPanel chatHeading=new JPanel(new BorderLayout(6,0));chatTitle.putClientProperty("html.disable",true);chatHeading.add(chatTitle);JPanel chatHeadingActions=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT,3,2));for(JButton button:new JButton[]{timelineMenu,agentsButton,chatActions,chatSettings}){button.setPreferredSize(new Dimension(29,27));button.setMargin(new Insets(2,3,2,3));chatHeadingActions.add(button);}chatHeading.add(chatHeadingActions,BorderLayout.EAST);chat.add(chatHeading,BorderLayout.NORTH);
+        JPanel chatHeading=new JPanel(new BorderLayout(6,0));chatTitle.putClientProperty("html.disable",true);chatHeading.add(chatTitle);JPanel chatHeadingActions=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT,3,2));for(JButton button:new JButton[]{projectStatusButton,timelineMenu,agentsButton,chatActions,chatSettings}){button.setPreferredSize(new Dimension(29,27));button.setMargin(new Insets(2,3,2,3));chatHeadingActions.add(button);}chatHeading.add(chatHeadingActions,BorderLayout.EAST);chat.add(chatHeading,BorderLayout.NORTH);
         agentsButton.addActionListener(e->setAgentPaneVisible(!agentPanel.isVisible()));
+        projectStatusButton.addActionListener(e->{javax.swing.JPopupMenu menu=new javax.swing.JPopupMenu();JMenu statuses=WorkspacePanel.statusMenu(sessionState.projectStatus,this::changeProjectStatus);while(statuses.getItemCount()>0)menu.add(statuses.getItem(0));menu.show(projectStatusButton,0,projectStatusButton.getHeight());});
         chatActions.addActionListener(e->buildChatActions().show(chatActions,0,chatActions.getHeight()));chatSettings.addActionListener(e->buildQuickSettings().show(chatSettings,0,chatSettings.getHeight()));
 
         JPanel buttons = new JPanel(new BorderLayout());
@@ -381,6 +413,7 @@ public final class LocalChat extends JFrame {
         installModelRenderer();
         installedSkills=Skills.load(skillsDir);
         previousConversation=storedPrevious();
+        workspace.statusChange=this::changeProjectStatus;
         refreshSessions();
         I18n.setLanguage(config.getProperty("ui.language", "ro"));
         languageBox.setSelectedIndex(java.util.Arrays.asList(I18n.CODES).indexOf(I18n.language()));
@@ -420,18 +453,18 @@ public final class LocalChat extends JFrame {
                 if (current != null || compactClient!=null) stop();
                 saveConversation();
                 saveConfig();
-                dashboardTimer.stop();markdownTimer.stop();if(pdfPreview!=null)pdfPreview.clear();
+                hotfolderTimer.stop();hotfolder=null;dashboardTimer.stop();markdownTimer.stop();if(pdfPreview!=null)pdfPreview.clear();
                 if(compactClient!=null)compactClient.cancel();
                 mcp.closeAll();
             }
-            @Override public void windowClosed(WindowEvent e){dashboardTimer.stop();markdownTimer.stop();if(pdfPreview!=null)pdfPreview.clear();busyIndicator.active(false);}
+            @Override public void windowClosed(WindowEvent e){hotfolderTimer.stop();hotfolder=null;dashboardTimer.stop();markdownTimer.stop();if(pdfPreview!=null)pdfPreview.clear();busyIndicator.active(false);}
         });
         setSize(1320, 880);
         setMinimumSize(new Dimension(1080, 650));
         setLocationRelativeTo(null);
         setStatus("Alege furnizorul, pune cheia API si scrie un mesaj.  Enter = trimite,  Shift+Enter = rand nou.", false);
         refreshDashboard();
-        if (!Boolean.getBoolean("localchat.test")) {reloadTools();dashboardTimer.start();}
+        if (!Boolean.getBoolean("localchat.test")) {reloadTools();dashboardTimer.start();hotfolderTimer.start();}
     }
 
     public static void main(String[] args) {
@@ -514,6 +547,7 @@ public final class LocalChat extends JFrame {
         chats.add(item("Deschide folderul conversatiilor", null, e -> openFolder(conversationsDir)));
         bar.add(chats);
         JMenu tools = ui(new JMenu(), "Unelte");
+        tools.add(item("Hotfolder proiecte",null,e->configureHotfolder()));
         tools.add(item("Memorii locale",null,e->showMemories()));
         tools.add(item("Reguli salvate (reguli.md)", null, e -> openInEditor(rulesFile, "# Reguli salvate\n\n")));
         tools.add(item("Folderul de skill-uri", null, e -> openFolder(skillsDir)));
@@ -733,7 +767,7 @@ public final class LocalChat extends JFrame {
             if(conversationFile!=null){previousConversation=conversationFile;config.setProperty("session.previous",conversationFile.getFileName().toString());}
             Conversations.Saved chosen=Conversations.load(selected.file());
             saveConfig();
-            restoringSelections=true;hidePdfPreview();composerAssist.clear();history.clear();history.addAll(chosen.messages());conversationFile=chosen.file();sessionState=chosen.state();
+            restoringSelections=true;hidePdfPreview();composerAssist.clear();history.clear();history.addAll(chosen.messages());conversationFile=chosen.file();sessionState=chosen.state();sessionState.unread=false;
             if(!sessionState.provider.isBlank())try{providerBox.setSelectedItem(restoredProvider(sessionState.providerPreset,Provider.valueOf(sessionState.provider)));}catch(IllegalArgumentException ignored){}
             if(!sessionState.providerPreset.isBlank() && !(shownSelection instanceof SavedProviders.Entry))keyField.setText("");
             if(!sessionState.model.isBlank())modelBox.setSelectedItem(sessionState.model);
@@ -754,7 +788,7 @@ public final class LocalChat extends JFrame {
             reportModel.removeAllElements();reportBar.setVisible(false);renderHistory();
             for(var m:history)if(("tool".equals(m.role) && !m.isError) || "PDFCONTROL".equals(m.label))addReports(m.content);
             workspace.select(conversationFile);
-            setStatus("Conversatie incarcata: {0}",false,chosen.title());refreshDashboard();saveConfig();
+            setStatus("Conversatie incarcata: {0}",false,chosen.title());refreshDashboard();saveConfig();saveConversation();
         }catch(IOException|RuntimeException e){setStatus("Nu pot deschide {0}: {1}",true,selected.file(),describe(e));}
         finally{restoringSelections=false;}
     }
@@ -967,6 +1001,7 @@ public final class LocalChat extends JFrame {
     }
 
     private void refreshDashboard() {
+        projectStatusButton.setIcon(ProjectStatus.icon(sessionState.projectStatus));projectStatusButton.setToolTipText(t("Status proiect")+": "+ProjectStatus.label(sessionState.projectStatus));projectStatusButton.setEnabled(!busy);
         filterModelOptions();
         if(chatTitle!=null)chatTitle.setText(sessionState==null||sessionState.title.isBlank()?t("Conversatie"):sessionState.title);
         refreshFavoriteButton();
@@ -1145,7 +1180,7 @@ public final class LocalChat extends JFrame {
     private void choosePreviewPdf(){JFileChooser picker=new JFileChooser();Path dir=currentWorkDir();if(dir!=null)picker.setCurrentDirectory(dir.toFile());picker.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("PDF","pdf"));picker.setDialogTitle(t("Deschide alt PDF"));if(picker.showOpenDialog(this)==JFileChooser.APPROVE_OPTION)reportAction(picker.getSelectedFile().toPath(),5);}
     private javax.swing.JPopupMenu buildChatActions(){
         javax.swing.JPopupMenu popup=new javax.swing.JPopupMenu();String[] labels={"Redenumeste conversatia…","Fixeaza / desprinde","Arhiveaza conversatia","Exporta chat JSON…","Compacteaza memoria","Copiaza raspunsul"};Runnable[] actions={this::renameSession,this::pinSession,this::archiveSession,this::exportSession,this::compactMemory,this::copyResponse};
-        for(int i=0;i<labels.length;i++){JMenuItem item=new JMenuItem(t(labels[i]));Runnable run=actions[i];item.setEnabled(!busy||i==5);item.addActionListener(e->run.run());popup.add(item);}return popup;
+        for(int i=0;i<labels.length;i++){JMenuItem item=new JMenuItem(t(labels[i]));Runnable run=actions[i];item.setEnabled(!busy||i==5);item.addActionListener(e->run.run());popup.add(item);}popup.add(WorkspacePanel.statusMenu(sessionState.projectStatus,this::changeProjectStatus));return popup;
     }
     private javax.swing.JPopupMenu buildQuickSettings(){
         javax.swing.JPopupMenu popup=new javax.swing.JPopupMenu();JMenu modelMenu=new JMenu(t("Model:"));for(int i=0;i<modelBox.getItemCount();i++){String model=modelBox.getItemAt(i);javax.swing.JRadioButtonMenuItem item=new javax.swing.JRadioButtonMenuItem(model,model.equals(currentModel()));item.addActionListener(e->{modelBox.setSelectedItem(model);saveConfig();saveConversation();refreshDashboard();});modelMenu.add(item);}modelMenu.setEnabled(!busy);popup.add(modelMenu);
@@ -1369,6 +1404,7 @@ public final class LocalChat extends JFrame {
             int anchorIndex=prefix+sessionState.contextAnchorCount-sessionState.memory.through;
             if(anchorIndex>=0 && anchorIndex<=base.size())turn.guard.seed(sessionState.contextAnchorInput,anchorIndex);
         }
+        sessionState.projectStatus="in_progress";
         current = turn;
         if (conversationFile == null) conversationFile = Conversations.newFile(conversationsDir);
 
@@ -1505,6 +1541,7 @@ public final class LocalChat extends JFrame {
         }
         completeResponseDisplay();
         turn.done = true;
+        sessionState.projectStatus="partial";
         current = null;
         setBusy(false);
         refreshDashboard();

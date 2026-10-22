@@ -24,11 +24,14 @@ final class WorkspacePanel extends JPanel {
     private final JButton fresh=new JButton(),rename=new JButton(),pin=new JButton(),remove=new JButton();
     private List<Conversations.Saved> all=List.of();
     private boolean refreshing;
+    Consumer<String> statusChange=value->{};
+    final JButton notifications=new JButton();
+    private final javax.swing.Timer notificationPulse=new javax.swing.Timer(700,e->{notifications.putClientProperty("JButton.buttonType",Boolean.TRUE.equals(notifications.getClientProperty("pulse"))?null:"roundRect");notifications.putClientProperty("pulse",!Boolean.TRUE.equals(notifications.getClientProperty("pulse")));notifications.setForeground(Boolean.TRUE.equals(notifications.getClientProperty("pulse"))?new Color(getBackground().getRed()<128?0x32BBCB:0x137585):UIManager.getColor("Label.foreground"));});
     WorkspacePanel(Runnable newChat,Consumer<Conversations.Saved> open,Runnable title,Runnable togglePin) {this(newChat,open,title,togglePin,()->{},()->{},()->{});}
     WorkspacePanel(Runnable newChat,Consumer<Conversations.Saved> open,Runnable title,Runnable togglePin,Runnable delete,Runnable archive,Runnable export) {
         super(new BorderLayout(5,7));setPreferredSize(new Dimension(255,400));
         setBorder(BorderFactory.createEmptyBorder(8,8,8,3));
-        JPanel top=new JPanel(new BorderLayout(4,5));top.add(heading,BorderLayout.NORTH);top.add(search);
+        JPanel top=new JPanel(new BorderLayout(4,5));JPanel headingRow=new JPanel(new BorderLayout());headingRow.add(heading);headingRow.add(notifications,BorderLayout.EAST);top.add(headingRow,BorderLayout.NORTH);notifications.setMargin(new Insets(2,4,2,4));notifications.addActionListener(e->showNotifications());top.add(search);
         JPanel actions=new JPanel(new GridLayout(2,2,3,3));actions.add(fresh);actions.add(remove);actions.add(rename);actions.add(pin);top.add(actions,BorderLayout.SOUTH);
         JPanel header=new JPanel(new BorderLayout(2,3));header.add(top);header.add(archived,BorderLayout.SOUTH);
         add(header,BorderLayout.NORTH); add(new JScrollPane(list));
@@ -41,13 +44,13 @@ final class WorkspacePanel extends JPanel {
                 JMenuItem renameItem=new JMenuItem(I18n.text("Redenumeste conversatia…"));renameItem.addActionListener(x->title.run());menu.add(renameItem);
                 JMenuItem a=new JMenuItem(I18n.text(list.getSelectedValue().state().archived?"Restaureaza conversatia":"Arhiveaza conversatia"));a.addActionListener(x->archive.run());menu.add(a);
                 JMenuItem ex=new JMenuItem(I18n.text("Exporta chat JSON…"));ex.addActionListener(x->export.run());menu.add(ex);
-                JMenuItem d=new JMenuItem(I18n.text("Sterge conversatia"));d.addActionListener(x->delete.run());menu.add(d);menu.show(list,e.getX(),e.getY());}
+                JMenuItem d=new JMenuItem(I18n.text("Sterge conversatia"));d.addActionListener(x->delete.run());menu.add(d);menu.addSeparator();menu.add(statusMenu(list.getSelectedValue().state().projectStatus,statusChange));menu.show(list,e.getX(),e.getY());}
             public void mousePressed(MouseEvent e){popup(e);}public void mouseReleased(MouseEvent e){popup(e);}
         });
         list.setCellRenderer(new DefaultListCellRenderer(){
             @Override public Component getListCellRendererComponent(JList<?> l,Object value,int index,boolean selected,boolean focus) {
                 Conversations.Saved s=(Conversations.Saved)value;
-                return super.getListCellRendererComponent(l,(s.state().pinned?"* ":"")+s.title(),index,selected,focus);
+                JLabel label=(JLabel)super.getListCellRendererComponent(l,(s.state().unread?"\u2022 ":"")+(s.state().pinned?"* ":"")+s.title(),index,selected,focus);label.putClientProperty("html.disable",true);label.setIcon(ProjectStatus.icon(s.state().projectStatus));label.setToolTipText(ProjectStatus.label(s.state().projectStatus));return label;
             }});
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         list.addListSelectionListener(e->{if(!refreshing && !e.getValueIsAdjusting() && list.getSelectedValue()!=null)open.accept(list.getSelectedValue());});
@@ -68,7 +71,7 @@ final class WorkspacePanel extends JPanel {
         translate();
     }
     void translate() {
-        heading.setText(I18n.text("Conversatii"));search.putClientProperty("JTextField.placeholderText",I18n.text("Cauta conversatii"));search.setToolTipText(I18n.text("Cauta conversatii"));
+        notifications.setToolTipText(I18n.text("Notificari: {0}",all.stream().filter(s->s.state().unread&&!s.state().archived).count()));notifications.getAccessibleContext().setAccessibleName(notifications.getToolTipText());heading.setText(I18n.text("Conversatii"));search.putClientProperty("JTextField.placeholderText",I18n.text("Cauta conversatii"));search.setToolTipText(I18n.text("Cauta conversatii"));
         search.getAccessibleContext().setAccessibleName(I18n.text("Cauta conversatii"));
         fresh.setText("+");fresh.setToolTipText(I18n.text("Conversatie noua"));
         remove.setText("−");remove.setToolTipText(I18n.text("Sterge conversatia"));archived.setText(I18n.text("Arhivate"));
@@ -85,7 +88,12 @@ final class WorkspacePanel extends JPanel {
         try{list.clearSelection();if(file!=null)for(int i=0;i<sessions.size();i++)if(sessions.get(i).file().equals(file)){list.setSelectedIndex(i);break;}}
         finally{refreshing=false;}
     }
-    void refresh(List<Conversations.Saved> saved) {all=saved;filter();}
+    void refresh(List<Conversations.Saved> saved) {all=saved;filter();int count=(int)all.stream().filter(s->s.state().unread&&!s.state().archived).count();notifications.setText(count>0?Integer.toString(count):"");notifications.setIcon(new Icon(){public int getIconWidth(){return 15;}public int getIconHeight(){return 15;}public void paintIcon(Component c,Graphics g,int x,int y){Graphics2D a=(Graphics2D)g.create();a.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);a.setColor(c.getForeground());a.setStroke(new BasicStroke(1.4f));a.drawArc(x+4,y+2,7,9,0,180);a.drawLine(x+4,y+6,x+3,y+11);a.drawLine(x+11,y+6,x+12,y+11);a.drawLine(x+3,y+11,x+12,y+11);a.fillOval(x+6,y+12,3,2);a.dispose();}});notifications.setToolTipText(I18n.text("Notificari: {0}",count));if(count>0&&isShowing())notificationPulse.start();else {notificationPulse.stop();notifications.setForeground(UIManager.getColor("Label.foreground"));}}
+    static JMenu statusMenu(String value,Consumer<String> change){JMenu menu=new JMenu(I18n.text("Status proiect"));for(String id:ProjectStatus.VALUES){JRadioButtonMenuItem choice=new JRadioButtonMenuItem(ProjectStatus.label(id),id.equals(value));choice.setIcon(ProjectStatus.icon(id));choice.addActionListener(e->change.accept(id));menu.add(choice);}return menu;}
+    private void showNotifications(){JPopupMenu menu=new JPopupMenu();for(var s:all)if(s.state().unread&&!s.state().archived){JMenuItem item=new JMenuItem(s.title(),ProjectStatus.icon(s.state().projectStatus));item.putClientProperty("html.disable",true);item.addActionListener(e->selectAndOpen(s));menu.add(item);}if(menu.getComponentCount()==0)menu.add(new JMenuItem(I18n.text("Nicio notificare noua")));menu.show(notifications,0,notifications.getHeight());}
+    private void selectAndOpen(Conversations.Saved saved){search.setText("");archived.setSelected(false);filter();list.setSelectedValue(saved,true);}
+    @Override public void addNotify(){super.addNotify();if(!notifications.getText().isBlank())notificationPulse.start();}
+    @Override public void removeNotify(){notificationPulse.stop();super.removeNotify();}
     private void filter() {
         String q=search.getText().strip().toLowerCase(Locale.ROOT);
         Conversations.Saved selected=list.getSelectedValue();

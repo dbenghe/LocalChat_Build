@@ -503,5 +503,20 @@
   "Completeaza alegerile; mesajul tau ramane in asteptare. Poti inchide propunerile pentru a trimite doar mesajul.": "Completa las opciones; tu mensaje queda pendiente. Cierra las propuestas para enviar solo tu mensaje.",
   "Astept raspunsurile tale; ciorna ramane editabila.": "Esperando tus respuestas; el borrador sigue editable.",
   "Alegeri si propuneri": "Opciones y propuestas",
-  "Disponibile in zona de scriere.": "Disponibles junto al editor."
+  "Disponibile in zona de scriere.": "Disponibles junto al editor.",
+  "Draft": "Borrador",
+  "In lucru": "En curso",
+  "Partial": "Parcial",
+  "Repornit": "Reanudado",
+  "Status proiect": "Estado del proyecto",
+  "Notificari: {0}": "Notificaciones: {0}",
+  "Nicio notificare noua": "Sin notificaciones nuevas",
+  "Hotfolder proiecte": "Carpeta vigilada de proyectos",
+  "Activeaza hotfolder (doar drafturi)": "Activar carpeta vigilada (solo borradores)",
+  "Foloseste folderul de lucru": "Usar carpeta de trabajo",
+  "Nu pot configura hotfolder: {0}": "No se puede configurar la carpeta: {0}",
+  "Hotfolder: {0}": "Carpeta vigilada: {0}",
+  "Hotfolder: {0} proiecte cu drafturi noi.": "Carpeta vigilada: {0} proyectos con borradores nuevos.",
+  "Proiect nou": "Proyecto nuevo",
+  "Actualizare proiect": "Actualización del proyecto"
 }
