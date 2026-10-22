@@ -1,3 +1,10 @@
+# 1.23.5 — 2026-10-22
+
+- Hotfolderul reutilizeaza conversatia proiectului dupa folderul local exact, inclusiv conversatii procesate, deschise sau arhivate; nu asociaza fabrici diferite numai dupa numarul proiectului.
+- Sursele noi marcheaza conversatia existenta Repornit si necitita, pastrand istoricul, ciorna, modelul si memoria. In ferestrele deschise pregatirea se pastreaza separat pana la accesare, fara intreruperea lucrului sau trimitere automata.
+- Monitorizarea functioneaza si cand Folder de lucru este chiar folderul numeric al proiectului.
+- Fisierele MSG/EML pregatesc mesajul «Am adaugat un email nou…» sau «Am adaugat emailuri noi…», pe baza extensiei, fara a citi continutul emailurilor.
+
 # 1.23.4 — 2026-10-22
 
 - Citirile repetitive declanseaza o singura recuperare ghidata, apoi constatari si blocaj in text fara unelte daca modelul persista. Nu repeta operatiile confirmate; pastreaza arhiva si Stop.

@@ -584,5 +584,7 @@
   "Citire repetata fara progres. Foloseste rezultatele existente; recuperarea este limitata.": "Repeated reading without progress. Use existing results; recovery is bounded.",
   "Reseteaza filtrele": "Reset filters",
   "Lista este filtrata; conversatiile raman salvate.": "The list is filtered; conversations remain saved.",
-  "Afiseaza numai conversatiile arhivate": "Show archived conversations only"
+  "Afiseaza numai conversatiile arhivate": "Show archived conversations only",
+  "Am adaugat un email nou in proiectul {0}.": "I added a new email to project {0}.",
+  "Am adaugat emailuri noi in proiectul {0}.": "I added new emails to project {0}."
 }

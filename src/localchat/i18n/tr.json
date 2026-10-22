@@ -584,5 +584,7 @@
   "Citire repetata fara progres. Foloseste rezultatele existente; recuperarea este limitata.": "İlerleme olmadan tekrarlanan okuma. Mevcut sonuçları kullanın; kurtarma sınırlıdır.",
   "Reseteaza filtrele": "Filtreleri sıfırla",
   "Lista este filtrata; conversatiile raman salvate.": "Liste filtrelendi; konuşmalar kayıtlı kalır.",
-  "Afiseaza numai conversatiile arhivate": "Yalnızca arşivlenmiş konuşmaları göster"
+  "Afiseaza numai conversatiile arhivate": "Yalnızca arşivlenmiş konuşmaları göster",
+  "Am adaugat un email nou in proiectul {0}.": "{0} projesine yeni bir e-posta ekledim.",
+  "Am adaugat emailuri noi in proiectul {0}.": "{0} projesine yeni e-postalar ekledim."
 }

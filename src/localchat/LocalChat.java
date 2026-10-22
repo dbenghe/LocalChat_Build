@@ -295,15 +295,25 @@ public final class LocalChat extends JFrame {
         Thread worker=new Thread(()->{try{var changes=watcher.scan(Path.of(folder),System.currentTimeMillis());SwingUtilities.invokeLater(()->{try{if(hotfolder!=watcher||!folder.equals(workDirField.getText().strip())||!Boolean.parseBoolean(config.getProperty("hotfolder.enabled","false")))return;hotfolderLastScan=System.currentTimeMillis();for(var change:changes){createHotfolderDraft(change);watcher.acknowledge(change);}if(!changes.isEmpty()){refreshSessions();setStatus("Hotfolder: {0} proiecte cu drafturi noi.",false,changes.size());}}catch(IOException|RuntimeException e){setStatus("Hotfolder: {0}",true,describe(e));}finally{hotfolderScanning=false;}});}catch(IOException|RuntimeException e){SwingUtilities.invokeLater(()->{hotfolderScanning=false;setStatus("Hotfolder: {0}",true,describe(e));});}},"hotfolder-inventory");worker.setDaemon(true);worker.start();
     }
     private void createHotfolderDraft(Hotfolder.Change change)throws IOException{
-        String project=change.folder().toString();String prompt=Hotfolder.prompt(change);String event=ModelCatalog.hash(project+change.signature());
-        List<Conversations.Saved> chats=Conversations.list(conversationsDir);
-        if(chats.stream().anyMatch(c->c.state().hotfolderEvent.equals(event)))return;
-        Conversations.Saved reusable=chats.stream().filter(c->!c.file().equals(conversationFile)&&owner(c.file())==null&&!c.state().archived&&c.messages().isEmpty()&&c.state().projectStatus.equals("draft")&&c.state().hotfolderProject.equals(project)).findFirst().orElse(null);
-        Conversations.State draft=reusable==null?new Conversations.State():reusable.state();
+        String project=change.folder().toString(),prompt=Hotfolder.prompt(change),event=HotfolderChats.event(change);
+        Conversations.Saved reusable=HotfolderChats.find(Conversations.list(conversationsDir),change);
+        LocalChat live=null;if(reusable!=null)for(LocalChat window:WINDOWS)if(window.appDir.equals(appDir)&&canonical(reusable.file()).equals(canonical(window.conversationFile))){live=window;break;}
+        Conversations.State draft=live!=null?live.sessionState:reusable==null?new Conversations.State():reusable.state();
+        if(draft.hotfolderEvent.equals(event))return;
+        String oldEvent=draft.hotfolderEvent,oldProject=draft.hotfolderProject,oldPending=draft.hotfolderPendingDraft,oldStatus=draft.projectStatus;boolean oldUnread=draft.unread,oldArchived=draft.archived,oldPaused=draft.queuePaused;
         if(reusable==null){draft.toolsEnabled=true;draft.contextMode="mbs";draft.systemPrompt=defaultSystemPrompt("mbs");draft.mbsSystemPrompt=defaultSystemPrompt("mbs");draft.normalSystemPrompt=defaultSystemPrompt("normal");draft.provider=shownProvider.name();draft.providerPreset=SavedProviders.id(shownSelection);draft.model=currentModel();draft.baseUrl=currentUrl();draft.streamEnabled=streamBox.isSelected();draft.responseProfile=responseProfile.getSelectedIndex();draft.responseLanguage=responseLanguage();draft.translateMessage=translateMessageBox.isSelected();draft.autoCompact=sessionState.autoCompact;draft.autoThreshold=sessionState.autoThreshold;draft.title=change.project()+" — "+t(change.fresh()?"Proiect nou":"Actualizare proiect");}
-        draft.draft=draft.draft.isBlank()?prompt:draft.draft+"\n\n"+prompt;draft.projectStatus="draft";draft.unread=true;draft.hotfolderProject=project;draft.hotfolderEvent=event;
-        Conversations.save(reusable==null?Conversations.newFile(conversationsDir):reusable.file(),project,List.of(),draft);
+        if(live!=null)draft.hotfolderPendingDraft=HotfolderChats.append(draft.hotfolderPendingDraft,prompt);
+        else draft.draft=HotfolderChats.append(draft.draft,prompt);
+        HotfolderChats.mark(draft,change,reusable!=null);
+        if(reusable!=null&&!reusable.messages().isEmpty())draft.projectStatus="restarted";
+        if(live!=null){if(!live.saveConversation()){draft.hotfolderEvent=oldEvent;draft.hotfolderProject=oldProject;draft.hotfolderPendingDraft=oldPending;draft.projectStatus=oldStatus;draft.unread=oldUnread;draft.archived=oldArchived;draft.queuePaused=oldPaused;throw new IOException("Hotfolder conversation could not be saved");}live.refreshQueue();live.refreshDashboard();}
+        else {Conversations.save(reusable==null?Conversations.newFile(conversationsDir):reusable.file(),reusable==null?project:reusable.workDir(),reusable==null?List.of():reusable.messages(),draft);for(LocalChat window:WINDOWS)if(window.appDir.equals(appDir))window.refreshSessions();}
     }
+    private void applyHotfolderPending(){
+        if(busy||sessionState.hotfolderPendingDraft.isBlank())return;
+        String next=HotfolderChats.append(input.getText(),sessionState.hotfolderPendingDraft);ComposerEditing.edit(input,()->{input.setText(next);});sessionState.hotfolderPendingDraft="";sessionState.unread=false;sessionState.projectStatus="restarted";saveConversation();refreshDashboard();
+    }
+
     private void changeProjectStatus(String value){if(busy)return;String old=sessionState.projectStatus;sessionState.projectStatus=ProjectStatus.valid(value);ensureSession();if(!saveConversation())sessionState.projectStatus=old;refreshDashboard();}
 
 
@@ -836,7 +846,7 @@ public final class LocalChat extends JFrame {
     private void ensureSession() {if(conversationFile==null)conversationFile=Conversations.newFile(conversationsDir);}
 
     private void openSession(Conversations.Saved selected) {
-        if(selected==null)return;if(conversationFile!=null&&conversationFile.equals(selected.file()))return;
+        if(selected==null)return;if(conversationFile!=null&&conversationFile.equals(selected.file())){applyHotfolderPending();return;}
         if(busy||owner(selected.file())!=null){openSeparate(selected);return;}
         try {
             // Reload from disk so the sidebar never restores a stale snapshot.
@@ -859,7 +869,7 @@ public final class LocalChat extends JFrame {
             permissionBox.setEnabled(toolsBox.isSelected());
             if(sessionState.contextLimit>=0 && !config.containsKey(contextProfile()+".metadata"))config.setProperty(contextProfile(),Integer.toString(sessionState.contextLimit));
             contextProfile="";
-            ComposerEditing.setText(input,sessionState.draft);refreshAttachments();
+            ComposerEditing.setText(input,HotfolderChats.append(sessionState.draft,sessionState.hotfolderPendingDraft));sessionState.hotfolderPendingDraft="";refreshAttachments();
             alwaysAllowed.clear();
             if(chosen.workDir()!=null && !chosen.workDir().isBlank())workDirField.setText(pathMap().path(chosen.workDir()));
             responseProfile.setSelectedIndex(sessionState.responseProfile);
@@ -1650,7 +1660,7 @@ public final class LocalChat extends JFrame {
         }
         completeResponseDisplay();
         turn.done = true;
-        sessionState.projectStatus="partial";
+        sessionState.projectStatus=sessionState.hotfolderPendingDraft.isBlank()?"partial":"restarted";
         current = null;
         setBusy(false);
         refreshDashboard();

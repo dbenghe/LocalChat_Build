@@ -111,3 +111,5 @@ Repository-ul utilizatorului este https://github.com/dbenghe/LocalChat_Build (co
 - Din 1.23.3, cardurile compacte pastreaza valorile originale, ciorna si selectie explicita, cu layout responsiv Dark/Light. Alegerea fabricii confirma doar ciorna/contextul curent, se reverifica pe locatiile disponibile si nu este anulata de o comparatie intre doua fabrici in aceeasi ciorna.
 
 - Din 1.23.4, detectarea repetitiilor de discovery permite o singura recuperare ghidata, apoi fallback fara unelte; arhiva si Stop raman intacte. Secventele de clicuri se grupeaza intr-o singura navigare, iar filtrele nu modifica starea arhivata sau fisierele chatului. Lista filtrata goala explica situatia si permite resetarea in sase limbi.
+
+- Din 1.23.5, schimbarile hotfolderului reutilizeaza chatul aceluiasi folder local chiar daca are istoric, este deschis sau arhivat. Nu uni proiecte/fabrici numai dupa numar. Pastreaza ciornele, istoricul si preferintele; o fereastra activa primeste pregatire separata, coada se suspenda si nu porneste inferenta. Notifica si marcheaza Repornit. MSG/EML indica emailuri pe baza metadatelor, fara citire automata.

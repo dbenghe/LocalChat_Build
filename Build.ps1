@@ -63,6 +63,8 @@ if ($LASTEXITCODE) { throw 'Provider creation, endpoint scope and xAI authentica
 if ($LASTEXITCODE) { throw 'Factory/project location preflight tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/hotfolder-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.HotfolderTest
 if ($LASTEXITCODE) { throw 'Hotfolder/status/notification tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/hotfolder-reuse-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.HotfolderReuseTest
+if ($LASTEXITCODE) { throw 'Hotfolder project reuse/email preparation tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/composer-assist-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ComposerAssistTest
 if ($LASTEXITCODE) { throw 'Composer interaction regression tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/interaction-cards-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.InteractionCardsTest
