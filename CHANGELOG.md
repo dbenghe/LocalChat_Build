@@ -1,3 +1,9 @@
+# 1.23.2 — 2026-10-22
+
+- Un card interactiv invalid nu mai opreste imediat tura: o singura reparare structurata, apoi raspuns in text daca repararea esueaza.
+- Recuperarea nu executa operatii, nu repeta actiuni confirmate si nu transforma propunerile in aprobari. Apelurile alaturate unui card primesc rezultate explicite de neexecutare inaintea cererii urmatoare.
+- Originalele si parametrii respinsi raman in arhiva; nu sunt executate fragmente JSON/XML deteriorate. Stop ramane prioritar.
+
 # 1.23.1 — 2026-10-22
 
 - Butonul + deschide un formular independent pentru nume, protocol, URL si cheie, fara mostenirea configuratiei furnizorului curent.

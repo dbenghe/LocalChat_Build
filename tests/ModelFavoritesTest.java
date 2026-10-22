@@ -15,6 +15,8 @@ public final class ModelFavoritesTest {
         ModelFavorites.toggle(loaded,prefix,url,id);check(!ModelFavorites.contains(loaded,prefix,url,id),"favorite removed");check(loaded.getProperty("default.model").equals("unchanged"),"favorite never changes default");
         try{FeatureTest.edt(()->{
             LocalChat app=AttachmentTest.window(home,"http://127.0.0.1:1/v1");
+            Properties fixture=FeatureTest.field(app,"config");String fixturePrefix=SavedProviders.prefix(FeatureTest.field(app,"shownSelection"));
+            fixture.setProperty(fixturePrefix+".models",Json.write(List.of("favorite-b","favorite-a")));fixture.setProperty(fixturePrefix+".modelsUrl","http://127.0.0.1:1/v1");
             JComboBox<String> models=FeatureTest.field(app,"modelBox");models.addItem("favorite-b");models.addItem("favorite-a");models.setSelectedItem("favorite-b");
             JButton star=FeatureTest.field(app,"favoriteModelButton");star.doClick();
             check(models.getItemAt(0).equals("favorite-b")&&models.getSelectedItem().equals("favorite-b"),"toggle reorders and preserves current model");

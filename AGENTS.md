@@ -105,3 +105,5 @@ Repository-ul utilizatorului este https://github.com/dbenghe/LocalChat_Build (co
 
 
 - Din 1.23.1, + creeaza un furnizor din campuri independente, fara chei, protocol sau modele mostenite. Modelele salvate sunt legate de endpoint; pastrarea unei selectii absente dupa un catalog nou nu este permisa. Lipsa tuturor capabilitatilor MBS nu trebuie sa produca o lista opaca goala: pastreaza inspectarea si marcajul neconfirmat, fara a declara compatibilitate. Cheile Grok/Cursor Agents nu sunt chei de inferenta xAI; diagnosticheaza local nepotrivirea, nu redirectiona chei automat si nu reproduce secretele din erorile serverului.
+
+- Din 1.23.2, cardurile invalide au o singura reparare structurata, apoi fallback in text fara unelte operationale. Nu executa JSON/XML deteriorat, nu repeta actiuni confirmate si nu inventa aprobari. Siblingii neexecutati au rezultate explicite inaintea urmatoarei inferente; pastreaza arhiva si Stop.

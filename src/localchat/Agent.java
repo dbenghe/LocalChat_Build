@@ -72,6 +72,7 @@ final class Agent {
         if(team!=null&&tools!=null)specs.add(AgentGroup.spec());
         if(interactive&&tools!=null)specs.add(ComposerAssist.spec());
         int protocolRepairs=0;
+        int interactionFailures=0;
         for (int step = 0; step < maximumSteps; step++) {
             if (cancelled) return;
             if (step > 0) ui.step();
@@ -80,11 +81,12 @@ final class Agent {
                 conversation.addAll(added);
                 replyPending = true;
             }
-            String effectiveSystem=system+(protocolRepairs>0?ToolProtocol.REPAIR:"");
-            if(guard!=null){conversation=guard.prepare(p,url,key,model,effectiveSystem,conversation,specs,step,ui);client.outputLimit(guard.outputLimit());}
+            final List<ChatClient.ToolSpec> requestSpecs=interactionFailures==0?specs:interactionFailures==1?List.of(ComposerAssist.spec()):List.of();
+            String effectiveSystem=system+(protocolRepairs>0?ToolProtocol.REPAIR:"")+(interactionFailures>0?INTERACTION_REPAIR:"")+(interactionFailures>1?INTERACTION_TEXT:"");
+            if(guard!=null){conversation=guard.prepare(p,url,key,model,effectiveSystem,conversation,requestSpecs,step,ui);client.outputLimit(guard.outputLimit());}
             if(cancelled)return;
-            ChatClient.Reply reply=InferenceRetry.chat(client,p,url,key,model,effectiveSystem,conversation,specs,stream,ui::text,new InferenceRetry.Hooks(){
-                public void before(String s,List<ChatClient.Message> messages)throws IOException{ui.request(s,messages,specs);}
+            ChatClient.Reply reply=InferenceRetry.chat(client,p,url,key,model,effectiveSystem,conversation,requestSpecs,stream,ui::text,new InferenceRetry.Hooks(){
+                public void before(String s,List<ChatClient.Message> messages)throws IOException{ui.request(s,messages,requestSpecs);}
                 public void usage(TokenUsage usage){if(guard!=null)guard.observe(usage,ui);ui.usage(usage);}
                 public boolean cancelled(){return cancelled;}
                 public void retry(int next,int total,int status){ui.retry(false,next,total,status);}
@@ -99,8 +101,16 @@ final class Agent {
             publishContext(base, ui);
             if(reply.calls.isEmpty()&&tools!=null&&ToolProtocol.malformed(reply.text)){if(protocolRepairs>=2)throw new IOException(I18n.text("Modelul a trimis apeluri de unelte ca text de trei ori. Niciun apel XML nu a fost executat; actiunile confirmate sunt pastrate."));ui.protocolRepair(++protocolRepairs);continue;}
             if (reply.calls.isEmpty()) return;
+            // Recovery is presentation-only: never run operational calls after a rejected card.
+            if(interactionFailures>1){
+                synchronized(added){for(var call:reply.calls)added.add(ChatClient.Message.toolResult(call.id,I18n.text("Propunere invalida. Continua in text."),true));}
+                publishContext(base,ui);return;
+            }
             List<ChatClient.ToolCall> callsToRun=reply.calls;
-            if(interactive&&tools!=null){var interaction=reply.calls.stream().filter(c->c.name.equals(ComposerAssist.TOOL)).findFirst();if(interaction.isPresent())callsToRun=List.of(interaction.get());}
+            if(interactive&&tools!=null){var interaction=reply.calls.stream().filter(c->c.name.equals(ComposerAssist.TOOL)).findFirst();if(interaction.isPresent()){
+                callsToRun=List.of(interaction.get());
+                synchronized(added){for(var sibling:reply.calls)if(sibling!=interaction.get())added.add(ChatClient.Message.toolResult(sibling.id,I18n.text("Anulat inainte de confirmarea rezultatului; verifica starea reala inainte de repetarea operatiei."),true));}
+            }}
             for (ChatClient.ToolCall call : callsToRun) {
                 if (cancelled) return;
                 ui.toolStarted(call);
@@ -109,7 +119,8 @@ final class Agent {
                 Tools.Result result=pdfStart?startedPdfJobs.get(signature):null;
                 if(result==null)result=loopGuard.before(call);
                 if(result==null){
-                    if(interactive&&tools!=null&&call.name.equals(ComposerAssist.TOOL)){try{ComposerAssist.parse(call.args);result=Tools.Result.ok(Json.write(Json.obj("status","waiting_user","executed",false)));}catch(IllegalArgumentException invalid){result=Tools.Result.error(I18n.text("Propunere invalida. Continua in text."));}}
+                    if(interactionFailures>0&&!call.name.equals(ComposerAssist.TOOL))result=Tools.Result.error(I18n.text("Propunere invalida. Continua in text."));
+                    else if(interactive&&tools!=null&&call.name.equals(ComposerAssist.TOOL)){try{ComposerAssist.parse(call.args);result=Tools.Result.ok(Json.write(Json.obj("status","waiting_user","executed",false)));}catch(IllegalArgumentException invalid){result=Tools.Result.error(I18n.text("Propunere invalida. Continua in text."));}}
                     else if(team!=null&&call.name.equals("run_agents"))result=team.run(call,p,url,key,model,label,system,ui);
                     else if(tools==null)result=Tools.Result.error("Tool-urile sunt dezactivate in aplicatie.");
                     else if(isMutation(call.name)){synchronized(MUTATION_LOCK){if(cancelled)return;result=tools.execute(call);}}
@@ -124,13 +135,24 @@ final class Agent {
                 publishContext(base, ui);
                 ui.toolFinished(call, result);
                 if(cancelled)return;
-                if(interactive&&call.name.equals(ComposerAssist.TOOL)){if(result.isError)throw new IOException(result.text);return;}
+                if(interactive&&call.name.equals(ComposerAssist.TOOL)){if(result.isError){interactionFailures++;break;}return;}
+                if(interactionFailures>0){interactionFailures=2;break;}
                 if(loopGuard.stalled(call))throw new IOException(result.text);
                 if(pdfStart&&failedPdfCalls.getOrDefault(signature,0)>=3)throw new IOException(I18n.text("PDFCONTROL: acelasi apel a esuat de trei ori. Verifica eroarea si sursele; lucrarea nu este finalizata."));
+            }
+            if(interactionFailures>0){
+                synchronized(added){
+                    Set<String> answered=new HashSet<>();for(var message:added)if(message.role.equals("tool"))answered.add(message.toolCallId);
+                    for(var call:reply.calls)if(!answered.contains(call.id))added.add(ChatClient.Message.toolResult(call.id,I18n.text("Anulat inainte de confirmarea rezultatului; verifica starea reala inainte de repetarea operatiei."),true));
+                }
+                publishContext(base,ui);
             }
         }
         throw new IOException("Oprit dupa " + maximumSteps + " pasi fara un raspuns final.");
     }
+
+    private static final String INTERACTION_REPAIR="\nThe preceding localchat_interaction was rejected: no card, approval or operation was created. Repair the card ONCE using native tool_calls and the supplied schema. questions and suggestions must be JSON arrays, never JSON strings; options must be arrays of strings. Keep useful findings in accompanying assistant text. Resume from confirmed results; do not repeat operations, request new operational tools, or treat proposed choices as consent. If the card cannot be expressed correctly, give the findings and pending clarification in normal text.\n";
+    private static final String INTERACTION_TEXT="\nThe repair did not produce a valid card. No tools are available for this final recovery response. Give a normal visible final answer with the findings and any pending question, in the selected response language. Do not claim pending work was executed. Do not emit tool calls or XML.\n";
 
     private static boolean isMutation(String name){if(name.matches("(?:.*_)?pdfcontrol_start_(?:check|extract|pairs|compare|workflow)"))return false;return !Set.of("read_skill","read_file","list_dir","find_files","search_text").contains(name)&&!name.endsWith("pdfcontrol_job_status")&&!name.endsWith("pdfcontrol_project_files")&&!name.endsWith("pdfcontrol_list_projects")&&!name.endsWith("pdfcontrol_read_document");}
 

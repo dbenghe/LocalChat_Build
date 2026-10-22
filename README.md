@@ -758,3 +758,5 @@ Daca API-ul nu declara suportul pentru unelte si nu exista modele MBS confirmate
 
 Pentru xAI: URL https://api.x.ai/v1, protocol Compatibil OpenAI, cheie de inferenta creata in https://console.x.ai/. API-ul xAI are autentificare Bearer. Cheile Grok/Cursor Agents apartin unui API distinct si nu sunt chei xAI de inferenta. LocalChat explica nepotrivirea, fara sa schimbe automat destinatia si fara sa afiseze cheia in erori.
 Surse: [xAI REST](https://docs.x.ai/developers/rest-api-reference/inference), [Cursor APIs](https://cursor.com/docs/api).
+
+Cardurile interactive invalide au o reparare limitata, apoi raspuns in text. Recuperarea foloseste rezultatele deja confirmate si nu executa operatii sau aprobari implicite.
