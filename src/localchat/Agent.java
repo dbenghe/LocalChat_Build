@@ -27,6 +27,7 @@ final class Agent {
         default void compactRequest(String system,List<ChatClient.Message> conversation,int fragment,int total) throws IOException {}
         default void compacted() {}
         default void retry(boolean compaction,int next,int total,int status){}
+        default void protocolRepair(int attempt){}
         default void usage(TokenUsage usage) {}
         default void agentProgress(String title,String state) {}
         default void agentTask(String id,String title,String task,String model) {}
@@ -70,6 +71,7 @@ final class Agent {
         List<ChatClient.ToolSpec> specs = new ArrayList<>(tools == null ? Collections.emptyList() : tools.specs());
         if(team!=null&&tools!=null)specs.add(AgentGroup.spec());
         if(interactive&&tools!=null)specs.add(ComposerAssist.spec());
+        int protocolRepairs=0;
         for (int step = 0; step < maximumSteps; step++) {
             if (cancelled) return;
             if (step > 0) ui.step();
@@ -78,9 +80,10 @@ final class Agent {
                 conversation.addAll(added);
                 replyPending = true;
             }
-            if(guard!=null){conversation=guard.prepare(p,url,key,model,system,conversation,specs,step,ui);client.outputLimit(guard.outputLimit());}
+            String effectiveSystem=system+(protocolRepairs>0?ToolProtocol.REPAIR:"");
+            if(guard!=null){conversation=guard.prepare(p,url,key,model,effectiveSystem,conversation,specs,step,ui);client.outputLimit(guard.outputLimit());}
             if(cancelled)return;
-            ChatClient.Reply reply=InferenceRetry.chat(client,p,url,key,model,system,conversation,specs,stream,ui::text,new InferenceRetry.Hooks(){
+            ChatClient.Reply reply=InferenceRetry.chat(client,p,url,key,model,effectiveSystem,conversation,specs,stream,ui::text,new InferenceRetry.Hooks(){
                 public void before(String s,List<ChatClient.Message> messages)throws IOException{ui.request(s,messages,specs);}
                 public void usage(TokenUsage usage){if(guard!=null)guard.observe(usage,ui);ui.usage(usage);}
                 public boolean cancelled(){return cancelled;}
@@ -94,6 +97,7 @@ final class Agent {
                 replyPending = false;
             }
             publishContext(base, ui);
+            if(reply.calls.isEmpty()&&tools!=null&&ToolProtocol.malformed(reply.text)){if(protocolRepairs>=2)throw new IOException(I18n.text("Modelul a trimis apeluri de unelte ca text de trei ori. Niciun apel XML nu a fost executat; actiunile confirmate sunt pastrate."));ui.protocolRepair(++protocolRepairs);continue;}
             if (reply.calls.isEmpty()) return;
             List<ChatClient.ToolCall> callsToRun=reply.calls;
             if(interactive&&tools!=null){var interaction=reply.calls.stream().filter(c->c.name.equals(ComposerAssist.TOOL)).findFirst();if(interaction.isPresent())callsToRun=List.of(interaction.get());}

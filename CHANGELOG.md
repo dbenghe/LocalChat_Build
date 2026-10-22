@@ -1,3 +1,13 @@
+# 1.22.0 — 2026-10-22
+
+- File drops work over chat viewports and dynamically created cards as well as the composer. Attachments, screenshots and text can be prepared while the model is busy; references remain separate from the active request. Explorer drops negotiate COPY, never move the source.
+- Explicit sends while busy create a per-chat FIFO queue (maximum 10 messages), retaining text and up to 20 attachment references per message. Successful replies drain the queue. Stop, errors, clarification cards, an unsent draft or changed model/profile/folder pause it. Restart/loading never sends; the queue menu supports resume, edit and removal.
+- Notification bell moved to the main window's top-right. Optional hotfolder monitoring follows the selected Working folder instead of a separately fixed path, remains metadata-only and can notify while the model is busy. First scan of a newly selected root establishes its baseline; stable later changes create unread drafts only.
+- Optional monthly factory-catalogue notification lives inside LocalChat, enabled in Tools. First MBS use in a new month creates one unread draft without inference or automatic download. No Codex automation is required.
+- PDFCONTROL factory lookup and isolated jobs now support all four known factories; a missing catalogue still remains unavailable. Build deployment includes private factory snapshots. Local catalogue maintenance previews new/changed/absent article codes, preserves XLSX/JSON archives and requires explicit review before accepting absent codes.
+- Bounded native-tool protocol repair for malformed provider XML text (two retries, no markup execution or implicit re-execution). Multiline Python inside cmd.exe inline quotes returns actionable .py script guidance instead of executing broken shell fragments.
+- Six-language UI, portable-Java and real-engine regression tests; private catalogues, source workbooks and skill copies remain excluded from Git.
+
 # 1.21.0 — 2026-10-22
 
 - Interactive composer cards support independent action checkboxes, exclusive choices and a free-text alternative. No defaults; multi-selection and qualifiers persist per conversation. Submitted answers distinguish selected and unselected actions.

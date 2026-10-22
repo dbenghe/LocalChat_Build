@@ -725,3 +725,13 @@ Iconita Panou agenti pulseaza discret numai cand exista sarcini live puse in coa
 Intrebarile apar in carduri imediat deasupra casetei de mesaj: alege o varianta sau bifeaza mai multe actiuni independente, adauga optional un raspuns propriu si apasa **Trimite raspunsurile**. Nu exista optiuni preselectate. Textul scris intre timp in editor ramane editabil si este inclus doar la trimiterea explicita.
 
 Pasii urmatori propusi pe baza progresului, procedurii skillului si regulilor relevante sunt tot optiuni selectabile, cu alternativa libera. Alegerea nu modifica automat ciorna si nu executa nimic. Tab in editorul gol poate accepta optional prima sugestie ca text editabil, anulabil cu Undo. Modelele sunt instruite sa foloseasca `localchat_interaction`; pentru anumite intrebari clasice exista recuperare locala fara o cerere API suplimentara. Aceasta nu garanteaza respectarea instructiunilor de catre orice model.
+
+## Coada, hotfolder si notificari locale (1.22.0)
+
+In timpul raspunsului poti scrie mesajul urmator, lipi o captura sau trage fisiere peste chat/editor. Apasa Trimite pentru a-l adauga in coada; indicatorul de langa Trimite permite reluare, editare sau eliminare. Mesajele pornesc pe rand dupa raspunsuri reusite. Stop, erorile, o intrebare in asteptare, o ciorna nestrimisa sau schimbarea contextului pun coada in pauza. Redeschiderea aplicatiei/chatului nu trimite mesaje automat.
+
+Clopotelul este sus-dreapta, langa Tema. **Unelte > Hotfolder proiecte** activeaza urmarirea folderului ales la **Folder de lucru**. Nu exista o radacina PRODUCTIE fixa in cod. Prima scanare stabileste baza; scanarile urmatoare pregatesc doar drafturi si notificari pentru proiectele directe cu numar de sase cifre. Nu pornesc modelul. Monitorizarea functioneaza numai cat timp LocalChat este deschis; schimbarea folderului muta urmarirea. Fisierele sunt detectate prin marime/data, nu prin citirea continutului.
+
+**Unelte > Notificare lunara cataloage** pregateste o singura notificare/chat draft la prima utilizare MBS a fiecarei luni. Descarci listele noi si pornesti tu compararea din draft. Cataloagele fiecarei fabrici si arhivele lor sunt date private. Instrumentul local `pdfcontrol/catalogue_update.py` ofera previzualizare, comparatie si aplicare cu arhiva; codurile absente necesita verificare explicita.
+
+Daca un furnizor scrie apelurile de unelte ca XML in raspuns, aplicatia cere cel mult de doua ori formatul nativ. XML-ul nu se executa. Costul eventualelor cereri suplimentare intra in consumul chatului; daca modelul continua sa greseasca, tura se opreste cu istoricul pastrat.

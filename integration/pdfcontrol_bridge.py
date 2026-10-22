@@ -471,7 +471,7 @@ def worker(number,identifier):
         for path in APP.iterdir():
             if path.is_file() and (path.name in {'bureaus.json','bureaus_prive.json','mbs_artikelnamen.json','mbs_catalogus.json','kennisbank.json','lower_right_ignored_labels.json','localchat_engine_manifest.json'} or path.suffix=='.py' and (path.name.startswith('mbs_') or path.name=='leer_van_tekenfouten.py')):
                 shutil.copy2(path,engine/path.name);manifest[path.name]=sha(engine/path.name)
-        for name in ['catalogus_soest.json','catalogus_alphen.json']:
+        for name in ['catalogus_soest.json','catalogus_alphen.json','catalogus_veenoord.json','catalogus_lelystad.json']:
             source=APP/'data_lokaal'/name
             if source.is_file():
                 target=engine/'data_lokaal'/name;target.parent.mkdir(exist_ok=True);shutil.copy2(source,target)

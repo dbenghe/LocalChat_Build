@@ -188,8 +188,8 @@ class Workflows(unittest.TestCase):
             if source.is_file() and source.suffix in {'.py','.json'}:
                 shutil.copy2(source,package/source.name)
         shutil.copytree(PACKAGE/'runtime/ocr-windows-x64',package/'runtime/ocr-windows-x64',dirs_exist_ok=True)
-        catalogue=package/'data_lokaal/catalogus_soest.json';catalogue.parent.mkdir(exist_ok=True)
-        catalogue.write_text(json.dumps({'schema_version':1,'factory':'soest','source':'synthetic-fixture.xlsx',
+        catalogue=package/'data_lokaal/catalogus_veenoord.json';catalogue.parent.mkdir(exist_ok=True)
+        catalogue.write_text(json.dumps({'schema_version':1,'factory':'veenoord','source':'synthetic-fixture.xlsx',
             'source_sha256':hashlib.sha256(b'synthetic factory fixture').hexdigest(),
             'records':[{'code':'MBS_TEST','description':'Synthetic fixture article','category':'import','fields':{},'sheet':'Fixture','row':2}],
             'excluded_rows':[]}),encoding='utf-8')
@@ -199,15 +199,15 @@ class Workflows(unittest.TestCase):
             # This also preserves the detailed loader diagnostic instead of a generic start error.
             status=client.call('pdfcontrol_status')
             self.assertTrue(status['ocr']['available'],json.dumps(status['ocr']))
-            record=client.wait(client.start('pdfcontrol_start_check',files=['loose/123456_WA224_V.pdf'],factory='soest'))
+            record=client.wait(client.start('pdfcontrol_start_check',files=['loose/123456_WA224_V.pdf'],factory='veenoord'))
         finally:
             client.close()
-        self.artifacts(record);self.assertTrue(record['catalogue']['available']);self.assertEqual(record['catalogue']['factory'],'soest')
-        snapshot=Path(record['run_folder'])/'engine/data_lokaal/catalogus_soest.json'
+        self.artifacts(record);self.assertTrue(record['catalogue']['available']);self.assertEqual(record['catalogue']['factory'],'veenoord')
+        snapshot=Path(record['run_folder'])/'engine/data_lokaal/catalogus_veenoord.json'
         self.assertEqual(digest(snapshot),digest(catalogue))
         self.assertEqual(state.read_bytes() if state.exists() else None,before)
         context=Path(record['run_folder'])/'catalog_context/123456/Controle/PDFCONTROL/project-state.json'
-        self.assertEqual(json.loads(context.read_text(encoding='utf-8'))['factory'],'soest')
+        self.assertEqual(json.loads(context.read_text(encoding='utf-8'))['factory'],'veenoord')
 
     def test_15_delivery_retries_temporary_windows_lock(self):
         import importlib.util

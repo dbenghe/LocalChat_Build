@@ -81,12 +81,12 @@ public final class UiTest {
             for(int mode=0;mode<2;mode++) {
                 themes.setSelectedIndex(mode);
                 check(I18n.language().equals(I18n.CODES[i]),"selected locale");
-                check(send.getText().isEmpty() && send.getIcon()!=null && send.getToolTipText().equals(I18n.text("Trimite")),"icon send with translated accessible tooltip");
+                check(send.getText().isEmpty() && send.getIcon()!=null && send.getToolTipText().equals(I18n.text("Adauga mesajul in coada")),"icon send with translated accessible tooltip");
                 check(app.getJMenuBar().getMenu(0).getItem(0).getText().equals(I18n.text("Conversație nouă")),"translated menu");
                 JLabel status=field(app,"status");
                 check(status.getText().equals(I18n.text("Rulez {0}…","read_file")),"translated dynamic status");
                 check(transcript.getText().equals(before),"streaming transcript preserved");
-                check(!send.isEnabled() && stop.isEnabled() && !newChat.isEnabled(),"busy controls retained");
+                check(send.isEnabled() && stop.isEnabled() && !newChat.isEnabled(),"busy controls retain Stop and allow queue submission");
                 Color errorColor=StyleConstants.getForeground(transcript.getStyledDocument().getCharacterElement(before.length()-2).getAttributes());
                 check(errorColor.equals(new Color(mode==1?0xFF9C9C:0xB42332)),"existing errors recolored");
                 check(key.getEchoChar()!=0,"API key remains masked");

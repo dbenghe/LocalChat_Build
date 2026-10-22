@@ -205,7 +205,7 @@ final class Tools {
         String env = ctx.commandEnv().isEmpty() ? "" : " Environment variables set for you: "
                 + String.join(", ", ctx.commandEnv().keySet()) + " (use them as %NAME%).";
         out.add(spec("run_command", "Run a Windows command line (cmd.exe, run as a .cmd script, so write %% for a literal %) "
-                        + "and return its output and exit code. Use it for programs and scripts, not for reading files." + env,
+                        + "and return its output and exit code. Use it for programs and scripts, not for reading files. Save multiline Python code with write_file to a .py file, then run that existing script using the correct cwd. Literal newlines inside a quoted python -c argument are not valid cmd.exe continuations. Do not retry a failed inline program unchanged." + env,
                 List.of("command"),
                 "command", "string", "The command line (may span several lines).",
                 "cwd", "string", "Folder to run in (default: the working folder).",
@@ -719,6 +719,7 @@ final class Tools {
 
     private Result runCommand(String command, Path cwd, int timeoutSeconds) throws IOException, ToolError {
         if (!Files.isDirectory(cwd)) throw new ToolError("Folderul pentru comanda nu exista: " + cwd);
+        if(command.matches("(?is).*\\b(?:python(?:\\.exe)?|py)\\s+-c\\s+\"[^\"\\r\\n]*\\R.*"))throw new ToolError(I18n.text("Python multiliniar: salveaza codul cu write_file intr-un fisier .py, apoi ruleaza fisierul cu cwd corect. Comanda nu a fost executata."));
         allow(Access.RUN, "Rulare comanda", command + "\n\nIn folderul: " + cwd);
         Path script = Files.createTempFile("localchat-", ".cmd");
         try {

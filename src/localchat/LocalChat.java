@@ -130,6 +130,8 @@ public final class LocalChat extends JFrame {
     private final JScrollPane attachmentBar=new JScrollPane(attachmentItems,JScrollPane.VERTICAL_SCROLLBAR_NEVER,JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
     private final ComposerAssist.GhostInput input = new ComposerAssist.GhostInput();
     private ComposerAssist composerAssist;
+    private final JPanel notificationSlot=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT,0,0));
+    private final JButton queueButton=new JButton();private String queueDispatchId="";private Conversations.State queueOwner;
     private final JButton sendButton = ui(new JButton(), "Trimite");
     private final JButton stopButton = ui(new JButton(), "Stop");
     private final JButton newChatButton = ui(new JButton(), "Conversatie noua");
@@ -214,6 +216,7 @@ public final class LocalChat extends JFrame {
         int generation=++factoryGeneration;resolvingFactory=true;setBusy(true);setStatus("Verific locatiile proiectului {0}...",false,project);
         Thread worker=new Thread(()->{ProjectLocations.Result discovered=ProjectLocations.scan(project,roots,10000);SwingUtilities.invokeLater(()->{ProjectLocations.Result result=discovered;
             if(generation!=factoryGeneration)return;resolvingFactory=false;setBusy(false);
+            if(!queuedAuthorized()){sessionState.queuePaused=true;refreshQueue();return;}
             if(!key.equals(factoryKey(project))||!toolsBox.isSelected()){setStatus("Mesajul s-a modificat. Verifica-l si apasa Trimite.",false);return;}
             ProjectLocations.Match selected=project.equals(sessionState.factoryProject)&&!ProjectLocations.mentionsRoot(result,draft)?ProjectLocations.selected(result,sessionState.factoryRoot,sessionState.factoryFolder):null;
             if(selected!=null&&selected.root().factory().isBlank()&&!sessionState.factoryName.isBlank())selected=new ProjectLocations.Match(new ProjectLocations.Root(sessionState.factoryName,selected.root().path()),selected.folder());
@@ -235,22 +238,16 @@ public final class LocalChat extends JFrame {
         }catch(RuntimeException error){sessionState.factoryPending="";composerAssist.clear();setStatus("Nu pot restaura alegerea fabricii. Apasa Trimite pentru reverificare.",true);}
     }
     private Hotfolder hotfolder;
-    private boolean hotfolderScanning;
-    private final javax.swing.Timer hotfolderTimer=new javax.swing.Timer(10000,e->scanHotfolder());
+    private boolean hotfolderScanning;private long hotfolderLastScan;
+    private final javax.swing.Timer hotfolderTimer=new javax.swing.Timer(10000,e->{scanHotfolder();checkMonthlyCatalogues();});
     private void configureHotfolder(){
-        if(busy)return;String selectedWork=workDirField.getText().strip();
-        JCheckBox enabled=new JCheckBox(t("Activeaza hotfolder (doar drafturi)"),Boolean.parseBoolean(config.getProperty("hotfolder.enabled","false")));
-        JTextField path=new JTextField(config.getProperty("hotfolder.path",selectedWork),38);
-        JButton use=new JButton(t("Foloseste folderul de lucru"));use.addActionListener(e->path.setText(selectedWork));
-        JPanel panel=new JPanel(new BorderLayout(5,8));panel.add(enabled,BorderLayout.NORTH);panel.add(path);panel.add(use,BorderLayout.SOUTH);
-        if(JOptionPane.showConfirmDialog(this,panel,t("Hotfolder proiecte"),JOptionPane.OK_CANCEL_OPTION)!=JOptionPane.OK_OPTION)return;
-        try{Path selected=Path.of(path.getText().strip()).toAbsolutePath().normalize();if(enabled.isSelected()){selected=selected.toRealPath();if(!Files.isDirectory(selected))throw new IOException(t("Folderul de lucru nu exista."));}Properties next=new Properties();next.putAll(config);next.setProperty("hotfolder.enabled",Boolean.toString(enabled.isSelected()));next.setProperty("hotfolder.path",selected.toString());SettingsStore.save(configFile,next);config.putAll(next);hotfolder=new Hotfolder(appDir.resolve("hotfolder.json"),30000);scanHotfolder();}catch(IOException|RuntimeException e){setStatus("Nu pot configura hotfolder: {0}",true,describe(e));}
+        if(busy)return;JCheckBox enabled=new JCheckBox(t("Activeaza hotfolder (doar drafturi)"),Boolean.parseBoolean(config.getProperty("hotfolder.enabled","false")));JPanel panel=new JPanel(new BorderLayout(5,8));panel.add(enabled,BorderLayout.NORTH);panel.add(new JLabel(t("Hotfolderul urmareste Folderul de lucru: {0}",workDirField.getText().strip())));if(JOptionPane.showConfirmDialog(this,panel,t("Hotfolder proiecte"),JOptionPane.OK_CANCEL_OPTION)!=JOptionPane.OK_OPTION)return;try{Properties next=new Properties();next.putAll(config);next.setProperty("hotfolder.enabled",Boolean.toString(enabled.isSelected()));next.remove("hotfolder.path");SettingsStore.save(configFile,next);config.putAll(next);config.remove("hotfolder.path");hotfolder=null;scanHotfolder();refreshDashboard();}catch(IOException|RuntimeException e){setStatus("Nu pot configura hotfolder: {0}",true,describe(e));}
     }
     private void scanHotfolder(){
-        if(hotfolderScanning||busy||!Boolean.parseBoolean(config.getProperty("hotfolder.enabled","false")))return;
-        String folder=config.getProperty("hotfolder.path","");if(folder.isBlank())return;
+        if(hotfolderScanning||!Boolean.parseBoolean(config.getProperty("hotfolder.enabled","false")))return;
+        String folder=workDirField.getText().strip();if(folder.isBlank())return;
         if(hotfolder==null)hotfolder=new Hotfolder(appDir.resolve("hotfolder.json"),30000);Hotfolder watcher=hotfolder;hotfolderScanning=true;
-        Thread worker=new Thread(()->{try{var changes=watcher.scan(Path.of(folder),System.currentTimeMillis());SwingUtilities.invokeLater(()->{try{if(hotfolder!=watcher||!folder.equals(config.getProperty("hotfolder.path"))||!Boolean.parseBoolean(config.getProperty("hotfolder.enabled","false"))||busy)return;for(var change:changes){createHotfolderDraft(change);watcher.acknowledge(change);}if(!changes.isEmpty()){refreshSessions();setStatus("Hotfolder: {0} proiecte cu drafturi noi.",false,changes.size());}}catch(IOException|RuntimeException e){setStatus("Hotfolder: {0}",true,describe(e));}finally{hotfolderScanning=false;}});}catch(IOException|RuntimeException e){SwingUtilities.invokeLater(()->{hotfolderScanning=false;setStatus("Hotfolder: {0}",true,describe(e));});}},"hotfolder-inventory");worker.setDaemon(true);worker.start();
+        Thread worker=new Thread(()->{try{var changes=watcher.scan(Path.of(folder),System.currentTimeMillis());SwingUtilities.invokeLater(()->{try{if(hotfolder!=watcher||!folder.equals(workDirField.getText().strip())||!Boolean.parseBoolean(config.getProperty("hotfolder.enabled","false")))return;hotfolderLastScan=System.currentTimeMillis();for(var change:changes){createHotfolderDraft(change);watcher.acknowledge(change);}if(!changes.isEmpty()){refreshSessions();setStatus("Hotfolder: {0} proiecte cu drafturi noi.",false,changes.size());}}catch(IOException|RuntimeException e){setStatus("Hotfolder: {0}",true,describe(e));}finally{hotfolderScanning=false;}});}catch(IOException|RuntimeException e){SwingUtilities.invokeLater(()->{hotfolderScanning=false;setStatus("Hotfolder: {0}",true,describe(e));});}},"hotfolder-inventory");worker.setDaemon(true);worker.start();
     }
     private void createHotfolderDraft(Hotfolder.Change change)throws IOException{
         String project=change.folder().toString();String prompt=Hotfolder.prompt(change);String event=ModelCatalog.hash(project+change.signature());
@@ -333,7 +330,7 @@ public final class LocalChat extends JFrame {
         JPanel composeRight=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT,5,2));
         composeLeft.add(attachButton);attachButton.setIcon(new UiIcon("attach",19));attachButton.setPreferredSize(new Dimension(32,30));attachButton.putClientProperty("JComponent.minimumWidth",0);attachButton.addActionListener(e->chooseAttachments());
         JButton copyResponseButton=ui(new JButton(),"Copiaza raspunsul");copyResponseButton.setFont(copyResponseButton.getFont().deriveFont(12f));copyResponseButton.setMargin(new Insets(3,6,3,6));copyResponseButton.addActionListener(e->copyResponse());
-        composeLeft.add(copyResponseButton);composeLeft.add(newChatButton);composeLeft.add(downloadsButton);composeLeft.add(pdfControlButton);pdfControlButton.addActionListener(e->showPdfControl());composeRight.add(busyIndicator);composeRight.add(stopButton);composeRight.add(sendButton);
+        composeLeft.add(copyResponseButton);composeLeft.add(newChatButton);composeLeft.add(downloadsButton);composeLeft.add(pdfControlButton);pdfControlButton.addActionListener(e->showPdfControl());queueButton.setVisible(false);queueButton.setMargin(new Insets(3,6,3,6));queueButton.addActionListener(e->showQueue());composeRight.add(queueButton);composeRight.add(busyIndicator);composeRight.add(stopButton);composeRight.add(sendButton);
         buttons.add(composeLeft);buttons.add(composeRight,BorderLayout.EAST);
         sendButton.setIcon(new UiIcon("send",20));stopButton.setIcon(new UiIcon("stop",16));newChatButton.setIcon(new UiIcon("new",15));downloadsButton.setIcon(new UiIcon("folder",15));
         sendButton.setPreferredSize(new Dimension(34,32));stopButton.setPreferredSize(new Dimension(32,30));
@@ -344,7 +341,7 @@ public final class LocalChat extends JFrame {
         compose.setBorder(BorderFactory.createEmptyBorder(6, 8, 2, 8));
         attachmentBar.setPreferredSize(new Dimension(400,43));attachmentBar.setBorder(BorderFactory.createEmptyBorder());attachmentBar.setVisible(false);composerAssist=new ComposerAssist(input,this::submitInteraction);JPanel composerContext=new JPanel();composerContext.setLayout(new javax.swing.BoxLayout(composerContext,javax.swing.BoxLayout.Y_AXIS));composerContext.add(attachmentBar);composerContext.add(composerAssist);compose.add(composerContext,BorderLayout.NORTH);
         JScrollPane inputScroll=new JScrollPane(input);inputScroll.putClientProperty("FlatLaf.style","arc: 14");compose.add(inputScroll);
-        for(JComponent target:new JComponent[]{compose,input,transcript,attachmentItems,attachmentBar})target.setTransferHandler(new AttachmentSupport.FileTransfer(target.getTransferHandler(),()->!busy,this::addAttachments,this::pasteClipboardImage));
+        for(JComponent target:new JComponent[]{chat,compose})AttachmentSupport.installDropTree(target,()->true,this::addAttachments,this::pasteClipboardImage);
         ComposerClipboard.install(input,error->setStatus("Nu pot lipi din clipboard: {0}",true,describe(error)));
 
         JPanel statusBar = new JPanel(new BorderLayout(12, 0));
@@ -357,7 +354,7 @@ public final class LocalChat extends JFrame {
 
         JPanel root = new JPanel(new BorderLayout());
         root.add(buildSettings(), BorderLayout.NORTH);
-        workspace=new WorkspacePanel(this::newChat,this::openSession,this::renameSession,this::pinSession,this::deleteSession,this::archiveSession,this::exportSession);
+        workspace=new WorkspacePanel(this::newChat,this::openSession,this::renameSession,this::pinSession,this::deleteSession,this::archiveSession,this::exportSession);notificationSlot.setOpaque(false);notificationSlot.add(workspace.notifications);
         JPanel footer=new JPanel(new BorderLayout());
         JPanel controls=new JPanel(new BorderLayout(5,2));
         JPanel selectors=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT,4,0));
@@ -533,7 +530,7 @@ public final class LocalChat extends JFrame {
         appearance.add(ui(new JLabel(), "Tema"));
         themeBox.setName("theme");
         themeBox.getAccessibleContext().setAccessibleName("Theme");
-        appearance.add(themeBox);
+        appearance.add(themeBox);appearance.add(notificationSlot);
         cell(p, c, 0, 0, 5, 1, appearance);
 
         cell(p, c, 0, 1, 1, 0, ui(new JLabel(), "Furnizor:"));
@@ -578,7 +575,7 @@ public final class LocalChat extends JFrame {
         chats.add(item("Deschide folderul conversatiilor", null, e -> openFolder(conversationsDir)));
         bar.add(chats);
         JMenu tools = ui(new JMenu(), "Unelte");
-        tools.add(item("Hotfolder proiecte",null,e->configureHotfolder()));
+        tools.add(item("Hotfolder proiecte",null,e->configureHotfolder()));javax.swing.JCheckBoxMenuItem monthly=new javax.swing.JCheckBoxMenuItem(t("Notificare lunara cataloage"),Boolean.parseBoolean(config.getProperty("catalogueReminder.enabled","false")));monthly.addActionListener(e->{config.setProperty("catalogueReminder.enabled",Boolean.toString(monthly.isSelected()));saveConfig();checkMonthlyCatalogues();});tools.add(monthly);
         tools.add(item("Memorii locale",null,e->showMemories()));
         tools.add(item("Reguli salvate (reguli.md)", null, e -> openInEditor(rulesFile, "# Reguli salvate\n\n")));
         tools.add(item("Folderul de skill-uri", null, e -> openFolder(skillsDir)));
@@ -647,7 +644,7 @@ public final class LocalChat extends JFrame {
             translateControls(getContentPane());
             translateControls(getJMenuBar());
             attachButton.setToolTipText(t("Adauga fisiere sau foldere"));attachButton.getAccessibleContext().setAccessibleName(t("Adauga fisiere sau foldere"));refreshAttachments();
-            sendButton.setText("");sendButton.setToolTipText(t("Trimite"));sendButton.getAccessibleContext().setAccessibleName(t("Trimite"));
+            sendButton.setText("");sendButton.setToolTipText(t(busy?"Adauga mesajul in coada":"Trimite"));sendButton.getAccessibleContext().setAccessibleName(sendButton.getToolTipText());
             stopButton.setText("");stopButton.setToolTipText(t("Stop"));stopButton.getAccessibleContext().setAccessibleName(t("Stop"));
             reportBar.setToolTipText(t("Fisiere deja salvate pe disc. Salvarea unei copii este optionala."));
             busyIndicator.setToolTipText(t("Se lucreaza…"));busyIndicator.getAccessibleContext().setAccessibleName(t("Se lucreaza…"));refreshWorkFolder();
@@ -1032,6 +1029,7 @@ public final class LocalChat extends JFrame {
     }
 
     private void refreshDashboard() {
+        refreshQueue();if(workspace!=null&&Boolean.parseBoolean(config.getProperty("hotfolder.enabled","false"))){String detail=hotfolderLastScan==0?t("Hotfolder: asteapta prima scanare"):t("Hotfolder: ultima scanare {0}",java.time.Instant.ofEpochMilli(hotfolderLastScan).atZone(java.time.ZoneId.systemDefault()).toLocalTime().withNano(0).toString());workspace.notifications.setToolTipText(t("Notificari: {0}",workspace.notifications.getText().isBlank()?"0":workspace.notifications.getText())+" — "+detail+" — "+workDirField.getText().strip());}
         projectStatusButton.setIcon(ProjectStatus.icon(sessionState.projectStatus));projectStatusButton.setDisabledIcon(projectStatusButton.getIcon());projectStatusButton.setToolTipText(t("Status proiect")+": "+ProjectStatus.label(sessionState.projectStatus));projectStatusButton.setEnabled(!busy);
         filterModelOptions();
         if(chatTitle!=null)chatTitle.setText(sessionState==null||sessionState.title.isBlank()?t("Conversatie"):sessionState.title);
@@ -1306,19 +1304,25 @@ public final class LocalChat extends JFrame {
 
     private String composerMessage(){return AttachmentSupport.message(input.getText().trim(),sessionState.draftAttachments);}
     private List<String> attachmentAccess(List<String> pending){List<String> all=new ArrayList<>(sessionState.attachedPaths);for(String path:pending)if(!all.contains(path))all.add(path);return all;}
+    private boolean queuedAuthorized(){return queueOwner!=sessionState||queueDispatchId.isBlank()||sessionState.queue.stream().anyMatch(q->q.id().equals(queueDispatchId));}
+    private String queueScope(){return ModelCatalog.hash(SavedProviders.id(shownSelection)+"|"+currentUrl()+"|"+currentModel()+"|"+workDirField.getText().strip());}
+    private void refreshQueue(){if(queueButton==null||sessionState==null)return;int n=sessionState.queue.size();queueButton.setVisible(n>0);queueButton.setText(t("In asteptare: {0}",n));queueButton.setToolTipText(t(sessionState.queuePaused?"Coada este in pauza":"Mesajele vor porni dupa raspunsul curent"));}
+    private void enqueueMessage(String text,List<String> attachments){if(sessionState.queue.size()>=MessageQueue.MAX){setStatus("Coada este plina. Maximum 10 mesaje.",true);return;}MessageQueue.Entry next=MessageQueue.entry(text,attachments,toolsBox.isSelected());sessionState.queue.add(new MessageQueue.Entry(next.id(),next.text(),next.attachments(),next.mode(),queueScope()));sessionState.queuePaused=current==null&&!resolvingFactory&&compactClient==null;ComposerEditing.setText(input,"");sessionState.draftAttachments.clear();refreshAttachments();ensureSession();saveConversation();refreshQueue();setStatus("Mesaj adaugat in coada: {0}.",false,sessionState.queue.size());}
+    private void dispatchQueue(){if(busy||sessionState.queuePaused||sessionState.queue.isEmpty())return;if(composerAssist.waiting()||!sessionState.factoryPending.isBlank()||!input.getText().isBlank()||!sessionState.draftAttachments.isEmpty()){sessionState.queuePaused=true;refreshQueue();return;}MessageQueue.Entry entry=sessionState.queue.get(0);if(!entry.mode().equals(toolsBox.isSelected()?"mbs":"normal")||(!entry.scope().isBlank()&&!entry.scope().equals(queueScope()))){sessionState.queuePaused=true;setStatus("Contextul cozii difera (model, profil sau folder). Editeaza mesajul pentru noua selectie.",false);refreshQueue();return;}queueOwner=sessionState;queueDispatchId=entry.id();ComposerEditing.setText(input,entry.text());sessionState.draftAttachments.addAll(entry.attachments());refreshAttachments();saveConversation();send();if(!busy){sessionState.queuePaused=true;refreshQueue();}}
+    private void showQueue(){javax.swing.JPopupMenu menu=new javax.swing.JPopupMenu();JMenuItem resume=new JMenuItem(t(sessionState.queuePaused?"Reia coada":"Pauza coada"));resume.setEnabled(!busy);resume.addActionListener(e->{sessionState.queuePaused=!sessionState.queuePaused;if(!sessionState.queuePaused)dispatchQueue();refreshQueue();saveConversation();});menu.add(resume);for(MessageQueue.Entry entry:List.copyOf(sessionState.queue)){String title=entry.text().isBlank()?t("Fisiere atasate"):entry.text();JMenu row=new JMenu(title.length()>65?title.substring(0,65)+"…":title);row.putClientProperty("html.disable",true);JMenuItem edit=new JMenuItem(t("Editeaza mesajul"));edit.setEnabled(!busy);edit.addActionListener(e->{if(!input.getText().isBlank()||!sessionState.draftAttachments.isEmpty()){setStatus("Pastreaza ciorna curenta inainte de editarea mesajului din coada.",false);return;}sessionState.queuePaused=true;queueOwner=sessionState;queueDispatchId=entry.id();ComposerEditing.setText(input,entry.text());sessionState.draftAttachments.addAll(entry.attachments());sessionState.queue.remove(entry);refreshAttachments();refreshQueue();saveConversation();});row.add(edit);JMenuItem remove=new JMenuItem(t("Elimina din coada"));remove.addActionListener(e->{sessionState.queue.remove(entry);refreshQueue();saveConversation();});row.add(remove);menu.add(row);}menu.show(queueButton,0,-menu.getPreferredSize().height);}
+    private void checkMonthlyCatalogues(){if(!toolsBox.isSelected()||!Boolean.parseBoolean(config.getProperty("catalogueReminder.enabled","false")))return;try{Conversations.State draft=new Conversations.State();draft.toolsEnabled=true;draft.contextMode="mbs";draft.systemPrompt=defaultSystemPrompt("mbs");draft.mbsSystemPrompt=draft.systemPrompt;draft.normalSystemPrompt="";draft.provider=shownProvider.name();draft.providerPreset=SavedProviders.id(shownSelection);draft.model=currentModel();draft.baseUrl=currentUrl();draft.responseLanguage=responseLanguage();draft.translateMessage=translateMessageBox.isSelected();if(new MonthlyCatalogues(appDir.resolve("catalogue-reminders.json")).ensure(java.time.YearMonth.now(),conversationsDir,Path.of(System.getProperty("user.home"),"Downloads").toString(),draft))refreshSessions();}catch(IOException|RuntimeException error){setStatus("Nu pot pregati notificarea lunara: {0}",true,describe(error));}}
     private void chooseAttachments(){
-        if(busy)return;
         JFileChooser picker=new JFileChooser();Path dir=currentWorkDir();if(dir!=null)picker.setCurrentDirectory(dir.toFile());
         picker.setDialogTitle(t("Adauga fisiere sau foldere"));picker.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);picker.setMultiSelectionEnabled(true);
         if(picker.showOpenDialog(this)==JFileChooser.APPROVE_OPTION){List<Path> paths=new ArrayList<>();for(File file:picker.getSelectedFiles())paths.add(file.toPath());if(paths.isEmpty() && picker.getSelectedFile()!=null)paths.add(picker.getSelectedFile().toPath());addAttachments(paths);}
     }
     private boolean pasteClipboardImage(java.awt.Image image){
-        if(busy || sessionState.draftAttachments.size()>=AttachmentSupport.MAX_PENDING){setStatus("Nu pot atasa imaginea acum: generarea este activa sau sunt deja 20 de atasamente.",true);return false;}
+        if(sessionState.draftAttachments.size()>=AttachmentSupport.MAX_PENDING){setStatus("Nu pot atasa imaginea acum: generarea este activa sau sunt deja 20 de atasamente.",true);return false;}
         try{Path file=ComposerClipboard.saveImage(image,appDir.resolve("atasamente_clipboard"));addAttachments(List.of(file));setStatus("Imagine lipita ca atasament PNG local. Selectia nu o trimite automat ca imagine la model.",false);return true;}
         catch(IOException|RuntimeException error){setStatus("Nu pot lipi din clipboard: {0}",true,describe(error));return false;}
     }
     private void addAttachments(List<Path> paths){
-        if(busy)return;int added=0,skipped=0;
+        int added=0,skipped=0;
         for(Path path:paths)try{
             String selected=AttachmentSupport.validate(path,configFile).toString();
             if(sessionState.draftAttachments.contains(selected))continue;
@@ -1329,14 +1333,14 @@ public final class LocalChat extends JFrame {
         refreshAttachments();if(added>0){ensureSession();saveConversation();}refreshDashboard();
         setStatus("Atasamente adaugate: {0}. Omise: {1}. Maximum 20 per mesaj; continutul este citit prin unelte dupa trimitere.",skipped>0,added,skipped);
     }
-    private void removeAttachment(String path){if(busy)return;sessionState.draftAttachments.remove(path);refreshAttachments();saveConversation();refreshDashboard();}
+    private void removeAttachment(String path){sessionState.draftAttachments.remove(path);refreshAttachments();saveConversation();refreshDashboard();}
     private void refreshAttachments(){
         attachmentItems.removeAll();
         for(String path:sessionState.draftAttachments){
             JPanel chip=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT,3,0));String name=path;
             try{Path p=Path.of(path);name=p.getFileName()==null?path:p.getFileName().toString();}catch(RuntimeException ignored){}
             JLabel label=new JLabel(name.length()>36?name.substring(0,33)+"…":name);label.putClientProperty("html.disable",true);label.setToolTipText(path);label.setFont(label.getFont().deriveFont(12f));chip.add(label);
-            JButton remove=new JButton("×");remove.setMargin(new Insets(1,5,1,5));remove.putClientProperty("JComponent.minimumWidth",0);remove.setToolTipText(t("Elimina atasamentul"));remove.getAccessibleContext().setAccessibleName(t("Elimina atasamentul")+": "+name);remove.setEnabled(!busy);remove.addActionListener(e->removeAttachment(path));chip.add(remove);chip.setToolTipText(path);attachmentItems.add(chip);
+            JButton remove=new JButton("×");remove.setMargin(new Insets(1,5,1,5));remove.putClientProperty("JComponent.minimumWidth",0);remove.setToolTipText(t("Elimina atasamentul"));remove.getAccessibleContext().setAccessibleName(t("Elimina atasamentul")+": "+name);remove.setEnabled(true);remove.addActionListener(e->removeAttachment(path));chip.add(remove);chip.setToolTipText(path);attachmentItems.add(chip);
         }
         attachmentBar.setVisible(!sessionState.draftAttachments.isEmpty());attachmentItems.revalidate();attachmentItems.repaint();
     }
@@ -1347,6 +1351,8 @@ public final class LocalChat extends JFrame {
         final List<String> pendingAttachments=List.copyOf(sessionState.draftAttachments);
         final String text=AttachmentSupport.message(draft,pendingAttachments);
         if (text.isEmpty()) return;
+        if(busy){if(draft.startsWith("/")){setStatus("Comenzile nu se adauga in coada.",false);return;}enqueueMessage(draft,pendingAttachments);return;}
+        checkMonthlyCatalogues();
         if(draft.startsWith("/")){ComposerEditing.setText(input,"");commandPopup.setVisible(false);executeCommand(draft);return;}
         if (busy) return;
         if(composerAssist.waiting()){setStatus("Completeaza alegerile; mesajul tau ramane in asteptare. Poti inchide propunerile pentru a trimite doar mesajul.",false);return;}
@@ -1403,7 +1409,7 @@ public final class LocalChat extends JFrame {
                 && sessionState.memory.boundary(history)>sessionState.memory.through) {
             String pending=input.getText();
             compactMemory(()->{
-                if(input.getText().equals(pending) && sessionState.draftAttachments.equals(pendingAttachments))send(false);
+                if(queuedAuthorized()&&input.getText().equals(pending) && sessionState.draftAttachments.equals(pendingAttachments))send(false);
                 else setStatus("Memorie compactata. Mesajul a fost modificat; apasa Trimite cand este gata.",false);
             });
             return;
@@ -1439,6 +1445,7 @@ public final class LocalChat extends JFrame {
         sessionState.projectStatus="in_progress";
         factoryChecked="";
         current = turn;
+        if(queueOwner==sessionState&&!queueDispatchId.isBlank()){sessionState.queue.removeIf(q->q.id().equals(queueDispatchId)&&q.text().equals(draft)&&q.attachments().equals(pendingAttachments));queueDispatchId="";queueOwner=null;}
         if (conversationFile == null) conversationFile = Conversations.newFile(conversationsDir);
 
         for(String path:pendingAttachments)if(!sessionState.attachedPaths.contains(path))sessionState.attachedPaths.add(path);
@@ -1478,6 +1485,7 @@ public final class LocalChat extends JFrame {
             @Override public void context(List<ChatClient.Message> conversation) {
                 later(turn,()->{requestConversation=ContextMemory.messages(conversation);turn.contextIncludesStep=true;refreshDashboard();});
             }
+            @Override public void protocolRepair(int attempt){later(turn,()->setStatus("Corectez formatul apelului de unealta: {0}/2.",false,attempt));}
             @Override public void usage(TokenUsage value) {
                 later(turn,()->{turn.requestActive=false;turn.usage.add(value);sessionState.usage.add(value);refreshDashboard();});
             }
@@ -1537,6 +1545,7 @@ public final class LocalChat extends JFrame {
 
     /** Stop finishes the turn right away; the network and running commands are closed in the background. */
     private void stop() {
+        sessionState.queuePaused=true;
         if(resolvingFactory){factoryGeneration++;resolvingFactory=false;setBusy(false);setStatus("Verificarea fabricii a fost oprita. Ciorna este pastrata.",false);return;}
         if(compactClient!=null){compactGeneration++;compactClient.cancel();compactClient=null;
             while(compactStarted.get()>compactUsage.requests){compactUsage.add(TokenUsage.UNKNOWN);sessionState.usage.add(TokenUsage.UNKNOWN);}
@@ -1594,9 +1603,10 @@ public final class LocalChat extends JFrame {
             } else {
                 setStatus("Gata.", false);
             }
-            if(composerAssist.waiting())setStatus("Astept raspunsurile tale; ciorna ramane editabila.",false);saveConversation();refreshDashboard();
+            if(composerAssist.waiting())setStatus("Astept raspunsurile tale; ciorna ramane editabila.",false);if(stopped||error!=null||composerAssist.waiting()||produced.stream().noneMatch(m->m.role.equals("assistant")&&!ReasoningDisplay.answer(m.content).isBlank()))sessionState.queuePaused=true;saveConversation();refreshDashboard();Conversations.State queueState=sessionState;SwingUtilities.invokeLater(()->{if(sessionState==queueState&&!sessionState.queuePaused)dispatchQueue();});
             return;
         }
+        sessionState.queuePaused=true;
         // No usable reply: drop the question so the conversation stays valid, and give it back for a retry.
         int removedQuestion=history.indexOf(turn.question);timeline.removeTurn(removedQuestion);sessionState.bookmarks.remove(removedQuestion);history.remove(turn.question);applyGuardMemory(turn,true);
         if (input.getText().isEmpty()) ComposerEditing.setText(input,turn.originalDraft);
@@ -2057,7 +2067,7 @@ public final class LocalChat extends JFrame {
         responseLanguageBox.setEnabled(!b);translateMessageBox.setEnabled(!b&&!responseLanguage().equals("auto"));
         busy = b;if(agentPanel!=null)agentPanel.busy(b);if(composerAssist!=null)composerAssist.busy(b);busyIndicator.active(b);pdfControlButton.setEnabled(!b);
         bottomModel.setEnabled(!b);bottomApproval.setEnabled(!b);bottomMode.setEnabled(!b);responseProfile.setEnabled(!b);inspectModel.setEnabled(!b && !inspectingModel);
-        sendButton.setEnabled(!b);attachButton.setEnabled(!b);refreshAttachments();
+        sendButton.setEnabled(true);attachButton.setEnabled(true);sendButton.setToolTipText(t(b?"Adauga mesajul in coada":"Trimite"));sendButton.getAccessibleContext().setAccessibleName(sendButton.getToolTipText());refreshAttachments();
         stopButton.setEnabled(b);
         newChatButton.setEnabled(!b);
         favoriteModelButton.setEnabled(!b);providerBox.setEnabled(!b);saveProviderButton.setEnabled(!b);manageProviderButton.setEnabled(!b);applyBudgetButton.setEnabled(!b);modelBox.setEnabled(!b);urlField.setEnabled(!b);keyField.setEnabled(!b);

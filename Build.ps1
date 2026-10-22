@@ -24,6 +24,8 @@ $taskPdfPython = Join-Path $PSScriptRoot 'pdfcontrol/runtime/python/python.exe'
 if (!(Test-Path -LiteralPath $taskPdfPython)) { throw 'PDFCONTROL runtime missing. Restore the local engine/runtime in pdfcontrol.' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_sync_engine.py"
 if ($LASTEXITCODE) { throw 'Owned engine build isolation tests failed' }
+& $taskPdfPython -I "$PSScriptRoot/integration/test_catalogue_update.py"
+if ($LASTEXITCODE) { throw 'Factory catalogue update tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/sync_engine.py" --package "$PSScriptRoot/pdfcontrol"
 if ($LASTEXITCODE) { throw 'PDFCONTROL engine synchronization failed' }
 $taskBuild = Join-Path $PSScriptRoot 'build'
@@ -61,6 +63,10 @@ if ($LASTEXITCODE) { throw 'Hotfolder/status/notification tests failed' }
 if ($LASTEXITCODE) { throw 'Composer interaction regression tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/interaction-cards-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.InteractionCardsTest
 if ($LASTEXITCODE) { throw 'Interactive checkbox/next-action card tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/queue-notification-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.QueueNotificationsTest
+if ($LASTEXITCODE) { throw 'Queue/local monthly notification/drop tests failed' }
+& "$taskJdk/bin/java.exe" "-Dlocalchat.home=$taskBuild/tool-protocol-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ToolProtocolTest
+if ($LASTEXITCODE) { throw 'Provider native tool protocol repair tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/catalog-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ModelCatalogTest
 if ($LASTEXITCODE) { throw 'Catalog/probe tests failed; distribution was not changed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/model-suitability-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ModelSuitabilityTest
@@ -167,11 +173,13 @@ function Get-EngineDigest([string]$Path) {
     finally { $taskDigestAlgorithm.Dispose(); $taskDigestStream.Dispose() }
 }
 $taskEngineManifest = Get-Content -LiteralPath "$PSScriptRoot/pdfcontrol/localchat_engine_manifest.json" -Raw | ConvertFrom-Json
-$taskEngineFiles = @($taskEngineManifest.sha256.PSObject.Properties.Name) + @('localchat_engine_manifest.json','octop_mcp.py','bureaus.json','bureaus_prive.json','mbs_artikelnamen.json','mbs_catalogus.json','kennisbank.json','lower_right_ignored_labels.json')
+$taskCatalogues = @('soest','alphen','veenoord','lelystad') | ForEach-Object { 'data_lokaal/catalogus_' + $_ + '.json' }
+$taskEngineFiles = @($taskEngineManifest.sha256.PSObject.Properties.Name) + @('localchat_engine_manifest.json','octop_mcp.py','bureaus.json','bureaus_prive.json','mbs_artikelnamen.json','mbs_catalogus.json','kennisbank.json','lower_right_ignored_labels.json') + $taskCatalogues
 foreach ($taskEngineName in $taskEngineFiles) {
     $taskEngineSource = Join-Path "$PSScriptRoot/pdfcontrol" $taskEngineName
     if (Test-Path -LiteralPath $taskEngineSource) {
         $taskEngineTarget = Join-Path "$DistributionPath/pdfcontrol" $taskEngineName
+        New-Item -ItemType Directory -Path (Split-Path $taskEngineTarget -Parent) -Force | Out-Null
         Copy-Item -LiteralPath $taskEngineSource -Destination $taskEngineTarget -Force
         if ((Get-EngineDigest $taskEngineSource) -ne (Get-EngineDigest $taskEngineTarget)) { throw "Installed PDFCONTROL differs: $taskEngineName" }
     }
