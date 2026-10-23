@@ -648,5 +648,6 @@
   "Surse si istoric": "Fuentes e historial",
   "Liste si articole": "Listas y artículos",
   "Desene si rapoarte": "Planos e informes",
-  "Disponibile in chat.": "Disponibles en el chat."
+  "Disponibile in chat.": "Disponibles en el chat.",
+  "Compactarea a esuat: fluxul API s-a inchis inaintea raspunsului complet; istoricul si memoria sunt pastrate.": "La compactacion fallo: el flujo de la API se cerro antes de completar la respuesta; se conservan el historial y la memoria."
 }

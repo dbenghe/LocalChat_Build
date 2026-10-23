@@ -648,5 +648,6 @@
   "Surse si istoric": "Sources and history",
   "Liste si articole": "Lists and articles",
   "Desene si rapoarte": "Drawings and reports",
-  "Disponibile in chat.": "Available in the chat."
+  "Disponibile in chat.": "Available in the chat.",
+  "Compactarea a esuat: fluxul API s-a inchis inaintea raspunsului complet; istoricul si memoria sunt pastrate.": "Compaction failed: the API stream closed before a complete reply; history and memory are preserved."
 }

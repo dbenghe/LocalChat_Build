@@ -648,5 +648,6 @@
   "Surse si istoric": "Kaynaklar ve geçmiş",
   "Liste si articole": "Listeler ve ürünler",
   "Desene si rapoarte": "Çizimler ve raporlar",
-  "Disponibile in chat.": "Sohbette kullanılabilir."
+  "Disponibile in chat.": "Sohbette kullanılabilir.",
+  "Compactarea a esuat: fluxul API s-a inchis inaintea raspunsului complet; istoricul si memoria sunt pastrate.": "Sikistirma basarisiz: API akisi tam yanit gelmeden kapandi; gecmis ve bellek korundu."
 }

@@ -158,6 +158,8 @@ final class ChatClient {
             public int read(byte[] bytes,int off,int len)throws IOException{connection.setReadTimeout(remainingMillis());return in.read(bytes,off,len);}
         };
     }
+    private boolean requireCompleteReply;
+    void requireCompleteReply(){requireCompleteReply=true;}
     private int outputLimit;
     void outputLimit(int tokens) {outputLimit=tokens;}
     private boolean omitUsageOption;
@@ -334,7 +336,7 @@ final class ChatClient {
         StringBuilder text = new StringBuilder();
         Map<Integer, CallBuilder> calls = new TreeMap<>();
         StringBuilder plain = new StringBuilder();
-        boolean sawEvents = false;
+        boolean sawEvents = false,completed = false;
         try (BufferedReader r = new BufferedReader(new InputStreamReader(timedInput(conn), StandardCharsets.UTF_8))) {
             String line;
             while ((line = r.readLine()) != null) {
@@ -347,12 +349,13 @@ final class ChatClient {
                 String data = line.substring(5).trim();
                 if (data.isEmpty()) continue;
                 if (data.equals("[DONE]")) {
-                    lastUsage=TokenUsage.parse(null,anthropic,lastUsage,true);break;
+                    completed=true;lastUsage=TokenUsage.parse(null,anthropic,lastUsage,true);break;
                 }
                 Object event = Json.parse(data);
                 String error = errorMessage(event);
                 if (error != null) throw new IOException(error);
                 boolean terminal=anthropic && "message_stop".equals(Json.str(event,"type"));
+                if(terminal || (!anthropic && Json.get(event,"choices",0,"finish_reason")!=null))completed=true;
                 lastUsage=TokenUsage.parse(event,anthropic,lastUsage,terminal);
                 String delta = anthropic ? anthropicEvent(event, calls) : openAiEvent(event, calls);
                 if (delta != null && !delta.isEmpty()) {
@@ -371,6 +374,7 @@ final class ChatClient {
             if (!full.text.isEmpty()) listener.onText(full.text);
             return full;
         }
+        if(requireCompleteReply && sawEvents && !completed && !cancelled)throw new IOException(I18n.text("Compactarea a esuat: fluxul API s-a inchis inaintea raspunsului complet; istoricul si memoria sunt pastrate."));
         return new Reply(text.toString(), cancelled ? Collections.emptyList() : build(calls));
     }
 

@@ -648,5 +648,6 @@
   "Surse si istoric": "Surse și istoric",
   "Liste si articole": "Liste și articole",
   "Desene si rapoarte": "Desene și rapoarte",
-  "Disponibile in chat.": "Disponibile în chat."
+  "Disponibile in chat.": "Disponibile în chat.",
+  "Compactarea a esuat: fluxul API s-a inchis inaintea raspunsului complet; istoricul si memoria sunt pastrate.": "Compactarea a esuat: fluxul API s-a inchis inaintea raspunsului complet; istoricul si memoria sunt pastrate."
 }

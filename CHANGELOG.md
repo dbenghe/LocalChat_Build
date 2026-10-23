@@ -1,4 +1,11 @@
+# 1.25.1 — 2026-10-23
+- Compactarea solicita raspuns in streaming, consumand progresul API fara sa publice rezumatul partial sau sa execute unelte. Rutele care raspund JSON raman acceptate.
+- Bugetul total de compactare se calculeaza dupa numarul fragmentelor: minimum 5 minute, 2 minute/fragment, maximum 15 minute; limita de inactivitate de 120 secunde ramane. Bugetul nu se reseteaza la retry. Generarea normala nu este modificata.
+- Timeout si Stop pastreaza arhiva, memoria si ciorna; nu se reia automat inferenta dupa timeout. Furnizorul poate continua sa expire; nu exista garantie de finalizare.
+
 # 1.25.0 — 2026-10-23
+
+
 
 - Verificari independente MBS delegate automat de aplicatie, fara un apel suplimentar pentru planificare si fara lista fixa de modele. Selectia separa surse/istoric, import/catalog si dovezi PDF; simpla lungime a mesajului nu declanseaza agenti. Cel mult trei sarcini, doua simultane, cu modelul/furnizorul ales, rezultate si consum reale in panoul agentilor.
 - Agentii automati nu modifica proiecte, nu ruleaza shell si nu pornesc controale noi: inspecteaza dovezi si pot genera rapoarte locale private de comparatie. Coordonatorul pastreaza operatiile de productie si permisiunile. Optiune Unelte pentru dezactivare; o cerere explicita fara agenti are prioritate. Normal ramane fara unelte sau agenti MBS.

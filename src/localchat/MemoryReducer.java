@@ -4,6 +4,7 @@ import java.util.*;
 /** Bounded retries for models whose token counts differ from the byte estimate. Never truncate memory. */
 final class MemoryReducer {
     interface Attempt extends InferenceRetry.Hooks { default void reused(){} }
+    static long planBudgetMillis(int fragments){return Math.min(900_000L,Math.max(300_000L,Math.max(1L,fragments)*120_000L));}
     static String cached(java.nio.file.Path directory,ChatClient client,Provider provider,String url,String key,String model,String system,List<ChatClient.Message> request,int target,int window,double scale,Attempt hooks)throws IOException{
         if(hooks.cancelled())throw new InterruptedIOException("Cancelled");
         String identity=CompactionCheckpoint.key(provider,url,key,model,system,request,target,window,scale);
@@ -14,7 +15,7 @@ final class MemoryReducer {
         CompactionCheckpoint.save(directory,identity,result);return result;
     }
     static String reduce(ChatClient client,Provider provider,String url,String key,String model,String system,List<ChatClient.Message> request,int target,int window,double scale,Attempt hooks)throws IOException{
-        client.ensureBudget();
+        client.ensureBudget();client.requireCompleteReply();
         int output=Math.max(32,(int)(target/Math.max(1,scale)));
         for(int attempt=0;attempt<3;attempt++){
             if(hooks.cancelled())throw new InterruptedIOException("Cancelled");
@@ -22,7 +23,7 @@ final class MemoryReducer {
             if(window>0 && Math.ceil((ContextMemory.estimate(instructions)+ContextMemory.messages(request))*scale)+output+Math.max(128,window/33)>=window)
                 throw new IOException(I18n.text("Istoricul depaseste limita configurata. Alege un model sau context mai mare pentru compactare."));
             client.outputLimit(output);ChatClient.Reply result;
-            try{result=InferenceRetry.chat(client,provider,url,key,model,instructions,request,List.of(),false,delta->{},hooks);}
+            try{result=InferenceRetry.chat(client,provider,url,key,model,instructions,request,List.of(),true,delta->{},hooks);}
             catch(java.net.SocketTimeoutException timeout){throw new IOException(I18n.text("Compactarea a depasit timpul de asteptare; istoricul si memoria sunt pastrate. Poti folosi comparatia locala fara API sau relua cu alt model."),timeout);}
             catch(ChatClient.HttpFailure failure){throw new IOException(I18n.text("Compactarea a esuat la API; memoria si istoricul au fost pastrate: {0}",failure.getMessage()),failure);}
             if(hooks.cancelled())throw new InterruptedIOException("Cancelled");
