@@ -26,6 +26,8 @@ if (!(Test-Path -LiteralPath $taskPdfPython)) { throw 'PDFCONTROL runtime missin
 if ($LASTEXITCODE) { throw 'Owned engine build isolation tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_import_audit.py"
 if ($LASTEXITCODE) { throw 'Local import/catalogue/drawing audit tests failed' }
+& $taskPdfPython -I "$PSScriptRoot/integration/test_catalogue_manager.py"
+if ($LASTEXITCODE) { throw 'Catalogue import/rollback/upgrade preservation tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_catalogue_update.py"
 if ($LASTEXITCODE) { throw 'Factory catalogue update tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/sync_engine.py" --package "$PSScriptRoot/pdfcontrol"
@@ -51,6 +53,8 @@ if ($LASTEXITCODE) { throw 'Test compilation failed' }
 if ($LASTEXITCODE) { throw 'Offline audit permissions/integration tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/compaction-budget-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.CompactionBudgetTest
 if ($LASTEXITCODE) { throw 'Compaction time budget tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/catalogue-manager-home" "-Daudit.python=$taskPdfPython" "-Daudit.package=$PSScriptRoot/pdfcontrol" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.CatalogueManagerTest
+if ($LASTEXITCODE) { throw 'Catalogue manager UI/service tests failed' }
 & "$taskJdk/bin/java.exe" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.SettingsStoreTest
 if ($LASTEXITCODE) { throw 'Settings persistence tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/concurrent-chat-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ConcurrentChatsTest
@@ -184,7 +188,7 @@ if (Test-Path -LiteralPath "$PSScriptRoot/packaging/skills") {
     if ($LASTEXITCODE -ge 8) { throw 'Skill copy failed' }
 }
 if (Test-Path -LiteralPath "$PSScriptRoot/pdfcontrol/octop_mcp.py") {
-    & robocopy.exe "$PSScriptRoot/pdfcontrol" "$DistributionPath/pdfcontrol" /E /XO /NFL /NDL /NJH /NJS /NP /XD .git .github __pycache__ test-tmp checked PDF_NOU OUD NIEUW pdfcompare _meetscripts Octop-PDFCONTROL pdfcontrol-octop /XF test_*.py *.backup-* octop_mcp_trace.jsonl installatie.log .gitignore skill-octop.zip | Out-Null
+    & robocopy.exe "$PSScriptRoot/pdfcontrol" "$DistributionPath/pdfcontrol" /E /XO /NFL /NDL /NJH /NJS /NP /XD data_lokaal .git .github __pycache__ test-tmp checked PDF_NOU OUD NIEUW pdfcompare _meetscripts Octop-PDFCONTROL pdfcontrol-octop /XF test_*.py *.backup-* octop_mcp_trace.jsonl installatie.log .gitignore skill-octop.zip | Out-Null
     if ($LASTEXITCODE -ge 8) { throw 'PDFControl copy failed' }
 }
 # Engine content must match the tested snapshot even when legacy file dates are older.
@@ -195,8 +199,7 @@ function Get-EngineDigest([string]$Path) {
     finally { $taskDigestAlgorithm.Dispose(); $taskDigestStream.Dispose() }
 }
 $taskEngineManifest = Get-Content -LiteralPath "$PSScriptRoot/pdfcontrol/localchat_engine_manifest.json" -Raw | ConvertFrom-Json
-$taskCatalogues = @('soest','alphen','veenoord','lelystad') | ForEach-Object { 'data_lokaal/catalogus_' + $_ + '.json' }
-$taskEngineFiles = @($taskEngineManifest.sha256.PSObject.Properties.Name) + @('localchat_engine_manifest.json','octop_mcp.py','bureaus.json','bureaus_prive.json','mbs_artikelnamen.json','mbs_catalogus.json','kennisbank.json','lower_right_ignored_labels.json') + $taskCatalogues
+$taskEngineFiles = @($taskEngineManifest.sha256.PSObject.Properties.Name) + @('localchat_engine_manifest.json','octop_mcp.py','bureaus.json','bureaus_prive.json','mbs_artikelnamen.json','mbs_catalogus.json','kennisbank.json','lower_right_ignored_labels.json')
 foreach ($taskEngineName in $taskEngineFiles) {
     $taskEngineSource = Join-Path "$PSScriptRoot/pdfcontrol" $taskEngineName
     if (Test-Path -LiteralPath $taskEngineSource) {
@@ -206,6 +209,9 @@ foreach ($taskEngineName in $taskEngineFiles) {
         if ((Get-EngineDigest $taskEngineSource) -ne (Get-EngineDigest $taskEngineTarget)) { throw "Installed PDFCONTROL differs: $taskEngineName" }
     }
 }
+# User-imported runtime snapshots/registry/archives are authoritative. Seed missing catalogues only.
+& $taskPdfPython -I "$PSScriptRoot/integration/seed_catalogues.py" --source "$PSScriptRoot/pdfcontrol/data_lokaal" --target "$DistributionPath/pdfcontrol/data_lokaal"
+if ($LASTEXITCODE) { throw 'Factory catalogue initialization failed' }
 if (!(Test-Path -LiteralPath "$DistributionPath/runtime/bin/javaw.exe")) {
     if (Test-Path -LiteralPath "$DistributionPath/runtime") { throw 'Incomplete runtime; restore it before building' }
     & "$taskJdk/bin/jlink.exe" --add-modules java.base,java.desktop,jdk.crypto.ec --strip-debug --no-header-files --no-man-pages --compress=2 --output "$DistributionPath/runtime"

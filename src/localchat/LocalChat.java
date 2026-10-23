@@ -641,6 +641,7 @@ public final class LocalChat extends JFrame {
         tools.add(item("Reporneste serverele MCP", null, e -> reloadTools()));
         tools.add(item("PDFCONTROL: operatii directe…",null,e->showPdfControl()));
         tools.add(item("Compara local listele de import",null,e->showImportAudit()));
+        tools.add(item("Cataloage fabrici",null,e->showCatalogues()));
         tools.add(item("Catalog modele",null,e->showModelCatalog(false)));
         tools.add(item("Exporta toate chaturile…",null,e->exportAllSessions()));
         tools.add(item("Salveaza setarile si modelul implicit",KeyStroke.getKeyStroke(KeyEvent.VK_S,InputEvent.CTRL_DOWN_MASK),e->saveDefaults()));
@@ -913,6 +914,12 @@ public final class LocalChat extends JFrame {
         String label=t("Deschide {0}",name.isBlank()?t("Folder de lucru"):name);downloadsButton.setText(label);downloadsButton.setToolTipText(raw);downloadsButton.getAccessibleContext().setAccessibleName(label);
         downloadsButton.setPreferredSize(new Dimension(Math.min(310,downloadsButton.getFontMetrics(downloadsButton.getFont()).stringWidth(label)+40),26));
     }
+    private void showCatalogues() {
+        String python=previewPython();
+        if(python==null){setStatus("Utilitarul local de cataloage lipseste.",true);return;}
+        new CatalogueDialog(this,new CatalogueStore(appDir,Path.of(python),permissionBox.getSelectedIndex()==2)).setVisible(true);
+    }
+
     private void showImportAudit() {
         Path folder=currentWorkDir();if(folder==null)return;
         // Dedicated tool instance; never borrows the active turn, history, queue or model connection.

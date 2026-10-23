@@ -1,3 +1,11 @@
+# 1.24.1 — 2026-10-23
+
+- Unelte > Cataloage fabrici: selectia explicita a fabricii si listei XLSX, previzualizarea articolelor noi/modificate/absente si Importa si activeaza. Primul import functioneaza si pentru Lelystad fara catalog anterior.
+- Afiseaza data, numarul de articole si sursa catalogului activ; sursa noua si snapshotul precedent se arhiveaza local. Fara API si fara modificarea listelor de productie.
+- Fabrica necesita confirmare; codurile absente necesita confirmarea listei complete. Fisierul sau catalogul schimbat dupa previzualizare cere o noua comparatie. Importurile concurente sunt serializate; eroarea la registru restaureaza datele precedente.
+- Buildurile pastreaza cataloagele, registrul si arhivele importate de utilizator. La instalari noi se initializeaza numai cataloagele lipsa din pachet, fara fabrici substituite.
+- Texte in toate cele sase limbi, teme Dark/Light si blocarea activarii in modul doar citire.
+
 # 1.24.0 — 2026-10-23
 
 - Instrument local `pdfcontrol_compare_import`: liste XLSX/CSV, catalog explicit al unei singure fabrici si tabele de articole din PDF-urile selectate. Citire locala fara inferenta, surse pastrate, rapoarte JSON/HTML cu randuri, pagini si hashuri.
