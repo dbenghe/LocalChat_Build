@@ -129,6 +129,6 @@ final class WorkspacePanel extends JPanel {
         context.setValue((int)Math.min(100,percent));
         context.setString(maximum>0 ? I18n.text("Context: ~{0}% · {1}/{2}",ContextRing.percentage(total,maximum),total,maximum)
                 : I18n.text("Context: ~{0} · limita necunoscuta",total));
-        details.setText(I18n.text("Sistem: ~{0}\nTool-uri: ~{1}\nConversatie: ~{2}",system,tools,conversation)+"\n"+usage);
+        String value=I18n.text("Sistem: ~{0}\nTool-uri: ~{1}\nConversatie: ~{2}",system,tools,conversation)+"\n"+usage;if(!details.getText().equals(value))details.setText(value);
     }
 }

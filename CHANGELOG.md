@@ -1,3 +1,12 @@
+# 1.26.1 — 2026-10-24
+- Dashboard si popup de context: actualizari neschimbate fara rescrierea repetata a documentelor Swing; actualizare periodica la o secunda si iconite stabile. Nu modifica procentajele sau contextul selectat.
+- Registru privat de provenienta pentru rezultatele uneltelor: hotfolderul nu considera din nou surse copiile/scrierile/extragerile/FAST identificate; schimbarea ulterioara a rezultatului de catre utilizator ramane detectabila. Shell: numai destinatii literale identificabile, fara excluderea folderelor de surse.
+- Evenimentele hotfolder recunoscute ale aceluiasi folder sunt grupate intr-un singur bloc de ciorna, fara stergerea textului liber sau a istoricului.
+- Eliminata limita comuna de 180 secunde a grupurilor de agenti. Stop, limitele de pasi, izolarea si protectiile conexiunii raman; rezultatele finalizate se pastreaza la oprirea altor sarcini.
+- Agenti: stari vizibile Asteapta API / Compactare context, profil de raspuns respectat fara plafonul suplimentar 2K/4K. Un raspuns trunchiat nu executa apelurile din acel raspuns si nu confirma un final complet.
+- Indexul local de reluare retine explicit starea fiecarui agent, erorile si arhivele; proza lunga a sarcinilor nu mai ascunde rezultatele copiilor in primele caractere.
+- DEVELOPMENT_STATUS.md documenteaza dezvoltarea, problemele intalnite, corectiile si limitarile ramase. Testele fizice si furnizorii reali sunt distincti de verificarile automate locale.
+
 # 1.26.0 — 2026-10-23
 
 - Imaginile PNG/JPEG/GIF statice atasate sunt trimise ca pixeli catre modelele vizuale prin protocolul OpenAI compatibil sau Anthropic, inclusiv in Normal. Copii locale cu hash pastreaza imaginea intre apelurile de unelte si la reluare; arhiva nu include base64. Fara enumerarea imaginilor din foldere. Maximum 4 imagini/mesaj, 5 MiB/imagine si 16 megapixeli. Metadatele explicit negative blocheaza trimiterea; suportul necunoscut este incercat fara a inventa capabilitati.

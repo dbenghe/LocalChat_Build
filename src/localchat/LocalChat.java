@@ -236,7 +236,7 @@ public final class LocalChat extends JFrame {
     private final CommandPalette commandPopup=new CommandPalette();
     private List<Skills.Skill> installedSkills=Collections.emptyList();
     private List<Conversations.Saved> sessionIndex=Collections.emptyList();
-    private final javax.swing.Timer dashboardTimer=new javax.swing.Timer(200,e->{refreshDashboard();if(!Boolean.getBoolean("localchat.test"))autoInspectModel();});
+    private final javax.swing.Timer dashboardTimer=new javax.swing.Timer(1000,e->{refreshDashboard();if(!Boolean.getBoolean("localchat.test"))autoInspectModel();});
     private final java.util.Map<String,Long> metadataAttempts=new java.util.HashMap<>();
     private String pendingMetadataProfile="";
     private long metadataProfileSince;
@@ -1543,7 +1543,7 @@ public final class LocalChat extends JFrame {
         final List<Map<String,Object>> autoTasks=useTools&&Boolean.parseBoolean(config.getProperty("agents.automatic","true"))?AutoDelegation.plan(draft,workDir,ProjectLocations.project(draft,workDir,sessionState.factoryProject)):List.of();
         if(useTools&&(WorkProgress.agentsRequested(draft)||!autoTasks.isEmpty())){
             final int approvals=permissionBox.getSelectedIndex();final Map<String,String> childEnv=commandEnv();final String childPython=pdfPython();final List<String> childAccess=List.copyOf(attachmentAccess(pendingAttachments));
-            turn.team=new AgentGroup(()->{Tools child=new Tools(new Tools.Context(workDir,skillsDir,rulesFile,configFile,childEnv,childPython,mcp,paths,approvals==1,alwaysAllowed,this::askPermission),skills).readOnly(approvals==2).attachments(childAccess);return autoTasks.isEmpty()?child:child.analysisOnly();},appDir.resolve("agent-runs").resolve(java.util.UUID.randomUUID().toString()),maximum,autoTasks.isEmpty()?budget:Math.min(2048,budget),sessionState.autoCompact,sessionState.autoThreshold);
+            turn.team=new AgentGroup(()->{Tools child=new Tools(new Tools.Context(workDir,skillsDir,rulesFile,configFile,childEnv,childPython,mcp,paths,approvals==1,alwaysAllowed,this::askPermission),skills).readOnly(approvals==2).attachments(childAccess);return autoTasks.isEmpty()?child:child.analysisOnly();},appDir.resolve("agent-runs").resolve(java.util.UUID.randomUUID().toString()),maximum,budget,sessionState.autoCompact,sessionState.autoThreshold);
             turn.agent.group(turn.team).automaticDelegation(autoTasks);
         }
         turn.agent.outputLimit(ResponseBudget.available(budget,maximum,protectedEstimate));
@@ -1589,7 +1589,7 @@ public final class LocalChat extends JFrame {
             }
             @Override public void agentTask(String id,String title,String task,String model){later(turn,()->{agentPanel.queued(id,title,task,model);agentPanel.busy(true);if(!turn.agentsOpened){turn.agentsOpened=true;setAgentPaneVisible(true);}});}
             @Override public void agentUpdate(String id,String title,String state){later(turn,()->agentPanel.progress(id,state));agentProgress(title,state);}
-            @Override public void agentProgress(String title,String state){later(turn,()->setStatus("Agent {0}: {1}",false,title,state.startsWith("tool:")?t("Rulez {0}…",state.substring(5)):t(switch(state){case "running"->"In curs";case "done"->"Gata.";case "cancelled"->"Anulat";case "partial"->"Rezultat partial";default->"Eroare";})));}
+            @Override public void agentProgress(String title,String state){later(turn,()->setStatus("Agent {0}: {1}",false,title,state.startsWith("tool:")?t("Rulez {0}…",state.substring(5)):t(switch(state){case "waiting_api"->"Asteapta API";case "compacting"->"Compactare context";case "running"->"In curs";case "done"->"Gata.";case "cancelled"->"Anulat";case "partial"->"Rezultat partial";default->"Eroare";})));}
             @Override public void agentRequest(String title){turn.started.incrementAndGet();}
             @Override public void calibration(double scale){later(turn,()->{config.setProperty(guardProfile+".tokenScale",Double.toString(scale));saveConfig();refreshDashboard();});}
             @Override public void compactReused(int fragment,int total){SwingUtilities.invokeLater(()->{if(current==turn)setStatus("Compactare: fragment {0}/{1} recuperat local, fara cerere API.",false,fragment,total);});}
@@ -2117,7 +2117,7 @@ public final class LocalChat extends JFrame {
         config.setProperty(profile,Long.toString(budget));config.setProperty(profile+".limitSource",targetSource);saveConfig();
     }
     private boolean isFavoriteModel(String id){return shownSelection!=null&&ModelFavorites.contains(config,SavedProviders.prefix(shownSelection),currentUrl(),id);}
-    private void refreshFavoriteButton(){boolean favorite=isFavoriteModel(currentModel());favoriteModelButton.setIcon(ModelFavorites.icon(null,favorite));String label=I18n.text(favorite?"Scoate modelul din favorite":"Adauga modelul la favorite");favoriteModelButton.setToolTipText(label);favoriteModelButton.getAccessibleContext().setAccessibleName(label);}
+    private void refreshFavoriteButton(){boolean favorite=isFavoriteModel(currentModel());if(!java.util.Objects.equals(favoriteModelButton.getClientProperty("favorite"),favorite)){favoriteModelButton.putClientProperty("favorite",favorite);favoriteModelButton.setIcon(ModelFavorites.icon(null,favorite));}String label=I18n.text(favorite?"Scoate modelul din favorite":"Adauga modelul la favorite");favoriteModelButton.setToolTipText(label);favoriteModelButton.getAccessibleContext().setAccessibleName(label);}
     private boolean profileModelFilter(){return !"false".equals(config.getProperty("models.profileFilter","true"));}
     private ModelSuitability.Decision modelDecision(String id){ModelCatalog.Entry entry=catalogEntries().stream().filter(e->e.id().equals(id)).findFirst().orElseGet(()->ModelCatalog.entry(Json.obj("id",id),currentUrl()));return ModelSuitability.assess(entry,currentModelCache().get(id),currentUrl(),toolsBox.isSelected());}
     private void filterModelOptions(){

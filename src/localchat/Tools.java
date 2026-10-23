@@ -250,6 +250,7 @@ final class Tools {
     Result execute(ChatClient.ToolCall call) {
         notes.clear();
         Result r = run(call);
+        if(!r.isError)try{switch(call.name){case "write_file","append_file","edit_file"->GeneratedFiles.mark(outputRegistry(),List.of(path(required(call.args,"path"))));case "pdfcontrol_prepare_fast_import"->{Object data=Json.parse(r.text);GeneratedFiles.mark(outputRegistry(),List.of(Path.of(Json.str(data,"output"))));}default->{}}}catch(Exception error){notes.add(I18n.text("Nu pot inregistra fisierele generate pentru hotfolder: {0}",error.getClass().getSimpleName()));}
         if (notes.isEmpty()) return r;
         return new Result(String.join("\n", notes) + "\n" + r.text, r.isError);
     }
@@ -592,7 +593,7 @@ final class Tools {
         if (count == 0) return "Emailul nu are atasamente de salvat" + (m.attachments().isEmpty() ? "." : " (doar imagini inline/semnatura).");
         allow(Access.WRITE, "Salvare atasamente email", "In folderul: " + dir + list);
         List<String> report = new ArrayList<>();
-        OutlookMsg.extract(m, dir, includeInline, report);
+        OutlookMsg.extract(m, dir, includeInline, report,produced->{try{GeneratedFiles.mark(outputRegistry(),List.of(produced));}catch(IOException error){notes.add(I18n.text("Nu pot inregistra fisierele generate pentru hotfolder: {0}",error.getClass().getSimpleName()));}});
         return "Atasamentele din " + file + " → " + dir + "\n" + String.join("\n", report);
     }
 
@@ -680,7 +681,7 @@ final class Tools {
             if(!sourceHash.equals(copyDigest(staged)))throw new IOException(I18n.text("Verificarea SHA-256 a copierii a esuat: {0}",target));
             Files.move(staged,target,overwrite?new StandardCopyOption[]{StandardCopyOption.REPLACE_EXISTING}:new StandardCopyOption[0]);
             if(!sourceHash.equals(copyDigest(target)))throw new IOException(I18n.text("Verificarea SHA-256 a copierii a esuat: {0}",target));
-            return true;
+            try{GeneratedFiles.mark(outputRegistry(),List.of(target));}catch(IOException error){notes.add(I18n.text("Nu pot inregistra fisierele generate pentru hotfolder: {0}",error.getClass().getSimpleName()));}return true;
         }finally{Files.deleteIfExists(staged);}
     }
 
@@ -791,11 +792,14 @@ final class Tools {
         try{Files.writeString(temp,Json.write(request),StandardCharsets.UTF_8);Output result=exec(List.of(python,"-I",script.toString(),"--request",temp.toString(),"--rules",rules.toString()),ctx.workDir(),ctx.commandEnv(),120);ensureActive();return new Result(cap(result.text()),!result.finished()||result.exitCode()!=0);}finally{Files.deleteIfExists(temp);}
     }
 
+    private Path outputRegistry(){return ctx.secretFile().toAbsolutePath().getParent().resolve("hotfolder-generated.json");}
+
     private Result runCommand(String command, Path cwd, int timeoutSeconds) throws IOException, ToolError {
         if (!Files.isDirectory(cwd)) throw new ToolError("Folderul pentru comanda nu exista: " + cwd);
         if(command.matches("(?is).*\\b(?:python(?:\\.exe)?|py)\\s+-c\\s+\"[^\"\\r\\n]*\\R.*"))throw new ToolError(I18n.text("Python multiliniar: salveaza codul cu write_file intr-un fisier .py, apoi ruleaza fisierul cu cwd corect. Comanda nu a fost executata."));
         allow(Access.RUN, "Rulare comanda", command + "\n\nIn folderul: " + cwd);
         Path script = Files.createTempFile("localchat-", ".cmd");
+        GeneratedFiles.Scope generated=null;try{generated=GeneratedFiles.command(outputRegistry(),cwd,command);}catch(IOException error){notes.add(I18n.text("Nu pot inregistra fisierele generate pentru hotfolder: {0}",error.getClass().getSimpleName()));}
         try {
             String body = command.replace("\r\n", "\n").replace("\n", "\r\n");
             Files.writeString(script, "@echo off\r\nchcp 65001 >nul\r\n" + body + "\r\n", StandardCharsets.UTF_8);
@@ -805,7 +809,7 @@ final class Tools {
             if (!out.finished()) return Result.error("Comanda a depasit " + timeoutSeconds + " s si a fost oprita.\n" + text);
             return new Result("Cod de iesire: " + out.exitCode() + "\n" + text, out.exitCode() != 0);
         } finally {
-            Files.deleteIfExists(script);
+            try{Files.deleteIfExists(script);}finally{if(generated!=null)try{generated.close();}catch(IOException error){notes.add(I18n.text("Nu pot inregistra fisierele generate pentru hotfolder: {0}",error.getClass().getSimpleName()));}}
         }
     }
 

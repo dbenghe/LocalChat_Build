@@ -12,7 +12,7 @@ final class ContextUsagePopup extends JPopupMenu {
     final Segments segments=new Segments();
     final JToggleButton api=new JToggleButton();
     private long system,tools,conversation;private int maximum;private String apiText="";
-    private boolean darkTheme;private Color outline=new Color(0xCFD3DA);
+    private String renderedLanguage="";private boolean darkTheme;private Color outline=new Color(0xCFD3DA);
     private final JPanel rows=new JPanel(new GridLayout(3,1,0,5));
     ContextUsagePopup(){
         putClientProperty("Popup.borderCornerRadius",18);putClientProperty("Popup.roundedBorderWidth",1);putClientProperty("Popup.dropShadowPainted",true);putClientProperty("Popup.forceHeavyWeight",true);setOpaque(false);setLayout(new BorderLayout());JPanel content=new JPanel();content.setOpaque(false);content.setLayout(new BoxLayout(content,BoxLayout.Y_AXIS));content.setPreferredSize(null);
@@ -27,19 +27,20 @@ final class ContextUsagePopup extends JPopupMenu {
         api.setBorderPainted(false);api.setContentAreaFilled(false);api.setMargin(new Insets(2,0,2,0));api.setFont(title.getFont().deriveFont(Font.PLAIN,12f));api.setHorizontalAlignment(SwingConstants.LEFT);api.addActionListener(e->{usage.setVisible(api.isSelected());refresh();if(isVisible())packPopup();});
         usage.setRows(4);usage.setColumns(29);usage.setVisible(false);usage.setMaximumSize(new Dimension(Integer.MAX_VALUE,95));content.add(api);content.add(usage);add(content);styleFonts();refresh();
     }
-    void update(long s,long t,long c,int max,String billing){system=Math.max(0,s);tools=Math.max(0,t);conversation=Math.max(0,c);maximum=max;apiText=billing;refresh();}
+    void update(long s,long t,long c,int max,String billing){if(system==Math.max(0,s)&&tools==Math.max(0,t)&&conversation==Math.max(0,c)&&maximum==max&&java.util.Objects.equals(apiText,billing)&&renderedLanguage.equals(I18n.language()))return;system=Math.max(0,s);tools=Math.max(0,t);conversation=Math.max(0,c);maximum=max;apiText=billing;refresh();}
     void refresh(){
-        boolean dark=darkTheme;Color bg=new Color(dark?0x1B1F26:0xFFFFFF),fg=new Color(dark?0xEDF1F7:0x202733);
+        renderedLanguage=I18n.language();boolean dark=darkTheme;Color bg=new Color(dark?0x1B1F26:0xFFFFFF),fg=new Color(dark?0xEDF1F7:0x202733);
         Color muted=new Color(dark?0xABB8CC:0x596477);outline=new Color(dark?0x414B5D:0xCDD4DF);
         setBackground(bg);setForeground(fg);setOpaque(false);setBorder(new EmptyBorder(16,18,13,18));
         title.setText(I18n.text("Utilizare context"));title.setForeground(fg);occupancy.setText(maximum>0?I18n.text("~{0}% ocupat",ContextRing.percentage(system+tools+conversation,maximum)):I18n.text("Limita de context necunoscuta"));occupancy.setForeground(muted);
-        explanation.setText(I18n.text("Estimarea contextului activ pentru cererea urmatoare, inclusiv ciorna. Nu reprezinta consumul API facturat."));explanation.setForeground(muted);
+        text(explanation,I18n.text("Estimarea contextului activ pentru cererea urmatoare, inclusiv ciorna. Nu reprezinta consumul API facturat."));explanation.setForeground(muted);
         String[] keys={"Prompt de sistem","Definitii unelte","Conversatie"};long[] tokens={system,tools,conversation};
         for(int i=0;i<3;i++){names[i].setText(I18n.text(keys[i]));names[i].setForeground(fg);values[i].setText(shortTokens(tokens[i]));values[i].setForeground(muted);values[i].setToolTipText("~"+tokens[i]+" "+I18n.text("tokeni"));}
         budget.setText(maximum>0?I18n.text("Buget local: {0} / {1} tokeni","~"+(system+tools+conversation),maximum):I18n.text("Configureaza bugetul local pentru a calcula procentul."));budget.setForeground(muted);
-        api.setText(I18n.text("Consum API separat"));api.setIcon(new Chevron(api.isSelected(),muted));api.setForeground(muted);usage.setForeground(muted);usage.setText(apiText);usage.setCaretPosition(0);
+        api.setText(I18n.text("Consum API separat"));api.setIcon(new Chevron(api.isSelected(),muted));api.setForeground(muted);usage.setForeground(muted);text(usage,apiText);
         segments.update(tokens,maximum,dark);getAccessibleContext().setAccessibleName(title.getText());revalidate();repaint();
     }
+    private static void text(JTextArea area,String value){if(!area.getText().equals(value)){area.setText(value);area.setCaretPosition(0);}}
     private void styleFonts(){Font base=UIManager.getFont("Label.font");String family=base==null?"Dialog":base.getFamily();title.setFont(new Font(family,Font.BOLD,18));occupancy.setFont(new Font(family,Font.PLAIN,14));for(JLabel label:names)label.setFont(new Font(family,Font.PLAIN,14));for(JLabel label:values)label.setFont(new Font(family,Font.PLAIN,14));for(JTextArea area:new JTextArea[]{explanation,usage})area.setFont(new Font(family,Font.PLAIN,12));budget.setFont(new Font(family,Font.PLAIN,11));api.setFont(new Font(family,Font.PLAIN,11));}
     void theme(boolean dark){darkTheme=dark;SwingUtilities.updateComponentTreeUI(this);styleFonts();refresh();}
     @Override public void show(Component anchor,int x,int y){theme(darkTheme);super.show(anchor,x,y);}

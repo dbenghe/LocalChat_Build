@@ -114,6 +114,7 @@ final class Agent {
                 replyPending = false;
             }
             publishContext(base, ui);
+            if(reply.truncated())throw new IOException(I18n.text("Raspunsul modelului a fost trunchiat. Niciun apel din acest raspuns nu a fost executat; istoricul si rezultatele anterioare sunt pastrate."));
             if(reply.calls.isEmpty()&&tools!=null&&ToolProtocol.malformed(reply.text)){if(protocolRepairs>=2)throw new IOException(I18n.text("Modelul a trimis apeluri de unelte ca text de trei ori. Niciun apel XML nu a fost executat; actiunile confirmate sunt pastrate."));ui.protocolRepair(++protocolRepairs);continue;}
             if (reply.calls.isEmpty()){if(discoveryRepairs>0&&reply.text.isBlank())recoveryFallback(lastRepeated,base,ui);return;}
             // Recovery is presentation-only: never run operational calls after a rejected card.

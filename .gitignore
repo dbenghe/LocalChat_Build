@@ -48,3 +48,6 @@
 # Private immutable image snapshots and factory-specific FAST rules
 **/atasamente_imagini/
 **/fast-import-rules.json
+
+**/hotfolder-generated.json
+**/hotfolder-generated.json.lock

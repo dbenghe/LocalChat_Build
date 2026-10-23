@@ -15,7 +15,7 @@ final class AgentPanel extends JPanel {
     final JButton stop=new JButton();
     private boolean dark,busy;private Runnable changed=()->{};
     void onChange(Runnable listener){changed=listener;changed.run();}
-    int runningCount(){return busy?(int)rows.values().stream().filter(row->row.state.equals("running")||row.state.startsWith("tool:")).count():0;}
+    int runningCount(){return busy?(int)rows.values().stream().filter(row->Set.of("running","waiting_api","compacting").contains(row.state)||row.state.startsWith("tool:")).count():0;}
     int waitingCount(){return busy?(int)rows.values().stream().filter(row->row.state.equals("queued")||row.state.equals("pending")).count():0;}
     String summaryState(){if(runningCount()>0)return "running";if(waitingCount()>0)return "pending";if(rows.isEmpty())return "draft";for(String state:List.of("failed","partial","unconfirmed","cancelled"))if(rows.values().stream().anyMatch(row->row.state.equals(state)||state.equals("unconfirmed")&&active(row.state)))return state;return rows.values().stream().allMatch(row->row.state.equals("done"))?"done":"unconfirmed";}
     private static final class Row {
@@ -32,14 +32,14 @@ final class AgentPanel extends JPanel {
         stop.addActionListener(e->cancel.run());add(stop,BorderLayout.SOUTH);translate();
     }
     void queued(String id,String title,String task,String model){rows.putIfAbsent(id,new Row(id,title,task,model));trim();rebuild();}
-    void progress(String id,String state){Row row=rows.get(id);if(row!=null){row.state=state;rebuild();}}
+    void progress(String id,String state){Row row=rows.get(id);if(row!=null&&!row.state.equals(state)){row.state=state;rebuild();}}
     void busy(boolean value){busy=value;stop.setEnabled(value&&rows.values().stream().anyMatch(row->active(row.state)));changed.run();}
     int count(){return rows.size();}
     String state(String id){return rows.containsKey(id)?rows.get(id).state:"";}
     String task(String id){return rows.containsKey(id)?rows.get(id).task:"";}
     void result(String text){try{Object data=Json.parse(text);String group=Json.str(data,"group_id"),model=Objects.toString(Json.str(data,"model"),"");if(group==null||group.isBlank()||!(Json.get(data,"tasks") instanceof List<?> tasks))return;int i=0;
         for(Object item:tasks){String id=group+"-"+(++i),title=Objects.toString(Json.str(item,"title"),""),task=Objects.toString(Json.str(item,"task"),"");Row row=rows.get(id);if(row==null){row=new Row(id,title,task,model);rows.put(id,row);}else if(row.task.isBlank())row.task=task;
-            row.state=Objects.toString(Json.str(item,"status"),"unconfirmed");row.answer=Objects.toString(Json.str(item,"answer"),"");row.error=Objects.toString(Json.str(item,"error"),"");row.pending=Boolean.TRUE.equals(Json.get(item,"completion_pending"));
+            row.state=Objects.toString(Json.str(item,"status"),"unconfirmed");row.answer=Objects.toString(Json.str(item,"answer"),"");row.error=Objects.toString(Json.str(item,"error"),"");String detail=Objects.toString(Json.str(item,"error_detail"),"");if(!detail.isBlank())row.error+="\n"+detail;row.pending=Boolean.TRUE.equals(Json.get(item,"completion_pending"));
         }trim();rebuild();}catch(RuntimeException ignored){}}
     void restore(List<ChatClient.Message> history){
         Map<String,Boolean> expanded=new HashMap<>();rows.forEach((id,row)->expanded.put(id,row.expanded));rows.clear();
@@ -52,8 +52,8 @@ final class AgentPanel extends JPanel {
     void translate(){heading.setText(I18n.text("Agenti"));close.setToolTipText(I18n.text("Ascunde panoul agentilor"));close.getAccessibleContext().setAccessibleName(close.getToolTipText());stop.setText(I18n.text("Opreste tura"));empty.setText(I18n.text("Niciun agent pornit in aceasta conversatie."));getAccessibleContext().setAccessibleName(I18n.text("Panou agenti"));rebuild();}
     void theme(boolean value){dark=value;rebuild();}
     private void trim(){while(rows.size()>MAX_ROWS)rows.remove(rows.keySet().iterator().next());}
-    private static boolean active(String state){return Set.of("queued","running","pending").contains(state)||state.startsWith("tool:");}
-    private String label(Row row){if(row.error.equals("group_deadline"))return I18n.text("Termen depasit");return row.state.startsWith("tool:")?I18n.text("Rulez {0}…",row.state.substring(5)):I18n.text(switch(row.state){case "queued"->"In asteptare";case "running"->"In curs";case "done"->"Gata.";case "partial"->"Rezultat partial";case "cancelled"->"Anulat";case "failed"->"Eroare";default->"Stare neconfirmata";});}
+    private static boolean active(String state){return Set.of("queued","running","pending","waiting_api","compacting").contains(state)||state.startsWith("tool:");}
+    private String label(Row row){if(row.error.equals("group_deadline"))return I18n.text("Termen depasit");return row.state.startsWith("tool:")?I18n.text("Rulez {0}…",row.state.substring(5)):I18n.text(switch(row.state){case "queued"->"In asteptare";case "waiting_api"->"Asteapta API";case "compacting"->"Compactare context";case "running"->"In curs";case "done"->"Gata.";case "partial"->"Rezultat partial";case "cancelled"->"Anulat";case "failed"->"Eroare";default->"Stare neconfirmata";});}
     private Color statusColor(Row row){return StatusColors.color(row.state,dark);}
 
     private static JLabel plain(String text){JLabel label=new JLabel(text);label.putClientProperty("html.disable",true);return label;}

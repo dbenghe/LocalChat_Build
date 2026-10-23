@@ -51,6 +51,8 @@ Copy-Item -LiteralPath "$PSScriptRoot/VERSION" -Destination $taskClasses
 $taskTests = (Get-ChildItem -LiteralPath "$PSScriptRoot/tests" -Filter '*.java').FullName
 & "$taskJdk/bin/javac.exe" -encoding UTF-8 --release 17 -cp "$taskClasses;$taskLibrary" -d "$taskBuild/tests" $taskTests
 if ($LASTEXITCODE) { throw 'Test compilation failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/stability-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.RuntimeStabilityTest
+if ($LASTEXITCODE) { throw 'Runtime stability/output provenance tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/vision-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.VisionInputTest
 if ($LASTEXITCODE) { throw 'Vision attachment tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/fast-import-home" "-Daudit.python=$taskPdfPython" "-Daudit.package=$PSScriptRoot/pdfcontrol" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.FastImportTest

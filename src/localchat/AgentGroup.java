@@ -9,7 +9,7 @@ import java.util.function.Supplier;
 
 /** Explicit, bounded child tasks using the selected provider/model and independent histories. */
 final class AgentGroup {
-    static final int MAX_TASKS=3, PARALLELISM=2, CHILD_STEPS=16, DEADLINE_SECONDS=180;
+    static final int MAX_TASKS=3, PARALLELISM=2, CHILD_STEPS=16;
     private final Supplier<Tools> factory;
     private final Path archiveDir;
     private final int contextLimit,outputLimit,threshold;
@@ -24,12 +24,12 @@ final class AgentGroup {
 
     AgentGroup(Supplier<Tools> factory,Path archiveDir,int contextLimit,int outputLimit,boolean autoCompact,int threshold){
         this.factory=Objects.requireNonNull(factory);this.archiveDir=Objects.requireNonNull(archiveDir);
-        this.contextLimit=Math.max(0,contextLimit);this.outputLimit=Math.max(1,Math.min(4096,outputLimit));
+        this.contextLimit=Math.max(0,contextLimit);this.outputLimit=Math.max(1,outputLimit);
         this.autoCompact=autoCompact;this.threshold=Math.max(30,Math.min(95,threshold));
     }
     static ChatClient.ToolSpec spec(){
         var task=Json.obj("type","object","properties",Json.obj("title",Json.obj("type","string","maxLength",100),"task",Json.obj("type","string","maxLength",12000)),"required",List.of("title","task"),"additionalProperties",false);
-        return new ChatClient.ToolSpec("run_agents","Run 1-3 scoped independent tasks with the current provider and model; at most two execute concurrently. Each child receives only its own task and the current system instructions, fresh tools under the same permissions, a 16-step cap, and a 180-second group deadline. No recursive delegation. The application may schedule independent evidence checks automatically. Additional delegated actions still need the current task scope and permissions. Return actual outcomes and private local archives; verify each result before claiming completion.",Json.obj("type","object","properties",Json.obj("tasks",Json.obj("type","array","minItems",1,"maxItems",MAX_TASKS,"items",task)),"required",List.of("tasks"),"additionalProperties",false));
+        return new ChatClient.ToolSpec("run_agents","Run 1-3 scoped independent tasks with the current provider and model; at most two execute concurrently. Each child receives only its own task and the current system instructions, fresh tools under the same permissions, a 16-step cap and cancellable provider requests without a shared wall-clock deadline. No recursive delegation. The application may schedule independent evidence checks automatically. Additional delegated actions still need the current task scope and permissions. Return actual outcomes and private local archives; verify each result before claiming completion.",Json.obj("type","object","properties",Json.obj("tasks",Json.obj("type","array","minItems",1,"maxItems",MAX_TASKS,"items",task)),"required",List.of("tasks"),"additionalProperties",false));
     }
     String pendingEvidence(){Pending view=pending;List<Object> tasks=new ArrayList<>();for(State state:view.states)tasks.add(state.result!=null?state.result:state.interrupted(cancelled?"cancelled":"pending"));return Json.write(Json.obj("group_id",view.group,"model",view.model,"tasks",tasks,"status",cancelled?"cancelled":"pending","completion_pending",true,"agent_archive_directory",archiveDir.toString()));}
     void cancel(){cancelled=true;for(Agent child:children)child.cancel();ExecutorService running=executor;if(running!=null)running.shutdownNow();}
@@ -54,8 +54,8 @@ final class AgentGroup {
         groupsStarted++;
         String group=UUID.randomUUID().toString().replace("-","");
         ExecutorService pool=Executors.newFixedThreadPool(PARALLELISM,r->{Thread t=new Thread(r,"localchat-child-agent");t.setDaemon(true);return t;});executor=pool;
-        List<Future<Map<String,Object>>> futures=new ArrayList<>();List<State> states=new ArrayList<>();List<Map<String,Object>> results=new ArrayList<>();long until=System.nanoTime()+TimeUnit.SECONDS.toNanos(DEADLINE_SECONDS);
-        boolean timedOut=false;
+        List<Future<Map<String,Object>>> futures=new ArrayList<>();List<State> states=new ArrayList<>();List<Map<String,Object>> results=new ArrayList<>();
+
         try{
             for(Task task:tasks)states.add(new State(task));
             pending=new Pending(group,model,List.copyOf(states));
@@ -63,20 +63,19 @@ final class AgentGroup {
             for(int i=0;i<tasks.size();i++){final int index=i;State state=states.get(i);try{futures.add(pool.submit(()->{var result=execute(group,index,state,provider,url,key,model,label,system,parentUi);state.result=result;return result;}));}catch(RejectedExecutionException e){if(cancelled)break;throw e;}}
             waitForTasks:for(var future:futures)while(true){
                 if(cancelled){break waitForTasks;}
-                long left=until-System.nanoTime();if(left<=0){timedOut=true;break waitForTasks;}
-                try{future.get(Math.min(left,TimeUnit.MILLISECONDS.toNanos(100)),TimeUnit.NANOSECONDS);break;}
+                try{future.get(100,TimeUnit.MILLISECONDS);break;}
                 catch(TimeoutException ignored){}
                 catch(InterruptedException e){cancel();Thread.currentThread().interrupt();break waitForTasks;}
                 catch(CancellationException|ExecutionException e){break;}
             }
         }finally{
-            if(cancelled||timedOut){for(State state:states)state.stop=cancelled?"cancelled":"group_deadline";for(Agent child:active)child.cancel();}
+            if(cancelled){for(State state:states)if(state.result==null)state.stop="cancelled";for(Agent child:active)child.cancel();}
             pool.shutdownNow();
             try{pool.awaitTermination(3,TimeUnit.SECONDS);}catch(InterruptedException e){Thread.currentThread().interrupt();}
             executor=null;
         }
-        for(State state:states)results.add(state.result!=null?state.result:state.interrupted(cancelled?"cancelled":timedOut?"group_deadline":"child_failed"));
-        // A timed-out/cancelled task may still have completed operations: its child always writes its own final archive.
+        for(State state:states)results.add(state.result!=null?state.result:state.interrupted(cancelled?"cancelled":"child_failed"));
+        // A cancelled task may still have completed operations: its child always writes its own final archive.
         boolean allDone=results.stream().allMatch(r->"done".equals(r.get("status")));
         boolean someDone=results.stream().anyMatch(r->Set.of("done","partial").contains(r.get("status")));
         String status=cancelled?"cancelled":allDone?"done":someDone?"partial":"failed";
@@ -84,7 +83,7 @@ final class AgentGroup {
     }
     private Map<String,Object> notStarted(Task task,String state,String error){return Json.obj("title",task.title,"task",clip(task.text,1000),"status",state,"answer","","completed_tools",List.of(),"error",error);}
     private Map<String,Object> execute(String group,int index,State state,Provider provider,String url,String key,String model,String label,String system,Agent.Ui parentUi){
-        Task task=state.task;Agent child=null;StringBuffer partial=state.partial;String error="";List<ChatClient.Message> messages=List.of();boolean stopped=false;
+        Task task=state.task;Agent child=null;StringBuffer partial=state.partial;String error="",errorDetail="";List<ChatClient.Message> messages=List.of();boolean stopped=false;
         Map<String,Object> result;
         String childLabel=label+" / "+task.title;
         try{
@@ -99,12 +98,12 @@ final class AgentGroup {
                 public void toolStarted(ChatClient.ToolCall c){parentUi.agentUpdate(group+"-"+(index+1),task.title,"tool:"+c.name);}
                 public void toolFinished(ChatClient.ToolCall c,Tools.Result r){state.outcomes.add(Json.obj("name",c.name,"success",!r.isError,"result",clip(r.text,3000),"truncated",r.text.length()>3000));if(!r.isError)recordPdfEvidence(state,c.name,r.text);}
                 public void usage(TokenUsage u){parentUi.usage(u);}
-                public void request(String s,List<ChatClient.Message> messages,List<ChatClient.ToolSpec> tools){parentUi.agentRequest(task.title);}
-                public void compactRequest(String s,List<ChatClient.Message> messages,int fragment,int total){parentUi.agentRequest(task.title);}
+                public void request(String s,List<ChatClient.Message> messages,List<ChatClient.ToolSpec> tools){parentUi.agentUpdate(group+"-"+(index+1),task.title,"waiting_api");parentUi.agentRequest(task.title);}
+                public void compactRequest(String s,List<ChatClient.Message> messages,int fragment,int total){parentUi.agentUpdate(group+"-"+(index+1),task.title,"compacting");parentUi.agentRequest(task.title);}
                 public void retry(boolean compaction,int next,int total,int status){parentUi.retry(compaction,next,total,status);}
             };
             child.run(provider,url,key,model,childLabel,system+"\nYou are a delegated child agent. Work only on your assigned task. No further delegation is available. Perform control jobs, copies or other mutations only when your assigned task explicitly requires them; an analysis-only task does not request a recontrol or copying. Keep completed work and limitations explicit. Do not claim actions without tool evidence.\n",List.of(ChatClient.Message.user(task.text)),false,ui);
-        }catch(Exception e){error=e.getClass().getSimpleName();if(e instanceof ChatClient.HttpFailure h)error+=" HTTP "+h.status;stopped=cancelled||Thread.currentThread().isInterrupted();}
+        }catch(Exception e){error=e.getClass().getSimpleName();errorDetail=clip(Objects.toString(e.getMessage(),""),500);if(!key.isEmpty())errorDetail=errorDetail.replace(key,"[redacted]");if(e instanceof ChatClient.HttpFailure h)error+=" HTTP "+h.status;stopped=cancelled||Thread.currentThread().isInterrupted();}
         finally{if(child!=null){messages=child.collect(partial.toString(),childLabel);active.remove(child);}}
         String answer="";for(int i=messages.size()-1;i>=0;i--){var m=messages.get(i);if(m.role.equals("assistant")&&m.toolCalls.isEmpty()){answer=ReasoningDisplay.answer(m.content).strip();break;}}
         List<Object> outcomes=snapshot(state.outcomes);
@@ -114,7 +113,7 @@ final class AgentGroup {
         String status=cancelled||stopped||!state.stop.isEmpty()?"cancelled":error.isEmpty()&&!answer.isBlank()&&!toolErrors&&!pendingJobs?"done":hasActions||!answer.isBlank()?"partial":"failed";
         if(!state.stop.isEmpty())error=state.stop;else if(error.isEmpty()&&answer.isBlank())error="no_visible_final_answer";else if(error.isEmpty()&&toolErrors)error="tool_errors";else if(error.isEmpty()&&pendingJobs)error="pending_jobs";
         result=Json.obj("title",task.title,"task",clip(task.text,1000),"task_truncated",task.text.length()>1000,"status",status,"answer",clip(answer,4000),"answer_truncated",answer.length()>4000,"completed_tool_count",outcomes.size(),"completed_tools",toolSummary(outcomes),"tools_truncated",outcomes.size()>8,"deliveries",deliverySummary(state.deliveries),"verified_delivery_count",state.deliveries.size(),"deliveries_truncated",deliveryTruncated(state.deliveries),"pending_jobs",pendingSummary(state.pendingJobs),"pending_job_count",state.pendingJobs.size(),"pending_jobs_truncated",state.pendingJobs.size()>16);
-        if(!error.isBlank())result.put("error",error);
+        if(!error.isBlank())result.put("error",error);if(!errorDetail.isBlank())result.put("error_detail",errorDetail);
         try{
             Files.createDirectories(archiveDir);Path file=archiveDir.resolve(group+"-"+(index+1)+".json");Path temp=Files.createTempFile(archiveDir,"agent-",".tmp");
             try{Files.writeString(temp,Json.write(Json.obj("group_id",group,"title",task.title,"task",task.text,"status",status,"model",model,"messages",archiveMessages(task.text,messages))),StandardCharsets.UTF_8);try{Files.move(temp,file,StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING);}catch(AtomicMoveNotSupportedException e){Files.move(temp,file,StandardCopyOption.REPLACE_EXISTING);}}finally{Files.deleteIfExists(temp);}

@@ -828,3 +828,9 @@ Lipirea unei capturi sau atasarea unui PNG/JPEG/GIF static trimite continutul vi
 Maximum 4 imagini/mesaj, 5 MiB/imagine si 16 megapixeli. Copiile originale cu hash se pastreaza privat in `atasamente_imagini`; JSON-ul conversatiei retine doar referintele. Acest director trebuie inclus la mutarea completa a datelor aplicatiei. Exportul JSON singur nu include pixelii. Vechile mesaje cu simple cai locale necesita reatasarea imaginii. Contextul vizual este estimat (~4096 tokeni/imagine), nu consum facturat. Modelul poate interpreta gresit o imagine; verificarile FAST raman deterministe in unealta locala.
 
 Protocol: [OpenAI image input](https://developers.openai.com/api/docs/guides/images-vision), [Anthropic image blocks](https://platform.claude.com/docs/en/build-with-claude/vision). Nu sunt create incarcari separate sau trimiteri catre alt furnizor.
+
+### Stabilitate si probleme cunoscute (1.26.1)
+
+Vezi [raportul de dezvoltare](DEVELOPMENT_STATUS.md) pentru istoricul functional, cauzele confirmate si problemele ramase. Hotfolderul foloseste `hotfolder-generated.json` privat pentru rezultatele identificate ale uneltelor; nu exclude global folderele cu desene sau liste. Editarea ulterioara a unui rezultat de catre utilizator poate genera din nou o notificare. Destinatiile shell calculate dinamic fara identificare certa raman monitorizate, pentru a nu ascunde surse legitime.
+
+Grupurile de agenti nu mai au o limita comuna de trei minute. Stop si protectiile conexiunii raman disponibile; panoul arata asteptarea API si compactarea. Mai mult timp nu garanteaza un raspuns corect sau disponibilitatea furnizorului.

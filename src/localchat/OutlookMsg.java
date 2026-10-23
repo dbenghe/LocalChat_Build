@@ -58,7 +58,9 @@ final class OutlookMsg {
     }
 
     /** Saves the attachments (embedded e-mails as .txt, their own attachments in a subfolder); reports each file. */
-    static void extract(Message m, Path dir, boolean includeInline, List<String> report) throws IOException {
+    static void extract(Message m,Path dir,boolean includeInline,List<String> report)throws IOException{extract(m,dir,includeInline,report,p->{});}
+
+    static void extract(Message m, Path dir, boolean includeInline, List<String> report,java.util.function.Consumer<Path> produced) throws IOException {
         Files.createDirectories(dir);
         for (Attachment a : m.attachments()) {
             if (a.inline() && !includeInline) {
@@ -69,15 +71,15 @@ final class OutlookMsg {
             if (a.embedded() != null) {
                 StringBuilder b = new StringBuilder("Email atasat: " + a.name() + "\n");
                 append(b, a.embedded(), 0);
-                report.add(save(dir.resolve(name + ".txt"), b.toString().getBytes(StandardCharsets.UTF_8)));
-                if (!a.embedded().attachments().isEmpty()) extract(a.embedded(), dir.resolve(name), includeInline, report);
+                report.add(save(dir.resolve(name + ".txt"), b.toString().getBytes(StandardCharsets.UTF_8),produced));
+                if (!a.embedded().attachments().isEmpty()) extract(a.embedded(), dir.resolve(name), includeInline, report,produced);
             } else {
-                report.add(save(dir.resolve(name), a.data()));
+                report.add(save(dir.resolve(name), a.data(),produced));
             }
         }
     }
 
-    private static String save(Path target, byte[] data) throws IOException {
+    private static String save(Path target, byte[] data,java.util.function.Consumer<Path> produced) throws IOException {
         if (Files.exists(target) && Arrays.equals(Files.readAllBytes(target), data)) return "exista deja, identic: " + target;
         Path free = target;
         String file = target.getFileName().toString();
@@ -85,7 +87,7 @@ final class OutlookMsg {
         String base = dot > 0 ? file.substring(0, dot) : file;
         String ext = dot > 0 ? file.substring(dot) : "";
         for (int i = 2; Files.exists(free); i++) free = target.resolveSibling(base + " (" + i + ")" + ext);
-        Files.write(free, data);
+        Files.write(free, data);produced.accept(free);
         return "salvat: " + free + " (" + Tools.size(data.length) + ")";
     }
 
