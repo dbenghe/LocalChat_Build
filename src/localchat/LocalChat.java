@@ -1360,7 +1360,7 @@ public final class LocalChat extends JFrame {
         ensureSession();
         final Path checkpointDirectory=CompactionCheckpoint.directory(appDir,conversationFile,contextProfile()+"/manual/"+sessionState.contextMode);
         long oldTokens=ContextMemory.messages(prefix);
-        ChatClient client=new ChatClient();client.outputLimit(outputBudget);client.budgetMillis(MemoryReducer.planBudgetMillis(chunks.size()));compactClient=client;int generation=++compactGeneration;
+        ChatClient client=new ChatClient();compactClient=client;int generation=++compactGeneration;
         compactUsage=new TokenUsage.Ledger();compactStarted.set(0);
         setBusy(true);setStatus("Se compacteaza memoria…",false);refreshDashboard();
         Thread worker=new Thread(()->{

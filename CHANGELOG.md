@@ -1,3 +1,9 @@
+# 1.25.2 — 2026-10-23
+- Eliminat plafonul total artificial de timp al compactarii si limita mica de generare calculata din lungimea rezumatului. Pentru API compatibil OpenAI, capacitatea de generare ramane la valoarea serverului/modelului. Anthropic pastreaza parametrul obligatoriu al protocolului. Rezumatul final trebuie sa incapa in context.
+- finish_reason=length, stop_reason=max_tokens si alte finalizari nevalide nu mai sunt acceptate ca memorie. Nu se scurteaza/retrimite un rezultat trunchiat ca si cum ar fi complet; arhiva si ciorna raman intacte.
+- Checkpointuri complete-v2: invalidarea cheilor si schemei vechi fara stergerea arhivei. Thinking separat sau blocuri think deschise nu devin memorie finala.
+- Ramane protectia Stop si timeoutul de inactivitate al conexiunii (10 minute), distinct de un plafon total. Fara modificarea procentajului/contextului ales sau a setarilor utilizatorului.
+
 # 1.25.1 — 2026-10-23
 - Compactarea solicita raspuns in streaming, consumand progresul API fara sa publice rezumatul partial sau sa execute unelte. Rutele care raspund JSON raman acceptate.
 - Bugetul total de compactare se calculeaza dupa numarul fragmentelor: minimum 5 minute, 2 minute/fragment, maximum 15 minute; limita de inactivitate de 120 secunde ramane. Bugetul nu se reseteaza la retry. Generarea normala nu este modificata.

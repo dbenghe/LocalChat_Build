@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 
@@ -127,11 +128,11 @@ final class ChatClient {
     static final class Reply {
         final String text;
         final List<ToolCall> calls;
+        final String finishReason;
+        Reply(String text,List<ToolCall> calls){this(text,calls,"");}
+        Reply(String text,List<ToolCall> calls,String finishReason){this.text=text;this.calls=calls;this.finishReason=finishReason==null?"":finishReason;}
+        boolean truncated(){return Set.of("length","max_tokens","model_length","model_context_window_exceeded").contains(finishReason);}
 
-        Reply(String text, List<ToolCall> calls) {
-            this.text = text;
-            this.calls = calls;
-        }
     }
 
     private static final class CallBuilder {
@@ -143,7 +144,6 @@ final class ChatClient {
     private long deadlineNanos;
     private int readTimeoutMillis=600_000;
     void budgetMillis(long millis){deadlineNanos=System.nanoTime()+java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(millis);readTimeoutMillis=120_000;}
-    void ensureBudget(){if(deadlineNanos==0)budgetMillis(300_000);}
     void checkBudget() throws java.net.SocketTimeoutException {remainingMillis();}
     private int remainingMillis() throws java.net.SocketTimeoutException {
         if(deadlineNanos==0)return readTimeoutMillis;
@@ -336,7 +336,7 @@ final class ChatClient {
         StringBuilder text = new StringBuilder();
         Map<Integer, CallBuilder> calls = new TreeMap<>();
         StringBuilder plain = new StringBuilder();
-        boolean sawEvents = false,completed = false;
+        boolean sawEvents = false,completed = false;String finishReason="";
         try (BufferedReader r = new BufferedReader(new InputStreamReader(timedInput(conn), StandardCharsets.UTF_8))) {
             String line;
             while ((line = r.readLine()) != null) {
@@ -355,6 +355,7 @@ final class ChatClient {
                 String error = errorMessage(event);
                 if (error != null) throw new IOException(error);
                 boolean terminal=anthropic && "message_stop".equals(Json.str(event,"type"));
+                String reason=anthropic?Json.str(event,"delta","stop_reason"):Json.str(event,"choices",0,"finish_reason");if(reason!=null)finishReason=reason;
                 if(terminal || (!anthropic && Json.get(event,"choices",0,"finish_reason")!=null))completed=true;
                 lastUsage=TokenUsage.parse(event,anthropic,lastUsage,terminal);
                 String delta = anthropic ? anthropicEvent(event, calls) : openAiEvent(event, calls);
@@ -375,7 +376,7 @@ final class ChatClient {
             return full;
         }
         if(requireCompleteReply && sawEvents && !completed && !cancelled)throw new IOException(I18n.text("Compactarea a esuat: fluxul API s-a inchis inaintea raspunsului complet; istoricul si memoria sunt pastrate."));
-        return new Reply(text.toString(), cancelled ? Collections.emptyList() : build(calls));
+        return new Reply(text.toString(), cancelled ? Collections.emptyList() : build(calls),finishReason);
     }
 
     private static String anthropicEvent(Object event, Map<Integer, CallBuilder> calls) {
@@ -462,7 +463,7 @@ final class ChatClient {
                 }
             }
         }
-        return new Reply(text.toString(), calls);
+        return new Reply(text.toString(), calls,anthropic?Json.str(resp,"stop_reason"):Json.str(resp,"choices",0,"finish_reason"));
     }
 
     @SuppressWarnings("unchecked")

@@ -649,5 +649,6 @@
   "Liste si articole": "Liste și articole",
   "Desene si rapoarte": "Desene și rapoarte",
   "Disponibile in chat.": "Disponibile în chat.",
-  "Compactarea a esuat: fluxul API s-a inchis inaintea raspunsului complet; istoricul si memoria sunt pastrate.": "Compactarea a esuat: fluxul API s-a inchis inaintea raspunsului complet; istoricul si memoria sunt pastrate."
+  "Compactarea a esuat: fluxul API s-a inchis inaintea raspunsului complet; istoricul si memoria sunt pastrate.": "Compactarea a esuat: fluxul API s-a inchis inaintea raspunsului complet; istoricul si memoria sunt pastrate.",
+  "Compactarea a fost oprita de limita de iesire a modelului. Rezumatul incomplet nu a fost salvat; istoricul si memoria sunt pastrate.": "Compactarea a fost oprita de limita de iesire a modelului. Rezumatul incomplet nu a fost salvat; istoricul si memoria sunt pastrate."
 }

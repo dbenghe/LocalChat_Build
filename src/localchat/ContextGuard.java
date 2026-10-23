@@ -81,7 +81,6 @@ final class ContextGuard {
         if(chunkBudget<128)throw new IOException(I18n.text("Istoricul depaseste limita configurata. Alege un model sau context mai mare pentru compactare."));
         List<String> chunks=ContextMemory.chunks(material.toString(),chunkBudget);
         if(chunks.size()>160)throw new IOException(I18n.text("Istoricul depaseste limita configurata. Alege un model sau context mai mare pentru compactare."));
-        summarizer.budgetMillis(MemoryReducer.planBudgetMillis(chunks.size())); // Bounded total, scaled to the fragment plan; no per-retry reset.
         for(String chunk:chunks){
             if(cancelled)throw new InterruptedIOException("Cancelled");
             var request=List.of(ChatClient.Message.user("Prior factual memory:\n"+summary+"\nNext historical fragment:\n"+chunk));

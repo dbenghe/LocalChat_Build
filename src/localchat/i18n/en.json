@@ -649,5 +649,6 @@
   "Liste si articole": "Lists and articles",
   "Desene si rapoarte": "Drawings and reports",
   "Disponibile in chat.": "Available in the chat.",
-  "Compactarea a esuat: fluxul API s-a inchis inaintea raspunsului complet; istoricul si memoria sunt pastrate.": "Compaction failed: the API stream closed before a complete reply; history and memory are preserved."
+  "Compactarea a esuat: fluxul API s-a inchis inaintea raspunsului complet; istoricul si memoria sunt pastrate.": "Compaction failed: the API stream closed before a complete reply; history and memory are preserved.",
+  "Compactarea a fost oprita de limita de iesire a modelului. Rezumatul incomplet nu a fost salvat; istoricul si memoria sunt pastrate.": "Compaction reached the model output limit. The incomplete summary was not saved; history and memory are preserved."
 }

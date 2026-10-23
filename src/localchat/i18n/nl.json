@@ -649,5 +649,6 @@
   "Liste si articole": "Lijsten en artikelen",
   "Desene si rapoarte": "Tekeningen en rapporten",
   "Disponibile in chat.": "Beschikbaar in de chat.",
-  "Compactarea a esuat: fluxul API s-a inchis inaintea raspunsului complet; istoricul si memoria sunt pastrate.": "Samenvatten mislukt: de API-stream sloot voor het volledige antwoord; geschiedenis en geheugen zijn bewaard."
+  "Compactarea a esuat: fluxul API s-a inchis inaintea raspunsului complet; istoricul si memoria sunt pastrate.": "Samenvatten mislukt: de API-stream sloot voor het volledige antwoord; geschiedenis en geheugen zijn bewaard.",
+  "Compactarea a fost oprita de limita de iesire a modelului. Rezumatul incomplet nu a fost salvat; istoricul si memoria sunt pastrate.": "Samenvatting bereikte de uitvoerlimiet van het model. De onvolledige samenvatting is niet opgeslagen; geschiedenis en geheugen zijn bewaard."
 }

@@ -649,5 +649,6 @@
   "Liste si articole": "Listeler ve ürünler",
   "Desene si rapoarte": "Çizimler ve raporlar",
   "Disponibile in chat.": "Sohbette kullanılabilir.",
-  "Compactarea a esuat: fluxul API s-a inchis inaintea raspunsului complet; istoricul si memoria sunt pastrate.": "Sikistirma basarisiz: API akisi tam yanit gelmeden kapandi; gecmis ve bellek korundu."
+  "Compactarea a esuat: fluxul API s-a inchis inaintea raspunsului complet; istoricul si memoria sunt pastrate.": "Sikistirma basarisiz: API akisi tam yanit gelmeden kapandi; gecmis ve bellek korundu.",
+  "Compactarea a fost oprita de limita de iesire a modelului. Rezumatul incomplet nu a fost salvat; istoricul si memoria sunt pastrate.": "Sıkıştırma modelin çıktı sınırına ulaştı. Eksik özet kaydedilmedi; geçmiş ve bellek korundu."
 }

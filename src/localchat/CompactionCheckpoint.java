@@ -11,13 +11,13 @@ final class CompactionCheckpoint {
     static String hash(String value){try{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));}catch(NoSuchAlgorithmException e){throw new IllegalStateException(e);}}
     static Path directory(Path home,Path conversation,String profile){return home.resolve("compaction-cache").resolve(hash(conversation.toAbsolutePath().normalize()+"\n"+profile));}
     static String key(Provider provider,String url,String key,String model,String system,List<ChatClient.Message> request,int target,int window,double scale){
-        return hash("checkpoint-v1\n"+provider.name()+"\n"+url+"\n"+hash(key)+"\n"+model+"\n"+system+"\n"+Json.write(request.stream().map(ChatClient.Message::toJson).toList())+"\n"+target+"/"+window+"/"+scale);
+        return hash("checkpoint-v2-complete\n"+provider.name()+"\n"+url+"\n"+hash(key)+"\n"+model+"\n"+system+"\n"+Json.write(request.stream().map(ChatClient.Message::toJson).toList())+"\n"+target+"/"+window+"/"+scale);
     }
     static String read(Path directory,String key,int target){
         if(directory==null)return null;
         try{Path file=directory.resolve(key+".json");if(!Files.isRegularFile(file)||Files.size(file)>131072||Files.getLastModifiedTime(file).toMillis()<System.currentTimeMillis()-30L*86400000)return null;
             Object data=Json.parse(Files.readString(file));String summary=Json.str(data,"summary");
-            if(!key.equals(Json.str(data,"key"))||summary==null||summary.isBlank()||ContextMemory.estimate(summary)>target||!hash(summary).equals(Json.str(data,"digest")))return null;
+            if(!"complete-v2".equals(Json.str(data,"policy"))||!key.equals(Json.str(data,"key"))||summary==null||summary.isBlank()||ContextMemory.estimate(summary)>target||!hash(summary).equals(Json.str(data,"digest")))return null;
             return summary;
         }catch(IOException|RuntimeException ignored){return null;}
     }
@@ -25,7 +25,7 @@ final class CompactionCheckpoint {
         if(directory==null)return;
         Path temp=null;
         try{Files.createDirectories(directory);temp=Files.createTempFile(directory,"checkpoint-",".tmp");
-            Files.writeString(temp,Json.write(Json.obj("key",key,"summary",summary,"digest",hash(summary))));
+            Files.writeString(temp,Json.write(Json.obj("policy","complete-v2","key",key,"summary",summary,"digest",hash(summary))));
             try{Files.move(temp,directory.resolve(key+".json"),StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING);}catch(AtomicMoveNotSupportedException e){Files.move(temp,directory.resolve(key+".json"),StandardCopyOption.REPLACE_EXISTING);}
             // Bound private disk use. Old checkpoints are optional and can always be regenerated.
             try(var files=Files.list(directory)){var ordered=files.filter(f->f.getFileName().toString().endsWith(".json")).sorted(Comparator.comparingLong(CompactionCheckpoint::modified).reversed()).toList();
