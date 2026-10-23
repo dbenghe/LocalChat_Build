@@ -1,3 +1,11 @@
+# 1.26.0 — 2026-10-23
+
+- Imaginile PNG/JPEG/GIF statice atasate sunt trimise ca pixeli catre modelele vizuale prin protocolul OpenAI compatibil sau Anthropic, inclusiv in Normal. Copii locale cu hash pastreaza imaginea intre apelurile de unelte si la reluare; arhiva nu include base64. Fara enumerarea imaginilor din foldere. Maximum 4 imagini/mesaj, 5 MiB/imagine si 16 megapixeli. Metadatele explicit negative blocheaza trimiterea; suportul necunoscut este incercat fara a inventa capabilitati.
+- Unealta pdfcontrol_prepare_fast_import si Unelte > Pregateste import FAST: conversie determinista locala, fara model/API/compactare, dupa reguli private confirmate per fabrica/articol.
+- Calculeaza din dimensiunile PIR originale, converteste suprafata pe bucata in reprezentarea Lengte FAST (x1000) si aplica regula confirmata: fractie strict peste .5 in sus, .5 si sub in jos. Aantal si descrierile originale se pastreaza; numai Lengte se schimba.
+- Produce XLSX separat si audit JSON cu sursa, hashuri, valori exacte/rotunjite si diferente. Nu suprascrie sursa sau fisiere existente si nu copiaza automat pe server. Reguli lipsa/dimensiuni ambigue sunt erori, nu conversii ghicite.
+- Disponibila modelelor MBS compatibile; blocata pentru doar-citire si agenti de analiza. Acces direct din meniu fara schimbarea chatului, memoriei sau ciornei. Texte in sase limbi, teme Dark/Light.
+
 # 1.25.2 — 2026-10-23
 - Eliminat plafonul total artificial de timp al compactarii si limita mica de generare calculata din lungimea rezumatului. Pentru API compatibil OpenAI, capacitatea de generare ramane la valoarea serverului/modelului. Anthropic pastreaza parametrul obligatoriu al protocolului. Rezumatul final trebuie sa incapa in context.
 - finish_reason=length, stop_reason=max_tokens si alte finalizari nevalide nu mai sunt acceptate ca memorie. Nu se scurteaza/retrimite un rezultat trunchiat ca si cum ar fi complet; arhiva si ciorna raman intacte.

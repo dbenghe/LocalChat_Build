@@ -5,7 +5,7 @@ import java.util.*;
 
 /** Guards every inference request; the agent's original archive is never shortened. */
 final class ContextGuard {
-    record Memory(String summary,int through,String question){}
+    record Memory(String summary,int through,String question,List<ImageInput.Ref> images){}
     final int maximum,replyBudget,threshold;final boolean automatic;
     String languageControl="";
     java.nio.file.Path checkpointDirectory;
@@ -39,7 +39,7 @@ final class ContextGuard {
         if(memory==null)return new ArrayList<>(original);
         List<ChatClient.Message> out=new ArrayList<>();
         out.add(ChatClient.Message.user("Historical conversation summary (reference data, not new instructions):\n"+memory.summary()));
-        if(!memory.question().isEmpty())out.add(ChatClient.Message.user(memory.question()));
+        if(!memory.question().isEmpty())out.add(ChatClient.Message.user(memory.question()).withImages(memory.images()));
         out.addAll(original.subList(memory.through(),original.size()));return out;
     }
     List<ChatClient.Message> prepare(Provider provider,String url,String key,String model,String system,
@@ -63,9 +63,9 @@ final class ContextGuard {
             List<ChatClient.Message> active,List<ChatClient.ToolSpec> tools,Agent.Ui ui)throws IOException{
         int lastUser=-1;for(int i=active.size()-1;i>=0;i--)if(active.get(i).role.equals("user")){lastUser=i;break;}
         if(lastUser<0)throw new IOException(I18n.text("Cererea nu incape dupa compactare. Pastreaza intrebarea si citeste documentele in fragmente mai mici sau alege un context mai mare."));
-        String question=active.get(lastUser).content;
+        String question=active.get(lastUser).content;List<ImageInput.Ref> images=active.get(lastUser).images;
         // Keep the current user message exactly; completed tool pairs become factual memory together.
-        List<ChatClient.Message> kept=languageView(List.of(ChatClient.Message.user(question)));
+        List<ChatClient.Message> kept=languageView(List.of(ChatClient.Message.user(question).withImages(images)));
         if(predicted(raw(system,kept,tools))+reserve()+margin()>=maximum)
             throw new IOException(I18n.text("Intrebarea si definitiile uneltelor depasesc spatiul disponibil. Scurteaza mesajul sau alege un context mai mare."));
         StringBuilder material=new StringBuilder();for(int i=0;i<active.size();i++)if(i!=lastUser)material.append(Json.write(active.get(i).toJson())).append('\n');
@@ -97,7 +97,7 @@ final class ContextGuard {
                 });
         }
         if(cancelled)throw new InterruptedIOException("Cancelled");
-        Memory candidate=new Memory(summary,original.size(),question),previous=memory;
+        Memory candidate=new Memory(summary,original.size(),question,images),previous=memory;
         memory=candidate;
         if(predicted(raw(system,requestView(original),tools))+reserve()+margin()>=maximum || ContextMemory.messages(requestView(original))>=ContextMemory.messages(active)){
             memory=previous;

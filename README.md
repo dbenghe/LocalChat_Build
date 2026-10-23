@@ -815,3 +815,16 @@ Compactarea cere streaming pentru a primi progresul furnizorului in loc sa astep
 ## Compactare fara plafon artificial (1.25.2)
 Aceasta versiune inlocuieste politica de asteptare 1.25.1: compactarea nu mai are termen total fix de 5–15 minute si nu mai trimite limita mica max_tokens derivata din lungimea memoriei pentru API compatibile OpenAI. Serverul/modelul decide capacitatea de generare; Anthropic necesita max_tokens si pastreaza valoarea implicita a protocolului. Limita contextului si marja de siguranta raman respectate, iar memoria finala ramane concisa. Stop ramane disponibil; o conexiune fara date timp de 10 minute poate expira.
 Finalizarile length/max_tokens nu sunt rezumate complete. Sunt refuzate si nu se salveaza in cache. Vechile checkpointuri nevalidate nu se reutilizeaza; fisierele si istoricul integral raman pastrate. Acest lucru nu poate elimina indisponibilitatea serverului ori limita de iesire configurata chiar pe server.
+
+## Pregatirea locala a cantitatilor FAST (1.26.0)
+Din chat MBS poti cere pregatirea unei copii FAST; modelul are unealta `pdfcontrol_prepare_fast_import`. Fara model sau compactare: **Unelte > Pregateste import FAST**, alege proiectul, fabrica confirmata, XLSX sursa si un nume nou de iesire in folderul de lucru. Se aplica numai regulile deja confirmate din fisierul privat `fast-import-rules.json`; lipsa unei reguli nu autorizeaza conversii.
+Pentru regula PIR confirmata, suprafata pe bucata se calculeaza din latime si lungime in mm, apoi se reprezinta in Lengte FAST prin x1000. Fractia strict peste .5 se rotunjeste in sus; exact .5 si sub in jos. Aantal si dimensiunile originale raman neschimbate. Auditul separat pastreaza precizia exacta si diferenta de rotunjire. Nu modifica unitatea catalogului.
+Sursa si fisierele existente nu sunt suprascrise. Verifica copia/auditul in FAST inainte de sincronizarea autorizata folosind mecanismul obisnuit de copiere si arhivare. Toolul nu importa in ISAH/FAST si nu transfera pe retea. Regula si sursele reale sunt private, excluse din Git.
+
+### Imagini atasate (1.26.0)
+
+Lipirea unei capturi sau atasarea unui PNG/JPEG/GIF static trimite continutul vizual la apasarea Trimite, catre furnizorul selectat. Sunt necesare un model si o ruta API cu suport vizual; capabilitatile necunoscute nu sunt presupuse negative. In Normal imaginile nu activeaza uneltele MBS; in MBS modelul poate analiza captura si continua cu uneltele permise. Selectia unui folder nu incarca automat imaginile din el.
+
+Maximum 4 imagini/mesaj, 5 MiB/imagine si 16 megapixeli. Copiile originale cu hash se pastreaza privat in `atasamente_imagini`; JSON-ul conversatiei retine doar referintele. Acest director trebuie inclus la mutarea completa a datelor aplicatiei. Exportul JSON singur nu include pixelii. Vechile mesaje cu simple cai locale necesita reatasarea imaginii. Contextul vizual este estimat (~4096 tokeni/imagine), nu consum facturat. Modelul poate interpreta gresit o imagine; verificarile FAST raman deterministe in unealta locala.
+
+Protocol: [OpenAI image input](https://developers.openai.com/api/docs/guides/images-vision), [Anthropic image blocks](https://platform.claude.com/docs/en/build-with-claude/vision). Nu sunt create incarcari separate sau trimiteri catre alt furnizor.

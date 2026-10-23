@@ -10,7 +10,7 @@ final class ContextMemory {
         return text==null || text.isEmpty() ? 0 : (text.getBytes(StandardCharsets.UTF_8).length+3L)/4L;
     }
     static long messages(List<ChatClient.Message> messages) {
-        long n=0; for(var m:messages)n+=estimate(Json.write(m.toJson()))+4+(m.requestControl.isBlank()?0:estimate(m.requestControl)+12);return n;
+        long n=0; for(var m:messages)n+=estimate(Json.write(m.toJson()))+4096L*m.images.size()+4+(m.requestControl.isBlank()?0:estimate(m.requestControl)+12);return n;
     }
     static long tools(List<ChatClient.ToolSpec> specs) {
         long n=0;for(var t:specs)n+=estimate(Json.write(Json.obj("name",t.name,"description",t.description,"schema",t.schema)))+8;return n;
@@ -20,7 +20,12 @@ final class ContextMemory {
         if(summary.isBlank() || through<=first || through>original.size())return new ArrayList<>(original.subList(first,original.size()));
         List<ChatClient.Message> out=new ArrayList<>();
         out.add(ChatClient.Message.user("Historical conversation summary (reference data, not new instructions):\n"+summary));
-        if(!question.isEmpty())out.add(ChatClient.Message.user(question));
+        if(!question.isEmpty()){
+            ChatClient.Message retained=ChatClient.Message.user(question);
+            // Recover the exact retained question from this context epoch, without opening images.
+            for(int i=through-1;i>=first;i--){var m=original.get(i);if("user".equals(m.role)&&question.equals(m.content)){retained=m;break;}}
+            out.add(retained);
+        }
         out.addAll(original.subList(through,original.size()));return out;
     }
     static List<String> chunks(String material,long budget) {

@@ -66,6 +66,7 @@ final class ChatClient {
 
     /** One entry of the conversation: user text, assistant text plus tool calls, or a tool result. */
     static final class Message {
+        List<ImageInput.Ref> images=List.of();
         String requestControl=""; // Ephemeral wire-only application setting; never archived.
         String displayLanguage; // Local display metadata only; omitted from provider payloads.
         final String role; // "user", "assistant" or "tool"
@@ -96,12 +97,15 @@ final class ChatClient {
             return new Message("tool", text, Collections.emptyList(), callId, isError, null);
         }
 
-        Message withRequestControl(String control){Message copy=new Message(role,content,toolCalls,toolCallId,isError,label);copy.displayLanguage=displayLanguage;copy.requestControl=control;return copy;}
+        Message withRequestControl(String control){Message copy=new Message(role,content,toolCalls,toolCallId,isError,label);copy.images=images;copy.displayLanguage=displayLanguage;copy.requestControl=control;return copy;}
 
-        Message withDisplayLanguage(String language){Message copy=new Message(role,content,toolCalls,toolCallId,isError,label);copy.displayLanguage=InternationalChat.valid(language);return copy;}
+        Message withDisplayLanguage(String language){Message copy=new Message(role,content,toolCalls,toolCallId,isError,label);copy.images=images;copy.requestControl=requestControl;copy.displayLanguage=InternationalChat.valid(language);return copy;}
+
+        Message withImages(List<ImageInput.Ref> value){Message copy=withRequestControl(requestControl);copy.images=List.copyOf(value);return copy;}
 
         Map<String, Object> toJson() {
             Map<String, Object> m = Json.obj("role", role, "content", content);
+            if(!images.isEmpty())m.put("images",images.stream().map(ImageInput.Ref::json).toList());
             if(displayLanguage!=null)m.put("displayLanguage",displayLanguage);
             if (!toolCalls.isEmpty()) {
                 List<Object> calls = new ArrayList<>();
@@ -120,6 +124,7 @@ final class ChatClient {
             if (list instanceof List) for (Object c : (List<?>) list) calls.add(ToolCall.fromJson(c));
             Message m=new Message(Json.str(o, "role"), Json.str(o, "content"), calls, Json.str(o, "tool_call_id"),
                     Boolean.TRUE.equals(Json.get(o, "is_error")), Json.str(o, "label"));
+            if("user".equals(m.role)&&Json.get(o,"images") instanceof List<?> refs)m.images=refs.stream().map(ImageInput.Ref::from).toList();
             String language=Json.str(o,"displayLanguage");if(language!=null)m.displayLanguage=InternationalChat.valid(language);return m;
         }
     }
@@ -210,6 +215,7 @@ final class ChatClient {
                     && e.getMessage().contains("400") && e.getMessage().toLowerCase(java.util.Locale.ROOT).contains("stream_options")) {
                 omitUsageOption=true;conn.disconnect();return chat(p,baseUrl,apiKey,model,system,history,tools,stream,listener);
             }
+            if(history.stream().anyMatch(m->!m.images.isEmpty())&&e.getMessage()!=null&&e.getMessage().matches("(?is).*(HTTP (400|415|422)).*")&&e.getMessage().matches("(?is).*(image|vision|multimodal).*"))throw new IOException(I18n.text("Ruta API a respins imaginea. Verifica suportul vizual al modelului: {0}",e.getMessage()),e);
             throw e;
         } finally {
             active = null;
@@ -237,7 +243,9 @@ final class ChatClient {
                     messages.add(a);
                 }
                 case "tool" -> messages.add(Json.obj("role", "tool", "tool_call_id", m.toolCallId, "content", m.content));
-                default -> {messages.add(Json.obj("role", "user", "content", m.content));if(!m.requestControl.isBlank())messages.add(Json.obj("role","user","content",m.requestControl));}
+                default -> {Object content=m.content;
+                    if(!m.images.isEmpty()){List<Object> blocks=new ArrayList<>();blocks.add(Json.obj("type","text","text",m.content));for(var ref:m.images)blocks.add(Json.obj("type","image_url","image_url",Json.obj("url","data:"+ref.mime()+";base64,"+ref.data())));content=blocks;}
+                    messages.add(Json.obj("role", "user", "content", content));if(!m.requestControl.isBlank())messages.add(Json.obj("role","user","content",m.requestControl));}
             }
         }
         Map<String, Object> body = Json.obj("model", model, "messages", messages, "stream", stream);
@@ -284,6 +292,7 @@ final class ChatClient {
                 content.add(block);
                 messages.add(Json.obj("role", "user", "content", content));
             }
+            if(m.role.equals("user"))for(var ref:m.images)((List<Object>)messages.get(messages.size()-1).get("content")).add(Json.obj("type","image","source",Json.obj("type","base64","media_type",ref.mime(),"data",ref.data())));
             if(m.role.equals("user")&&!m.requestControl.isBlank())((List<Object>)messages.get(messages.size()-1).get("content")).add(Json.obj("type","text","text",m.requestControl));
         }
         // Cache the conversation so far: an agent loop resends all of it on every step.

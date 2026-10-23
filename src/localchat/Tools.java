@@ -55,7 +55,7 @@ final class Tools {
             + "[print('--- pagina %d ---\\n%s'%(i+1,d[i].get_text())) for i in range(a-1,b)]";
     static final List<String> BUILTIN = List.of("list_dir", "find_files", "search_text", "read_file",
             "extract_attachments", "write_file", "append_file", "edit_file", "make_dir", "copy_path", "move_path", "run_command",
-            "open_in_explorer", "read_skill", "save_rule", "pdfcontrol_compare_import");
+            "open_in_explorer", "read_skill", "save_rule", "pdfcontrol_compare_import", "pdfcontrol_prepare_fast_import");
 
     enum Access { READ, WRITE, RUN }
 
@@ -234,6 +234,10 @@ final class Tools {
                     "drawings",Json.obj("type","array","items",Json.obj("type","string"),"maxItems",50),
                     "catalogue",Json.obj("type","string","description","Explicit factory XLSX or JSON catalogue; optional confirmed private snapshot by factory.")),
                     "required",List.of("project","factory","imports"),"additionalProperties",false)));
+        out.add(spec("pdfcontrol_prepare_fast_import",
+                "Prepare a separate local FAST XLSX copy using explicitly saved factory/article conversion rules. Use this local tool instead of ad-hoc scripts for confirmed PIR area quantities stored in FAST Lengte (1000 units per metre). It recomputes from original dimensions, applies the saved rounding rule, preserves Aantal/descriptions and source, and writes an audit. It never copies to the server or calls an API. Unsupported/missing rules or ambiguous dimensions fail; do not guess rules. Output must be a new file inside the working folder.",List.of("project","factory","input","output"),
+                "project","string","Confirmed six-digit project.","factory","string","Confirmed factory: soest, alphen, veenoord or lelystad.",
+                "input","string","Source XLSX path.","output","string","New local XLSX path, distinct from input; no overwrite."));
         for (Map.Entry<String, McpRef> e : mcpTools.entrySet()) {
             McpServer.Tool t = e.getValue().tool();
             Map<String, Object> schema = t.schema.containsKey("type") ? t.schema : Json.obj("type", "object", "properties", Json.obj());
@@ -274,6 +278,7 @@ final class Tools {
                 case "run_command" -> runCommand(required(a, "command"), path(str(a, "cwd", ".")), Math.min(3600, Math.max(1, integer(a, "timeout_seconds", 600))));
                 case "open_in_explorer" -> Result.ok(openInExplorer(path(required(a, "path"))));
                 case "pdfcontrol_compare_import" -> compareImport(a);
+                case "pdfcontrol_prepare_fast_import" -> prepareFastImport(a);
                 case "read_skill" -> Result.ok(Skills.read(skills, required(a, "name"), ctx.paths()::text));
                 case "save_rule" -> Result.ok(saveRule(required(a, "rule"),str(a,"scope","global"),str(a,"project",memoryProject)));
                 default -> Result.error("Tool necunoscut: " + call.name);
@@ -766,6 +771,24 @@ final class Tools {
             if(!result.finished())return Result.error(I18n.text("Controlul local a depasit limita de timp. Sursele au ramas nemodificate."));
             return new Result(cap(result.text()),result.exitCode()!=0);
         }finally{Files.deleteIfExists(temp);}
+    }
+
+    private Result prepareFastImport(Map<String,Object> args)throws IOException,ToolError{
+        if(!Set.of("project","factory","input","output").containsAll(args.keySet()))throw new ToolError("Unknown FAST arguments");
+        String project=required(args,"project"),factory=required(args,"factory");
+        if(!project.matches("[0-9]{6}")||!Set.of("soest","alphen","veenoord","lelystad").contains(factory))throw new ToolError("Explicit project/factory required");
+        Path source=readable(required(args,"input")),output=writable(required(args,"output"));
+        Path root=ctx.workDir().toRealPath(),parent=output.toAbsolutePath().normalize().getParent();
+        // Resolve existing ancestors so a junction cannot turn a local output into a network/secret write.
+        Path ancestor=parent;while(ancestor!=null&&!Files.exists(ancestor))ancestor=ancestor.getParent();
+        if(ancestor==null||!ancestor.toRealPath().startsWith(root)||!output.normalize().startsWith(ctx.workDir()))throw new ToolError("FAST output must be inside the working folder");
+        if(!source.toString().toLowerCase(Locale.ROOT).endsWith(".xlsx")||!output.toString().toLowerCase(Locale.ROOT).endsWith(".xlsx")||!Files.isRegularFile(source)||source.equals(output)||Files.exists(output)||Files.exists(Path.of(output+".fast-audit.json")))throw new ToolError("Choose a source XLSX and a new distinct output XLSX");
+        Path home=ctx.secretFile().toAbsolutePath().getParent(),script=home.resolve("pdfcontrol/fast_import.py"),rules=home.resolve("fast-import-rules.json");String python=ctx.pdfPython();
+        if(python==null||!Files.isRegularFile(Path.of(python))||!Files.isRegularFile(script)||!Files.isRegularFile(rules))throw new ToolError("FAST runtime or confirmed rules unavailable");
+        Map<String,Object> request=Json.obj("project",project,"factory",factory,"input",source.toRealPath().toString(),"output",output.toString(),"source_sha256",copyDigest(source));
+        allow(Access.WRITE,I18n.text("Pregateste import FAST"),Json.write(request));ensureActive();
+        Path temp=Files.createTempFile("localchat-fast-",".json");
+        try{Files.writeString(temp,Json.write(request),StandardCharsets.UTF_8);Output result=exec(List.of(python,"-I",script.toString(),"--request",temp.toString(),"--rules",rules.toString()),ctx.workDir(),ctx.commandEnv(),120);ensureActive();return new Result(cap(result.text()),!result.finished()||result.exitCode()!=0);}finally{Files.deleteIfExists(temp);}
     }
 
     private Result runCommand(String command, Path cwd, int timeoutSeconds) throws IOException, ToolError {

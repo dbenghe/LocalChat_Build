@@ -643,6 +643,7 @@ public final class LocalChat extends JFrame {
         tools.add(item("Reporneste serverele MCP", null, e -> reloadTools()));
         tools.add(item("PDFCONTROL: operatii directe…",null,e->showPdfControl()));
         tools.add(item("Compara local listele de import",null,e->showImportAudit()));
+        tools.add(item("Pregateste import FAST",null,e->showFastImport()));
         tools.add(item("Cataloage fabrici",null,e->showCatalogues()));
         tools.add(item("Catalog modele",null,e->showModelCatalog(false)));
         tools.add(item("Exporta toate chaturile…",null,e->exportAllSessions()));
@@ -922,6 +923,14 @@ public final class LocalChat extends JFrame {
         new CatalogueDialog(this,new CatalogueStore(appDir,Path.of(python),permissionBox.getSelectedIndex()==2)).setVisible(true);
     }
 
+    private void showFastImport(){
+        Path folder=currentWorkDir();if(folder==null)return;
+        Tools local=new Tools(new Tools.Context(folder,skillsDir,rulesFile,configFile,commandEnv(),previewPython(),new Mcp(),pathMap(),permissionBox.getSelectedIndex()==1,EnumSet.noneOf(Tools.Access.class),this::askPermission),List.of()).readOnly(permissionBox.getSelectedIndex()==2);
+        FastImportDialog dialog=new FastImportDialog(this,folder,local);if(sessionState.factoryProject.matches("[0-9]{6}"))dialog.project.setText(sessionState.factoryProject);
+        for(int i=1;i<dialog.factory.getItemCount();i++)if(dialog.factory.getItemAt(i).equalsIgnoreCase(sessionState.factoryName))dialog.factory.setSelectedIndex(i);
+        dialog.setVisible(true);
+    }
+
     private void showImportAudit() {
         Path folder=currentWorkDir();if(folder==null)return;
         // Dedicated tool instance; never borrows the active turn, history, queue or model connection.
@@ -1146,7 +1155,7 @@ public final class LocalChat extends JFrame {
             String system=toolsBox.isSelected()?agentPrompt(dir,installedSkills,pathMap()):plainPrompt();
             sys=ContextMemory.estimate(system)+ContextMemory.estimate(responseLanguageControl())+(responseLanguageControl().isBlank()?0:12);tools=ContextMemory.tools(dashboardTools());
             messages=ContextMemory.messages(sessionState.memory.view(history));
-            String pending=composerMessage();if(!pending.isBlank() && !input.getText().startsWith("/"))messages+=ContextMemory.estimate(pending)+8;
+            String pending=composerMessage();if(!pending.isBlank() && !input.getText().startsWith("/"))messages+=ContextMemory.estimate(pending)+ImageInput.estimate(sessionState.draftAttachments)+8;
         }
         double displayScale=contextScale();sys=(long)Math.ceil(sys*displayScale);tools=(long)Math.ceil(tools*displayScale);messages=(long)Math.ceil(messages*displayScale);
         long apiOutput=responseOutputLimit();int output=ResponseBudget.available(responseBudget(),configured,sys+tools+messages);
@@ -1478,7 +1487,8 @@ public final class LocalChat extends JFrame {
             return;
         }
         if(!pendingAttachments.isEmpty()){
-            if(!toolsBox.isSelected()){setStatus("Activeaza Tool-uri pentru a citi fisierele atasate.",true);return;}
+            if(!toolsBox.isSelected()&&pendingAttachments.stream().anyMatch(n->!ImageInput.candidate(n)||Files.isDirectory(Path.of(n)))){setStatus("Activeaza Tool-uri pentru a citi fisierele atasate.",true);return;}
+            if(pendingAttachments.stream().anyMatch(ImageInput::candidate)&&Boolean.FALSE.equals(currentCatalogEntry().vision())){setStatus("Modelul selectat nu accepta imagini. Alege un model cu suport vizual.",true);return;}
             try{for(String path:pendingAttachments)AttachmentSupport.validate(Path.of(path),configFile);}catch(IOException|RuntimeException error){setStatus("Un atasament nu mai este disponibil. Verifica selectia inainte de trimitere.",true);return;}
         }
         final boolean useTools = toolsBox.isSelected();
@@ -1503,7 +1513,7 @@ public final class LocalChat extends JFrame {
         Path estimateDir=currentWorkDir();if(estimateDir==null)estimateDir=appDir;
         String estimateSystem=useTools?agentPrompt(estimateDir,installedSkills,pathMap()):plainPrompt();
         long estimated=ContextMemory.estimate(estimateSystem)+ContextMemory.estimate(responseLanguageControl())+12+ContextMemory.tools(dashboardTools())
-                +ContextMemory.messages(sessionState.memory.view(history))+ContextMemory.estimate(text)+8;
+                +ContextMemory.messages(sessionState.memory.view(history))+ContextMemory.estimate(text)+ImageInput.estimate(pendingAttachments)+8;
         double estimateScale=contextScale();
         long protectedEstimate=(long)Math.ceil(estimated*estimateScale);
         int plannedReply=responseBudget();
@@ -1518,6 +1528,8 @@ public final class LocalChat extends JFrame {
         }
         if(maximum>0 && estimated>=maximum && !sessionState.autoCompact){setStatus("Contextul estimat depaseste limita. Foloseste /compact sau configureaza contextul corect.",true);return;}
 
+        final List<ImageInput.Ref> imageInputs;
+        try{imageInputs=ImageInput.snapshot(pendingAttachments,appDir.resolve("atasamente_imagini"),configFile);}catch(IOException|RuntimeException error){setStatus("Nu pot pregati imaginile: {0}",true,error.getMessage());return;}
         final String label = SavedProviders.label(shownSelection,url) + " · " + model;
         List<Skills.Skill> skills = useTools ? Skills.load(skillsDir) : Collections.emptyList();
         PathMap paths = pathMap();
@@ -1526,7 +1538,7 @@ public final class LocalChat extends JFrame {
         if(tools!=null)tools.memories(memories(),memoryProject(draft),draft,conversationFile==null?"":conversationFile.getFileName().toString());
         final String system = useTools ? agentPrompt(workDir, skills, paths) : plainPrompt();
         final boolean stream = streamBox.isSelected();
-        final Turn turn = new Turn(ChatClient.Message.user(text), new Agent(tools).interactions(useTools), label);turn.originalDraft=draft;turn.attachments=pendingAttachments;turn.modelCache=currentModelCache();turn.modelId=model;
+        final Turn turn = new Turn(ChatClient.Message.user(text).withImages(imageInputs), new Agent(tools).interactions(useTools), label);turn.originalDraft=draft;turn.attachments=pendingAttachments;turn.modelCache=currentModelCache();turn.modelId=model;
         int budget=responseBudget();
         final List<Map<String,Object>> autoTasks=useTools&&Boolean.parseBoolean(config.getProperty("agents.automatic","true"))?AutoDelegation.plan(draft,workDir,ProjectLocations.project(draft,workDir,sessionState.factoryProject)):List.of();
         if(useTools&&(WorkProgress.agentsRequested(draft)||!autoTasks.isEmpty())){
