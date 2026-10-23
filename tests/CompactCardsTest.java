@@ -12,14 +12,15 @@ public final class CompactCardsTest {
     a.presentLocal(new ComposerAssist.Request("Project 506000 appears in multiple locations. Choose the factory and folder.",List.of(new ComposerAssist.Question("factory","Where should I process project 506000?",List.of(first,"2. Factory B — Y:\\Projects\\506000_A second location","3. Factory C — folder not yet confirmed","4. Factory D — folder not yet confirmed"))),List.of()),"fixture");
     JFrame frame=new JFrame();JPanel host=new JPanel();host.setLayout(new BoxLayout(host,BoxLayout.Y_AXIS));host.add(a);JScrollPane draft=new JScrollPane(input);draft.setAlignmentX(Component.LEFT_ALIGNMENT);host.add(draft);frame.add(host);frame.setSize(1200,430);frame.addNotify();frame.validate();frame.validate();
     check(a.getWidth()<=720&&a.getHeight()<=265,"bounded card on wide window");
-    var buttons=ComposerAssistTest.all(a).stream().filter(c->c instanceof JRadioButton).map(c->(JRadioButton)c).toList();var labels=ComposerAssistTest.all(a).stream().filter(c->c instanceof JTextArea t&&Boolean.TRUE.equals(t.getClientProperty("interaction.label"))).map(c->(JTextArea)c).toList();
-    check(buttons.size()==4&&labels.size()==4&&!labels.get(0).getText().startsWith("1."),"single visual numbering");
-    for(int i=0;i<4;i++){Point button=SwingUtilities.convertPoint(buttons.get(i),0,0,a),label=SwingUtilities.convertPoint(labels.get(i),0,0,a);check(Math.abs(button.y-label.y)<=2,"selectors align with first text line");}
+    var buttons=ComposerAssistTest.all(a).stream().filter(c->c instanceof JToggleButton b&&b.getClientProperty("interaction.option")!=null).map(c->(JToggleButton)c).toList();
+    check(buttons.size()==4&&buttons.stream().noneMatch(b->b.getText().matches("^[0-9]+[.)].*")),"plain text choices have no duplicated numbering");
+    check(buttons.stream().allMatch(b->b.getFont().getSize()<=12),"choice text stays compact");
+    check(buttons.get(0).getToolTipText().equals(first),"full original path remains inspectable");
     check(!a.send.isEnabled()&&input.getText().equals("Pending draft"),"compact layout does not authorize or edit draft");buttons.get(0).doClick();check(a.value("factory").equals(first),"original numbered choice retained");
     BufferedImage image=new BufferedImage(a.getWidth(),a.getHeight(),BufferedImage.TYPE_INT_RGB);Graphics2D g=image.createGraphics();g.setColor(host.getBackground());g.fillRect(0,0,image.getWidth(),image.getHeight());a.printAll(g);g.dispose();
     if(language.equals("ro"))javax.imageio.ImageIO.write(image,"png",home.resolve(dark?"compact-dark.png":"compact-light.png").toFile());
-    frame.setSize(430,430);frame.validate();frame.validate();check(a.getWidth()<=430&&labels.get(0).getWidth()>100&&labels.get(0).getWidth()<a.getWidth(),"fits narrow window");
-    check(labels.get(0).getPreferredSize().height>labels.get(0).getFontMetrics(labels.get(0).getFont()).getHeight(),"long option wraps vertically");
+    frame.setSize(430,430);frame.validate();frame.validate();check(a.getWidth()<=430&&buttons.get(0).getWidth()>100&&buttons.get(0).getWidth()<a.getWidth(),"fits narrow window");
+    check(buttons.get(0).getText().length()<=115&&buttons.get(0).getToolTipText().contains("long street"),"long path uses a short label without losing its full value");
     if(language.equals("ro")){BufferedImage small=new BufferedImage(a.getWidth(),a.getHeight(),BufferedImage.TYPE_INT_RGB);Graphics2D sg=small.createGraphics();sg.setColor(host.getBackground());sg.fillRect(0,0,small.getWidth(),small.getHeight());a.printAll(sg);sg.dispose();javax.imageio.ImageIO.write(small,"png",home.resolve(dark?"compact-narrow-dark.png":"compact-narrow-light.png").toFile());}
     a.presentLocal(new ComposerAssist.Request("Long summary ".repeat(90),List.of(new ComposerAssist.Question("q","Choose",List.of("Yes","No"))),List.of()),"long-title");frame.setSize(1200,430);frame.validate();frame.validate();check(a.getHeight()<=265,"long summary cannot enlarge the card without bound");
     frame.dispose();

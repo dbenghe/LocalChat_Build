@@ -1,3 +1,12 @@
+# 1.25.0 — 2026-10-23
+
+- Verificari independente MBS delegate automat de aplicatie, fara un apel suplimentar pentru planificare si fara lista fixa de modele. Selectia separa surse/istoric, import/catalog si dovezi PDF; simpla lungime a mesajului nu declanseaza agenti. Cel mult trei sarcini, doua simultane, cu modelul/furnizorul ales, rezultate si consum reale in panoul agentilor.
+- Agentii automati nu modifica proiecte, nu ruleaza shell si nu pornesc controale noi: inspecteaza dovezi si pot genera rapoarte locale private de comparatie. Coordonatorul pastreaza operatiile de productie si permisiunile. Optiune Unelte pentru dezactivare; o cerere explicita fara agenti are prioritate. Normal ramane fara unelte sau agenti MBS.
+- Propunerile sunt in aceeasi zona derulabila cu discutia, cu text mic si colturi rotunjite. Sugestiile optionale sunt legaturi text care editeaza ciorna, fara trimitere sau selectii predefinite. Editorul ramane utilizabil. Nu mai apar formulare deduse automat din proza istorica a modelului.
+- Deciziile necesare folosesc optiuni text si raspuns liber, fara checkbox/radio vizibil. Confirmarile reale de unelte apar punctual in chat; inchiderea/Stop refuza, iar alternativa libera este pastrata ca draft si nu reprezinta aprobare de executie.
+- Fabrica confirmata se pastreaza independent de compactare, inclusiv cand cererea compara doua fabrici sau reteaua este temporar indisponibila. O schimbare explicita ramane posibila; o locatie disponibila dar disparuta necesita reverificare.
+- Include corectia 1.24.2 pentru fragmentarea si checkpointurile private ale compactarii. Texte noi in sase limbi si teste offline de flux complet, permisiuni, teme si persistenta.
+
 # 1.24.2 — 2026-10-23
 
 - Compactarea automata foloseste aceleasi unitati pentru buget si fragmentare; un istoric de aproximativ 205 KB la context 131072 necesita trei fragmente in loc de noua, cu verificarea spatiului pentru memorie, raspuns si marja de siguranta.

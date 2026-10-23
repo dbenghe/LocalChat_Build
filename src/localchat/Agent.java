@@ -45,6 +45,8 @@ final class Agent {
     boolean recoveryIncomplete(){return recoveryIncomplete;}
     Agent interactions(boolean value){interactive=value;return this;}
     private AgentGroup team;
+    private ChatClient.ToolCall automaticDelegation;
+    Agent automaticDelegation(List<java.util.Map<String,Object>> tasks){if(!tasks.isEmpty())automaticDelegation=new ChatClient.ToolCall("auto-agents-"+java.util.UUID.randomUUID(),"run_agents",Json.obj("tasks",tasks));return this;}
     Agent group(AgentGroup value){team=value;return this;}
     private static final Object MUTATION_LOCK=new Object();
     private final ToolLoopGuard loopGuard=new ToolLoopGuard();
@@ -75,6 +77,14 @@ final class Agent {
         List<ChatClient.ToolSpec> specs = new ArrayList<>(tools == null ? Collections.emptyList() : tools.specs());
         if(team!=null&&tools!=null)specs.add(AgentGroup.spec());
         if(interactive&&tools!=null)specs.add(ComposerAssist.spec());
+        if(automaticDelegation!=null&&team!=null&&tools!=null){
+            if(cancelled)return;var call=automaticDelegation;automaticDelegation=null;
+            synchronized(added){added.add(ChatClient.Message.assistant("",List.of(call),label));}
+            ui.toolStarted(call);Tools.Result result;
+            try{result=team.run(call,p,url,key,model,label,system,ui);}catch(IOException failed){result=Tools.Result.error(failed.getMessage());}
+            synchronized(added){added.add(ChatClient.Message.toolResult(call.id,result.text,result.isError));}
+            ui.toolFinished(call,result);publishContext(base,ui);if(cancelled)return;
+        }
         int protocolRepairs=0;
         int interactionFailures=0,discoveryRepairs=0,discoveryStarted=-1;boolean discoveryFinal=false;String discoveryHint="",lastRepeated="";
         for (int step = 0; step < maximumSteps; step++) {

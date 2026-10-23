@@ -643,5 +643,10 @@
   "Nou": "Despues",
   "Fabrica": "Fabrica",
   "Mod doar citire: modificarile si comenzile sunt blocate.": "Solo lectura: cambios y comandos bloqueados.",
-  "Compactare: fragment {0}/{1} recuperat local, fara cerere API.": "Compactación: fragmento {0}/{1} recuperado localmente, sin solicitud API."
+  "Compactare: fragment {0}/{1} recuperat local, fara cerere API.": "Compactación: fragmento {0}/{1} recuperado localmente, sin solicitud API.",
+  "Agenti automati pentru verificari independente": "Agentes automáticos para comprobaciones independientes",
+  "Surse si istoric": "Fuentes e historial",
+  "Liste si articole": "Listas y artículos",
+  "Desene si rapoarte": "Planos e informes",
+  "Disponibile in chat.": "Disponibles en el chat."
 }

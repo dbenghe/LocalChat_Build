@@ -643,5 +643,10 @@
   "Nou": "Nowe",
   "Fabrica": "Zaklad",
   "Mod doar citire: modificarile si comenzile sunt blocate.": "Tryb tylko do odczytu: zmiany i polecenia zablokowane.",
-  "Compactare: fragment {0}/{1} recuperat local, fara cerere API.": "Kompaktowanie: fragment {0}/{1} przywrócony lokalnie, bez żądania API."
+  "Compactare: fragment {0}/{1} recuperat local, fara cerere API.": "Kompaktowanie: fragment {0}/{1} przywrócony lokalnie, bez żądania API.",
+  "Agenti automati pentru verificari independente": "Automatyczni agenci do niezależnych kontroli",
+  "Surse si istoric": "Źródła i historia",
+  "Liste si articole": "Listy i artykuły",
+  "Desene si rapoarte": "Rysunki i raporty",
+  "Disponibile in chat.": "Dostępne w czacie."
 }

@@ -55,6 +55,10 @@ if ($LASTEXITCODE) { throw 'Offline audit permissions/integration tests failed' 
 if ($LASTEXITCODE) { throw 'Compaction time budget tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/compaction-resume-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.CompactionResumeTest
 if ($LASTEXITCODE) { throw 'Compaction checkpoint recovery tests failed' }
+foreach($taskNewTest in @('AutomaticDelegationTest','InlineApprovalTest','InlineScrollTest')){
+    & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/$taskNewTest-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" "localchat.$taskNewTest"
+    if ($LASTEXITCODE) { throw "Failed: $taskNewTest" }
+}
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/catalogue-manager-home" "-Daudit.python=$taskPdfPython" "-Daudit.package=$PSScriptRoot/pdfcontrol" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.CatalogueManagerTest
 if ($LASTEXITCODE) { throw 'Catalogue manager UI/service tests failed' }
 & "$taskJdk/bin/java.exe" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.SettingsStoreTest
@@ -80,7 +84,7 @@ if ($LASTEXITCODE) { throw 'Hotfolder project reuse/email preparation tests fail
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/composer-assist-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ComposerAssistTest
 if ($LASTEXITCODE) { throw 'Composer interaction regression tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/interaction-cards-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.InteractionCardsTest
-if ($LASTEXITCODE) { throw 'Interactive checkbox/next-action card tests failed' }
+if ($LASTEXITCODE) { throw 'Compact inline decision/suggestion tests failed' }
 & "$taskJdk/bin/java.exe" "-Dlocalchat.home=$taskBuild/interaction-recovery-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.InteractionRecoveryTest
 if ($LASTEXITCODE) { throw 'Invalid interaction recovery tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/compact-cards-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.CompactCardsTest

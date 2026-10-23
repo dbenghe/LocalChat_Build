@@ -115,7 +115,9 @@ final class Tools {
     Tools attachments(List<String> paths){attachedPaths=List.copyOf(paths);return this;}
     private LocalMemories memories;private String memoryProject="",memoryUser="",memoryChat="";
     Tools memories(LocalMemories store,String project,String user,String chat){memories=store;memoryProject=project;memoryUser=user;memoryChat=chat;return this;}
-    private boolean readOnly;
+    private boolean readOnly,analysisOnly,analysisReports;
+    Tools analysisOnly(){analysisReports=!readOnly;readOnly=true;analysisOnly=true;return this;}
+    private boolean analysisTool(String name){McpRef ref=mcpTools.get(name);return ref!=null?ref.tool().readOnly:Set.of("list_dir","find_files","search_text","read_file","read_skill").contains(name)||(analysisReports&&name.equals("pdfcontrol_compare_import"));}
     Tools readOnly(boolean value){readOnly=value;return this;}
 
     Tools(Context ctx, List<Skills.Skill> skills) {
@@ -237,6 +239,7 @@ final class Tools {
             Map<String, Object> schema = t.schema.containsKey("type") ? t.schema : Json.obj("type", "object", "properties", Json.obj());
             out.add(new ChatClient.ToolSpec(e.getKey(), "[MCP " + e.getValue().server().name + "] " + t.description, schema));
         }
+        if(analysisOnly)out.removeIf(spec->!analysisTool(spec.name));
         return out;
     }
 
@@ -251,6 +254,7 @@ final class Tools {
         Map<String, Object> a = call.args;
         try {
             ensureActive();
+            if(analysisOnly&&!analysisTool(call.name))throw new ToolError(I18n.text("Mod doar citire: modificarile si comenzile sunt blocate."));
             if (a.containsKey(INVALID_ARGS)) throw new ToolError("Argumentele nu sunt JSON valid: " + a.get(INVALID_ARGS));
             McpRef ref = mcpTools.get(call.name);
             if (ref != null) return callMcp(ref, a);
@@ -753,7 +757,7 @@ final class Tools {
         if(!Files.isRegularFile(catalogue)||!(catName.endsWith(".json")||catName.endsWith(".xlsx")))throw new ToolError("Factory catalogue is missing or unsupported");
         request.put("catalogue",catalogue.toRealPath().toString());
         Path reports=ctx.secretFile().toAbsolutePath().getParent().resolve("analyses/imports");
-        allow(Access.WRITE,I18n.text("Compara local listele de import"),Json.write(request)+"\n"+reports);
+        allow(analysisOnly&&analysisReports?Access.READ:Access.WRITE,I18n.text("Compara local listele de import"),Json.write(request)+"\n"+reports);
         ensureActive();Path temp=Files.createTempFile("localchat-import-audit-",".json");
         try{
             Files.writeString(temp,Json.write(request),StandardCharsets.UTF_8);
