@@ -27,7 +27,9 @@ def main():
         if not file.is_file() or hashlib.sha256(file.read_bytes()).hexdigest()!=digest:raise SystemExit('Owned engine differs from development manifest: '+name)
     shutil.copy2(integration/'pdfcontrol_bridge.py',package/'octop_mcp.py')
     shutil.copy2(integration/'catalogue_update.py',package/'catalogue_update.py')
+    shutil.copy2(integration/'import_audit.py',package/'import_audit.py')
     registered=json.loads(manifest.read_text(encoding='utf-8'));registered['sha256']['catalogue_update.py']=hashlib.sha256((package/'catalogue_update.py').read_bytes()).hexdigest()
+    registered['sha256']['import_audit.py']=hashlib.sha256((package/'import_audit.py').read_bytes()).hexdigest()
     manifest.write_text(json.dumps(registered,indent=2)+'\n',encoding='utf-8')
     print('PASS: LocalChat owned engine manifest verified; bridge staged. Legacy installation was not read or changed.')
 

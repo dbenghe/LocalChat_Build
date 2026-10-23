@@ -2,7 +2,7 @@ package localchat;
 import java.util.*;
 /** Limits exact repeated discovery calls; job-status polling and changed work are not duplicates. */
 final class ToolLoopGuard {
- private static final Set<String> READS=Set.of("read_skill","list_dir","find_files","read_file","search_text","run_agents",ComposerAssist.TOOL);
+ private static final Set<String> READS=Set.of("pdfcontrol_compare_import","read_skill","list_dir","find_files","read_file","search_text","run_agents",ComposerAssist.TOOL);
  private final Map<String,Integer> counts=new HashMap<>();private final Map<String,Tools.Result> skills=new HashMap<>();
  private final Set<String> evidence=new HashSet<>();
  private boolean read(String name){return READS.contains(name)||name.endsWith("pdfcontrol_project_files")||name.endsWith("pdfcontrol_read_document")||name.endsWith("pdfcontrol_list_projects");}

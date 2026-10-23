@@ -640,6 +640,7 @@ public final class LocalChat extends JFrame {
         tools.add(item("Configurare tool-uri si MCP (unelte.json)", null, e -> openInEditor(toolsConfigFile, DEFAULT_TOOLS_CONFIG)));
         tools.add(item("Reporneste serverele MCP", null, e -> reloadTools()));
         tools.add(item("PDFCONTROL: operatii directe…",null,e->showPdfControl()));
+        tools.add(item("Compara local listele de import",null,e->showImportAudit()));
         tools.add(item("Catalog modele",null,e->showModelCatalog(false)));
         tools.add(item("Exporta toate chaturile…",null,e->exportAllSessions()));
         tools.add(item("Salveaza setarile si modelul implicit",KeyStroke.getKeyStroke(KeyEvent.VK_S,InputEvent.CTRL_DOWN_MASK),e->saveDefaults()));
@@ -912,6 +913,14 @@ public final class LocalChat extends JFrame {
         String label=t("Deschide {0}",name.isBlank()?t("Folder de lucru"):name);downloadsButton.setText(label);downloadsButton.setToolTipText(raw);downloadsButton.getAccessibleContext().setAccessibleName(label);
         downloadsButton.setPreferredSize(new Dimension(Math.min(310,downloadsButton.getFontMetrics(downloadsButton.getFont()).stringWidth(label)+40),26));
     }
+    private void showImportAudit() {
+        Path folder=currentWorkDir();if(folder==null)return;
+        // Dedicated tool instance; never borrows the active turn, history, queue or model connection.
+        Tools audit=new Tools(new Tools.Context(folder,skillsDir,rulesFile,configFile,commandEnv(),previewPython(),new Mcp(),pathMap(),
+                permissionBox.getSelectedIndex()==1,EnumSet.noneOf(Tools.Access.class),this::askPermission),List.of()).readOnly(permissionBox.getSelectedIndex()==2);
+        new ImportAuditDialog(this,folder,audit).setVisible(true);
+    }
+
     private void showPdfControl() {
         if(parallelBlocked(input.getText(),currentWorkDir()))return;
         if(busy){setStatus("Opreste generarea inainte de aceasta comanda.",true);return;}
@@ -1764,6 +1773,7 @@ public final class LocalChat extends JFrame {
                 .append("- Drawing verification must deliver the original control RAPPORT PDF with available annotated drawings. Old/new revision comparison must deliver Vergelijking_OUD_NIEUW.pdf and available differences PDFs. These are distinct operations: V and W are not old and new revisions. Each operation delivers its own PDF; when both operations are requested, deliver both actual PDF outputs, never Markdown substitutes.\n")
                 .append("- PDFCONTROL accepts local project sources, including Controle/Atasamente folders. Use exact project-relative paths from pdfcontrol_project_files (pdf_source=true); never guess basenames or require a server copy. Do not change the requested project or drawing set to bypass an error. Six V/W files mean six files, not twelve. Read the schema of each tool.\n")
                 .append("- A PDFCONTROL start response is only a job receipt. Poll that same job; successful delivery requires a terminal done/partial status, matching source_files, delivery_verified=true, and PDF paths returned in artifacts. For failed/cancelled jobs report the actual error, never claim a report was generated. Repeated validation errors require diagnosis, not repeated random paths or shell commands.\n")
+                .append("- For import lists versus factory articles/drawing tables, prefer pdfcontrol_compare_import with exact selected files and one confirmed factory per call. It computes locally without inference and returns a short summary plus complete local JSON/HTML evidence. Do not read full spreadsheets/catalogues into context or recreate the comparison with run_command. Read only relevant report fragments for unresolved items. A catalogue name match is not physical equivalence; missing OCR, dimensions or unit evidence remain partial. Never claim the audit corrected XLSX or copied server files.\n")
                 .append("- For PDFCONTROL JSON details use exactly the results path returned by pdfcontrol_job_status (check jobs store it under run_folder/engine/checked/resultaten.json). Never construct run_folder/checked/resultaten.json. A missing guessed path does not invalidate a verified PDF or justify rerunning a completed job. Use summary for counts; processed source PDFs and drawing sheets are distinct.\n")
                 .append("- Find things out with the tools (list_dir, find_files, search_text, read_file) instead of guessing; never invent tool results.\n")
                 .append("- Load a matching skill when needed. If it has already been read in the active conversation, resume from confirmed progress and read only missing relevant sections. A request to continue is not a request to restart the complete procedure.\n")

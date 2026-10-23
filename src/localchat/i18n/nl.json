@@ -590,5 +590,18 @@
   "Recuperez dupa citiri repetitive; operatiile confirmate raman pastrate.": "Herstel na herhaalde leesacties; bevestigde acties blijven bewaard.",
   "Pregatesc rezultatul partial; limita de recuperare a fost atinsa.": "Gedeeltelijk resultaat voorbereiden; herstellimiet bereikt.",
   "Rezultat partial: modelul nu a incheiat verificarea ceruta.": "Gedeeltelijk resultaat: het model heeft de gevraagde controle niet afgerond.",
-  "LocalChat: recuperarea nu a produs un raspuns final utilizabil. Verificarea ramane incompleta.\nUltimul apel repetat: {0}\nIstoricul si rezultatele uneltelor sunt pastrate. Poti schimba modelul in aceeasi conversatie si continua pasul ramas.": "LocalChat: herstel leverde geen bruikbaar eindantwoord op. De controle blijft onvolledig.\nLaatste herhaalde aanroep: {0}\nDe geschiedenis en toolresultaten blijven bewaard. Je kunt in hetzelfde gesprek een ander model kiezen en de resterende stap voortzetten."
+  "LocalChat: recuperarea nu a produs un raspuns final utilizabil. Verificarea ramane incompleta.\nUltimul apel repetat: {0}\nIstoricul si rezultatele uneltelor sunt pastrate. Poti schimba modelul in aceeasi conversatie si continua pasul ramas.": "LocalChat: herstel leverde geen bruikbaar eindantwoord op. De controle blijft onvolledig.\nLaatste herhaalde aanroep: {0}\nDe geschiedenis en toolresultaten blijven bewaard. Je kunt in hetzelfde gesprek een ander model kiezen en de resterende stap voortzetten.",
+  "Compara local listele de import": "Importlijsten lokaal vergelijken",
+  "Controlul local a depasit limita de timp. Sursele au ramas nemodificate.": "De lokale controle duurde te lang. Bronnen zijn ongewijzigd.",
+  "Fara API: selecteaza fabrica, listele si optional desenele.": "Zonder API: kies fabriek, lijsten en eventueel tekeningen.",
+  "Catalog gol: snapshotul fabricii selectate.": "Lege catalogus: opgeslagen catalogus van de gekozen fabriek.",
+  "Liste de import": "Importlijsten",
+  "Desene PDF": "PDF-tekeningen",
+  "Catalog XLSX sau JSON": "XLSX- of JSON-catalogus",
+  "Oprire solicitata; sursele raman nemodificate.": "Stop aangevraagd; bronnen blijven ongewijzigd.",
+  "Alege proiectul, fabrica si cel putin o lista de import.": "Kies project, fabriek en minimaal een importlijst.",
+  "Comparatie locala in curs; nu se trimit date la model.": "Lokale vergelijking bezig; geen gegevens naar het model.",
+  "Control local nereusit; consulta detaliile.": "Lokale controle mislukt; bekijk de details.",
+  "Control local terminat. Sursele nu au fost modificate.": "Lokale controle gereed. Bronnen zijn niet gewijzigd.",
+  "Compactarea a depasit timpul de asteptare; istoricul si memoria sunt pastrate. Poti folosi comparatia locala fara API sau relua cu alt model.": "Contextsamenvatting duurde te lang; geschiedenis en geheugen zijn bewaard. Gebruik de lokale vergelijking zonder API of hervat met een ander model."
 }

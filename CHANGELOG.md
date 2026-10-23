@@ -1,3 +1,10 @@
+# 1.24.0 — 2026-10-23
+
+- Instrument local `pdfcontrol_compare_import`: liste XLSX/CSV, catalog explicit al unei singure fabrici si tabele de articole din PDF-urile selectate. Citire locala fara inferenta, surse pastrate, rapoarte JSON/HTML cu randuri, pagini si hashuri.
+- Rezumat scurt in chat si cache invalidat de schimbarea surselor/motorului. Potrivirile fizice, scanarile nerecunoscute, unitatile lipsa si cotele nelegate sigur raman de verificat, fara corecturi sau aprobari inventate.
+- Unelte > Compara local listele de import permite executia directa fara model si fara compactarea chatului. Selectie explicita de proiect/fabrica/fisiere, permisiuni si Stop, texte in sase limbi si ambele teme.
+- Compactarea are o limita separata de asteptare la citire de 120 s si buget comun de 300 s verificat intre fragmente/reincercari si la citirea raspunsului. Timeout nu retrimite automat si nu modifica memoria/istoricul. Generarea normala isi pastreaza limita existenta. Nu elimina erorile 504 ale furnizorului.
+
 # 1.23.6 — 2026-10-22
 
 - Recuperarea din bucle permite cel mult sase pasi suplimentari de unelte, apoi cere un rezultat partial fara unelte. Nu reporneste actiunile confirmate.

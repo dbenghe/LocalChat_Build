@@ -590,5 +590,18 @@
   "Recuperez dupa citiri repetitive; operatiile confirmate raman pastrate.": "Odzyskiwanie po powtarzanych odczytach; potwierdzone działania są zachowane.",
   "Pregatesc rezultatul partial; limita de recuperare a fost atinsa.": "Przygotowywanie wyniku częściowego; osiągnięto limit odzyskiwania.",
   "Rezultat partial: modelul nu a incheiat verificarea ceruta.": "Wynik częściowy: model nie zakończył żądanej weryfikacji.",
-  "LocalChat: recuperarea nu a produs un raspuns final utilizabil. Verificarea ramane incompleta.\nUltimul apel repetat: {0}\nIstoricul si rezultatele uneltelor sunt pastrate. Poti schimba modelul in aceeasi conversatie si continua pasul ramas.": "LocalChat: odzyskiwanie nie dało użytecznej odpowiedzi końcowej. Weryfikacja pozostaje niepełna.\nOstatnie powtórzone wywołanie: {0}\nHistoria i wyniki narzędzi są zachowane. Możesz zmienić model w tej samej rozmowie i kontynuować pozostały krok."
+  "LocalChat: recuperarea nu a produs un raspuns final utilizabil. Verificarea ramane incompleta.\nUltimul apel repetat: {0}\nIstoricul si rezultatele uneltelor sunt pastrate. Poti schimba modelul in aceeasi conversatie si continua pasul ramas.": "LocalChat: odzyskiwanie nie dało użytecznej odpowiedzi końcowej. Weryfikacja pozostaje niepełna.\nOstatnie powtórzone wywołanie: {0}\nHistoria i wyniki narzędzi są zachowane. Możesz zmienić model w tej samej rozmowie i kontynuować pozostały krok.",
+  "Compara local listele de import": "Porownaj lokalnie listy importu",
+  "Controlul local a depasit limita de timp. Sursele au ramas nemodificate.": "Przekroczono czas kontroli. Zrodla bez zmian.",
+  "Fara API: selecteaza fabrica, listele si optional desenele.": "Bez API: wybierz zaklad, listy i opcjonalne rysunki.",
+  "Catalog gol: snapshotul fabricii selectate.": "Pusty katalog: zapisana kopia wybranego zakladu.",
+  "Liste de import": "Listy importu",
+  "Desene PDF": "Rysunki PDF",
+  "Catalog XLSX sau JSON": "Katalog XLSX lub JSON",
+  "Oprire solicitata; sursele raman nemodificate.": "Zadano zatrzymania; zrodla bez zmian.",
+  "Alege proiectul, fabrica si cel putin o lista de import.": "Wybierz projekt, zaklad i przynajmniej jedna liste.",
+  "Comparatie locala in curs; nu se trimit date la model.": "Trwa porownanie lokalne; bez danych do modelu.",
+  "Control local nereusit; consulta detaliile.": "Kontrola lokalna nieudana; sprawdz szczegoly.",
+  "Control local terminat. Sursele nu au fost modificate.": "Kontrola zakonczona. Zrodla bez zmian.",
+  "Compactarea a depasit timpul de asteptare; istoricul si memoria sunt pastrate. Poti folosi comparatia locala fara API sau relua cu alt model.": "Przekroczono czas kompaktowania; historia i pamiec zachowane. Uzyj lokalnego porownania bez API lub wznow z innym modelem."
 }

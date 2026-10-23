@@ -590,5 +590,18 @@
   "Recuperez dupa citiri repetitive; operatiile confirmate raman pastrate.": "Recovering from repeated reads; confirmed operations remain preserved.",
   "Pregatesc rezultatul partial; limita de recuperare a fost atinsa.": "Preparing partial results; the recovery limit was reached.",
   "Rezultat partial: modelul nu a incheiat verificarea ceruta.": "Partial result: the model did not finish the requested check.",
-  "LocalChat: recuperarea nu a produs un raspuns final utilizabil. Verificarea ramane incompleta.\nUltimul apel repetat: {0}\nIstoricul si rezultatele uneltelor sunt pastrate. Poti schimba modelul in aceeasi conversatie si continua pasul ramas.": "LocalChat: recovery did not produce a usable final answer. The check remains incomplete.\nLast repeated call: {0}\nHistory and tool results remain preserved. You can switch models in the same conversation and continue the remaining step."
+  "LocalChat: recuperarea nu a produs un raspuns final utilizabil. Verificarea ramane incompleta.\nUltimul apel repetat: {0}\nIstoricul si rezultatele uneltelor sunt pastrate. Poti schimba modelul in aceeasi conversatie si continua pasul ramas.": "LocalChat: recovery did not produce a usable final answer. The check remains incomplete.\nLast repeated call: {0}\nHistory and tool results remain preserved. You can switch models in the same conversation and continue the remaining step.",
+  "Compara local listele de import": "Compare import lists locally",
+  "Controlul local a depasit limita de timp. Sursele au ramas nemodificate.": "Local audit timed out. Sources were not changed.",
+  "Fara API: selecteaza fabrica, listele si optional desenele.": "No API: select factory, lists and optional drawings.",
+  "Catalog gol: snapshotul fabricii selectate.": "Empty catalogue: saved snapshot for selected factory.",
+  "Liste de import": "Import lists",
+  "Desene PDF": "PDF drawings",
+  "Catalog XLSX sau JSON": "XLSX or JSON catalogue",
+  "Oprire solicitata; sursele raman nemodificate.": "Stop requested; sources remain unchanged.",
+  "Alege proiectul, fabrica si cel putin o lista de import.": "Select project, factory and at least one import list.",
+  "Comparatie locala in curs; nu se trimit date la model.": "Local comparison running; no data sent to the model.",
+  "Control local nereusit; consulta detaliile.": "Local audit failed; see details.",
+  "Control local terminat. Sursele nu au fost modificate.": "Local audit finished. Sources were not changed.",
+  "Compactarea a depasit timpul de asteptare; istoricul si memoria sunt pastrate. Poti folosi comparatia locala fara API sau relua cu alt model.": "Compaction timed out; history and memory are preserved. You can use the local comparison without an API or resume with another model."
 }

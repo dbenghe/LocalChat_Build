@@ -590,5 +590,18 @@
   "Recuperez dupa citiri repetitive; operatiile confirmate raman pastrate.": "Tekrarlanan okumalardan kurtarılıyor; onaylanan işlemler korunur.",
   "Pregatesc rezultatul partial; limita de recuperare a fost atinsa.": "Kısmi sonuç hazırlanıyor; kurtarma sınırına ulaşıldı.",
   "Rezultat partial: modelul nu a incheiat verificarea ceruta.": "Kısmi sonuç: model istenen kontrolü tamamlamadı.",
-  "LocalChat: recuperarea nu a produs un raspuns final utilizabil. Verificarea ramane incompleta.\nUltimul apel repetat: {0}\nIstoricul si rezultatele uneltelor sunt pastrate. Poti schimba modelul in aceeasi conversatie si continua pasul ramas.": "LocalChat: kurtarma kullanılabilir bir son yanıt üretmedi. Kontrol tamamlanmadı.\nSon tekrarlanan çağrı: {0}\nGeçmiş ve araç sonuçları korunur. Aynı konuşmada modeli değiştirip kalan adıma devam edebilirsiniz."
+  "LocalChat: recuperarea nu a produs un raspuns final utilizabil. Verificarea ramane incompleta.\nUltimul apel repetat: {0}\nIstoricul si rezultatele uneltelor sunt pastrate. Poti schimba modelul in aceeasi conversatie si continua pasul ramas.": "LocalChat: kurtarma kullanılabilir bir son yanıt üretmedi. Kontrol tamamlanmadı.\nSon tekrarlanan çağrı: {0}\nGeçmiş ve araç sonuçları korunur. Aynı konuşmada modeli değiştirip kalan adıma devam edebilirsiniz.",
+  "Compara local listele de import": "Iceri aktarma listelerini yerel karsilastir",
+  "Controlul local a depasit limita de timp. Sursele au ramas nemodificate.": "Yerel denetim zaman asimina ugradi. Kaynaklar degistirilmedi.",
+  "Fara API: selecteaza fabrica, listele si optional desenele.": "API yok: fabrika, listeler ve istege bagli cizimleri secin.",
+  "Catalog gol: snapshotul fabricii selectate.": "Bos katalog: secilen fabrikanin kayitli kopyasi.",
+  "Liste de import": "Iceri aktarma listeleri",
+  "Desene PDF": "PDF cizimleri",
+  "Catalog XLSX sau JSON": "XLSX veya JSON katalog",
+  "Oprire solicitata; sursele raman nemodificate.": "Durdurma istendi; kaynaklar degistirilmez.",
+  "Alege proiectul, fabrica si cel putin o lista de import.": "Proje, fabrika ve en az bir liste secin.",
+  "Comparatie locala in curs; nu se trimit date la model.": "Yerel karsilastirma suruyor; modele veri gonderilmez.",
+  "Control local nereusit; consulta detaliile.": "Yerel denetim basarisiz; ayrintilara bakin.",
+  "Control local terminat. Sursele nu au fost modificate.": "Yerel denetim tamamlandi. Kaynaklar degistirilmedi.",
+  "Compactarea a depasit timpul de asteptare; istoricul si memoria sunt pastrate. Poti folosi comparatia locala fara API sau relua cu alt model.": "Baglam sikistirma zaman asimina ugradi; gecmis ve bellek korundu. API olmadan yerel karsilastirmayi kullanin veya baska modelle surdurun."
 }

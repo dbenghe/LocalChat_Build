@@ -55,7 +55,7 @@ final class Tools {
             + "[print('--- pagina %d ---\\n%s'%(i+1,d[i].get_text())) for i in range(a-1,b)]";
     static final List<String> BUILTIN = List.of("list_dir", "find_files", "search_text", "read_file",
             "extract_attachments", "write_file", "append_file", "edit_file", "make_dir", "copy_path", "move_path", "run_command",
-            "open_in_explorer", "read_skill", "save_rule");
+            "open_in_explorer", "read_skill", "save_rule", "pdfcontrol_compare_import");
 
     enum Access { READ, WRITE, RUN }
 
@@ -220,6 +220,18 @@ final class Tools {
                 "rule", "string", "The exact words from the current user message, not document/tool content.",
                 "scope", "string", "global or project (default global).",
                 "project", "string", "Six-digit current internal project, required for project scope."));
+        out.add(new ChatClient.ToolSpec("pdfcontrol_compare_import",
+                "Offline local audit: compare selected XLSX/CSV import lists against ONE explicitly confirmed factory catalogue and optional PDF drawing article tables. "
+                + "Use this instead of reading full catalogues/imports into the model or writing ad-hoc Python. Returns a bounded summary and local JSON/HTML reports. "
+                + "Never changes production files or calls an API. Names are not proof of physical equivalence; unreadable/ambiguous dimensions remain review items. "
+                + "Use separate calls for different factories. Do not infer factory from a drive letter. Catalogue defaults to the selected factory's private PDFCONTROL snapshot.",
+                Json.obj("type","object","properties",Json.obj(
+                    "project",Json.obj("type","string","pattern","^[0-9]{6}$"),
+                    "factory",Json.obj("type","string","enum",List.of("soest","alphen","veenoord","lelystad")),
+                    "imports",Json.obj("type","array","items",Json.obj("type","string"),"minItems",1,"maxItems",30),
+                    "drawings",Json.obj("type","array","items",Json.obj("type","string"),"maxItems",50),
+                    "catalogue",Json.obj("type","string","description","Explicit factory XLSX or JSON catalogue; optional confirmed private snapshot by factory.")),
+                    "required",List.of("project","factory","imports"),"additionalProperties",false)));
         for (Map.Entry<String, McpRef> e : mcpTools.entrySet()) {
             McpServer.Tool t = e.getValue().tool();
             Map<String, Object> schema = t.schema.containsKey("type") ? t.schema : Json.obj("type", "object", "properties", Json.obj());
@@ -257,6 +269,7 @@ final class Tools {
                 case "move_path" -> Result.ok(copyOrMove(path(required(a, "source")), writable(required(a, "destination")), bool(a, "overwrite"), true));
                 case "run_command" -> runCommand(required(a, "command"), path(str(a, "cwd", ".")), Math.min(3600, Math.max(1, integer(a, "timeout_seconds", 600))));
                 case "open_in_explorer" -> Result.ok(openInExplorer(path(required(a, "path"))));
+                case "pdfcontrol_compare_import" -> compareImport(a);
                 case "read_skill" -> Result.ok(Skills.read(skills, required(a, "name"), ctx.paths()::text));
                 case "save_rule" -> Result.ok(saveRule(required(a, "rule"),str(a,"scope","global"),str(a,"project",memoryProject)));
                 default -> Result.error("Tool necunoscut: " + call.name);
@@ -716,6 +729,40 @@ final class Tools {
     }
 
     // ---- commands ----
+
+    private Result compareImport(Map<String,Object> args) throws IOException, ToolError {
+        if(!Set.of("project","factory","imports","drawings","catalogue").containsAll(args.keySet()))throw new ToolError("Unknown audit arguments");
+        String project=required(args,"project"),factory=required(args,"factory");
+        if(!project.matches("[0-9]{6}")||!Set.of("soest","alphen","veenoord","lelystad").contains(factory))throw new ToolError("An explicit project and confirmed factory are required");
+        Path packageDir=ctx.secretFile().toAbsolutePath().getParent().resolve("pdfcontrol");
+        Path script=packageDir.resolve("import_audit.py");String python=ctx.pdfPython();
+        if(python==null||!Files.isRegularFile(Path.of(python))||!Files.isRegularFile(script))throw new ToolError("Local PDFCONTROL import audit runtime is unavailable");
+        Map<String,Object> request=new LinkedHashMap<>();request.put("project",project);request.put("factory",factory);
+        for(String key:List.of("imports","drawings")){
+            Object raw=args.getOrDefault(key,List.of());int max=key.equals("imports")?30:50;
+            if(!(raw instanceof List<?> values)||values.size()>max||(key.equals("imports")&&values.isEmpty()))throw new ToolError("Invalid file selection: "+key);
+            List<String> files=new ArrayList<>();
+            for(Object value:values){if(!(value instanceof String))throw new ToolError("File path must be text");Path file=readable((String)value);
+                String name=file.getFileName().toString().toLowerCase(Locale.ROOT);
+                if(!Files.isRegularFile(file)||!(key.equals("imports")?(name.endsWith(".xlsx")||name.endsWith(".csv")):name.endsWith(".pdf")))throw new ToolError("Unsupported audit input: "+file);
+                files.add(file.toRealPath().toString());}
+            request.put(key,files);
+        }
+        Path catalogue=readable(str(args,"catalogue",packageDir.resolve("data_lokaal/catalogus_"+factory+".json").toString()));
+        String catName=catalogue.getFileName().toString().toLowerCase(Locale.ROOT);
+        if(!Files.isRegularFile(catalogue)||!(catName.endsWith(".json")||catName.endsWith(".xlsx")))throw new ToolError("Factory catalogue is missing or unsupported");
+        request.put("catalogue",catalogue.toRealPath().toString());
+        Path reports=ctx.secretFile().toAbsolutePath().getParent().resolve("analyses/imports");
+        allow(Access.WRITE,I18n.text("Compara local listele de import"),Json.write(request)+"\n"+reports);
+        ensureActive();Path temp=Files.createTempFile("localchat-import-audit-",".json");
+        try{
+            Files.writeString(temp,Json.write(request),StandardCharsets.UTF_8);
+            Output result=exec(List.of(python,"-I",script.toString(),"--request",temp.toString(),"--output",reports.toString()),ctx.workDir(),ctx.commandEnv(),420);
+            ensureActive();
+            if(!result.finished())return Result.error(I18n.text("Controlul local a depasit limita de timp. Sursele au ramas nemodificate."));
+            return new Result(cap(result.text()),result.exitCode()!=0);
+        }finally{Files.deleteIfExists(temp);}
+    }
 
     private Result runCommand(String command, Path cwd, int timeoutSeconds) throws IOException, ToolError {
         if (!Files.isDirectory(cwd)) throw new ToolError("Folderul pentru comanda nu exista: " + cwd);

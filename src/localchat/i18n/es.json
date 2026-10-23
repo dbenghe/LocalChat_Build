@@ -590,5 +590,18 @@
   "Recuperez dupa citiri repetitive; operatiile confirmate raman pastrate.": "Recuperando lecturas repetidas; se conservan las acciones confirmadas.",
   "Pregatesc rezultatul partial; limita de recuperare a fost atinsa.": "Preparando el resultado parcial; se alcanzó el límite de recuperación.",
   "Rezultat partial: modelul nu a incheiat verificarea ceruta.": "Resultado parcial: el modelo no terminó la comprobación solicitada.",
-  "LocalChat: recuperarea nu a produs un raspuns final utilizabil. Verificarea ramane incompleta.\nUltimul apel repetat: {0}\nIstoricul si rezultatele uneltelor sunt pastrate. Poti schimba modelul in aceeasi conversatie si continua pasul ramas.": "LocalChat: la recuperación no produjo una respuesta final utilizable. La comprobación sigue incompleta.\nÚltima llamada repetida: {0}\nSe conservan el historial y los resultados de las herramientas. Puedes cambiar de modelo en la misma conversación y continuar el paso pendiente."
+  "LocalChat: recuperarea nu a produs un raspuns final utilizabil. Verificarea ramane incompleta.\nUltimul apel repetat: {0}\nIstoricul si rezultatele uneltelor sunt pastrate. Poti schimba modelul in aceeasi conversatie si continua pasul ramas.": "LocalChat: la recuperación no produjo una respuesta final utilizable. La comprobación sigue incompleta.\nÚltima llamada repetida: {0}\nSe conservan el historial y los resultados de las herramientas. Puedes cambiar de modelo en la misma conversación y continuar el paso pendiente.",
+  "Compara local listele de import": "Comparar listas de importacion localmente",
+  "Controlul local a depasit limita de timp. Sursele au ramas nemodificate.": "La comprobacion local agoto el tiempo. Fuentes sin cambios.",
+  "Fara API: selecteaza fabrica, listele si optional desenele.": "Sin API: elige fabrica, listas y dibujos opcionales.",
+  "Catalog gol: snapshotul fabricii selectate.": "Catalogo vacio: copia guardada de la fabrica elegida.",
+  "Liste de import": "Listas de importacion",
+  "Desene PDF": "Planos PDF",
+  "Catalog XLSX sau JSON": "Catalogo XLSX o JSON",
+  "Oprire solicitata; sursele raman nemodificate.": "Parada solicitada; fuentes sin cambios.",
+  "Alege proiectul, fabrica si cel putin o lista de import.": "Elige proyecto, fabrica y al menos una lista.",
+  "Comparatie locala in curs; nu se trimit date la model.": "Comparacion local en curso; sin datos al modelo.",
+  "Control local nereusit; consulta detaliile.": "Comprobacion local fallida; consulta los detalles.",
+  "Control local terminat. Sursele nu au fost modificate.": "Comprobacion terminada. Fuentes sin cambios.",
+  "Compactarea a depasit timpul de asteptare; istoricul si memoria sunt pastrate. Poti folosi comparatia locala fara API sau relua cu alt model.": "Se agoto el tiempo de compactacion; se conservan historial y memoria. Usa la comparacion local sin API o continua con otro modelo."
 }

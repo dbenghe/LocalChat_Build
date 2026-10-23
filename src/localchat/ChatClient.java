@@ -72,7 +72,7 @@ final class ChatClient {
         final List<ToolCall> toolCalls; // assistant only
         final String toolCallId; // tool only: the call this answers
         final boolean isError; // tool only
-        final String label; // assistant only: "Claude · model", shown in the transcript
+        final String label; // assistant only: "Claude Â· model", shown in the transcript
 
         private Message(String role, String content, List<ToolCall> toolCalls, String toolCallId, boolean isError, String label) {
             this.role = role;
@@ -140,6 +140,24 @@ final class ChatClient {
         final StringBuilder args = new StringBuilder();
     }
 
+    private long deadlineNanos;
+    private int readTimeoutMillis=600_000;
+    void budgetMillis(long millis){deadlineNanos=System.nanoTime()+java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(millis);readTimeoutMillis=120_000;}
+    void ensureBudget(){if(deadlineNanos==0)budgetMillis(300_000);}
+    void checkBudget() throws java.net.SocketTimeoutException {remainingMillis();}
+    private int remainingMillis() throws java.net.SocketTimeoutException {
+        if(deadlineNanos==0)return readTimeoutMillis;
+        long left=java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(deadlineNanos-System.nanoTime());
+        if(left<=0)throw new java.net.SocketTimeoutException("Compaction time budget exhausted");
+        return (int)Math.max(1,Math.min(readTimeoutMillis,left));
+    }
+    private InputStream timedInput(HttpURLConnection connection) throws IOException {
+        InputStream input=connection.getInputStream();if(deadlineNanos==0)return input;
+        return new java.io.FilterInputStream(input){
+            public int read() throws IOException{connection.setReadTimeout(remainingMillis());return super.read();}
+            public int read(byte[] bytes,int off,int len)throws IOException{connection.setReadTimeout(remainingMillis());return in.read(bytes,off,len);}
+        };
+    }
     private int outputLimit;
     void outputLimit(int tokens) {outputLimit=tokens;}
     private boolean omitUsageOption;
@@ -172,6 +190,8 @@ final class ChatClient {
         if(outputLimit>0)body.put(p==Provider.OPENAI?"max_completion_tokens":"max_tokens",outputLimit);
         if (stream && !anthropic && !omitUsageOption) body.put("stream_options", Json.obj("include_usage", true));
         HttpURLConnection conn = open(p, baseUrl + (anthropic ? "/messages" : "/chat/completions"), apiKey, "POST");
+        conn.setReadTimeout(remainingMillis());
+        if(deadlineNanos!=0)conn.setConnectTimeout(Math.min(30_000,remainingMillis()));
         active = conn;
         try {
             byte[] out = Json.write(body).getBytes(StandardCharsets.UTF_8);
@@ -315,7 +335,7 @@ final class ChatClient {
         Map<Integer, CallBuilder> calls = new TreeMap<>();
         StringBuilder plain = new StringBuilder();
         boolean sawEvents = false;
-        try (BufferedReader r = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+        try (BufferedReader r = new BufferedReader(new InputStreamReader(timedInput(conn), StandardCharsets.UTF_8))) {
             String line;
             while ((line = r.readLine()) != null) {
                 if (cancelled) break;
@@ -484,7 +504,7 @@ final class ChatClient {
             // not JSON; show the raw body below
         }
         if (msg == null) msg = body.isEmpty() ? conn.getResponseMessage() : body;
-        if (msg != null && msg.length() > 600) msg = msg.substring(0, 600) + "…";
+        if (msg != null && msg.length() > 600) msg = msg.substring(0, 600) + "â€¦";
         throw new HttpFailure(code,"HTTP " + code + ": " + msg);
     }
 

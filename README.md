@@ -768,3 +768,16 @@ Filtrul Arhivate afiseaza numai arhiva. Cand un filtru ascunde toate chaturile, 
 Hotfolderul actualizeaza chatul existent al aceluiasi folder local, il marcheaza Repornit si pregateste o notificare. Daca chatul este deschis, ciorna noua ramane separat pana la accesare. Nici actualizarea, nici deschiderea nu trimit automat cereri. MSG/EML sunt identificate ca emailuri numai dupa extensie.
 
 Recuperarea dupa repetitii are maximum sase pasi suplimentari. Daca modelul nu produce finalul, apare un mesaj LocalChat cu starea incompleta; coada ramane suspendata. Aceasta protectie nu garanteaza executia corecta a sarcinii de catre orice model.
+
+
+## Comparare locala de importuri (1.24.0)
+
+**Unelte > Compara local listele de import** ruleaza fara API sau compactarea conversatiei. Alege proiectul, fabrica confirmata, listele XLSX/CSV si optional PDF-urile relevante; poti selecta catalogul XLSX/JSON explicit. Un catalog gol foloseste numai snapshotul privat al fabricii alese din pdfcontrol/data_lokaal, fara substituirea altei fabrici. Nu deduce fabrica din litera discului.
+
+In chat, MBS are aceeasi unealta `pdfcontrol_compare_import(project, factory, imports, drawings?, catalogue?)`, cu orice model compatibil cu unelte. Modelul trebuie sa aleaga unealta; citirea/interpretarea finala de catre AI poate consuma tokeni, dar compararea locala nu face inferente. Modul Normal ramane fara unelte sau instructiuni MBS.
+
+Motorul din integration/import_audit.py este distribuit ca pdfcontrol/import_audit.py. Citeste originalele fara modificari; scrie numai rapoarte locale in analyses/imports/<hash>/report.json si report.html. Cache-ul include hashurile surselor si motorului. Rezultatul in chat este limitat la numaratori, cateva exemple si caile rapoartelor; citeste doar fragmentele necesare, fara retrimiterea cataloagelor/tabelelor intregi. Din terminal: Python-ul portabil cu `-I pdfcontrol/import_audit.py --request cerere.json --output folder_local`; cererea contine project, factory, imports, drawings si catalogue.
+
+Verificarile sunt conservatoare: separa codurile MBS de MB, pastreaza formulele neverificate ca atare, numele de baza nu dovedesc echivalenta fizica, unitatile lipsa din catalog raman neconfirmate, iar Lengte se cere pentru articole in metri. Tabelele PDF folosesc extractorul propriu PDFCONTROL cu marca/pagina/pozitie; un PDF scanat sau tabel nerecunoscut cere OCR/verificare, nu devine articol absent. Cotele geometrice izolate nu sunt transformate automat in lungimi; candidatii expliciti din tabel raman de verificat. Nu modifica XLSX, nu importa in ISAH si nu copiaza pe server. Instrumentul nu inlocuieste controlul structural sau aprobarea desenelor.
+
+Compactarea are acum asteptare separata de cel mult 120 secunde per citire si buget comun de 300 secunde verificat pe parcursul fragmentelor/reincercarilor. La depasire se opreste cu mesaj explicit si pastreaza arhiva/memoria/ciorna. Cererile normale nu primesc aceasta limita. Un context mai mare nu elimina un HTTP 504; limita necesara depinde de fragment, rezumat, instructiuni, rezerva de iesire si tokenizarea modelului. Compararea directa locala ocoleste complet aceasta dependenta.

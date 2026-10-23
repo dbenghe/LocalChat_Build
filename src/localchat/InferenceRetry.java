@@ -14,6 +14,7 @@ final class InferenceRetry {
             List<ChatClient.Message> request,List<ChatClient.ToolSpec> tools,boolean stream,ChatClient.Listener listener,Hooks hooks)throws IOException{
         for(int attempt=1;;attempt++){
             if(hooks.cancelled())throw new InterruptedIOException("Cancelled");
+            client.checkBudget(); // An expired local budget is not an API attempt or billable usage.
             hooks.before(system,request);
             try{return client.chat(provider,url,key,model,system,request,tools,stream,listener);}
             catch(ChatClient.HttpFailure failure){

@@ -590,5 +590,18 @@
   "Recuperez dupa citiri repetitive; operatiile confirmate raman pastrate.": "Recuperez dupa citiri repetitive; operatiile confirmate raman pastrate.",
   "Pregatesc rezultatul partial; limita de recuperare a fost atinsa.": "Pregatesc rezultatul partial; limita de recuperare a fost atinsa.",
   "Rezultat partial: modelul nu a incheiat verificarea ceruta.": "Rezultat partial: modelul nu a incheiat verificarea ceruta.",
-  "LocalChat: recuperarea nu a produs un raspuns final utilizabil. Verificarea ramane incompleta.\nUltimul apel repetat: {0}\nIstoricul si rezultatele uneltelor sunt pastrate. Poti schimba modelul in aceeasi conversatie si continua pasul ramas.": "LocalChat: recuperarea nu a produs un raspuns final utilizabil. Verificarea ramane incompleta.\nUltimul apel repetat: {0}\nIstoricul si rezultatele uneltelor sunt pastrate. Poti schimba modelul in aceeasi conversatie si continua pasul ramas."
+  "LocalChat: recuperarea nu a produs un raspuns final utilizabil. Verificarea ramane incompleta.\nUltimul apel repetat: {0}\nIstoricul si rezultatele uneltelor sunt pastrate. Poti schimba modelul in aceeasi conversatie si continua pasul ramas.": "LocalChat: recuperarea nu a produs un raspuns final utilizabil. Verificarea ramane incompleta.\nUltimul apel repetat: {0}\nIstoricul si rezultatele uneltelor sunt pastrate. Poti schimba modelul in aceeasi conversatie si continua pasul ramas.",
+  "Compara local listele de import": "Compara local listele de import",
+  "Controlul local a depasit limita de timp. Sursele au ramas nemodificate.": "Controlul local a depasit limita de timp. Sursele au ramas nemodificate.",
+  "Fara API: selecteaza fabrica, listele si optional desenele.": "Fara API: selecteaza fabrica, listele si optional desenele.",
+  "Catalog gol: snapshotul fabricii selectate.": "Catalog gol: snapshotul fabricii selectate.",
+  "Liste de import": "Liste de import",
+  "Desene PDF": "Desene PDF",
+  "Catalog XLSX sau JSON": "Catalog XLSX sau JSON",
+  "Oprire solicitata; sursele raman nemodificate.": "Oprire solicitata; sursele raman nemodificate.",
+  "Alege proiectul, fabrica si cel putin o lista de import.": "Alege proiectul, fabrica si cel putin o lista de import.",
+  "Comparatie locala in curs; nu se trimit date la model.": "Comparatie locala in curs; nu se trimit date la model.",
+  "Control local nereusit; consulta detaliile.": "Control local nereusit; consulta detaliile.",
+  "Control local terminat. Sursele nu au fost modificate.": "Control local terminat. Sursele nu au fost modificate.",
+  "Compactarea a depasit timpul de asteptare; istoricul si memoria sunt pastrate. Poti folosi comparatia locala fara API sau relua cu alt model.": "Compactarea a depasit timpul de asteptare; istoricul si memoria sunt pastrate. Poti folosi comparatia locala fara API sau relua cu alt model."
 }
