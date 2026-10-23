@@ -53,6 +53,8 @@ if ($LASTEXITCODE) { throw 'Test compilation failed' }
 if ($LASTEXITCODE) { throw 'Offline audit permissions/integration tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/compaction-budget-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.CompactionBudgetTest
 if ($LASTEXITCODE) { throw 'Compaction time budget tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/compaction-resume-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.CompactionResumeTest
+if ($LASTEXITCODE) { throw 'Compaction checkpoint recovery tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/catalogue-manager-home" "-Daudit.python=$taskPdfPython" "-Daudit.package=$PSScriptRoot/pdfcontrol" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.CatalogueManagerTest
 if ($LASTEXITCODE) { throw 'Catalogue manager UI/service tests failed' }
 & "$taskJdk/bin/java.exe" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.SettingsStoreTest

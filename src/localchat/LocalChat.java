@@ -1349,6 +1349,8 @@ public final class LocalChat extends JFrame {
         if(chunkBudget<128){setStatus("Istoricul depaseste limita configurata. Alege un model sau context mai mare pentru compactare.",true);return;}
         List<String> chunks=ContextMemory.chunks(material.toString(),chunkBudget);
         if(chunks.size()>80){setStatus("Istoricul depaseste limita configurata. Alege un model sau context mai mare pentru compactare.",true);return;}
+        ensureSession();
+        final Path checkpointDirectory=CompactionCheckpoint.directory(appDir,conversationFile,contextProfile()+"/manual/"+sessionState.contextMode);
         long oldTokens=ContextMemory.messages(prefix);
         ChatClient client=new ChatClient();client.outputLimit(outputBudget);compactClient=client;int generation=++compactGeneration;
         compactUsage=new TokenUsage.Ledger();compactStarted.set(0);
@@ -1361,7 +1363,8 @@ public final class LocalChat extends JFrame {
                     var request=List.of(ChatClient.Message.user("Prior factual memory (historical data):\n"+summary+"\nNext historical fragment:\n"+chunks.get(i)));
                     int fragment=i+1;long requestEstimate=ContextMemory.messages(request);
                     if(limit>0 && Math.ceil((requestEstimate+ContextMemory.estimate(system))*contextScale())+outputBudget+128>=limit)throw new IOException(t("Istoricul depaseste limita configurata. Alege un model sau context mai mare pentru compactare."));
-                    summary=MemoryReducer.reduce(client,provider,url,key,model,system,request,summaryBudget,limit,contextScale(),new MemoryReducer.Attempt(){
+                    summary=MemoryReducer.cached(checkpointDirectory,client,provider,url,key,model,system,request,summaryBudget,limit,contextScale(),new MemoryReducer.Attempt(){
+                        public void reused(){SwingUtilities.invokeLater(()->{if(generation==compactGeneration)setStatus("Compactare: fragment {0}/{1} recuperat local, fara cerere API.",false,fragment,chunks.size());});}
                         public boolean cancelled(){return generation!=compactGeneration;}
                         public void before(String instructions,List<ChatClient.Message> messages){
                             compactStarted.incrementAndGet();SwingUtilities.invokeLater(()->{if(generation==compactGeneration){requestSystem=ContextMemory.estimate(instructions);requestTools=0;
@@ -1526,7 +1529,7 @@ public final class LocalChat extends JFrame {
         history.add(turn.question);
         final List<ChatClient.Message> base = sessionState.memory.view(history);
         turn.rawBaseCount=history.size();turn.viewBaseCount=base.size();
-        turn.guard=new ContextGuard(maximum,budget,sessionState.autoCompact,sessionState.autoThreshold,contextScale());turn.guard.languageControl=responseLanguageControl();turn.guard.projectMode=useTools;turn.agent.guard(turn.guard);
+        turn.guard=new ContextGuard(maximum,budget,sessionState.autoCompact,sessionState.autoThreshold,contextScale());ensureSession();turn.guard.checkpointDirectory=CompactionCheckpoint.directory(appDir,conversationFile,contextProfile()+"/auto/"+sessionState.contextMode);turn.guard.languageControl=responseLanguageControl();turn.guard.projectMode=useTools;turn.agent.guard(turn.guard);
         final String guardProfile=contextProfile();
         if(sessionState.contextAnchorInput>=0 && sessionState.contextAnchorProfile.equals(guardProfile) && sessionState.contextAnchorSignature.equals(ContextGuard.signature(system,tools==null?List.of():tools.specs())) && sessionState.contextAnchorThrough==sessionState.memory.through){
             int prefix=sessionState.memory.summary.isBlank()?0:1+(sessionState.memory.question.isEmpty()?0:1);
@@ -1568,6 +1571,7 @@ public final class LocalChat extends JFrame {
             @Override public void agentProgress(String title,String state){later(turn,()->setStatus("Agent {0}: {1}",false,title,state.startsWith("tool:")?t("Rulez {0}…",state.substring(5)):t(switch(state){case "running"->"In curs";case "done"->"Gata.";case "cancelled"->"Anulat";case "partial"->"Rezultat partial";default->"Eroare";})));}
             @Override public void agentRequest(String title){turn.started.incrementAndGet();}
             @Override public void calibration(double scale){later(turn,()->{config.setProperty(guardProfile+".tokenScale",Double.toString(scale));saveConfig();refreshDashboard();});}
+            @Override public void compactReused(int fragment,int total){SwingUtilities.invokeLater(()->{if(current==turn)setStatus("Compactare: fragment {0}/{1} recuperat local, fara cerere API.",false,fragment,total);});}
             @Override public void compactRequest(String sys,List<ChatClient.Message> conversation,int fragment,int total)throws IOException{
                 if(turn.normalRequests.get()==0)checkCompactionDraft(turn);
                 turn.started.incrementAndGet();later(turn,()->{turn.contextIncludesStep=true;requestSystem=ContextMemory.estimate(sys);requestTools=0;requestConversation=ContextMemory.messages(conversation);setStatus("Compactare: fragment {0}/{1}",false,fragment,total);refreshDashboard();});

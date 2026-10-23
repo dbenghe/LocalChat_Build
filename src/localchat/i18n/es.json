@@ -642,5 +642,6 @@
   "Anterior": "Antes",
   "Nou": "Despues",
   "Fabrica": "Fabrica",
-  "Mod doar citire: modificarile si comenzile sunt blocate.": "Solo lectura: cambios y comandos bloqueados."
+  "Mod doar citire: modificarile si comenzile sunt blocate.": "Solo lectura: cambios y comandos bloqueados.",
+  "Compactare: fragment {0}/{1} recuperat local, fara cerere API.": "Compactación: fragmento {0}/{1} recuperado localmente, sin solicitud API."
 }

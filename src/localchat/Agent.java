@@ -24,6 +24,7 @@ final class Agent {
         /** Updated context after a reply or tool result, without starting another API request. */
         default void context(List<ChatClient.Message> conversation) {}
         default void calibration(double scale) {}
+        default void compactReused(int fragment,int total) {}
         default void compactRequest(String system,List<ChatClient.Message> conversation,int fragment,int total) throws IOException {}
         default void compacted() {}
         default void retry(boolean compaction,int next,int total,int status){}

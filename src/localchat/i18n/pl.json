@@ -642,5 +642,6 @@
   "Anterior": "Poprzednio",
   "Nou": "Nowe",
   "Fabrica": "Zaklad",
-  "Mod doar citire: modificarile si comenzile sunt blocate.": "Tryb tylko do odczytu: zmiany i polecenia zablokowane."
+  "Mod doar citire: modificarile si comenzile sunt blocate.": "Tryb tylko do odczytu: zmiany i polecenia zablokowane.",
+  "Compactare: fragment {0}/{1} recuperat local, fara cerere API.": "Kompaktowanie: fragment {0}/{1} przywrócony lokalnie, bez żądania API."
 }

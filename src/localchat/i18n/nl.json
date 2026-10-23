@@ -642,5 +642,6 @@
   "Anterior": "Vorige",
   "Nou": "Nieuw",
   "Fabrica": "Fabriek",
-  "Mod doar citire: modificarile si comenzile sunt blocate.": "Alleen-lezen: wijzigingen en opdrachten zijn geblokkeerd."
+  "Mod doar citire: modificarile si comenzile sunt blocate.": "Alleen-lezen: wijzigingen en opdrachten zijn geblokkeerd.",
+  "Compactare: fragment {0}/{1} recuperat local, fara cerere API.": "Samenvatten: fragment {0}/{1} lokaal hersteld, geen API-aanvraag."
 }

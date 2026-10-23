@@ -1,3 +1,11 @@
+# 1.24.2 — 2026-10-23
+
+- Compactarea automata foloseste aceleasi unitati pentru buget si fragmentare; un istoric de aproximativ 205 KB la context 131072 necesita trei fragmente in loc de noua, cu verificarea spatiului pentru memorie, raspuns si marja de siguranta.
+- Fragmentele rezumate cu succes sunt salvate privat per conversatie/profil, furnizor, cheie, model, instructiuni si continut exact. O reluare explicita reutilizeaza numai rezultate identice; nu retrimite fragmentele deja rezumate si nu inventeaza consum API.
+- Compactarea manuala si automata pastreaza checkpointurile maximum 30 de zile, cel mult 128 per director. Rezumatul incomplet nu devine memorie activa; Stop/eroare pastreaza ciorna si arhiva si nu trimit automat. Transportul normal si pragul configurat raman neschimbate.
+- Elimina impartirea dubla a bugetului rezumatului automat prin factorul de calibrare. Nu garanteaza disponibilitatea furnizorului si nu elimina timeouturile externe.
+- Indicator de recuperare locala in sase limbi; teste cu API simulat pentru esec, reluare, izolare, invalidare si Stop.
+
 # 1.24.1 — 2026-10-23
 
 - Unelte > Cataloage fabrici: selectia explicita a fabricii si listei XLSX, previzualizarea articolelor noi/modificate/absente si Importa si activeaza. Primul import functioneaza si pentru Lelystad fara catalog anterior.

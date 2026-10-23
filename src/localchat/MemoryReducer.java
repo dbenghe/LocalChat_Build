@@ -3,7 +3,16 @@ import java.io.*;
 import java.util.*;
 /** Bounded retries for models whose token counts differ from the byte estimate. Never truncate memory. */
 final class MemoryReducer {
-    interface Attempt extends InferenceRetry.Hooks {}
+    interface Attempt extends InferenceRetry.Hooks { default void reused(){} }
+    static String cached(java.nio.file.Path directory,ChatClient client,Provider provider,String url,String key,String model,String system,List<ChatClient.Message> request,int target,int window,double scale,Attempt hooks)throws IOException{
+        if(hooks.cancelled())throw new InterruptedIOException("Cancelled");
+        String identity=CompactionCheckpoint.key(provider,url,key,model,system,request,target,window,scale);
+        String saved=CompactionCheckpoint.read(directory,identity,target);
+        if(saved!=null){if(hooks.cancelled())throw new InterruptedIOException("Cancelled");hooks.reused();return saved;}
+        String result=reduce(client,provider,url,key,model,system,request,target,window,scale,hooks);
+        if(hooks.cancelled())throw new InterruptedIOException("Cancelled");
+        CompactionCheckpoint.save(directory,identity,result);return result;
+    }
     static String reduce(ChatClient client,Provider provider,String url,String key,String model,String system,List<ChatClient.Message> request,int target,int window,double scale,Attempt hooks)throws IOException{
         client.ensureBudget();
         int output=Math.max(32,(int)(target/Math.max(1,scale)));

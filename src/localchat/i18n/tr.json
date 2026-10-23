@@ -642,5 +642,6 @@
   "Anterior": "Onceki",
   "Nou": "Yeni",
   "Fabrica": "Fabrika",
-  "Mod doar citire: modificarile si comenzile sunt blocate.": "Salt okunur: degisiklikler ve komutlar engellendi."
+  "Mod doar citire: modificarile si comenzile sunt blocate.": "Salt okunur: degisiklikler ve komutlar engellendi.",
+  "Compactare: fragment {0}/{1} recuperat local, fara cerere API.": "Sıkıştırma: {0}/{1} parça yerelden geri yüklendi, API isteği yok."
 }

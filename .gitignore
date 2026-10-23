@@ -41,3 +41,6 @@
 
 # Private source metadata inventory for the optional project hotfolder
 **/hotfolder.json
+
+# Private partial compaction results; never publish chat-derived memory
+**/compaction-cache/
