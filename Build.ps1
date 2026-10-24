@@ -121,6 +121,8 @@ if ($LASTEXITCODE) { throw 'Verified resumable copy tests failed' }
 if ($LASTEXITCODE) { throw 'Runtime parallel agent tests failed' }
 & "$taskJdk/bin/java.exe" "-Dlocalchat.readme=$PSScriptRoot/README.md" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ManualCurrentLimits
 if ($LASTEXITCODE) { throw 'Current manual limits drifted from the agent and compaction behavior' }
+& "$taskJdk/bin/java.exe" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ErrorHintTest
+if ($LASTEXITCODE) { throw 'Provider capacity and streaming hint tests failed' }
 & "$taskJdk/bin/java.exe" "-Dlocalchat.home=$taskBuild/agent-artifacts-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.AgentArtifactsTest
 if ($LASTEXITCODE) { throw 'Verified child-agent PDF artifact tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/agent-integration-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.AgentIntegrationTest

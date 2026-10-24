@@ -82,7 +82,8 @@ textul rămâne în `Pentru_ChatGPT_<nr>.txt`), `.xls`/`.doc` vechi, importul î
 ## Probleme frecvente
 
 - **HTTP 401** — cheie greșită sau pentru alt furnizor.
-- **Eroare care pomenește „stream”** — debifează **Streaming**.
+- **HTTP 429** — ruta furnizorului este ocupată. Așteaptă puțin sau alege alt model. Streaming rămâne neschimbat.
+- **Eroare de transport SSE** (streaming sau event-stream) — debifează **Streaming**.
 - **Eroare care pomenește „tool”** — modelul nu suportă tool-uri: alt model sau debifează **Tool-uri**.
 - **MCP: eroare** (în bara de jos) — vezi `unelte.json`; PDFCONTROL trebuie să fie în `pdfcontrol\` lângă aplicație.
 

@@ -1,6 +1,6 @@
 # LocalChat — raport de dezvoltare si probleme cunoscute
 
-Actualizat: 24 octombrie 2026. Livrare: 1.26.2.
+Actualizat: 24 octombrie 2026. Livrare: 1.26.3.
 
 Acest raport sintetizeaza dezvoltarea aplicatiei si diagnosticele confirmate. Cronologia completa a modificarilor functionale ramane in CHANGELOG.md; sursele si commiturile sunt in repository-ul personal LocalChat_Build. Datele proiectelor, conversatiile, cheile, cataloagele private si jurnalele nu fac parte din publicarea Git.
 
@@ -72,3 +72,7 @@ Nu au fost executate teste fizice cu mouse/tastatura, inferenta la furnizori ext
 ### Rezultatele verificarilor pentru 1.26.2
 
 ManualCurrentLimits confirma ca sectiunile curente din README corespund limitelor din cod. O rulare completa a trecut verificarile native de shortcut (229), navigare si popup, apoi s-a oprit la timeout-ul de 20 de secunde al probei Tesseract copiate. Reluarea izolata a fluxului PDFCONTROL a trecut 16 verificari. Doua rulari ulterioare nu au putut livra tastele reale in editor, din cauza focusului. Build-ul instalat in C:\LocalChat a folosit SkipNativeQA si a trecut din nou suitele automate, inclusiv motorul PDFCONTROL pe date sintetice; cataloagele existente au ramas pastrate. Tastele native nu fac parte din aceasta instalare.
+
+### Rezultatele verificarilor pentru 1.26.3
+
+ErrorHintTest confirma ca textul HTTP 429 cu „upstream” nu mai cere debifarea Streaming, iar o eroare SSE pastreaza sfatul vechi. Traducerea este in sase limbi. Build-ul instalat a folosit SkipNativeQA, pentru ca LocalChat era deschis; prima incercare s-a oprit la un AccessDenied tranzitoriu pe fisierul temporar al registrului, reluarea a trecut suitele automate. Cataloagele existente au ramas pastrate. HTTP 429 ramane o limita a furnizorului.

@@ -52,6 +52,7 @@
   "Niciun răspuns — mesajul tău a fost pus înapoi în caseta de text.": "Geen antwoord — je bericht staat weer in het tekstvak.",
   "[Eroare] ": "[Fout] ",
   "Sfat: debifează „Streaming” și încearcă din nou.": "Tip: schakel Streaming uit en probeer opnieuw.",
+  "Sfat: furnizorul este ocupat (HTTP 429). Încearcă din nou peste puțin timp sau alege alt model.": "Tip: de provider is bezet (HTTP 429). Probeer zo opnieuw of kies een ander model.",
   "Sfat: dacă modelul nu suportă tool-uri, debifează „Tool-uri” sau alege alt model.": "Tip: als het model geen tools ondersteunt, schakel Tools uit of kies een ander model.",
   "Permite": "Toestaan",
   "Permite tot de acest tip în conversație": "Dit type altijd toestaan in dit gesprek",

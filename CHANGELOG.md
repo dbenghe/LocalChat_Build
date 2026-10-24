@@ -1,3 +1,7 @@
+# 1.26.3 — 2026-10-24
+- HTTP 429 explica ocuparea furnizorului si ofera reincearcarea sau alt model. Cuvantul upstream nu mai este tratat ca o eroare de streaming.
+- Sfatul de debifare Streaming ramane pentru erorile de transport SSE.
+
 # 1.26.2 — 2026-10-24
 - Manualul de utilizare descrie limitele curente ale agentilor: 3 sarcini, 2 simultane, 16 pasi, iesire dupa profilul selectat si durata cererilor catre furnizor. Termenul comun de 180 de secunde si plafonul fix de 4096 pentru copil raman doar in istoricul versiunilor in care au existat.
 - Sectiunile de compactare din manual trimit la politica 1.25.2. Comportamentul aplicatiei ramane neschimbat.

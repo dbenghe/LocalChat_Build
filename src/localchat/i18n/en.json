@@ -52,6 +52,7 @@
   "Niciun răspuns — mesajul tău a fost pus înapoi în caseta de text.": "No response — your message was restored to the text box.",
   "[Eroare] ": "[Error] ",
   "Sfat: debifează „Streaming” și încearcă din nou.": "Tip: disable Streaming and try again.",
+  "Sfat: furnizorul este ocupat (HTTP 429). Încearcă din nou peste puțin timp sau alege alt model.": "Tip: the provider is busy (HTTP 429). Retry shortly or choose another model.",
   "Sfat: dacă modelul nu suportă tool-uri, debifează „Tool-uri” sau alege alt model.": "Tip: if the model does not support tools, disable Tools or choose another model.",
   "Permite": "Allow",
   "Permite tot de acest tip în conversație": "Always allow this type in this conversation",

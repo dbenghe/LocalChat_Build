@@ -52,6 +52,7 @@
   "Niciun răspuns — mesajul tău a fost pus înapoi în caseta de text.": "Yanıt yok — mesajınız metin kutusuna geri kondu.",
   "[Eroare] ": "[Hata] ",
   "Sfat: debifează „Streaming” și încearcă din nou.": "İpucu: Streaming seçeneğini kapatıp yeniden deneyin.",
+  "Sfat: furnizorul este ocupat (HTTP 429). Încearcă din nou peste puțin timp sau alege alt model.": "İpucu: sağlayıcı meşgul (HTTP 429). Kısa süre sonra yeniden deneyin veya başka bir model seçin.",
   "Sfat: dacă modelul nu suportă tool-uri, debifează „Tool-uri” sau alege alt model.": "İpucu: model araçları desteklemiyorsa Araçları kapatın veya başka model seçin.",
   "Permite": "İzin ver",
   "Permite tot de acest tip în conversație": "Bu sohbette bu türe her zaman izin ver",

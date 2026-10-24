@@ -1741,13 +1741,16 @@ public final class LocalChat extends JFrame {
         restoreAgentPanel();saveConversation();refreshDashboard();
     }
 
+    static boolean streamingHint(String message){return java.util.regex.Pattern.compile("(?<![a-z])stream").matcher(message).find();}
     private void showError(Exception error) {
         ensureNewline();
         String msg = describe(error);
         append(t("[Eroare] ") + msg, errorStyle);
         String lower = msg.toLowerCase(Locale.ROOT);
-        if(lower.contains("http 429"))SwingUtilities.invokeLater(()->{if(!busy)offerAlternatives();});
-        if (streamBox.isSelected() && lower.contains("stream")) {
+        if(lower.contains("http 429")){
+            append("\n" + t("Sfat: furnizorul este ocupat (HTTP 429). Incearca din nou peste putin timp sau alege alt model."), errorStyle);
+            SwingUtilities.invokeLater(()->{if(!busy)offerAlternatives();});
+        } else if (streamBox.isSelected() && streamingHint(lower)) {
             append("\n" + t("Sfat: debifeaza „Streaming” si incearca din nou."), errorStyle);
         }
         if (toolsBox.isSelected() && lower.contains("tool")) {
