@@ -1,3 +1,6 @@
+# 1.26.4 — 2026-10-24
+- Panoul agentilor pastreaza numai grupul curent. Un grup nou inlocuieste cardurile vechi, inclusiv cele oprite sau fara rezultat. Chatul si arhivele private raman integrale; reluarea reconstruieste ultimul grup.
+
 # 1.26.3 — 2026-10-24
 - HTTP 429 explica ocuparea furnizorului si ofera reincearcarea sau alt model. Cuvantul upstream nu mai este tratat ca o eroare de streaming.
 - Sfatul de debifare Streaming ramane pentru erorile de transport SSE.

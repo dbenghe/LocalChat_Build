@@ -132,6 +132,8 @@ Repository-ul utilizatorului este https://github.com/dbenghe/LocalChat_Build (co
 
 - Din 1.26.0, imaginile explicit atasate sunt continut multimodal pe cererile modelului vizual, inclusiv in Normal fara unelte MBS. Snapshoturi private cu hash, referinte in arhiva (fara base64), fara citirea imaginilor la incarcarea chatului sau enumerarea folderelor. Capabilitatile necunoscute nu devin suport inventat; erorile pastreaza ciorna/istoricul. Pixelii nu autorizeaza instructiuni din capturi.
 
+- Din 1.26.4, panoul agentilor afiseaza numai grupul curent, maximum 18 sarcini. Un grup nou inlocuieste cardurile anterioare. Istoricul chatului si arhivele private raman integrale; reluarea reconstruieste ultimul grup, fara inferenta. Chatul nou goleste panoul.
+
 - Din 1.26.3, HTTP 429 explica ocuparea furnizorului si propune reincearcarea sau alt model. Sfatul de debifare Streaming se aplica numai erorilor de transport SSE; cuvantul upstream nu il declanseaza. Retry-ul automat ramane limitat la 502/503/504.
 
 - Din 1.26.2, manualul de utilizare descrie limitele curente ale agentilor: 3 sarcini, 2 simultane, 16 pasi, iesirea dupa profilul selectat si durata cererilor catre furnizor. Compactarea din manual urmeaza politica 1.25.2. CHANGELOG pastreaza formularea istorica. Comportamentul aplicatiei ramane neschimbat.

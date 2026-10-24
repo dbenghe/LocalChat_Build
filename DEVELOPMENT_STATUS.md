@@ -1,6 +1,6 @@
 # LocalChat — raport de dezvoltare si probleme cunoscute
 
-Actualizat: 24 octombrie 2026. Livrare: 1.26.3.
+Actualizat: 24 octombrie 2026. Livrare: 1.26.4.
 
 Acest raport sintetizeaza dezvoltarea aplicatiei si diagnosticele confirmate. Cronologia completa a modificarilor functionale ramane in CHANGELOG.md; sursele si commiturile sunt in repository-ul personal LocalChat_Build. Datele proiectelor, conversatiile, cheile, cataloagele private si jurnalele nu fac parte din publicarea Git.
 
@@ -76,3 +76,7 @@ ManualCurrentLimits confirma ca sectiunile curente din README corespund limitelo
 ### Rezultatele verificarilor pentru 1.26.3
 
 ErrorHintTest confirma ca textul HTTP 429 cu „upstream” nu mai cere debifarea Streaming, iar o eroare SSE pastreaza sfatul vechi. Traducerea este in sase limbi. Build-ul instalat a folosit SkipNativeQA, pentru ca LocalChat era deschis; prima incercare s-a oprit la un AccessDenied tranzitoriu pe fisierul temporar al registrului, reluarea a trecut suitele automate. Cataloagele existente au ramas pastrate. HTTP 429 ramane o limita a furnizorului.
+
+### Rezultatele verificarilor pentru 1.26.4
+
+AgentPanelTest confirma 69 de verificari: un grup nou inlocuieste cardurile vechi, iar reluarea pastreaza numai ultimul grup. Arhivele si mesajele chatului nu sunt sterse. Build-ul de instalare foloseste SkipNativeQA cat timp LocalChat este deschis.

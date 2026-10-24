@@ -31,26 +31,29 @@ final class AgentPanel extends JPanel {
         cards.setLayout(new BoxLayout(cards,BoxLayout.Y_AXIS));JScrollPane scroll=new JScrollPane(cards);scroll.setBorder(null);scroll.getVerticalScrollBar().setUnitIncrement(18);add(scroll);
         stop.addActionListener(e->cancel.run());add(stop,BorderLayout.SOUTH);translate();
     }
-    void queued(String id,String title,String task,String model){rows.putIfAbsent(id,new Row(id,title,task,model));trim();rebuild();}
+    void queued(String id,String title,String task,String model){retainGroup(groupOf(id));rows.putIfAbsent(id,new Row(id,title,task,model));trim();rebuild();}
     void progress(String id,String state){Row row=rows.get(id);if(row!=null&&!row.state.equals(state)){row.state=state;rebuild();}}
     void busy(boolean value){busy=value;stop.setEnabled(value&&rows.values().stream().anyMatch(row->active(row.state)));changed.run();}
     int count(){return rows.size();}
     String state(String id){return rows.containsKey(id)?rows.get(id).state:"";}
     String task(String id){return rows.containsKey(id)?rows.get(id).task:"";}
-    void result(String text){try{Object data=Json.parse(text);String group=Json.str(data,"group_id"),model=Objects.toString(Json.str(data,"model"),"");if(group==null||group.isBlank()||!(Json.get(data,"tasks") instanceof List<?> tasks))return;int i=0;
+    void result(String text){try{Object data=Json.parse(text);String group=Json.str(data,"group_id"),model=Objects.toString(Json.str(data,"model"),"");if(group==null||group.isBlank()||!(Json.get(data,"tasks") instanceof List<?> tasks))return;retainGroup(group);int i=0;
         for(Object item:tasks){String id=group+"-"+(++i),title=Objects.toString(Json.str(item,"title"),""),task=Objects.toString(Json.str(item,"task"),"");Row row=rows.get(id);if(row==null){row=new Row(id,title,task,model);rows.put(id,row);}else if(row.task.isBlank())row.task=task;
             row.state=Objects.toString(Json.str(item,"status"),"unconfirmed");row.answer=Objects.toString(Json.str(item,"answer"),"");row.error=Objects.toString(Json.str(item,"error"),"");String detail=Objects.toString(Json.str(item,"error_detail"),"");if(!detail.isBlank())row.error+="\n"+detail;row.pending=Boolean.TRUE.equals(Json.get(item,"completion_pending"));
         }trim();rebuild();}catch(RuntimeException ignored){}}
     void restore(List<ChatClient.Message> history){
         Map<String,Boolean> expanded=new HashMap<>();rows.forEach((id,row)->expanded.put(id,row.expanded));rows.clear();
         Map<String,ChatClient.Message> results=new HashMap<>();for(var m:history)if(m.role.equals("tool"))results.put(m.toolCallId,m);
-        for(var m:history)for(var c:m.toolCalls)if(c.name.equals("run_agents")){var result=results.get(c.id);boolean structured=false;if(result!=null)try{Object value=Json.parse(result.content);structured=Json.str(value,"group_id")!=null&&!Json.str(value,"group_id").isBlank()&&Json.get(value,"tasks") instanceof List<?>;if(structured)result(result.content);}catch(RuntimeException ignored){}
-            if(!structured&&Json.get(c.args,"tasks") instanceof List<?> tasks){int i=0;for(Object task:tasks){String id=c.id+"-"+(++i);Row row=new Row(id,Objects.toString(Json.str(task,"title"),""),Objects.toString(Json.str(task,"task"),""),"");row.state="unconfirmed";rows.put(id,row);}}
+        ChatClient.ToolCall latest=null;for(var m:history)for(var c:m.toolCalls)if(c.name.equals("run_agents"))latest=c;
+        if(latest!=null){var result=results.get(latest.id);boolean structured=false;if(result!=null)try{Object value=Json.parse(result.content);structured=Json.str(value,"group_id")!=null&&!Json.str(value,"group_id").isBlank()&&Json.get(value,"tasks") instanceof List<?>;if(structured)result(result.content);}catch(RuntimeException ignored){}
+            if(!structured&&Json.get(latest.args,"tasks") instanceof List<?> tasks){int i=0;for(Object task:tasks){String id=latest.id+"-"+(++i);Row row=new Row(id,Objects.toString(Json.str(task,"title"),""),Objects.toString(Json.str(task,"task"),""),"");row.state="unconfirmed";rows.put(id,row);}}
         }
         rows.forEach((id,row)->{row.expanded=expanded.getOrDefault(id,false);if(active(row.state))row.state="unconfirmed";});trim();rebuild();
     }
     void translate(){heading.setText(I18n.text("Agenti"));close.setToolTipText(I18n.text("Ascunde panoul agentilor"));close.getAccessibleContext().setAccessibleName(close.getToolTipText());stop.setText(I18n.text("Opreste tura"));empty.setText(I18n.text("Niciun agent pornit in aceasta conversatie."));getAccessibleContext().setAccessibleName(I18n.text("Panou agenti"));rebuild();}
     void theme(boolean value){dark=value;rebuild();}
+    private void retainGroup(String group){if(group==null||group.isBlank())return;rows.entrySet().removeIf(entry->{String other=groupOf(entry.getKey());return !other.isEmpty()&&!other.equals(group);});}
+    static String groupOf(String id){int dash=id.lastIndexOf('-');if(dash<=0||dash==id.length()-1)return "";String suffix=id.substring(dash+1);for(int i=0;i<suffix.length();i++)if(!Character.isDigit(suffix.charAt(i)))return "";return id.substring(0,dash);}
     private void trim(){while(rows.size()>MAX_ROWS)rows.remove(rows.keySet().iterator().next());}
     private static boolean active(String state){return Set.of("queued","running","pending","waiting_api","compacting").contains(state)||state.startsWith("tool:");}
     private String label(Row row){if(row.error.equals("group_deadline"))return I18n.text("Termen depasit");return row.state.startsWith("tool:")?I18n.text("Rulez {0}…",row.state.substring(5)):I18n.text(switch(row.state){case "queued"->"In asteptare";case "waiting_api"->"Asteapta API";case "compacting"->"Compactare context";case "running"->"In curs";case "done"->"Gata.";case "partial"->"Rezultat partial";case "cancelled"->"Anulat";case "failed"->"Eroare";default->"Stare neconfirmata";});}

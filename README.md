@@ -683,7 +683,7 @@ Pentru un build intr-o sesiune fara desktop interactiv se poate folosi `Build.ps
 
 ### Panoul agentilor
 
-Iconita cu agenti din antet deschide/inchide panoul lateral. Panoul apare automat numai cand `run_agents` porneste efectiv sarcinile; simpla afirmatie a modelului nu creeaza carduri. Cardurile arata modelul, sarcina, starea live si detalii pliabile pentru rezultat sau diagnostic. Sunt pastrate ultimele 18 sarcini ale conversatiei; istoricul integral ramane in chat si in arhivele private. Reluarea citeste dovezile salvate fara inferenta. „Opreste tura” opreste intreaga cerere, iar operatiile fara confirmare raman marcate astfel. Panoul PDF ramane disponibil separat.
+Iconita cu agenti din antet deschide/inchide panoul lateral. Panoul apare automat numai cand `run_agents` porneste efectiv sarcinile; simpla afirmatie a modelului nu creeaza carduri. Cardurile arata modelul, sarcina, starea live si detalii pliabile pentru rezultat sau diagnostic. Panoul arata numai grupul curent, cel mult 18 sarcini. Un grup nou inlocuieste cardurile anterioare, inclusiv cele oprite sau fara rezultat. Istoricul integral ramane in chat si in arhivele private. Reluarea reconstruieste doar ultimul grup din dovezile salvate, fara inferenta. „Opreste tura” opreste intreaga cerere, iar operatiile fara confirmare raman marcate astfel. Panoul PDF ramane disponibil separat.
 
 ### Furnizori si propuneri in editor
 
