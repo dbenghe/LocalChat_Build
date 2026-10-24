@@ -1,6 +1,6 @@
 # LocalChat — raport de dezvoltare si probleme cunoscute
 
-Actualizat: 24 octombrie 2026. Livrare: 1.26.1.
+Actualizat: 24 octombrie 2026. Livrare: 1.26.2.
 
 Acest raport sintetizeaza dezvoltarea aplicatiei si diagnosticele confirmate. Cronologia completa a modificarilor functionale ramane in CHANGELOG.md; sursele si commiturile sunt in repository-ul personal LocalChat_Build. Datele proiectelor, conversatiile, cheile, cataloagele private si jurnalele nu fac parte din publicarea Git.
 
@@ -59,7 +59,7 @@ Acest raport sintetizeaza dezvoltarea aplicatiei si diagnosticele confirmate. Cr
 
 Modificarile se verifica prin teste relevante, cu date sintetice si servere loopback; rezultatele si hashurile buildului sunt pastrate privat in auditul instalarii. Nu se trimit istorice private catre furnizori pentru diagnostic. Conversatiile, cheile, folderul ales, cataloagele si regulile private se pastreaza la instalare. Copiile de test nu devin fisierele active ale proiectelor.
 
-Pentru detalii exacte ale versiunilor anterioare: CHANGELOG.md. Pentru utilizare/build si limitele imaginilor/FAST: README.md (CITESTE.md in distributie).
+Pentru detalii exacte ale versiunilor anterioare: CHANGELOG.md. Pentru utilizare/build si limitele imaginilor/FAST: README.md (CITESTE.md in distributie). Din 1.26.2, sectiunile de utilizare descriu limitele curente ale agentilor si durata compactarii din 1.25.2; CHANGELOG pastreaza formularea istorica.
 
 ### Rezultatele verificarilor pentru 1.26.1
 
@@ -68,3 +68,7 @@ Au trecut regresiile relevante cu Java-ul portabil: hotfolder si reutilizare cha
 A fost corectat un fixture care folosea callbackul parintelui pentru textul unui raspuns trunchiat. A fost actualizata si asteptarea veche a testului privind plafonul ascuns de 4K, pentru a verifica profilul selectat. Cazurile corectate au fost reexecutate cu succes; jurnalele initiale raman private.
 
 Nu au fost executate teste fizice cu mouse/tastatura, inferenta la furnizori externi ori o noua suita completa a motorului PDFCONTROL nemodificat. Testele locale nu reprezinta confirmarea finalizarii proiectului de productie activ.
+
+### Rezultatele verificarilor pentru 1.26.2
+
+ManualCurrentLimits confirma ca sectiunile curente din README corespund limitelor din cod. O rulare completa a trecut verificarile native de shortcut (229), navigare si popup, apoi s-a oprit la timeout-ul de 20 de secunde al probei Tesseract copiate. Reluarea izolata a fluxului PDFCONTROL a trecut 16 verificari. Doua rulari ulterioare nu au putut livra tastele reale in editor, din cauza focusului. Build-ul instalat in C:\LocalChat a folosit SkipNativeQA si a trecut din nou suitele automate, inclusiv motorul PDFCONTROL pe date sintetice; cataloagele existente au ramas pastrate. Tastele native nu fac parte din aceasta instalare.

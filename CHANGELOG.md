@@ -1,3 +1,7 @@
+# 1.26.2 — 2026-10-24
+- Manualul de utilizare descrie limitele curente ale agentilor: 3 sarcini, 2 simultane, 16 pasi, iesire dupa profilul selectat si durata cererilor catre furnizor. Termenul comun de 180 de secunde si plafonul fix de 4096 pentru copil raman doar in istoricul versiunilor in care au existat.
+- Sectiunile de compactare din manual trimit la politica 1.25.2. Comportamentul aplicatiei ramane neschimbat.
+
 # 1.26.1 — 2026-10-24
 - Dashboard si popup de context: actualizari neschimbate fara rescrierea repetata a documentelor Swing; actualizare periodica la o secunda si iconite stabile. Nu modifica procentajele sau contextul selectat.
 - Registru privat de provenienta pentru rezultatele uneltelor: hotfolderul nu considera din nou surse copiile/scrierile/extragerile/FAST identificate; schimbarea ulterioara a rezultatului de catre utilizator ramane detectabila. Shell: numai destinatii literale identificabile, fara excluderea folderelor de surse.
