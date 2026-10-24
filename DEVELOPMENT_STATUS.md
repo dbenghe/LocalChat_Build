@@ -20,7 +20,7 @@ Acest raport sintetizeaza dezvoltarea aplicatiei si diagnosticele confirmate. Cr
 | Hotfolder | Urmareste Folderul de lucru ales; pregateste drafturi si notificari, fara pornirea automata a modelului. Reutilizeaza chatul proiectului si actualizeaza statusul. |
 | PDFCONTROL | Unelte pentru extragere, V/W, control, comparatie OUD/NIEUW, progres, anulare si verificarea livrarii rapoartelor reale. Completarea unei perechi nu permite inventarea armarii. |
 | Liste de import | Comparatie locala import/catalog/tabele PDF, rapoarte si audit. Din 1.26.0, conversia FAST este determinista si necesita regula confirmata per fabrica/articol; creeaza o copie XLSX si audit, pastrand sursa, Aantal si descrierea originala. |
-| Agenti | Delegare explicita sau automata a verificarilor independente in MBS, cu modelul selectat, contexte separate, doua sarcini simultane, panou de progres si arhive private. Agentii automati de analiza nu modifica fisierele de productie. |
+| Agenti | Delegare explicita sau automata a verificarilor independente in MBS, cu modelul selectat, contexte separate, doua sarcini simultane, panou de progres si arhive private. Din 1.26.4 panoul arata numai grupul curent, maximum 18 sarcini; un grup nou inlocuieste cardurile anterioare. Istoricul chatului si arhivele private raman integrale. Agentii automati de analiza nu modifica fisierele de productie. |
 
 ## Probleme intalnite si masurile luate
 
@@ -43,6 +43,9 @@ Acest raport sintetizeaza dezvoltarea aplicatiei si diagnosticele confirmate. Cr
 | Reluarea pierdea distinctia dintre agenti finalizati si neterminati | Indexul limita dovada la primele caractere ale rezultatului, uneori ocupate de descrierea sarcinii. | 1.26.1 extrage local statusurile, erorile, numerele de rezultate si arhivele, fara repetarea prozei sarcinilor. Nu inventeaza finalizarea. |
 | Nu era clar daca agentul lucreaza sau asteapta | Panoul afisa predominant In curs. | 1.26.1 afiseaza Asteapta API si Compactare context ca stari active, cu detalii de eroare in raportul privat. |
 | Limite ascunse de generare la agenti | Copiii aveau plafoane suplimentare de 2K/4K, distincte de profilul selectat. | 1.26.1 respecta profilul selectat si spatiul real disponibil. Raspunsurile trunchiate opresc executarea apelurilor din acel raspuns. |
+| Manualul descria limite vechi ale agentilor | README, copiat la instalare ca CITESTE.md, inca spunea 180 de secunde pe lot si plafon fix de 4096 pentru copil. Codul din 1.26.1 nu mai are termen comun, iar iesirea urmeaza profilul selectat. | 1.26.2 alinaza sectiunile curente de utilizare. CHANGELOG pastreaza formularea din versiunea in care limita a existat. Comportamentul aplicatiei nu s-a schimbat. |
+| HTTP 429 cerea debifarea Streaming | Sfatul cauta textul „stream” oriunde. Mesajul GonkaRouter „Upstream capacity is currently saturated” contine „upstream”. | 1.26.3 explica ocuparea furnizorului si ofera reincearcarea sau alt model, in sase limbi. Sfatul Streaming ramane pentru erorile SSE. Capacitatea rutei nu este reparata de aplicatie. Retry-ul automat ramane doar pentru HTTP 502/503/504. |
+| Cardurile de agenti se adunau in panou | La fiecare reluare, panoul reconstruieste toate apelurile run_agents din chat, pana la 18, inclusiv grupurile oprite cu „Termen depasit” sau rezultat partial. | 1.26.4 pastreaza in panou numai grupul curent. Un grup nou inlocuieste cardurile vechi. Mesajele, arhivele private si dovezile vechi raman in conversatie. |
 
 ## Ce ramane de rezolvat sau de verificat
 
@@ -80,3 +83,21 @@ ErrorHintTest confirma ca textul HTTP 429 cu „upstream” nu mai cere debifare
 ### Rezultatele verificarilor pentru 1.26.4
 
 AgentPanelTest confirma 69 de verificari: un grup nou inlocuieste cardurile vechi, iar reluarea pastreaza numai ultimul grup. Arhivele si mesajele chatului nu sunt sterse. Build-ul de instalare foloseste SkipNativeQA cat timp LocalChat este deschis.
+
+## Livrarile din 24 octombrie 2026
+
+Aceste trei versiuni sunt instalate in `C:\LocalChat` si publicate pe `main` in repository-ul personal https://github.com/dbenghe/LocalChat_Build. Ultima versiune instalata este 1.26.4. Aplicatia deschisa trebuie repornita prin `Porneste LocalChat.bat` ca titlul si Despre sa citeasca VERSION. Setarile, conversatiile, cheile si cataloagele existente nu au fost inlocuite: seed-ul de instalare a raportat `preserved: soest, alphen, veenoord` si `initialized: []`.
+
+| Versiune | Commit | Ce s-a rezolvat | Ce nu s-a schimbat |
+|---|---|---|---|
+| 1.26.2 | `bbb1ae3` | Manualul de utilizare. Sectiunile curente spun 3 sarcini, 2 simultane, 16 pasi, iesire dupa profilul selectat si durata cererilor catre furnizor. Compactarea din manual trimite la politica 1.25.2. Test nou: `ManualCurrentLimits`. | Codul agentilor si al compactarii. Termenul de 180 de secunde si plafonul de 4096 raman doar in istoricul CHANGELOG, acolo unde au fost introduse. |
+| 1.26.3 | `18b3c20` | Sfatul afisat la HTTP 429. Cazul vazut: GonkaRouter, model `MiniMaxAI/MiniMax-M2.7`, unealta `run_agents`, raspuns „Upstream capacity is currently saturated”. Grupul a ramas partial. Test nou: `ErrorHintTest`, sase limbi. | Ocuparea rutei. Aplicatia nu retrimite singura un 429 si nu face modelul disponibil. Proiectul 506556 nu a fost reluat sau declarat finalizat. |
+| 1.26.4 | `154555d` | Panoul din dreapta. In sesiune erau cinci carduri, intre ele „Surse si istoric / Gata.”, doua carduri „Termen depasit” si „Liste si articole / Rezultat partial”. Panoul arata acum numai grupul curent. | Istoricul conversatiei si fisierele din `agent-runs/`. Un rezultat partial sau „Termen depasit” nu devine succes. |
+
+### Cum s-a verificat
+
+- 1.26.2: `ManualCurrentLimits` a trecut. O suita completa a trecut verificarile native de shortcut (229), navigarea si popup-ul, apoi proba Tesseract copiata a depasit 20 de secunde. Reluarea izolata a fluxului PDFCONTROL a trecut 16 verificari. Doua rulari ulterioare nu au putut scrie in editor, pentru ca fereastra de test nu avea focus. Instalarea a folosit `Build.ps1 -SkipNativeQA` si a trecut suitele automate, inclusiv motorul PDFCONTROL pe date sintetice.
+- 1.26.3: `ErrorHintTest` a trecut. Prima suita s-a oprit la `AccessDeniedException` pe mutarea temporara `hotfolder-generated.json`; reluarea a trecut. Instalarea a folosit din nou `SkipNativeQA`, pentru ca LocalChat era deschis.
+- 1.26.4: `AgentPanelTest` a trecut 69 de verificari, fata de 67 inaintea curatarii. Instalarea a folosit `SkipNativeQA` din acelasi motiv.
+
+Tastele reale si masurarea de mouse nu fac parte din aceste instalari. Testele locale nu confirma finalizarea proiectului de productie 506556. HTTP 429 ramane limita furnizorului.
