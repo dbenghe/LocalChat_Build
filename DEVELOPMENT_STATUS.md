@@ -1,8 +1,20 @@
 # LocalChat — raport de dezvoltare si probleme cunoscute
 
-Actualizat: 24 octombrie 2026. Livrare: 1.26.4.
+Actualizat: 26 octombrie 2026. Livrare: 1.26.5.
 
 Acest raport sintetizeaza dezvoltarea aplicatiei si diagnosticele confirmate. Cronologia completa a modificarilor functionale ramane in CHANGELOG.md; sursele si commiturile sunt in repository-ul personal LocalChat_Build. Datele proiectelor, conversatiile, cheile, cataloagele private si jurnalele nu fac parte din publicarea Git.
+
+## Corectie 1.26.5: izolarea cardurilor de fabrica
+
+Cauza confirmata: folderul numerotat mostenit avea prioritate fata de proiectul deja confirmat la raspunsuri scurte. Proiectul confirmat are acum prioritate, iar o cerere explicita pentru alt proiect ramane prioritara. Folderul local se aliniaza numai spre un frate deja existent cu numarul proiectului, fara creare de directoare sau radacini fixe. Daca folderul-frate lipseste, mesajul ramane netrimis, cu explicarea nepotrivirii; nu executa operatii relative in celalalt proiect.
+
+Un card de fabrica salvat pentru alt proiect putea intercepta raspunsul liber al conversatiei curente. Restaurarea si trimiterea invalideaza acum alegerea care nu corespunde proiectului mesajului/folderului/conversatiei. Nu sterg istoricul, ciorna sau fabrica confirmata. Rezultatul unei verificari asincrone apartine numai starii care a pornit-o; schimbarea chatului invalideaza generatia si cache-urile verificarii.
+
+Fabrica confirmata se reutilizeaza pentru acelasi proiect fara o noua cautare de disponibilitate. Un server momentan offline nu declanseaza repetarea intrebarii. Numai schimbarea explicita a destinatiei/proiectului sau eliminarea locatiei din configuratie necesita o noua alegere; aceasta nu autorizeaza operatii noi si nu afirma ca serverul este accesibil.
+
+Un raspuns liber nerecunoscut la alegerea fabricii ramane vizibil si editabil, cu explicatie in card. Numele cu prefix MBS si numarul optiunii sunt acceptate numai daca identifica unic fabrica. Nu transforma textul arbitrar in aprobare. Cardurile modelului continua sa trimita raspunsul liber impreuna cu ciorna.
+
+Regresia dedicata FactoryReplyTest foloseste date sintetice, server loopback si Swing: stare salvata incompatibila, pastrarea fabricii/ciornei, raspuns valid/invalid si schimbarea intre doua chaturi cu intrebari separate. Nu modifica documente de productie. La verificarea generala, AgentIntegrationTest a avut o asertiune tranzitorie privind numarul cererilor loopback; reluarea izolata a trecut (11 verificari), iar restul pipeline-ului este executat fara schimbari ale implementarii. Prima nereusita ramane in jurnalul local. Verificarile ramase au trecut, inclusiv 16 fluxuri PDFCONTROL, iar JAR-ul 1.26.5 a fost generat. Testarea fizica a mouse-ului/tastaturii ramane neexecutata; erorile furnizorilor nu sunt eliminate prin aceasta corectie.
 
 ## Ce este implementat pana acum
 

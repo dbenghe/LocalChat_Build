@@ -31,6 +31,7 @@ final class ComposerAssist extends JPanel {
  boolean waiting(){return request!=null&&!dismissed&&!request.questions.isEmpty();}
  void busy(boolean value){busy=value;send.setEnabled(!value&&ready());for(Component c:components(this))if(c instanceof AbstractButton||c instanceof JTextField)c.setEnabled(!value);send.setEnabled(!value&&ready());}
  private static java.util.List<Component> components(Container parent){java.util.List<Component> all=new ArrayList<>();for(Component c:parent.getComponents()){all.add(c);if(c instanceof Container box)all.addAll(components(box));}return all;}
+ void retry(String message){dismissed=false;render();JTextArea feedback=wrapped(message);feedback.setFont(UIManager.getFont("Label.font").deriveFont(12f));JPanel footer=clearPanel(new BorderLayout(6,0));footer.add(feedback);footer.add(send,BorderLayout.EAST);add(footer,BorderLayout.SOUTH);revalidate();repaint();}
  void dismiss(){dismissed=true;input.ghost("");setVisible(false);revalidate();}
  void present(Object raw,String identity){presentLocal(parse(raw),identity);}
  void presentLocal(Request next,String identity){if(!key.equals(identity)){answers.clear();custom.clear();selected.clear();dismissed=false;key=identity;}request=next;render();}

@@ -83,6 +83,8 @@ if ($LASTEXITCODE) { throw 'Provider/metadata tests failed; distribution was not
 if ($LASTEXITCODE) { throw 'Provider management regression tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/provider-setup-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ProviderSetupTest
 if ($LASTEXITCODE) { throw 'Provider creation, endpoint scope and xAI authentication tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/factory-reply-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.FactoryReplyTest
+if ($LASTEXITCODE) { throw 'Factory reply project isolation tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/project-location-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ProjectLocationsTest
 if ($LASTEXITCODE) { throw 'Factory/project location preflight tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/hotfolder-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.HotfolderTest

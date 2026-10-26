@@ -13,7 +13,14 @@ final class ProjectLocations {
  static String project(String message,Path folder,String previous){
   Matcher explicit=Pattern.compile("(?i)(?:proiect(?:ul)?|project|projekt|proje)[^0-9\\r\\n]{0,25}([0-9]{6})(?![0-9])").matcher(message);if(explicit.find())return explicit.group(1);
   if(message.toLowerCase(Locale.ROOT).matches("(?s).*(productie|pdfcontrol|productie-projecten).*")){Matcher number=Pattern.compile("(?<![0-9])[0-9]{6}(?![0-9])").matcher(message);if(number.find())return number.group();}
+  if(previous!=null&&previous.matches("[0-9]{6}"))return previous;
   if(folder!=null&&folder.getFileName()!=null&&folder.getFileName().toString().matches("[0-9]{6}"))return folder.getFileName().toString();return previous!=null&&previous.matches("[0-9]{6}")?previous:"";
+ }
+ // Only correct an inherited numbered project folder when the sibling already exists.
+ static Path projectFolder(Path folder,String project){
+  if(folder==null||folder.getFileName()==null||!project.matches("[0-9]{6}")||!folder.getFileName().toString().matches("[0-9]{6}")||folder.getFileName().toString().equals(project))return folder;
+  Path parent=folder.getParent();if(parent==null)return folder;Path sibling=parent.resolve(project);
+  return Files.isDirectory(sibling,LinkOption.NOFOLLOW_LINKS)&&!Files.isSymbolicLink(sibling)?sibling:folder;
  }
  private static final ExecutorService POOL=Executors.newFixedThreadPool(4,r->{Thread t=new Thread(r,"project-root-read");t.setDaemon(true);return t;});
  private record Scan(Root root,List<Match> matches){}
@@ -38,6 +45,6 @@ final class ProjectLocations {
  static boolean needsName(Result result){return result.choices().size()==1&&result.choices().get(0).root.factory.isBlank();}
  static String factoryName(String value){String clean=value.strip().replaceFirst("(?i)^MBS\\s*","");return clean.toLowerCase(Locale.ROOT);}
  static ComposerAssist.Request question(Result result){if(needsName(result))return new ComposerAssist.Request(I18n.text("Confirma fabrica pentru locatia {0}.",result.choices().get(0).root.path),List.of(new ComposerAssist.Question("factory-name",I18n.text("Care este fabrica proiectului {0}?",result.project),List.of("MBS Soest","MBS Alphen","MBS Veenoord","MBS Lelystad"))),List.of());List<String> labels=new ArrayList<>();int i=0;for(Match m:result.choices())labels.add((++i)+". "+m.label());String message=I18n.text(result.matches.isEmpty()?"Proiectul {0} nu a fost gasit. Alege fabrica pentru continuare.":"Proiectul {0} apare in mai multe locatii. Alege fabrica si folderul.",result.project);if(!result.unavailable.isEmpty())message+="\n"+I18n.text("Locatii neverificate: {0}",String.join(", ",result.unavailable));return new ComposerAssist.Request(message,List.of(new ComposerAssist.Question("factory",I18n.text("Unde procesez proiectul {0}?",result.project),labels)),List.of());}
- static Match answer(Result result,String answer){var candidates=result.choices();List<Match> matches=new ArrayList<>();for(int i=0;i<candidates.size();i++){Match m=candidates.get(i);if(answer.equals((i+1)+". "+m.label())||answer.equalsIgnoreCase(m.folder)&&!m.folder.isBlank()||answer.equalsIgnoreCase(m.root.path)||!m.root.factory.isBlank()&&answer.equalsIgnoreCase(m.root.factory))matches.add(m);}return matches.size()==1?matches.get(0):null;}
+ static Match answer(Result result,String answer){var candidates=result.choices();List<Match> matches=new ArrayList<>();for(int i=0;i<candidates.size();i++){Match m=candidates.get(i);if(answer.strip().equals(Integer.toString(i+1))||answer.equals((i+1)+". "+m.label())||answer.equalsIgnoreCase(m.folder)&&!m.folder.isBlank()||answer.equalsIgnoreCase(m.root.path)||!m.root.factory.isBlank()&&factoryName(answer).equalsIgnoreCase(m.root.factory))matches.add(m);}return matches.size()==1?matches.get(0):null;}
  private ProjectLocations(){}
 }

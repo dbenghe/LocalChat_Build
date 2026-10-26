@@ -673,5 +673,8 @@
   "Asteapta API": "API bekleniyor",
   "Compactare context": "Bağlam sıkıştırılıyor",
   "Nu pot inregistra fisierele generate pentru hotfolder: {0}": "Oluşturulan dosyalar kaydedilemiyor: {0}",
-  "Raspunsul modelului a fost trunchiat. Niciun apel din acest raspuns nu a fost executat; istoricul si rezultatele anterioare sunt pastrate.": "Model yanıtı kesildi. Bu yanıttaki çağrılar çalıştırılmadı; geçmiş ve önceki sonuçlar korundu."
+  "Raspunsul modelului a fost trunchiat. Niciun apel din acest raspuns nu a fost executat; istoricul si rezultatele anterioare sunt pastrate.": "Model yanıtı kesildi. Bu yanıttaki çağrılar çalıştırılmadı; geçmiş ve önceki sonuçlar korundu.",
+  "Alege o fabrica din lista sau scrie numele ei. Raspunsul tau este pastrat.": "Listeden bir fabrika seçin veya adını yazın. Yanıtınız korunur.",
+  "Alegerea veche a fost eliminata. Verifica mesajul si apasa Trimite.": "Eski seçim kaldırıldı. Mesajınızı kontrol edip Gönder düğmesine basın.",
+  "Folderul ales este pentru proiectul {0}, iar conversatia este pentru {1}. Alege folderul proiectului curent.": "Seçilen klasör {0} projesine, bu sohbet ise {1} projesine ait. Geçerli projenin klasörünü seçin."
 }

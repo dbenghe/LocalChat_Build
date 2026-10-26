@@ -1,3 +1,9 @@
+# 1.26.5 — 2026-10-26
+- La raspunsuri scurte, proiectul confirmat are prioritate fata de un folder numerotat mostenit de la alt chat. Corecteaza folderul local numai spre fratele deja existent al proiectului curent; nu creeaza directoare si nu ghiceste radacini.
+- Fabrica deja confirmata este reutilizata pentru acelasi proiect fara verificari repetate de disponibilitate si fara intrebari noi dupa compactare/comparatie/reluare. Schimbarea explicita a destinatiei sau eliminarea locatiei din configuratie necesita reverificare.
+- Cardurile de fabrica ramase de la alt proiect nu mai intercepteaza raspunsurile conversatiei curente. Alegerea confirmata, istoricul si ciorna sunt pastrate.
+- Raspunsurile libere nerecunoscute la alegerea fabricii raman in card, cu explicatie vizibila; rezultatele verificarilor asincrone apartin numai conversatiei care le-a pornit.
+
 # 1.26.4 — 2026-10-24
 - Panoul agentilor pastreaza numai grupul curent. Un grup nou inlocuieste cardurile vechi, inclusiv cele oprite sau fara rezultat. Chatul si arhivele private raman integrale; reluarea reconstruieste ultimul grup.
 
