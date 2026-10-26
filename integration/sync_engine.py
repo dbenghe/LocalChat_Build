@@ -25,11 +25,17 @@ def main():
     for name,digest in json.loads(manifest.read_text(encoding='utf-8'))['sha256'].items():
         file=package/name
         if not file.is_file() or hashlib.sha256(file.read_bytes()).hexdigest()!=digest:raise SystemExit('Owned engine differs from development manifest: '+name)
+    import importlib.util
+    spec=importlib.util.spec_from_file_location('owned_extraction_hooks',integration/'apply_extraction_layout.py')
+    hooks=importlib.util.module_from_spec(spec);spec.loader.exec_module(hooks);hooks.apply(package)
     shutil.copy2(integration/'pdfcontrol_bridge.py',package/'octop_mcp.py')
     shutil.copy2(integration/'catalogue_update.py',package/'catalogue_update.py')
     shutil.copy2(integration/'import_audit.py',package/'import_audit.py')
     shutil.copy2(integration/'fast_import.py',package/'fast_import.py')
-    registered=json.loads(manifest.read_text(encoding='utf-8'));registered['sha256']['catalogue_update.py']=hashlib.sha256((package/'catalogue_update.py').read_bytes()).hexdigest()
+    shutil.copy2(integration/'mbs_localchat_layout.py',package/'mbs_localchat_layout.py')
+    registered=json.loads(manifest.read_text(encoding='utf-8'));
+    if (package/'mbs_webapp.py').is_file():registered['sha256']['mbs_webapp.py']=hashlib.sha256((package/'mbs_webapp.py').read_bytes()).hexdigest()
+    registered['sha256']['mbs_localchat_layout.py']=hashlib.sha256((package/'mbs_localchat_layout.py').read_bytes()).hexdigest();registered['sha256']['catalogue_update.py']=hashlib.sha256((package/'catalogue_update.py').read_bytes()).hexdigest()
     registered['sha256']['import_audit.py']=hashlib.sha256((package/'import_audit.py').read_bytes()).hexdigest()
     registered['sha256']['fast_import.py']=hashlib.sha256((package/'fast_import.py').read_bytes()).hexdigest()
     manifest.write_text(json.dumps(registered,indent=2)+'\n',encoding='utf-8')

@@ -1,8 +1,14 @@
 # LocalChat — raport de dezvoltare si probleme cunoscute
 
-Actualizat: 26 octombrie 2026. Livrare: 1.26.5.
+Actualizat: 26 octombrie 2026. Livrare: 1.26.6.
 
 Acest raport sintetizeaza dezvoltarea aplicatiei si diagnosticele confirmate. Cronologia completa a modificarilor functionale ramane in CHANGELOG.md; sursele si commiturile sunt in repository-ul personal LocalChat_Build. Datele proiectelor, conversatiile, cheile, cataloagele private si jurnalele nu fac parte din publicarea Git.
+
+## Corectie 1.26.6: extragere Tekla/ABWN
+
+Titlul VORM/WAPENING si familia marcii au prioritate fata de pozitiile din tabelele de accesorii. Numarul MBS din campul dublu ABWN/MBS este citit distinct de numarul de cinci cifre al biroului. Plansele fara proiect propriu pot mosteni numai numarul MBS unic, etichetat in aceeasi brosura; copertele conflictuale nu autorizeaza asocierea. Un numar propriu valid ramane prioritar. Coperta nu este desen de productie, iar W lipsa nu este fabricat.
+
+Regresia foloseste brosuri sintetice cu coperta separata, BA1/BA2, H20/SU2, numere concurente si documente succesive. Diagnosticul pe sursa utilizatorului si copiile de proba raman private. Modificarile sunt in motorul propriu, nu in instalatia legacy. Interfata Java ramane neschimbata; versiunea provine din VERSION. Validarea acestei livrari foloseste testele relevante motorului, conectorului si JAR-ului cu versiunea noua; suita generala UI din 1.26.5 nu a fost repetata integral. Un test separat de catalog/OCR a depasit initial cele 20 de secunde la pornirea Tesseract; reluarea lui izolata a trecut. Eroarea initiala ramane in jurnal, distinct de extragerea ABWN.
 
 ## Corectie 1.26.5: izolarea cardurilor de fabrica
 

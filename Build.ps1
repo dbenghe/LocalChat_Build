@@ -167,6 +167,8 @@ if ($LASTEXITCODE) { throw 'International chat tests failed' }
 if ($LASTEXITCODE) { throw 'Local memory tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/normal-mode-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.NormalModeTest
 if ($LASTEXITCODE) { throw 'Clean Normal mode isolation tests failed' }
+& $taskPdfPython -I "$PSScriptRoot/integration/test_extraction_layout.py" --package "$PSScriptRoot/pdfcontrol"
+if ($LASTEXITCODE) { throw 'ABWN brochure extraction layout tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_owned_layout.py" --package "$PSScriptRoot/pdfcontrol"
 if ($LASTEXITCODE) { throw 'Owned engine layout tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_pdfcontrol_bridge.py" --package "$PSScriptRoot/pdfcontrol" --output "$taskBuild/pdfcontrol-tests"

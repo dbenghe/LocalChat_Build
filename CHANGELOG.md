@@ -1,3 +1,7 @@
+# 1.26.6 — 2026-10-26
+- Extragere Tekla/ABWN: foloseste marca unica din titlul plansei (BA/GA/DP/TR/BD), fara confundarea cu pozitiile de accesorii. Titlurile ambigue raman neconfirmate.
+- Plansele fara numar MBS pot prelua numarul explicit, unic, din coperta aceleiasi brosuri. Nu foloseste numarul biroului, nu suprascrie un proiect propriu valid si nu inventeaza armari W.
+
 # 1.26.5 — 2026-10-26
 - La raspunsuri scurte, proiectul confirmat are prioritate fata de un folder numerotat mostenit de la alt chat. Corecteaza folderul local numai spre fratele deja existent al proiectului curent; nu creeaza directoare si nu ghiceste radacini.
 - Fabrica deja confirmata este reutilizata pentru acelasi proiect fara verificari repetate de disponibilitate si fara intrebari noi dupa compactare/comparatie/reluare. Schimbarea explicita a destinatiei sau eliminarea locatiei din configuratie necesita reverificare.

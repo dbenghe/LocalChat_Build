@@ -56,6 +56,7 @@ class Workflows(unittest.TestCase):
         for side,value,rev in [('old','2000','A'),('new','2100','B')]:
             path=PROJECT/side/'123456_A1_V.pdf'
             pdf(path,[f'Projectnummer: 123456\nVormtekening\nA1_V\nRevisie: {rev}\nDefinitief\nMaat: {value}'])
+        pdf(PROJECT/'abwn-book.pdf',['Tekla Structures\nVB-BA1\nRenvooi\nProjectnummer ABWN // werknummer MBS:\n98765 / 123456','Tekla Structures\nH20\nSU2\nINSTORTVOORZIENINGEN\nVORM BALKON\nBA1','Tekla Structures\nSU2\nH20\nINSTORTVOORZIENINGEN\nVORM BALKON\nBA2'])
         cls.before={str(p):digest(p) for p in PROJECT.rglob('*.pdf')}
     @classmethod
     def tearDownClass(cls):
@@ -239,6 +240,16 @@ class Workflows(unittest.TestCase):
             return original(path,*args,**kwargs)
         with patch.object(Path,'read_text',locked):self.assertEqual(bridge.read_record(target)['status'],'done')
         self.assertEqual(len(attempts),3)
+
+    def test_17_abwn_cover_project_and_title_marks(self):
+        record=self.client.wait(self.client.start('pdfcontrol_start_extract',files=['abwn-book.pdf']))
+        self.artifacts(record);self.assertEqual(record['status'],'partial')
+        folder=Path(record['run_folder'])/'engine/PDF_NOU'
+        self.assertEqual({p.name for p in folder.glob('123456_*_V.pdf')},{'123456_BA1_V.pdf','123456_BA2_V.pdf'})
+        self.assertFalse(list(folder.glob('*_W.pdf')))
+        provenance=json.loads(Path(record['provenance']).read_text(encoding='utf-8'))
+        extracted=[a for a in provenance['actions'] if a['soort']=='extract']
+        self.assertEqual({a['pagina'] for a in extracted},{1,2});self.assertEqual(record['pair_summary']['created'],2)
 
 if __name__=='__main__':
     result=unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(Workflows))
