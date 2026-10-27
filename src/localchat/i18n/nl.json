@@ -676,5 +676,7 @@
   "Raspunsul modelului a fost trunchiat. Niciun apel din acest raspuns nu a fost executat; istoricul si rezultatele anterioare sunt pastrate.": "Het modelantwoord is afgebroken. Geen aanroep uit dit antwoord is uitgevoerd; geschiedenis en eerdere resultaten zijn bewaard.",
   "Alege o fabrica din lista sau scrie numele ei. Raspunsul tau este pastrat.": "Kies een fabriek uit de lijst of typ de naam. Je antwoord blijft bewaard.",
   "Alegerea veche a fost eliminata. Verifica mesajul si apasa Trimite.": "De oude keuze is verwijderd. Controleer het bericht en klik op Verzenden.",
-  "Folderul ales este pentru proiectul {0}, iar conversatia este pentru {1}. Alege folderul proiectului curent.": "De gekozen map is voor project {0}, maar dit gesprek is voor {1}. Kies de map van het huidige project."
+  "Folderul ales este pentru proiectul {0}, iar conversatia este pentru {1}. Alege folderul proiectului curent.": "De gekozen map is voor project {0}, maar dit gesprek is voor {1}. Kies de map van het huidige project.",
+  "Rezultate unelte": "Toolresultaten",
+  "Gandire: {0}": "Redeneren: {0}"
 }

@@ -1,6 +1,6 @@
 # LocalChat — raport de dezvoltare si probleme cunoscute
 
-Actualizat: 26 octombrie 2026. Livrare: 1.26.6.
+Actualizat: 28 octombrie 2026. Livrare: 1.27.0.
 
 Acest raport sintetizeaza dezvoltarea aplicatiei si diagnosticele confirmate. Cronologia completa a modificarilor functionale ramane in CHANGELOG.md; sursele si commiturile sunt in repository-ul personal LocalChat_Build. Datele proiectelor, conversatiile, cheile, cataloagele private si jurnalele nu fac parte din publicarea Git.
 
@@ -22,6 +22,15 @@ Un raspuns liber nerecunoscut la alegerea fabricii ramane vizibil si editabil, c
 
 Regresia dedicata FactoryReplyTest foloseste date sintetice, server loopback si Swing: stare salvata incompatibila, pastrarea fabricii/ciornei, raspuns valid/invalid si schimbarea intre doua chaturi cu intrebari separate. Nu modifica documente de productie. La verificarea generala, AgentIntegrationTest a avut o asertiune tranzitorie privind numarul cererilor loopback; reluarea izolata a trecut (11 verificari), iar restul pipeline-ului este executat fara schimbari ale implementarii. Prima nereusita ramane in jurnalul local. Verificarile ramase au trecut, inclusiv 16 fluxuri PDFCONTROL, iar JAR-ul 1.26.5 a fost generat. Testarea fizica a mouse-ului/tastaturii ramane neexecutata; erorile furnizorilor nu sunt eliminate prin aceasta corectie.
 
+## Optimizare 1.27.0: prefix stabil si masurare
+
+Auditul a confirmat doua cauze ale consumului inutil: mesajul de control mutat dupa ultimul mesaj al utilizatorului si indexul de progres/memoriile din promptul de sistem schimbau prefixul la fiecare tur, iar politica limbii era scrisa de trei ori. Acum sistemul este identic intre ture, politica apare o singura data, iar datele volatile sunt un bloc unic la final (numai MBS). Anchorele includ blocul in semnatura.
+
+Masuratoare pe harness sintetic (API simulat, estimari in caractere, ~): Normal tur 1: 3253 -> 1490 caractere (sistem 1990 -> 1299). MBS tur 1 cu 30 unelte: 30107 -> 28344 caractere (sistem 9744 -> 9053; definitiile uneltelor, 19017 caractere, raman cea mai mare componenta si sunt tinta urmatoarei etape). Estimarea in tokeni depinde de tokenizerul modelului.
+
+reasoning_content se citeste, se numara prin reasoning_tokens si nu se retrimite. Fereastra de context are patru componente.
+
+Teste: StablePrefixTest (35 verificari) in Build.ps1, InternationalChatTest adaptat. Limita cunoscuta: estimarile ~ nu inlocuiesc contorul furnizorului.
 ## Ce este implementat pana acum
 
 | Domeniu | Functionalitate disponibila |

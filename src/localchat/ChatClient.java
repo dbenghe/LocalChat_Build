@@ -25,6 +25,8 @@ final class ChatClient {
 
     interface Listener {
         void onText(String delta);
+        /** Provider reasoning_content / thinking deltas: observability only, never shown as answer and never resent. */
+        default void onReasoning(String delta) {}
     }
 
     /** A tool the model asked to run. */
@@ -134,8 +136,11 @@ final class ChatClient {
         final String text;
         final List<ToolCall> calls;
         final String finishReason;
+        /** Separate provider reasoning (reasoning_content/thinking). Request-local: never added to history or the archive. */
+        final String reasoning;
         Reply(String text,List<ToolCall> calls){this(text,calls,"");}
-        Reply(String text,List<ToolCall> calls,String finishReason){this.text=text;this.calls=calls;this.finishReason=finishReason==null?"":finishReason;}
+        Reply(String text,List<ToolCall> calls,String finishReason){this(text,calls,finishReason,"");}
+        Reply(String text,List<ToolCall> calls,String finishReason,String reasoning){this.text=text;this.calls=calls;this.finishReason=finishReason==null?"":finishReason;this.reasoning=reasoning==null?"":reasoning;}
         boolean truncated(){return Set.of("length","max_tokens","model_length","model_context_window_exceeded").contains(finishReason);}
 
     }
@@ -342,7 +347,7 @@ final class ChatClient {
     }
 
     private Reply readReply(HttpURLConnection conn, boolean anthropic, Listener listener) throws IOException {
-        StringBuilder text = new StringBuilder();
+        StringBuilder text = new StringBuilder(),reasoning = new StringBuilder();
         Map<Integer, CallBuilder> calls = new TreeMap<>();
         StringBuilder plain = new StringBuilder();
         boolean sawEvents = false,completed = false;String finishReason="";
@@ -367,6 +372,11 @@ final class ChatClient {
                 String reason=anthropic?Json.str(event,"delta","stop_reason"):Json.str(event,"choices",0,"finish_reason");if(reason!=null)finishReason=reason;
                 if(terminal || (!anthropic && Json.get(event,"choices",0,"finish_reason")!=null))completed=true;
                 lastUsage=TokenUsage.parse(event,anthropic,lastUsage,terminal);
+                String thought = reasoningDelta(event, anthropic);
+                if (thought != null && !thought.isEmpty()) {
+                    reasoning.append(thought);
+                    listener.onReasoning(thought);
+                }
                 String delta = anthropic ? anthropicEvent(event, calls) : openAiEvent(event, calls);
                 if (delta != null && !delta.isEmpty()) {
                     text.append(delta);
@@ -381,11 +391,19 @@ final class ChatClient {
             Object parsed=Json.parse(plain.toString());
             lastUsage=TokenUsage.parse(parsed,anthropic,TokenUsage.UNKNOWN,true);
             Reply full = fullReply(parsed, anthropic);
+            if (!full.reasoning.isEmpty()) listener.onReasoning(full.reasoning);
             if (!full.text.isEmpty()) listener.onText(full.text);
             return full;
         }
         if(requireCompleteReply && sawEvents && !completed && !cancelled)throw new IOException(I18n.text("Compactarea a esuat: fluxul API s-a inchis inaintea raspunsului complet; istoricul si memoria sunt pastrate."));
-        return new Reply(text.toString(), cancelled ? Collections.emptyList() : build(calls),finishReason);
+        return new Reply(text.toString(), cancelled ? Collections.emptyList() : build(calls),finishReason,reasoning.toString());
+    }
+
+    /** Reasoning delta of one SSE event: OpenAI-compatible reasoning_content (LM Studio, DeepSeek) or reasoning (OpenRouter); Anthropic thinking_delta. */
+    static String reasoningDelta(Object event, boolean anthropic) {
+        if (anthropic) return "thinking_delta".equals(Json.str(event, "delta", "type")) ? Json.str(event, "delta", "thinking") : null;
+        String value = Json.str(event, "choices", 0, "delta", "reasoning_content");
+        return value != null && !value.isEmpty() ? value : Json.str(event, "choices", 0, "delta", "reasoning");
     }
 
     private static String anthropicEvent(Object event, Map<Integer, CallBuilder> calls) {
@@ -442,7 +460,7 @@ final class ChatClient {
         String error = errorMessage(resp);
         if (error != null) throw new IOException(error);
         List<ToolCall> calls = new ArrayList<>();
-        StringBuilder text = new StringBuilder();
+        StringBuilder text = new StringBuilder(),reasoning = new StringBuilder();
         if (anthropic) {
             Object content = Json.get(resp, "content");
             if (content instanceof List) {
@@ -450,6 +468,9 @@ final class ChatClient {
                     String type = Json.str(block, "type");
                     if ("text".equals(type)) {
                         text.append(Json.str(block, "text"));
+                    } else if ("thinking".equals(type)) {
+                        String thought = Json.str(block, "thinking");
+                        if (thought != null) reasoning.append(thought);
                     } else if ("tool_use".equals(type)) {
                         Object input = Json.get(block, "input");
                         calls.add(new ToolCall(Json.str(block, "id"), Json.str(block, "name"),
@@ -460,6 +481,9 @@ final class ChatClient {
         } else {
             String s = Json.str(resp, "choices", 0, "message", "content");
             if (s != null) text.append(s);
+            String thought = Json.str(resp, "choices", 0, "message", "reasoning_content");
+            if (thought == null || thought.isEmpty()) thought = Json.str(resp, "choices", 0, "message", "reasoning");
+            if (thought != null) reasoning.append(thought);
             Object list = Json.get(resp, "choices", 0, "message", "tool_calls");
             if (list instanceof List) {
                 for (Object tc : (List<?>) list) {
@@ -472,7 +496,7 @@ final class ChatClient {
                 }
             }
         }
-        return new Reply(text.toString(), calls,anthropic?Json.str(resp,"stop_reason"):Json.str(resp,"choices",0,"finish_reason"));
+        return new Reply(text.toString(), calls,anthropic?Json.str(resp,"stop_reason"):Json.str(resp,"choices",0,"finish_reason"),reasoning.toString());
     }
 
     @SuppressWarnings("unchecked")

@@ -7,10 +7,12 @@ import java.util.*;
 final class ContextGuard {
     record Memory(String summary,int through,String question,List<ImageInput.Ref> images){}
     final int maximum,replyBudget,threshold;final boolean automatic;
-    String languageControl="";
+    /** Volatile per-request data (progress, scoped memories): one wire-only block after the last user message; the system prompt and earlier history stay byte-stable. */
+    String requestContext="";
     java.nio.file.Path checkpointDirectory;
     boolean projectMode=true;
     String signature="";
+    static String signature(String system,String requestContext,List<ChatClient.ToolSpec> tools){return signature(requestContext==null||requestContext.isBlank()?system:system+"\n"+requestContext,tools);}
     static String signature(String system,List<ChatClient.ToolSpec> tools){try{return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest((system+"\n"+Json.write(tools.stream().map(t->Json.obj("name",t.name,"description",t.description,"schema",t.schema)).toList())).getBytes(java.nio.charset.StandardCharsets.UTF_8)));}catch(java.security.NoSuchAlgorithmException e){throw new IllegalStateException(e);}}
     double scale;long requestRaw,requestEstimate,anchorInput=-1;int requestSourceCount,anchorSourceCount;Memory memory,requestMemory,anchorMemory;
     void seed(long input,int sourceCount){anchorInput=input;anchorSourceCount=sourceCount;anchorMemory=null;}
@@ -45,7 +47,7 @@ final class ContextGuard {
     List<ChatClient.Message> prepare(Provider provider,String url,String key,String model,String system,
             List<ChatClient.Message> original,List<ChatClient.ToolSpec> tools,int step,Agent.Ui ui)throws IOException{
         if(cancelled)throw new InterruptedIOException("Cancelled");
-        signature=signature(system,tools);
+        signature=signature(system,requestContext,tools);
         List<ChatClient.Message> active=requestView(original);
         long estimate=estimate(system,original,active,tools);
         if(maximum>0 && automatic && (estimate+reserve()+margin()>maximum || (step>0 && ContextMemory.messages(active)>256 && estimate*100L>=(long)maximum*threshold))){
@@ -57,7 +59,7 @@ final class ContextGuard {
         requestRaw=raw(system,active,tools);requestEstimate=estimate;requestSourceCount=original.size();requestMemory=memory;return active;
     }
     List<ChatClient.Message> requestView(List<ChatClient.Message> original){return languageView(view(original));}
-    private List<ChatClient.Message> languageView(List<ChatClient.Message> messages){if(languageControl.isBlank())return messages;List<ChatClient.Message> copy=new ArrayList<>(messages);for(int i=copy.size()-1;i>=0;i--)if(copy.get(i).role.equals("user")){copy.set(i,copy.get(i).withRequestControl(languageControl));break;}return copy;}
+    private List<ChatClient.Message> languageView(List<ChatClient.Message> messages){if(requestContext.isBlank())return messages;List<ChatClient.Message> copy=new ArrayList<>(messages);for(int i=copy.size()-1;i>=0;i--)if(copy.get(i).role.equals("user")){copy.set(i,copy.get(i).withRequestControl(requestContext));break;}return copy;}
     int outputLimit(){return maximum>0?(int)Math.max(1,Math.min(replyBudget,maximum-requestEstimate-margin())):replyBudget;}
     private void compact(Provider provider,String url,String key,String model,String system,List<ChatClient.Message> original,
             List<ChatClient.Message> active,List<ChatClient.ToolSpec> tools,Agent.Ui ui)throws IOException{

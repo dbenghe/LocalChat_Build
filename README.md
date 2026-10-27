@@ -840,3 +840,10 @@ Sectiunile de utilizare pentru agenti descriu limitele curente: 3 sarcini, 2 sim
 Vezi [raportul de dezvoltare](DEVELOPMENT_STATUS.md) pentru istoricul functional, cauzele confirmate si problemele ramase. Hotfolderul foloseste `hotfolder-generated.json` privat pentru rezultatele identificate ale uneltelor; nu exclude global folderele cu desene sau liste. Editarea ulterioara a unui rezultat de catre utilizator poate genera din nou o notificare. Destinatiile shell calculate dinamic fara identificare certa raman monitorizate, pentru a nu ascunde surse legitime.
 
 Grupurile de agenti nu mai au o limita comuna de trei minute. Stop si protectiile conexiunii raman disponibile; panoul arata asteptarea API si compactarea. Mai mult timp nu garanteaza un raspuns corect sau disponibilitatea furnizorului.
+
+## Prefix stabil si masurarea cererii (1.27.0)
+
+- Promptul de sistem nu se schimba de la un mesaj la altul, deci LM Studio poate refolosi cache-ul KV al istoricului. Indexul de progres si memoriile confirmate se trimit intr-un singur bloc scurt dupa ultimul mesaj, numai in MBS. In Normal nu exista unelte, reguli MBS sau memorii.
+- Regula limbii de raspuns apare o singura data. Limba interfetei ramane separata si nu se trimite modelului.
+- Fereastra de context are patru randuri: Prompt de sistem, Definitii unelte, Conversatie si Rezultate unelte. Valorile cu ~ sunt estimari, nu masuratori ale furnizorului.
+- Pentru modelele cu reasoning, linia de utilizare afiseaza Gandire: N cand API-ul raporteaza reasoning_tokens. Textul de gandire nu este salvat si nu este retrimis.

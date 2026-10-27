@@ -1,3 +1,9 @@
+# 1.27.0 — 2026-10-28
+- Prefix stabil pentru cache-ul KV al modelului local: promptul de sistem este identic de la un tur la altul. Nu mai contine indexul de progres sau memoriile, iar mesajul de control care urma dupa fiecare ultim mesaj de utilizator a fost eliminat. Datele volatile (indexul de progres si memoriile confirmate) merg intr-un singur bloc "LocalChat session data" dupa ultimul mesaj al utilizatorului, numai in MBS si numai cand exista continut. Blocul este doar pe retea, nu intra in arhiva/export si este inclus in semnatura ancorelor.
+- Politica limbii de raspuns apare o singura data, compact, la finalul promptului de sistem (inainte aparea de trei ori: cap, coada si control). Limba fixa isi pastreaza prioritatea, iar limba interfetei nu ajunge niciodata in cerere.
+- Raspunsurile de tip reasoning: se citeste reasoning_content (SSE si raspuns complet; si campul reasoning si thinking_delta Anthropic). Continutul nu se salveaza si nu se retrimite in istoric. reasoning_tokens din usage se aduna in registrul de consum si apar in linia de utilizare ca Gandire.
+- Fereastra de context arata patru componente cu valori estimate marcate ~: prompt de sistem, definitii unelte, conversatie si rezultate unelte. Procentul si bugetul includ rezultatele uneltelor.
+- Text nou in cele sase limbi (Rezultate unelte, Gandire). Teste noi: StablePrefixTest (35 verificari) plus InternationalChatTest adaptat.
 # 1.26.6 — 2026-10-26
 - Extragere Tekla/ABWN: foloseste marca unica din titlul plansei (BA/GA/DP/TR/BD), fara confundarea cu pozitiile de accesorii. Titlurile ambigue raman neconfirmate.
 - Plansele fara numar MBS pot prelua numarul explicit, unic, din coperta aceleiasi brosuri. Nu foloseste numarul biroului, nu suprascrie un proiect propriu valid si nu inventeaza armari W.

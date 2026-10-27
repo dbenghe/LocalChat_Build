@@ -12,6 +12,10 @@ final class ContextMemory {
     static long messages(List<ChatClient.Message> messages) {
         long n=0; for(var m:messages)n+=estimate(Json.write(m.toJson()))+4096L*m.images.size()+4+(m.requestControl.isBlank()?0:estimate(m.requestControl)+12);return n;
     }
+    /** Estimated size of tool-result messages alone (included in messages()); shown separately so large outputs are visible. */
+    static long toolResults(List<ChatClient.Message> messages) {
+        long n=0; for(var m:messages)if("tool".equals(m.role))n+=estimate(Json.write(m.toJson()))+4;return n;
+    }
     static long tools(List<ChatClient.ToolSpec> specs) {
         long n=0;for(var t:specs)n+=estimate(Json.write(Json.obj("name",t.name,"description",t.description,"schema",t.schema)))+8;return n;
     }

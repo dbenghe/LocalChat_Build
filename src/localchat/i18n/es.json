@@ -676,5 +676,7 @@
   "Raspunsul modelului a fost trunchiat. Niciun apel din acest raspuns nu a fost executat; istoricul si rezultatele anterioare sunt pastrate.": "La respuesta del modelo fue truncada. No se ejecutó ninguna llamada de esta respuesta; se conservan el historial y los resultados anteriores.",
   "Alege o fabrica din lista sau scrie numele ei. Raspunsul tau este pastrat.": "Elige una fábrica de la lista o escribe su nombre. Tu respuesta se conserva.",
   "Alegerea veche a fost eliminata. Verifica mesajul si apasa Trimite.": "Se eliminó la selección anterior. Revisa el mensaje y pulsa Enviar.",
-  "Folderul ales este pentru proiectul {0}, iar conversatia este pentru {1}. Alege folderul proiectului curent.": "La carpeta elegida es del proyecto {0}, pero esta conversación es de {1}. Elige la carpeta del proyecto actual."
+  "Folderul ales este pentru proiectul {0}, iar conversatia este pentru {1}. Alege folderul proiectului curent.": "La carpeta elegida es del proyecto {0}, pero esta conversación es de {1}. Elige la carpeta del proyecto actual.",
+  "Rezultate unelte": "Resultados de herramientas",
+  "Gandire: {0}": "Razonamiento: {0}"
 }
