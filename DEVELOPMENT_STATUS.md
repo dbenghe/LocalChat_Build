@@ -1,8 +1,14 @@
 # LocalChat — raport de dezvoltare si probleme cunoscute
 
-Actualizat: 28 octombrie 2026. Livrare: 1.28.0.
+Actualizat: 28 octombrie 2026. Livrare: 1.28.1.
 
 Acest raport sintetizeaza dezvoltarea aplicatiei si diagnosticele confirmate. Cronologia completa a modificarilor functionale ramane in CHANGELOG.md; sursele si commiturile sunt in repository-ul personal LocalChat_Build. Datele proiectelor, conversatiile, cheile, cataloagele private si jurnalele nu fac parte din publicarea Git.
+
+## Skill productie-projecten (1.28.1)
+- Instalare: sursa locala `packaging\skills\productie-projecten\` (gitignored), instalat in `C:\LocalChat\skills\productie-projecten\`. Fisierele nu sunt in git: toate contin date de productie sau personale (SKILL.md: cai si numere de proiect; PROCEDURA_PROIECTE_MBS.md si SKILL_MBS_PDFCONTROL.md: numere de proiect, cai; references/catalog-isah.json si isah-artikelen.md: catalog ISAH; mengsel-dovezi.json: cai UNC si proiecte; proiecte-curente.md: identificatori ChatGPT; conventii.md, pdfcontrol.md, operare-si-documentare.md, conversatii-chatgpt.md: cai si proceduri interne). Cai ale altui calculator (`C:\Users\<alt utilizator>\...`) sunt traduse de PathMap la citire.
+- Buget: in prompt intra numele si descrierea (274 caractere). SKILL.md are circa 7,1k caractere si cere citirea PROCEDURA_PROIECTE_MBS.md (circa 40k caractere) inainte de prelucrare; se citeste paginat cu `read_file` (fisierele de referinta sunt doar listate).
+- Neconcordante fata de uneltele LocalChat (nerezolvate, procedura nu a fost rescrisa): (1) skill-ul si references/pdfcontrol.md descriu aplicatia veche (`C:\PDFCONTROL`, `mbs_webapp.py`, `START_WEBAPP.bat`, interfata 127.0.0.1:8756, apeluri directe de module `mbs_*` intr-un proces separat); in LocalChat modelul foloseste `pdfcontrol_*`: Wapening Checker = `pdfcontrol_start_check`, Extract PDF = `pdfcontrol_start_extract`, Tekeningen vergelijken = `pdfcontrol_start_compare`, import = `pdfcontrol_compare_import`/`pdfcontrol_prepare_fast_import`, rezultate = `pdfcontrol_job_summary`/`job_findings`, catalog = `pdfcontrol_catalogue_status`; (2) rutinele "chat ChatGPT per proiect" (creare/actualizare/publicare chat, Pentru_ChatGPT_<numar>.txt) cer integrarea cu aplicatia ChatGPT, care nu exista in LocalChat: modelul trebuie sa marcheze transferul ca restant, nu sa pretinda publicarea; (3) mentiunile Codex/LM Studio sunt istorice; (4) skill-ul cere proceduri de retea/copiere (UNC) care raman sub controlul comenzii `run_command`/accesului din LocalChat; (5) `pdfcontrol-octop` si `productie-projecten` se suprapun la reguli PDFCONTROL: prioritate pentru confirmarea fabricii pe proiect si pentru uneltele `pdfcontrol_*`.
+- Propuneri: curatarea sectiunilor vechi din skill (aplicatia web) de catre Dumitru; mutarea datelor de catalog in `data_lokaal` privat, nu in skill.
 
 ## Unelte PDFCONTROL de citire (1.28.0)
 

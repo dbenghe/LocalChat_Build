@@ -58,7 +58,7 @@ suportă tool-uri, debifează **Tool-uri**.
 Toate stau lângă `LocalChat.jar`, deci merg cu folderul pe stick:
 
 - `skills\<nume>\SKILL.md` — instrucțiuni pentru un tip de lucru (același format ca skill-urile Claude). Un `.zip`
-  de skill pus în `skills\` e despachetat automat. Incluse: `productie-projecten` și `pdfcontrol-octop`.
+  de skill pus în `skills\` e despachetat automat. Inclus in repository: `pdfcontrol-octop`. `productie-projecten` contine date de productie si se instaleaza doar local din `packaging\skills\` (ignorat de git; Build.ps1 il copiaza in `skills\`).
 - `reguli.md` — regulile salvate (de tine sau de model cu `save_rule`); se aplică în fiecare conversație.
   Meniul **Unelte > Reguli salvate** le deschide în Notepad.
 - `conversatii\` — fiecare conversație, salvată automat (JSON), cu tot ce au făcut tool-urile.
@@ -867,7 +867,7 @@ Grupurile de agenti nu mai au o limita comuna de trei minute. Stop si protectiil
 - `pdfcontrol_job_summary(project, job_id)`: stare, delivery_verified, cai raport/livrare si numaratori (desene, constatari, per status si severitate, coduri frecvente, silent_checks) dintr-un job real. `pdfcontrol_job_findings(project, job_id, offset, filter, max_chars)`: constatari paginate (next_offset), filtrate pe cuvinte. `pdfcontrol_list_projects(offset)`: proiectele, 50 pe pagina. `pdfcontrol_catalogue_status(factory, project?, article?)`: catalogul activ, regulile FAST si cautarea unui articol; fabrica ramane cea confirmata, niciodata dedusa.
 - Toate sunt numai citire: merg in modul read-only si in agentii de analiza, nu pornesc joburi si nu inlocuiesc rapoartele PDF.
 - `pdfcontrol_status` nu mai arata modelului PID-uri sau trasee; diagnosticul complet ramane local (pdfcontrol/runtime/octop_status_diagnostic.json si `octop_mcp.py --self-test`).
-- Skill-ul `productie-projecten` nu este inclus in repository sau build; copiile cunoscute sunt in `C:\Users\Local User\Downloads\productie-projecten` si `C:\Users\Local User\.lmstudio\skills\productie-projecten`. Pune-l in `skills\` daca vrei sa-l folosesti in chat.
+- Skill-ul `productie-projecten` (1.28.1) este instalat doar local: sursa in `packaging\skills\productie-projecten\` (ignorat de git, contine date de productie), instalat de Build.ps1 in `skills\productie-projecten\`. Descrierea YAML pe mai multe randuri este acum citita complet.
 
 ## Gandire si trunchiere (1.27.3)
 

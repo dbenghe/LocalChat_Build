@@ -92,15 +92,14 @@ final class Skills {
                     if (colon <= 0 || Character.isWhitespace(line.charAt(0))) continue;
                     String key = line.substring(0, colon).trim().toLowerCase(Locale.ROOT);
                     String value = line.substring(colon + 1).trim();
-                    if (value.isEmpty() || value.matches("[>|][-+]?")) {
-                        // folded / multi-line YAML value: the indented lines that follow
-                        StringBuilder b = new StringBuilder();
-                        while (i + 1 < lines.length && (lines[i + 1].startsWith(" ") || lines[i + 1].startsWith("\t"))) {
-                            if (b.length() > 0) b.append(' ');
-                            b.append(lines[++i].trim());
-                        }
-                        value = b.toString();
+                    // Folded/literal blocks (">", "|", or empty) and plain or quoted scalars wrapped over several
+                    // lines: the indented lines that follow belong to the same value.
+                    StringBuilder b = new StringBuilder(value.isEmpty() || value.matches("[>|][-+]?") ? "" : value);
+                    while (i + 1 < lines.length && (lines[i + 1].startsWith(" ") || lines[i + 1].startsWith("\t"))) {
+                        if (b.length() > 0) b.append(' ');
+                        b.append(lines[++i].trim());
                     }
+                    value = b.toString();
                     if (value.length() >= 2 && (value.startsWith("\"") && value.endsWith("\"") || value.startsWith("'") && value.endsWith("'"))) {
                         value = value.substring(1, value.length() - 1);
                     }
