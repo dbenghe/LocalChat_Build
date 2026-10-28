@@ -63,7 +63,7 @@ if ($LASTEXITCODE) { throw 'Offline audit permissions/integration tests failed' 
 if ($LASTEXITCODE) { throw 'Compaction time budget tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/compaction-resume-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.CompactionResumeTest
 if ($LASTEXITCODE) { throw 'Compaction checkpoint recovery tests failed' }
-foreach($taskNewTest in @('AutomaticDelegationTest','InlineApprovalTest','InlineScrollTest','StablePrefixTest')){
+foreach($taskNewTest in @('AutomaticDelegationTest','InlineApprovalTest','InlineScrollTest','StablePrefixTest','ToolRelevanceTest','RuleCoverageTest')){
     & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/$taskNewTest-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" "localchat.$taskNewTest"
     if ($LASTEXITCODE) { throw "Failed: $taskNewTest" }
 }
@@ -177,6 +177,8 @@ if ($LASTEXITCODE) { throw 'PDFCONTROL workflow tests failed; distribution was n
 if ($LASTEXITCODE) { throw 'Direct PDFCONTROL UI/MCP tests failed; distribution was not changed' }
 & "$taskJdk/bin/java.exe" "-Dpdfcontrol.package=$PSScriptRoot/pdfcontrol" "-Dpdfcontrol.projects=$taskBuild/pdfcontrol-tests/PROJECTS" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.PdfAgentTest
 if ($LASTEXITCODE) { throw 'Model to PDFCONTROL workflow tests failed' }
+& "$taskJdk/bin/java.exe" "-Dpdfcontrol.package=$PSScriptRoot/pdfcontrol" "-Dpdfcontrol.projects=$taskBuild/pdfcontrol-tests/PROJECTS" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/token-budget-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.TokenBudgetTest
+if ($LASTEXITCODE) { throw 'Token budget (MBS overhead / Normal) tests failed' }
 $taskJar = Join-Path $taskBuild 'LocalChat.jar'
 $taskManifest = Join-Path $taskBuild 'MANIFEST.MF'
 @"

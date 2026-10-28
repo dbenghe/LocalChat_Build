@@ -1,6 +1,6 @@
 # LocalChat — raport de dezvoltare si probleme cunoscute
 
-Actualizat: 28 octombrie 2026. Livrare: 1.27.0.
+Actualizat: 28 octombrie 2026. Livrare: 1.27.1.
 
 Acest raport sintetizeaza dezvoltarea aplicatiei si diagnosticele confirmate. Cronologia completa a modificarilor functionale ramane in CHANGELOG.md; sursele si commiturile sunt in repository-ul personal LocalChat_Build. Datele proiectelor, conversatiile, cheile, cataloagele private si jurnalele nu fac parte din publicarea Git.
 
@@ -31,6 +31,13 @@ Masuratoare pe harness sintetic (API simulat, estimari in caractere, ~): Normal 
 reasoning_content se citeste, se numara prin reasoning_tokens si nu se retrimite. Fereastra de context are patru componente.
 
 Teste: StablePrefixTest (35 verificari) in Build.ps1, InternationalChatTest adaptat. Limita cunoscuta: estimarile ~ nu inlocuiesc contorul furnizorului.
+
+## Reducerea overhead-ului MBS (1.27.1)
+
+Masurat pe cererea de proba (primul tur, MBS, doar citire): 28348 -> 10891 caractere (~-62%); cu toate uneltele 19810 (~-30%); implicit cu scriere permisa 15502 (20 unelte). Promptul de sistem MBS ~4,8k caractere (inainte ~9k). Tokenii sunt estimari (~).
+
+Regulile PDFCONTROL sunt acum in skill-ul pdfcontrol si in descrierile esentiale ale uneltelor; RuleCoverageTest verifica faptul ca regulile cerute de AGENTS.md exista in prompt sau in skill. Uneltele care modifica fisiere si run_command apar dupa relevanta (selectie fara stare, doar crestere in conversatie); modul doar citire si agentii copil nu pot debloca. Optiunea tools.all trimite lista completa. Aliasul pdfcontrol_live_status este ascuns, dar apelurile arhivate functioneaza. Risc ramas: un cuvant-cheie lipsa ascunde temporar o unealta de scriere; modelul poate cere localchat_enable_tools, iar utilizatorul poate activa trimiterea tuturor uneltelor.
+
 ## Ce este implementat pana acum
 
 | Domeniu | Functionalitate disponibila |

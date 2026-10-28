@@ -27,14 +27,14 @@ def tool(name, description, properties, required, readonly=True):
 
 
 TOOLS = [
-    tool('pdfcontrol_status','Verifica disponibilitatea pachetului, OCR si radacinii proiectelor.',{},[]),
-    tool('pdfcontrol_project_files','Inventariaza fisierele unui proiect din radacina configurata. Paginare cu offset.',
+    tool('pdfcontrol_status','Disponibilitate pachet, OCR si radacina proiectelor.',{},[]),
+    tool('pdfcontrol_project_files','Inventar fisiere proiect (paginat cu offset); cai relative, pdf_source=true pentru PDF-uri sursa.',
          {'project':SCHEMA_PROJECT,'offset':{'type':'integer','minimum':0}},['project']),
-    tool('pdfcontrol_read_document','Citeste un document text/EML sau un PDF cu text, din proiect. Scanarile necesita verificarea OCR.',
+    tool('pdfcontrol_read_document','Citeste un text/EML sau un PDF cu text din proiect. Scanarile necesita OCR.',
          {'project':SCHEMA_PROJECT,'path':{'type':'string'},'offset':{'type':'integer','minimum':0}},['project','path']),
-    tool('pdfcontrol_start_check','Porneste controlul PDFCONTROL cu OCR pe PDF-urile selectate, in copie izolata. Nu aproba transferul, nu copiaza pe server.',
+    tool('pdfcontrol_start_check','Control PDFCONTROL cu OCR pe PDF-uri selectate, in copie izolata.',
          {'project':SCHEMA_PROJECT,'files':{'type':'array','items':{'type':'string'},'minItems':1,'maxItems':100}},['project','files'],False),
-    tool('pdfcontrol_job_status','Citeste starea unei verificari si caile rezultatelor. Statusul done nu aproba productia sau transferul.',
+    tool('pdfcontrol_job_status','Starea unui job si caile rezultatelor (results, artifacts). done nu aproba productia.',
          {'project':SCHEMA_PROJECT,'job_id':{'type':'string','pattern':'^[a-f0-9]{32}$'}},['project','job_id'])
 ]
 
@@ -53,8 +53,7 @@ def trace_event(event):
         print('Diagnostic trace: '+str(error),file=sys.stderr,flush=True)
         return str(error)
 
-TOOLS.append(tool('pdfcontrol_live_status',
-    'Diagnostic live: verifica acum OCR si proiectele, returnand data UTC, PID si identificator diagnostic.',{},[]))
+# pdfcontrol_live_status is no longer advertised (duplicate of pdfcontrol_status); run_tool still accepts the old name.
 
 
 def project_path(number):
@@ -216,31 +215,31 @@ def run_tool(name,args):
     raise ValueError('Unealta de citire necunoscuta.')
 
 
-FILES_SCHEMA={'type':'array','description':'Cai relative la radacina proiectului, exact ca in pdfcontrol_project_files; include subfolderele. Sursele din Controle/Atasamente sunt acceptate. Nu folosi rapoarte sau rezultate anterioare.','items':{'type':'string'},'minItems':1,'maxItems':500}
+FILES_SCHEMA={'type':'array','description':'Cai relative exact ca in pdfcontrol_project_files (pdf_source=true). Nu rapoarte sau rezultate anterioare.','items':{'type':'string'},'minItems':1,'maxItems':500}
 for definition in TOOLS:
     if definition['name']=='pdfcontrol_start_check':
         definition['inputSchema']['properties']['files']=FILES_SCHEMA
         definition['inputSchema']['properties']['include_drawings']={'type':'boolean','default':True}
-        definition['description']='Verifica PDF-uri cu motorul original si OCR. Produce RAPPORT.pdf cu desenele marcate anexate implicit, in copie izolata.'
+        definition['description']='Verifica PDF-uri (motor original, OCR). Produce RAPPORT.pdf cu desene marcate. Intoarce job_id; LocalChat asteapta starea finala.'
     if definition['name']=='pdfcontrol_job_status':
         definition['inputSchema']['properties'].update(wait_seconds={'type':'integer','minimum':0,'maximum':20},artifact_offset={'type':'integer','minimum':0})
-        definition['description']='Asteapta pana la 10 secunde o lucrare, apoi citeste progresul si PDF-urile reale. Repeta pana la done/partial/failed/cancelled. artifact_offset pagina urmatoare.'
+        definition['description']='Starea unui job existent (wait_seconds 0-20, implicit 10; artifact_offset pentru pagina urmatoare). Pornirea asteapta deja starea finala: apeleaza numai pentru un job_id cunoscut.'
 for name,description in [
-    ('pdfcontrol_start_extract','Extrage planse din brosuri si verifica/completeaza perechi V/W folosind regulile originale; nu inventeaza armari. Produce PDF-uri separate, provenienta si raport PDF.'),
-    ('pdfcontrol_start_pairs','Verifica perechi V/W individuale si copiaza numai armarea confirmata prin proiect si referinta. Pastreaza cartusul. Produce PDF cu lipsuri/provenienta.'),
-    ('pdfcontrol_start_workflow','Flux complet: extrage brosuri, completeaza perechile confirmate, controleaza desenele cu OCR si genereaza raport PDF cu planse marcate anexate.')]:
+    ('pdfcontrol_start_extract','Extrage planse din brosuri si completeaza perechi V/W (reguli originale). PDF-uri separate, provenienta, raport PDF.'),
+    ('pdfcontrol_start_pairs','Perechi V/W individuale: copiaza numai armarea confirmata. Pastreaza cartusul. PDF cu lipsuri/provenienta.'),
+    ('pdfcontrol_start_workflow','Flux complet: extragere, perechi confirmate, control OCR si raport PDF cu planse marcate.')]:
     TOOLS.append(tool(name,description,{'project':SCHEMA_PROJECT,'files':FILES_SCHEMA,'include_drawings':{'type':'boolean','default':True}},['project','files'],False))
-TOOLS.append(tool('pdfcontrol_start_compare','Compara OUD/NIEUW cu motorul original: PDF vizual cu chenare identice HTML, PDF diferente T/B, PDF individual per pereche. Nu modifica sursele.',
+TOOLS.append(tool('pdfcontrol_start_compare','Compara OUD/NIEUW (motor original): Vergelijking_OUD_NIEUW.pdf, PDF diferente T/B, PDF per pereche. Nu modifica sursele.',
                   {'project':SCHEMA_PROJECT,'old_files':FILES_SCHEMA,'new_files':FILES_SCHEMA},['project','old_files','new_files'],False))
-TOOLS.append(tool('pdfcontrol_regenerate_report','Genereaza dintr-un job de control existent un nou raport PDF, implicit cu desenele marcate anexate; fara reluarea controlului.',
+TOOLS.append(tool('pdfcontrol_regenerate_report','Raport PDF nou dintr-un job de control existent; fara reluarea controlului.',
                   {'project':SCHEMA_PROJECT,'job_id':{'type':'string'},'include_drawings':{'type':'boolean','default':True}},['project','job_id'],False))
-TOOLS.append(tool('pdfcontrol_cancel_job','Solicita anularea lucrarii PDFCONTROL. Rezultatele partiale raman marcate cancelled, nu done.',
+TOOLS.append(tool('pdfcontrol_cancel_job','Anuleaza un job PDFCONTROL; rezultatele partiale raman cancelled, nu done.',
                   {'project':SCHEMA_PROJECT,'job_id':{'type':'string'}},['project','job_id'],False))
 
 for definition in TOOLS:
     if definition['name'] in {'pdfcontrol_start_check','pdfcontrol_start_workflow'}:
         definition['inputSchema']['properties']['factory']={'type':'string','enum':['soest','alphen','veenoord','lelystad'],
-            'description':'Fabrica confirmata pentru lot; nu o deduce din litera discului. Optional; altfel foloseste numai configurarea explicita existenta a proiectului.'}
+            'description':'Fabrica confirmata a lotului; nu o deduce din litera discului. Optional.'}
 
 _read_tool=run_tool
 OPERATIONS={'pdfcontrol_start_check':'check','pdfcontrol_start_extract':'extract','pdfcontrol_start_pairs':'pairs',

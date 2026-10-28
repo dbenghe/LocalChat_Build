@@ -678,5 +678,6 @@
   "Alegerea veche a fost eliminata. Verifica mesajul si apasa Trimite.": "The old choice was removed. Check your message and press Send.",
   "Folderul ales este pentru proiectul {0}, iar conversatia este pentru {1}. Alege folderul proiectului curent.": "The selected folder is for project {0}, but this conversation is for {1}. Choose the current project folder.",
   "Rezultate unelte": "Tool results",
-  "Gandire: {0}": "Reasoning: {0}"
+  "Gandire: {0}": "Reasoning: {0}",
+  "Trimite toate uneltele (fara selectie dupa relevanta)": "Send all tools (no relevance selection)"
 }

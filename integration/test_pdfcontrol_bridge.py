@@ -251,6 +251,15 @@ class Workflows(unittest.TestCase):
         extracted=[a for a in provenance['actions'] if a['soort']=='extract']
         self.assertEqual({a['pagina'] for a in extracted},{1,2});self.assertEqual(record['pair_summary']['created'],2)
 
+    def test_18_live_status_alias_is_hidden_but_still_accepted(self):
+        listed={t['name'] for t in self.client.request('tools/list',{})['tools']}
+        self.assertNotIn('pdfcontrol_live_status',listed);self.assertIn('pdfcontrol_status',listed)
+        old=self.client.call('pdfcontrol_live_status');current=self.client.call('pdfcontrol_status')
+        self.assertEqual(old['bridge_version'],current['bridge_version']);self.assertEqual(old['ocr']['available'],current['ocr']['available'])
+        status=next(t for t in self.client.request('tools/list',{})['tools'] if t['name']=='pdfcontrol_job_status')
+        self.assertEqual(status['inputSchema']['properties']['wait_seconds']['maximum'],20);self.assertIn('0-20',status['description']);self.assertNotIn('10 secunde',status['description'])
+        self.assertLess(sum(len(json.dumps(t,ensure_ascii=False)) for t in self.client.request('tools/list',{})['tools']),7000)
+
 if __name__=='__main__':
     result=unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(Workflows))
     raise SystemExit(0 if result.wasSuccessful() else 1)

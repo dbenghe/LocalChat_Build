@@ -847,3 +847,10 @@ Grupurile de agenti nu mai au o limita comuna de trei minute. Stop si protectiil
 - Regula limbii de raspuns apare o singura data. Limba interfetei ramane separata si nu se trimite modelului.
 - Fereastra de context are patru randuri: Prompt de sistem, Definitii unelte, Conversatie si Rezultate unelte. Valorile cu ~ sunt estimari, nu masuratori ale furnizorului.
 - Pentru modelele cu reasoning, linia de utilizare afiseaza Gandire: N cand API-ul raporteaza reasoning_tokens. Textul de gandire nu este salvat si nu este retrimis.
+
+## Selectia uneltelor si overhead redus (1.27.1)
+
+- In MBS, promptul de sistem este mai scurt (~4,8k caractere), iar regulile PDFCONTROL stau in skill-ul pdfcontrol si in descrierile uneltelor. Cererea de proba scade de la 28348 la 10891 caractere in modul doar citire (~-62%); valorile cu ~ sunt estimari.
+- Uneltele care scriu sau ruleaza comenzi (write_file, edit_file, copy_path, move_path, run_command, save_rule etc.) sunt trimise modelului numai cand cererea le cere (cuvinte-cheie in cele sase limbi sau apeluri anterioare); modelul poate cere localchat_enable_tools. Permisiunile raman aceleasi, iar modul doar citire nu poate fi deblocat.
+- Optiunea de meniu Unelte > Trimite toate uneltele (fara selectie dupa relevanta) trimite lista completa, ca in versiunile anterioare. Se salveaza in setari ca tools.all.
+- pdfcontrol_live_status nu mai apare in lista modelului; apelurile salvate in conversatii vechi functioneaza in continuare.

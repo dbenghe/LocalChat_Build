@@ -678,5 +678,6 @@
   "Alegerea veche a fost eliminata. Verifica mesajul si apasa Trimite.": "Eski seçim kaldırıldı. Mesajınızı kontrol edip Gönder düğmesine basın.",
   "Folderul ales este pentru proiectul {0}, iar conversatia este pentru {1}. Alege folderul proiectului curent.": "Seçilen klasör {0} projesine, bu sohbet ise {1} projesine ait. Geçerli projenin klasörünü seçin.",
   "Rezultate unelte": "Araç sonuçları",
-  "Gandire: {0}": "Düşünme: {0}"
+  "Gandire: {0}": "Düşünme: {0}",
+  "Trimite toate uneltele (fara selectie dupa relevanta)": "Tüm araçları gönder (alaka seçimi yok)"
 }

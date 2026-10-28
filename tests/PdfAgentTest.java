@@ -12,6 +12,8 @@ public final class PdfAgentTest {
             mcp.reload(Json.obj("mcpServers",Json.obj("pdfcontrol",Json.obj("command",pack.resolve("runtime/python/python.exe").toString(),"args",List.of("-I",pack.resolve("octop_mcp.py").toString()),"env",Json.obj("PDFCONTROL_PACKAGE",pack.toString(),"PDFCONTROL_PROJECTS_ROOT",root.toString()),"cwd",pack.toString()))),s->s);
             check(mcp.servers().size()==1,"real owned MCP connected");
             Tools tools=new Tools(new Tools.Context(project,project.resolve("skills"),project.resolve("reguli.md"),project.resolve("settings.properties"),Map.of(),null,mcp,PathMap.none(),true,EnumSet.allOf(Tools.Access.class),(a,b)->Tools.Decision.NO),List.of());
+            check(tools.specs().stream().noneMatch(s->s.name.equals("pdfcontrol_live_status")||s.description.startsWith("[MCP")),"1.27.1: no duplicate live-status alias and no [MCP] prefix in the tool list");
+            check(!tools.execute(new ChatClient.ToolCall("live","pdfcontrol_live_status",Json.obj())).isError,"1.27.1: archived pdfcontrol_live_status calls still run through pdfcontrol_status");
             Map<String,Object> valid=Json.obj("project","123456","files",List.of("loose/123456_WA224_V.pdf","loose/123456_WA133_W.pdf"));
             long before=jobs(project);
             try(var model=new FeatureTest.Server(FeatureTest.json(request("one","pdfcontrol_start_pairs",valid)),FeatureTest.json(request("two","pdfcontrol_start_pairs",valid)),FeatureTest.json(FeatureTest.answer("Finished",100,10)))){

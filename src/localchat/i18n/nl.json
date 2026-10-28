@@ -678,5 +678,6 @@
   "Alegerea veche a fost eliminata. Verifica mesajul si apasa Trimite.": "De oude keuze is verwijderd. Controleer het bericht en klik op Verzenden.",
   "Folderul ales este pentru proiectul {0}, iar conversatia este pentru {1}. Alege folderul proiectului curent.": "De gekozen map is voor project {0}, maar dit gesprek is voor {1}. Kies de map van het huidige project.",
   "Rezultate unelte": "Toolresultaten",
-  "Gandire: {0}": "Redeneren: {0}"
+  "Gandire: {0}": "Redeneren: {0}",
+  "Trimite toate uneltele (fara selectie dupa relevanta)": "Alle tools naar het model sturen (zonder selectie op relevantie)"
 }

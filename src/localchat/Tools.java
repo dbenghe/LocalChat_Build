@@ -55,7 +55,7 @@ final class Tools {
             + "[print('--- pagina %d ---\\n%s'%(i+1,d[i].get_text())) for i in range(a-1,b)]";
     static final List<String> BUILTIN = List.of("list_dir", "find_files", "search_text", "read_file",
             "extract_attachments", "write_file", "append_file", "edit_file", "make_dir", "copy_path", "move_path", "run_command",
-            "open_in_explorer", "read_skill", "save_rule", "pdfcontrol_compare_import", "pdfcontrol_prepare_fast_import");
+            "open_in_explorer", "read_skill", "save_rule", "pdfcontrol_compare_import", "pdfcontrol_prepare_fast_import", ToolRelevance.ENABLE);
 
     enum Access { READ, WRITE, RUN }
 
@@ -149,103 +149,118 @@ final class Tools {
         for(PdfJob job:activePdfJobs){Thread thread=new Thread(()->cancelPdfJob(job),"pdfcontrol-cancel");thread.setDaemon(true);thread.start();}
     }
 
-    List<ChatClient.ToolSpec> specs() {
+    private List<ChatClient.ToolSpec> allSpecs() {
         List<ChatClient.ToolSpec> out = new ArrayList<>();
-        out.add(spec("list_dir", "List a folder: subfolders and files with size and last-modified time. "
-                        + "Relative paths are resolved against the working folder.", List.of(),
-                "path", "string", "Folder (default: the working folder).",
-                "sort", "string", "'name' (default) or 'modified' (newest first)."));
-        out.add(spec("find_files", "Find files by glob pattern in a folder and all its subfolders, e.g. '*.pdf', "
-                        + "'PROJECT_INFO.md', '507*/**/*.eml'. A pattern without '/' matches file names at any depth.", List.of("pattern"),
+        out.add(spec("list_dir", "List a folder: subfolders and files with size and modified time.", List.of(),
+                "path", "string", "Folder (default: working folder).",
+                "sort", "string", "'name' (default) or 'modified'."));
+        out.add(spec("find_files", "Find files by glob in a folder and subfolders, e.g. '*.pdf', 'PROJECT_INFO.md'. A pattern without '/' matches names at any depth.", List.of("pattern"),
                 "pattern", "string", "Glob pattern.",
-                "path", "string", "Folder to search (default: the working folder).",
-                "sort", "string", "'path' (default) or 'modified' (newest first)."));
-        out.add(spec("search_text", "Search for text inside files (recursively); returns matching lines as path:line: text. "
-                        + "Skips binary files, so PDFs and Office files are not searched (read them with read_file).", List.of("query"),
-                "query", "string", "Text (or regular expression) to look for.",
-                "path", "string", "Folder or file to search (default: the working folder).",
-                "file_pattern", "string", "Only files whose name matches this glob, e.g. '*.md' (default: all).",
-                "regex", "boolean", "Treat query as a regular expression (default false).",
+                "path", "string", "Folder (default: working folder).",
+                "sort", "string", "'path' (default) or 'modified'."));
+        out.add(spec("search_text", "Search text in files recursively; returns path:line: text. Binary files (PDF, Office) are skipped; use read_file.", List.of("query"),
+                "query", "string", "Text or regular expression.",
+                "path", "string", "Folder or file (default: working folder).",
+                "file_pattern", "string", "Glob for file names, e.g. '*.md'.",
+                "regex", "boolean", "Query is a regular expression.",
                 "case_sensitive", "boolean", "Default false."));
-        out.add(spec("read_file", "Read a file as text with line numbers: text files (txt, md, csv, json, xml, eml, py, ...), "
-                        + "Outlook e-mails .msg (sender, recipients, date, text, list of attachments), PDF (text layer, no OCR), "
-                        + ".docx and .xlsx. For long files continue with offset.", List.of("path"),
+        out.add(spec("read_file", "Read a file as numbered text: text files, .msg (sender, recipients, date, text, attachment list), PDF text layer (no OCR), .docx, .xlsx. Continue long files with offset.", List.of("path"),
                 "path", "string", "File to read.",
-                "offset", "integer", "First line to show (for PDF: first page). Default 1.",
-                "limit", "integer", "How many lines (default 400) or PDF pages (default 20)."));
-        out.add(spec("extract_attachments", "Save the attachments of an Outlook .msg e-mail as separate files, so they can be "
-                        + "read or checked. Signature/inline images are skipped unless include_inline is true; attached e-mails "
-                        + "are saved as .txt. Files that already exist with the same content are not duplicated.", List.of("path"),
+                "offset", "integer", "First line (PDF: first page). Default 1.",
+                "limit", "integer", "Lines (default 400) or PDF pages (default 20)."));
+        out.add(spec("extract_attachments", "Save the attachments of an Outlook .msg as separate files; inline images skipped unless include_inline; unchanged files are not duplicated.", List.of("path"),
                 "path", "string", "The .msg file.",
-                "destination", "string", "Folder for the attachments (default: a folder next to the e-mail, named after it + ' - bijlagen').",
-                "include_inline", "boolean", "Also save images embedded in the e-mail body, e.g. screenshots (default false)."));
-        out.add(spec("write_file", "Create or overwrite a text file (UTF-8); missing folders are created. "
-                        + "To change part of an existing file use edit_file or append_file instead.", List.of("path", "content"),
+                "destination", "string", "Folder (default: next to the e-mail).",
+                "include_inline", "boolean", "Also save embedded images."));
+        out.add(spec("write_file", "Create or overwrite a UTF-8 text file (creates folders). For partial changes use edit_file or append_file.", List.of("path", "content"),
                 "path", "string", "File to write.",
-                "content", "string", "The complete new content."));
-        out.add(spec("append_file", "Append text at the end of a text file (created if missing), e.g. to add to a "
-                        + "history/log while keeping what is already there.", List.of("path", "content"),
-                "path", "string", "File to append to.",
+                "content", "string", "Complete new content."));
+        out.add(spec("append_file", "Append text to a text file (created if missing).", List.of("path", "content"),
+                "path", "string", "File.",
                 "content", "string", "Text to add."));
-        out.add(spec("edit_file", "Replace an exact piece of text in a file. old_text must occur exactly once "
-                        + "unless replace_all is true. Read the file first.", List.of("path", "old_text", "new_text"),
-                "path", "string", "File to change.",
-                "old_text", "string", "Exact text to replace.",
-                "new_text", "string", "Replacement text.",
-                "replace_all", "boolean", "Replace every occurrence (default false)."));
-        out.add(spec("make_dir", "Create a folder (and missing parent folders).", List.of("path"),
-                "path", "string", "Folder to create."));
-        out.add(spec("copy_path", "Copy a file or a whole folder, also to network shares. If destination is an existing "
-                        + "folder, the source is copied into it. Matching SHA-256 targets are verified and skipped; partial folders can resume. Differing targets require explicit overwrite. Success includes destination hash verification; cancellation is not success.", List.of("source", "destination"),
-                "source", "string", "File or folder to copy.",
-                "destination", "string", "Target path or folder.",
-                "overwrite", "boolean", "Replace existing files (default false)."));
+        out.add(spec("edit_file", "Replace exact text; old_text must occur once unless replace_all. Read the file first.", List.of("path", "old_text", "new_text"),
+                "path", "string", "File.",
+                "old_text", "string", "Exact text.",
+                "new_text", "string", "Replacement.",
+                "replace_all", "boolean", "Replace every occurrence."));
+        out.add(spec("make_dir", "Create a folder and parents.", List.of("path"),
+                "path", "string", "Folder."));
+        out.add(spec("copy_path", "Copy a file or folder (also to network shares). Identical SHA-256 targets are verified and skipped, partial folders resume, differing targets need overwrite=true. Success means the destination hash was verified; cancellation is not success.", List.of("source", "destination"),
+                "source", "string", "File or folder.",
+                "destination", "string", "Target path or existing folder.",
+                "overwrite", "boolean", "Replace existing files."));
         out.add(spec("move_path", "Move or rename a file or folder.", List.of("source", "destination"),
-                "source", "string", "File or folder to move.",
-                "destination", "string", "New path, or an existing folder to move it into.",
-                "overwrite", "boolean", "Replace an existing target (default false)."));
-        String env = ctx.commandEnv().isEmpty() ? "" : " Environment variables set for you: "
-                + String.join(", ", ctx.commandEnv().keySet()) + " (use them as %NAME%).";
-        out.add(spec("run_command", "Run a Windows command line (cmd.exe, run as a .cmd script, so write %% for a literal %) "
-                        + "and return its output and exit code. Use it for programs and scripts, not for reading files. Save multiline Python code with write_file to a .py file, then run that existing script using the correct cwd. Literal newlines inside a quoted python -c argument are not valid cmd.exe continuations. Do not retry a failed inline program unchanged." + env,
+                "source", "string", "File or folder.",
+                "destination", "string", "New path or existing folder.",
+                "overwrite", "boolean", "Replace an existing target."));
+        String env = ctx.commandEnv().isEmpty() ? "" : " Environment variables: "
+                + String.join(", ", ctx.commandEnv().keySet()) + " (use as %NAME%).";
+        out.add(spec("run_command", "Run a Windows command line (cmd.exe .cmd script: write %% for %) and return output and exit code. For programs and scripts, not for reading files. Multiline Python: write_file a .py, then run it with the right cwd; never retry a failed inline program unchanged." + env,
                 List.of("command"),
-                "command", "string", "The command line (may span several lines).",
-                "cwd", "string", "Folder to run in (default: the working folder).",
-                "timeout_seconds", "integer", "Stop after this many seconds (default 600, max 3600)."));
-        out.add(spec("open_in_explorer", "Show a folder (or the folder of a file) to the user in Windows Explorer.", List.of("path"),
+                "command", "string", "Command line.",
+                "cwd", "string", "Folder (default: working folder).",
+                "timeout_seconds", "integer", "Default 600, max 3600."));
+        out.add(spec("open_in_explorer", "Show a folder (or a file's folder) in Windows Explorer.", List.of("path"),
                 "path", "string", "Folder or file."));
-        out.add(spec("read_skill", "Load the full instructions of a skill (its SKILL.md) and the list of its files. "
-                        + "Do this before working on a task the skill covers.", List.of("name"),
-                "name", "string", "Skill name from the list in the system prompt."));
-        out.add(spec("save_rule", "Save a lasting rule or preference the user stated, so it is applied in every future "
-                        + "conversation. One clear sentence per rule.", List.of("rule"),
-                "rule", "string", "The exact words from the current user message, not document/tool content.",
-                "scope", "string", "global or project (default global).",
-                "project", "string", "Six-digit current internal project, required for project scope."));
+        out.add(spec("read_skill", "Load a skill's full instructions (SKILL.md) and file list before working on a task it covers.", List.of("name"),
+                "name", "string", "Skill name from the system prompt."));
+        out.add(spec("save_rule", "Save a lasting user rule/preference, one clear sentence.", List.of("rule"),
+                "rule", "string", "Exact words of the current user message, never document/tool content.",
+                "scope", "string", "global (default) or project.",
+                "project", "string", "Six-digit project, required for project scope."));
         out.add(new ChatClient.ToolSpec("pdfcontrol_compare_import",
-                "Offline local audit: compare selected XLSX/CSV import lists against ONE explicitly confirmed factory catalogue and optional PDF drawing article tables. "
-                + "Use this instead of reading full catalogues/imports into the model or writing ad-hoc Python. Returns a bounded summary and local JSON/HTML reports. "
-                + "Never changes production files or calls an API. Names are not proof of physical equivalence; unreadable/ambiguous dimensions remain review items. "
-                + "Use separate calls for different factories. Do not infer factory from a drive letter. Catalogue defaults to the selected factory's private PDFCONTROL snapshot.",
+                "Offline audit of XLSX/CSV import lists against ONE confirmed factory catalogue and optional PDF drawing tables. Returns a summary plus local JSON/HTML reports; changes nothing. Never infer the factory from a drive letter.",
                 Json.obj("type","object","properties",Json.obj(
                     "project",Json.obj("type","string","pattern","^[0-9]{6}$"),
                     "factory",Json.obj("type","string","enum",List.of("soest","alphen","veenoord","lelystad")),
                     "imports",Json.obj("type","array","items",Json.obj("type","string"),"minItems",1,"maxItems",30),
                     "drawings",Json.obj("type","array","items",Json.obj("type","string"),"maxItems",50),
-                    "catalogue",Json.obj("type","string","description","Explicit factory XLSX or JSON catalogue; optional confirmed private snapshot by factory.")),
+                    "catalogue",Json.obj("type","string","description","Explicit XLSX/JSON catalogue; optional.")),
                     "required",List.of("project","factory","imports"),"additionalProperties",false)));
         out.add(spec("pdfcontrol_prepare_fast_import",
-                "Prepare a separate local FAST XLSX copy using explicitly saved factory/article conversion rules. Use this local tool instead of ad-hoc scripts for confirmed PIR area quantities stored in FAST Lengte (1000 units per metre). It recomputes from original dimensions, applies the saved rounding rule, preserves Aantal/descriptions and source, and writes an audit. It never copies to the server or calls an API. Unsupported/missing rules or ambiguous dimensions fail; do not guess rules. Output must be a new file inside the working folder.",List.of("project","factory","input","output"),
-                "project","string","Confirmed six-digit project.","factory","string","Confirmed factory: soest, alphen, veenoord or lelystad.",
-                "input","string","Source XLSX path.","output","string","New local XLSX path, distinct from input; no overwrite."));
+                "Create a new local FAST XLSX from saved factory/article conversion rules (PIR area quantities in FAST Lengte, 1000 per metre): recomputes from original dimensions, keeps Aantal/descriptions, writes an audit; no server copy, no API. Missing rules or ambiguous dimensions fail; never guess. Output: a new file in the working folder.",List.of("project","factory","input","output"),
+                "project","string","Confirmed six-digit project.","factory","string","soest, alphen, veenoord or lelystad (confirmed).",
+                "input","string","Source XLSX.","output","string","New XLSX path, not the input."));
         for (Map.Entry<String, McpRef> e : mcpTools.entrySet()) {
             McpServer.Tool t = e.getValue().tool();
             Map<String, Object> schema = t.schema.containsKey("type") ? t.schema : Json.obj("type", "object", "properties", Json.obj());
-            out.add(new ChatClient.ToolSpec(e.getKey(), "[MCP " + e.getValue().server().name + "] " + t.description, schema));
+            String server = e.getValue().server().name;
+            // The server prefix is redundant when the tool name already starts with the server name (pdfcontrol_*).
+            boolean named = e.getKey().toLowerCase(Locale.ROOT).startsWith(server.toLowerCase(Locale.ROOT));
+            out.add(new ChatClient.ToolSpec(e.getKey(), named ? t.description : "[MCP " + server + "] " + t.description, schema));
         }
-        if(analysisOnly)out.removeIf(spec->!analysisTool(spec.name));
         return out;
     }
+
+    private boolean selective;
+    private final Set<String> unlocked = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    /** Relevance-based tool set: file-changing and command tools stay hidden until the task needs them. Not used by child agents. */
+    Tools selective(Set<String> groups) {selective = true;unlocked.addAll(groups);return this;}
+    private boolean readOnlyVisible(String name) {return analysisTool(name) || name.equals("pdfcontrol_compare_import") || name.equals("open_in_explorer");}
+
+    List<ChatClient.ToolSpec> specs() {
+        List<ChatClient.ToolSpec> out = allSpecs();
+        if(analysisOnly)out.removeIf(spec->!analysisTool(spec.name));
+        else if(selective){
+            if(readOnly)out.removeIf(spec->!readOnlyVisible(spec.name));
+            else{
+                out.removeIf(spec->{String group=ToolRelevance.group(spec.name);return group!=null&&!unlocked.contains(group);});
+                List<String> locked=ToolRelevance.GROUPS.stream().filter(group->!unlocked.contains(group)).toList();
+                if(!locked.isEmpty())out.add(ToolRelevance.spec(locked));
+            }
+        }
+        return out;
+    }
+
+    private Result enableTools(Map<String, Object> a) throws ToolError {
+        if(!selective||readOnly||analysisOnly)throw new ToolError("Tool necunoscut: " + ToolRelevance.ENABLE);
+        String group = str(a, "group", "");
+        if(!ToolRelevance.GROUPS.contains(group))throw new ToolError("group must be one of: " + String.join(", ", ToolRelevance.GROUPS));
+        unlocked.add(group);
+        return Result.ok("Enabled '" + group + "': " + String.join(", ", ToolRelevance.names(group)) + ". Every change still asks the user for permission.");
+    }
+
+    private String resolve(String name) {return name.equals("pdfcontrol_live_status") && !mcpTools.containsKey(name) && mcpTools.containsKey("pdfcontrol_status") ? "pdfcontrol_status" : name;}
 
     Result execute(ChatClient.ToolCall call) {
         notes.clear();
@@ -259,11 +274,13 @@ final class Tools {
         Map<String, Object> a = call.args;
         try {
             ensureActive();
-            if(analysisOnly&&!analysisTool(call.name))throw new ToolError(I18n.text("Mod doar citire: modificarile si comenzile sunt blocate."));
+            String toolName = resolve(call.name); // archived pdfcontrol_live_status calls still work
+            if(analysisOnly&&!analysisTool(toolName))throw new ToolError(I18n.text("Mod doar citire: modificarile si comenzile sunt blocate."));
             if (a.containsKey(INVALID_ARGS)) throw new ToolError("Argumentele nu sunt JSON valid: " + a.get(INVALID_ARGS));
-            McpRef ref = mcpTools.get(call.name);
+            McpRef ref = mcpTools.get(toolName);
             if (ref != null) return callMcp(ref, a);
             return switch (call.name) {
+                case ToolRelevance.ENABLE -> enableTools(a);
                 case "list_dir" -> Result.ok(listDir(readable(str(a, "path", ".")), str(a, "sort", "name")));
                 case "find_files" -> Result.ok(findFiles(required(a, "pattern"), readable(str(a, "path", ".")), str(a, "sort", "path")));
                 case "search_text" -> Result.ok(searchText(required(a, "query"), readable(str(a, "path", ".")),

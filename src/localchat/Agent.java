@@ -66,6 +66,14 @@ final class Agent {
 
     void outputLimit(int tokens) {client.outputLimit(tokens);}
 
+    /** Every tool offered to the model for the next request; also the basis of the context anchor signature. */
+    List<ChatClient.ToolSpec> specs() {
+        List<ChatClient.ToolSpec> specs = new ArrayList<>(tools == null ? Collections.emptyList() : tools.specs());
+        if(team!=null&&tools!=null)specs.add(AgentGroup.spec());
+        if(interactive&&tools!=null)specs.add(ComposerAssist.spec());
+        return specs;
+    }
+
     void cancel() {
         cancelled = true;
         client.cancel();if(team!=null)team.cancel();if(guard!=null)guard.cancel();
@@ -74,9 +82,6 @@ final class Agent {
 
     void run(Provider p, String url, String key, String model, String label, String system,
              List<ChatClient.Message> base, boolean stream, Ui ui) throws IOException {
-        List<ChatClient.ToolSpec> specs = new ArrayList<>(tools == null ? Collections.emptyList() : tools.specs());
-        if(team!=null&&tools!=null)specs.add(AgentGroup.spec());
-        if(interactive&&tools!=null)specs.add(ComposerAssist.spec());
         if(automaticDelegation!=null&&team!=null&&tools!=null){
             if(cancelled)return;var call=automaticDelegation;automaticDelegation=null;
             synchronized(added){added.add(ChatClient.Message.assistant("",List.of(call),label));}
@@ -96,6 +101,7 @@ final class Agent {
                 conversation.addAll(added);
                 replyPending = true;
             }
+            final List<ChatClient.ToolSpec> specs=specs(); // recomputed per step: localchat_enable_tools takes effect on the next request
             final List<ChatClient.ToolSpec> requestSpecs=discoveryFinal?List.of():interactionFailures==0?specs:interactionFailures==1?List.of(ComposerAssist.spec()):List.of();
             String effectiveSystem=system+(protocolRepairs>0?ToolProtocol.REPAIR:"")+(interactionFailures>0?INTERACTION_REPAIR:"")+(interactionFailures>1?INTERACTION_TEXT:"")+(discoveryRepairs>0?DISCOVERY_REPAIR+discoveryHint:"")+(discoveryFinal?DISCOVERY_TEXT:"");
             if(guard!=null){conversation=guard.prepare(p,url,key,model,effectiveSystem,conversation,requestSpecs,step,ui);client.outputLimit(guard.outputLimit());}

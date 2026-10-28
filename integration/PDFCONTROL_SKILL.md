@@ -1,6 +1,6 @@
 ---
 name: pdfcontrol-octop
-description: PDFCONTROL complet in LocalChat - verificare desene cu OCR si marcaje, raport PDF cu anexe, extragere brosuri, perechi V/W confirmate si comparatie vizuala OUD/NIEUW. Executa motorul original, nu simuleaza rezultatele prin model.
+description: PDFCONTROL cu motorul original - control desene cu OCR, raport PDF, brosuri, perechi V/W, comparatie OUD/NIEUW.
 ---
 
 # PDFCONTROL complet in LocalChat
@@ -19,8 +19,10 @@ Citeste PROJECT_INFO.md si regulile aplicabile proiectului. Exclude rezultatele 
 - Doua versiuni: pdfcontrol_start_compare, project, old_files, new_files. Cere clarificare daca identitatea vechi/nou este ambigua; nu ghici doar din data fisierului.
 - Un nou raport din control existent: pdfcontrol_regenerate_report, project, job_id, include_drawings=true.
 
-Pornirea returneaza un job_id, NU rezultatul final. Apeleaza pdfcontrol_job_status (wait_seconds=10)
-pana la done/partial/failed/cancelled. Nu lansa din nou aceeasi lucrare pentru simpla citire a progresului.
+Pornirea returneaza doar o confirmare cu job_id, NU rezultatul. Uneltele start din LocalChat asteapta automat starea finala (done/partial/failed/cancelled); foloseste pdfcontrol_job_status numai pentru un job_id cunoscut (reluare, progres) si nu lansa din nou aceeasi lucrare pentru simpla citire a progresului.
+Succes = stare terminala done/partial cu source_files corespunzand selectiei, delivery_verified=true si cai PDF in artifacts. Failed/cancelled se raporteaza cu eroarea reala. Nu declara reusit un job pending/partial/failed.
+Controlul livreaza RAPPORT.pdf original cu desenele marcate; comparatia livreaza Vergelijking_OUD_NIEUW.pdf plus PDF-urile de diferente. V si W nu sunt OUD/NIEUW; sase fisiere V/W inseamna sase, nu douasprezece.
+La erori repetate de validare diagnosticheaza (schema, inventar); nu inventa cai si nu schimba proiectul sau setul de desene ca sa ocolesti eroarea. Nu pretinde ca un audit a corectat XLSX sau a copiat fisiere pe server.
 Pentru liste lungi de PDF-uri parcurge next_artifact_offset cu artifact_offset si wait_seconds=0.
 Pentru anularea lucrarii foloseste pdfcontrol_cancel_job; oprirea generarii modelului nu confirma oprirea jobului.
 
@@ -35,7 +37,7 @@ Raportul original pastreaza propriile reguli de anexe si limita de siguranta a l
 Pentru V/W, numai motorul original determina sursa confirmata dupa proiect, continut si referinta
 din V. Nu copia un W arbitrar pentru toate V-urile. Nu edita cartusul copiei si nu inventa _bron_W.
 Sursele originale se pastreaza; outputurile si provenienta sunt in Controle/Octop-PDFCONTROL/<job_id>.
-Comparația produce PDF vizual OUD/NIEUW, PDF cu diferente T/B si PDF-uri individuale per pereche,
+Comparatia produce PDF vizual OUD/NIEUW, PDF cu diferente T/B si PDF-uri individuale per pereche,
 cu chenarele originale. Nu deduce dimensiuni tehnice din pixeli.
 
 Interfata ofera si butonul PDFCONTROL, pentru aceleasi operatii directe fara model.
