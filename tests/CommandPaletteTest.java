@@ -9,7 +9,7 @@ public final class CommandPaletteTest {
     static int checks;static void check(boolean ok,String label){checks++;if(!ok)throw new AssertionError(label);}
     public static void main(String[] args)throws Exception{Path home=Path.of(System.getProperty("localchat.home"));Files.createDirectories(home);try{FeatureTest.edt(()->{
         LocalChat app=AttachmentTest.window(home,"http://127.0.0.1:1/v1");String[][] commands=FeatureTest.field(app,"COMMANDS");CommandPalette palette=FeatureTest.field(app,"commandPopup");AtomicReference<String> selected=new AtomicReference<>();
-        check(commands.length==25&&java.util.Arrays.stream(commands).anyMatch(c->c[0].equals("/agents")),"all twenty-five LocalChat commands including agents exposed");
+        check(commands.length==26&&java.util.Arrays.stream(commands).anyMatch(c->c[0].equals("/agents")),"all twenty-six LocalChat commands including agents exposed");
         for(int language=0;language<6;language++)for(int theme=0;theme<2;theme++){
             ((JComboBox<?>)FeatureTest.field(app,"languageBox")).setSelectedIndex(language);((JComboBox<?>)FeatureTest.field(app,"themeBox")).setSelectedIndex(theme);palette.filter("/",commands,selected::set,620);
             check(palette.choices.size()==commands.length,"entire command list available in every language and theme");check(palette.scroll.getPreferredSize().height<=360,"long command list bounded with scrolling");

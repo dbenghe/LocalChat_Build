@@ -4,7 +4,7 @@ import java.nio.file.*;import java.util.*;
 final class HotfolderChats {
  static String path(String value){try{return value==null||value.isBlank()?"":Path.of(value).toAbsolutePath().normalize().toString().toLowerCase(Locale.ROOT);}catch(RuntimeException e){return "";}}
  static boolean matches(Conversations.Saved chat,Hotfolder.Change change){
-  var state=chat.state();if("normal".equals(state.contextMode)||Boolean.FALSE.equals(state.toolsEnabled))return false;
+  var state=chat.state();if(!state.continuedTo.isBlank())return false;if("normal".equals(state.contextMode)||Boolean.FALSE.equals(state.toolsEnabled))return false;
   String folder=path(change.folder().toString());if(folder.equals(path(state.hotfolderProject))||folder.equals(path(chat.workDir())))return true;
   if(!state.hotfolderProject.isBlank())return false;
   boolean project=change.project().equals(state.factoryProject)||chat.messages().stream().filter(m->m.role.equals("user")).anyMatch(m->change.project().equals(ProjectLocations.project(m.content,null,"")));

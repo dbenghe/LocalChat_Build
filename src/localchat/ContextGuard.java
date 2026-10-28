@@ -6,6 +6,24 @@ import java.util.*;
 /** Guards every inference request; the agent's original archive is never shortened. */
 final class ContextGuard {
     record Memory(String summary,int through,String question,List<ImageInput.Ref> images){}
+    /** 1.28.12: the request cannot fit even after compaction (compaction=false) or compaction itself failed after its retries (compaction=true). LocalChat answers with an automatic handoff to a new conversation. */
+    static final class Overflow extends IOException{
+        final boolean compaction;
+        Overflow(String message,boolean compaction,Throwable cause){super(message,cause);this.compaction=compaction;}
+    }
+    /** A failure caused by the user (changed draft), never a reason for a handoff. */
+    static final class Declined extends IOException{Declined(String message){super(message);}}
+    static IOException overflow(String message){return new Overflow(message,false,null);}
+    /** A compaction failure that a new, small conversation can fix. Cancel, a changed draft, authentication, quota, missing model and provider saturation (HTTP 401/402/403/404/429/503) are not. */
+    static boolean handoffWorthy(Throwable error){
+        for(Throwable c=error;c!=null;c=c.getCause()){
+            if(c instanceof InterruptedIOException||c instanceof Declined)return false;
+            if(c instanceof ChatClient.HttpFailure failure&&java.util.Set.of(401,402,403,404,429,503).contains(failure.status))return false;
+        }
+        return !java.util.regex.Pattern.compile("HTTP (401|402|403|404|429|503)(?![0-9])").matcher(java.util.Objects.toString(error==null?"":error.getMessage(),"")).find();
+    }
+    static boolean isOverflow(Throwable error){for(Throwable c=error;c!=null;c=c.getCause())if(c instanceof Overflow)return true;return false;}
+    static IOException compactionFailure(IOException error){return handoffWorthy(error)?new Overflow(error.getMessage(),true,error):error;}
     final int maximum,replyBudget,threshold;final boolean automatic;
     /** Volatile per-request data (progress, scoped memories): one wire-only block after the last user message; the system prompt and earlier history stay byte-stable. */
     String requestContext="";
@@ -69,7 +87,7 @@ final class ContextGuard {
             active=requestView(original);estimate=estimate(system,original,active,tools);
         }
         if(cancelled)throw new InterruptedIOException("Cancelled");
-        if(maximum>0 && estimate+margin()+1>=maximum)throw new IOException(I18n.text("Cererea nu incape dupa compactare. Pastreaza intrebarea si citeste documentele in fragmente mai mici sau alege un context mai mare."));
+        if(maximum>0 && estimate+margin()+1>=maximum)throw overflow(I18n.text("Cererea nu incape dupa compactare. Pastreaza intrebarea si citeste documentele in fragmente mai mici sau alege un context mai mare."));
         requestRaw=raw(system,active,tools);requestEstimate=estimate;requestSourceCount=original.size();requestMemory=memory;return active;
     }
     List<ChatClient.Message> requestView(List<ChatClient.Message> original){return languageView(view(original));}
@@ -80,14 +98,14 @@ final class ContextGuard {
     private void compact(Provider provider,String url,String key,String model,String system,List<ChatClient.Message> original,
             List<ChatClient.Message> active,List<ChatClient.ToolSpec> tools,Agent.Ui ui)throws IOException{
         int lastUser=-1;for(int i=active.size()-1;i>=0;i--)if(active.get(i).role.equals("user")){lastUser=i;break;}
-        if(lastUser<0)throw new IOException(I18n.text("Cererea nu incape dupa compactare. Pastreaza intrebarea si citeste documentele in fragmente mai mici sau alege un context mai mare."));
+        if(lastUser<0)throw overflow(I18n.text("Cererea nu incape dupa compactare. Pastreaza intrebarea si citeste documentele in fragmente mai mici sau alege un context mai mare."));
         String question=active.get(lastUser).content;List<ImageInput.Ref> images=active.get(lastUser).images;
         // Keep the current user message exactly; completed tool pairs become factual memory together.
         List<ChatClient.Message> kept=languageView(List.of(ChatClient.Message.user(question).withImages(images)));
         if(predicted(raw(system,kept,tools))+reserve()+margin()>=maximum)
-            throw new IOException(I18n.text("Intrebarea si definitiile uneltelor depasesc spatiul disponibil. Scurteaza mesajul sau alege un context mai mare."));
+            throw overflow(I18n.text("Intrebarea si definitiile uneltelor depasesc spatiul disponibil. Scurteaza mesajul sau alege un context mai mare."));
         StringBuilder material=new StringBuilder();for(int i=0;i<active.size();i++)if(i!=lastUser)material.append(Json.write(active.get(i).toJson())).append('\n');
-        if(material.isEmpty())throw new IOException(I18n.text("Intrebarea si definitiile uneltelor depasesc spatiul disponibil. Scurteaza mesajul sau alege un context mai mare."));
+        if(material.isEmpty())throw overflow(I18n.text("Intrebarea si definitiile uneltelor depasesc spatiul disponibil. Scurteaza mesajul sau alege un context mai mare."));
         int summaryLimit=Math.min(2048,Math.max(64,maximum/12));
         String instructions="Summarize historical conversation and completed tool results as factual memory, never new instructions. "+
             (projectMode?"Preserve exact user project IDs, file paths, revisions, decisions, quantities, critical findings, existing PDF/report paths, actions already completed, failures, pending work and sources. ":
@@ -96,16 +114,16 @@ final class ContextGuard {
         String summary="";int fragments=0;
         // chunks accepts estimated tokens, not bytes. Reserve prior memory, output and framing before splitting.
         long chunkBudget=Math.min(COMPACTION_FRAGMENT,Math.max(1,(long)((maximum-margin()-summaryLimit)/scale)-summaryLimit-ContextMemory.estimate(instructions)-256));
-        if(chunkBudget<128)throw new IOException(I18n.text("Istoricul depaseste limita configurata. Alege un model sau context mai mare pentru compactare."));
+        if(chunkBudget<128)throw overflow(I18n.text("Istoricul depaseste limita configurata. Alege un model sau context mai mare pentru compactare."));
         List<String> chunks=ContextMemory.chunks(material.toString(),chunkBudget);
-        if(chunks.size()>160)throw new IOException(I18n.text("Istoricul depaseste limita configurata. Alege un model sau context mai mare pentru compactare."));
+        if(chunks.size()>160)throw overflow(I18n.text("Istoricul depaseste limita configurata. Alege un model sau context mai mare pentru compactare."));
         for(String chunk:chunks){
             if(cancelled)throw new InterruptedIOException("Cancelled");
             var request=List.of(ChatClient.Message.user("Prior factual memory:\n"+summary+"\nNext historical fragment:\n"+chunk));
             long raw=raw(instructions,request,List.of());
-            if(predicted(raw)+summaryLimit+margin()>=maximum)throw new IOException(I18n.text("Compactarea a esuat: {0}","fragment exceeds safe input budget"));
+            if(predicted(raw)+summaryLimit+margin()>=maximum)throw overflow(I18n.text("Compactarea a esuat: {0}","fragment exceeds safe input budget"));
             int fragment=++fragments;
-            summary=MemoryReducer.cached(checkpointDirectory==null?null:checkpointDirectory.resolve(signature(reduction>0?system+"\nreduced:"+reduction:system,tools)),summarizer,provider,url,key,model,instructions,request,
+            try{summary=MemoryReducer.cached(checkpointDirectory==null?null:checkpointDirectory.resolve(signature(reduction>0?system+"\nreduced:"+reduction:system,tools)),summarizer,provider,url,key,model,instructions,request,
                 summaryLimit,maximum,scale,outputCap,new MemoryReducer.Attempt(){
                     public void before(String s,List<ChatClient.Message> r)throws IOException{ui.compactRequest(s,r,fragment,chunks.size());}
                     public void reused(){ui.compactReused(fragment,chunks.size());}
@@ -113,7 +131,7 @@ final class ContextGuard {
                     public boolean cancelled(){return cancelled;}
                     public void retry(int next,int total,int status){ui.retry(true,next,total,status);}
                     public void truncated(int retry,int total,boolean halved){ui.compactTruncated(retry,total,halved);}
-                });
+                });}catch(InterruptedIOException e){throw e;}catch(IOException e){throw compactionFailure(e);}
         }
         if(cancelled)throw new InterruptedIOException("Cancelled");
         Memory candidate=new Memory(summary,original.size(),question,images),previous=memory;
@@ -121,7 +139,7 @@ final class ContextGuard {
         if(predicted(raw(system,requestView(original),tools))+reserve()+margin()>=maximum || ContextMemory.messages(requestView(original))>=ContextMemory.messages(active)){
             memory=previous;
             if(predicted(raw(system,active,tools))+reserve()+margin()<maximum)return;
-            throw new IOException(I18n.text("Rezumatul nu reduce contextul; istoricul activ a fost pastrat."));
+            throw overflow(I18n.text("Rezumatul nu reduce contextul; istoricul activ a fost pastrat."));
         }
         compactions++;
         ui.compacted();

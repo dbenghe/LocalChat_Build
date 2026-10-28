@@ -27,6 +27,19 @@ final class Conversations {
         String factoryProject="",factoryRoot="",factoryFolder="",factoryName="",factoryPending="";
         String projectStatus="draft",hotfolderProject="",hotfolderEvent="",hotfolderPendingDraft="";boolean unread;
         boolean pinned, archived;
+        /** 1.28.12: handoff links between a conversation and its continuation, by file name. handoffFresh = created by a handoff and no turn has finished since (loop guard). */
+        String continuedFrom="",continuedFromTitle="",continuedTo="",continuedToTitle="";boolean handoffFresh;
+        /** 1.28.12: settings of a continuation: the same project, folder, provider, model and options as the previous conversation; no history, memory, usage or anchors. */
+        static State continuation(State old,String title,String fromFile,String fromTitle){
+            State s=new State();s.title=title;s.continuedFrom=fromFile;s.continuedFromTitle=fromTitle;s.handoffFresh=true;
+            s.factoryProject=old.factoryProject;s.factoryRoot=old.factoryRoot;s.factoryFolder=old.factoryFolder;s.factoryName=old.factoryName;s.factoryPending=old.factoryPending;
+            s.projectStatus=old.projectStatus;s.hotfolderProject=old.hotfolderProject;s.hotfolderEvent=old.hotfolderEvent;s.catalogueMonth=old.catalogueMonth;s.pinned=old.pinned;
+            s.provider=old.provider;s.providerPreset=old.providerPreset;s.model=old.model;s.baseUrl=old.baseUrl;s.contextLimit=old.contextLimit;s.responseProfile=old.responseProfile;
+            s.autoCompact=old.autoCompact;s.autoThreshold=old.autoThreshold;s.systemPrompt=old.systemPrompt;s.responseLanguage=old.responseLanguage;s.translateMessage=old.translateMessage;
+            s.contextMode=old.contextMode;s.mbsSystemPrompt=old.mbsSystemPrompt;s.normalSystemPrompt=old.normalSystemPrompt;s.toolsEnabled=old.toolsEnabled;s.streamEnabled=old.streamEnabled;
+            s.attachedPaths.addAll(old.attachedPaths);
+            return s;
+        }
         final java.util.Set<Integer> bookmarks=new java.util.TreeSet<>();
         String interactionState="";boolean interactionReplyDraft;String catalogueMonth="";boolean queuePaused=true;final List<MessageQueue.Entry> queue=new ArrayList<>();
         String draft="",provider="",providerPreset="",model="",baseUrl="";
@@ -51,7 +64,7 @@ final class Conversations {
         TokenUsage.Ledger usage=new TokenUsage.Ledger();
         TokenUsage.Ledger last=new TokenUsage.Ledger();
         Object toJson() { return Json.obj("catalogueMonth",catalogueMonth,"queuedMessages",queue.stream().map(MessageQueue.Entry::json).toList(),"factoryProject",factoryProject,"factoryRoot",factoryRoot,"factoryFolder",factoryFolder,"factoryName",factoryName,"factoryPending",factoryPending,"projectStatus",projectStatus,"hotfolderProject",hotfolderProject,"hotfolderEvent",hotfolderEvent,"hotfolderPendingDraft",hotfolderPendingDraft,"unread",unread,"contextMode",contextMode,"activeContextStart",memory.start,"mbsSystemPrompt",mbsSystemPrompt,"normalSystemPrompt",normalSystemPrompt,"bookmarks",new ArrayList<>(bookmarks),"responseLanguage",responseLanguage,"translateMessage",translateMessage,"customTitle",title,"pinned",pinned,"archived",archived,"draft",draft,"interactionState",interactionState,"interactionReplyDraft",interactionReplyDraft,"draftAttachments",draftAttachments,"attachedPaths",attachedPaths,"provider",provider,"providerPreset",providerPreset,"model",model,"baseUrl",baseUrl,"contextLimit",contextLimit,"autoCompact",autoCompact,"autoThreshold",autoThreshold,"responseProfile",responseProfile,"systemPrompt",systemPrompt,"toolsEnabled",toolsEnabled,"streamEnabled",streamEnabled,"summary",memory.summary,
-                "contextAnchorInput",contextAnchorInput,"contextAnchorCount",contextAnchorCount,"contextAnchorThrough",contextAnchorThrough,"contextAnchorProfile",contextAnchorProfile,"contextAnchorSignature",contextAnchorSignature,"compactedThrough",memory.through,"retainedQuestion",memory.question,"usage",usage.toJson(),"lastTurn",last.toJson()); }
+                "contextAnchorInput",contextAnchorInput,"contextAnchorCount",contextAnchorCount,"contextAnchorThrough",contextAnchorThrough,"contextAnchorProfile",contextAnchorProfile,"contextAnchorSignature",contextAnchorSignature,"compactedThrough",memory.through,"retainedQuestion",memory.question,"usage",usage.toJson(),"lastTurn",last.toJson(),"continuedFrom",continuedFrom,"continuedFromTitle",continuedFromTitle,"continuedTo",continuedTo,"continuedToTitle",continuedToTitle,"handoffFresh",handoffFresh); }
         static State fromJson(Object o, int count) {
             State s=new State();s.catalogueMonth=java.util.Objects.toString(Json.str(o,"catalogueMonth"),"");s.queue.addAll(MessageQueue.parse(Json.get(o,"queuedMessages")));s.factoryProject=java.util.Objects.toString(Json.str(o,"factoryProject"),"");s.factoryRoot=java.util.Objects.toString(Json.str(o,"factoryRoot"),"");s.factoryFolder=java.util.Objects.toString(Json.str(o,"factoryFolder"),"");s.factoryName=java.util.Objects.toString(Json.str(o,"factoryName"),"");s.factoryPending=java.util.Objects.toString(Json.str(o,"factoryPending"),"");s.hotfolderPendingDraft=java.util.Objects.toString(Json.str(o,"hotfolderPendingDraft"),"");s.projectStatus=ProjectStatus.valid(Json.str(o,"projectStatus"));s.hotfolderProject=java.util.Objects.toString(Json.str(o,"hotfolderProject"),"");s.hotfolderEvent=java.util.Objects.toString(Json.str(o,"hotfolderEvent"),"");s.unread=Boolean.TRUE.equals(Json.get(o,"unread"));s.interactionState=java.util.Objects.toString(Json.str(o,"interactionState"),"");s.interactionReplyDraft=Boolean.TRUE.equals(Json.get(o,"interactionReplyDraft"));
             s.contextMode=java.util.Objects.toString(Json.str(o,"contextMode"),"");
@@ -65,6 +78,8 @@ final class Conversations {
             s.contextAnchorSignature=java.util.Objects.toString(Json.str(o,"contextAnchorSignature"),"");
             s.providerPreset=java.util.Objects.toString(Json.str(o,"providerPreset"),"");
             s.pinned=Boolean.TRUE.equals(Json.get(o,"pinned"));s.archived=Boolean.TRUE.equals(Json.get(o,"archived"));
+            s.continuedFrom=java.util.Objects.toString(Json.str(o,"continuedFrom"),"");s.continuedFromTitle=java.util.Objects.toString(Json.str(o,"continuedFromTitle"),"");
+            s.continuedTo=java.util.Objects.toString(Json.str(o,"continuedTo"),"");s.continuedToTitle=java.util.Objects.toString(Json.str(o,"continuedToTitle"),"");s.handoffFresh=Boolean.TRUE.equals(Json.get(o,"handoffFresh"));
             String draft=Json.str(o,"draft"),provider=Json.str(o,"provider"),model=Json.str(o,"model"),url=Json.str(o,"baseUrl");
             s.responseProfile=(int)Math.max(0,Math.min(3,TokenUsage.number(o,"responseProfile",3)));
             s.autoCompact=Boolean.TRUE.equals(Json.get(o,"autoCompact"));

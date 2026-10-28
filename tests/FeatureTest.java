@@ -207,6 +207,7 @@ public final class FeatureTest {
                 ((JCheckBox)field(app[0],"toolsBox")).setSelected(false);command(app[0],"/new bounded");command(app[0],"/context 4096");{WorkspacePanel manual=field(app[0],"workspace");if(manual.autoCompact.isSelected())manual.autoCompact.doClick();}
                 List<ChatClient.Message> history=field(app[0],"history");
                 for(int i=0;i<4;i++){history.add(ChatClient.Message.user("source "+i+" "+"detail ".repeat(1200)));history.add(ChatClient.Message.assistant("decision",List.of(),"fixture"));}
+                ((Conversations.State)field(app[0],"sessionState")).handoffFresh=true; // 1.28.12: a chat created by handoff is never handed off again, so the oversized request is blocked locally as before
                 ((JTextArea)field(app[0],"input")).setText("next");call(app[0],"send",new Class<?>[]{});
                 check(server.requests.isEmpty() && !((Boolean)field(app[0],"busy")),"oversized normal request blocked locally");
                 command(app[0],"/compact");
@@ -253,6 +254,7 @@ public final class FeatureTest {
                 if(mode==4)panel.autoCompact.doClick();panel.autoThreshold.setValue(30);
                 file[0]=field(app[0],"conversationFile");
                 check(!panel.autoThreshold.isEnabled() || mode!=3,"unknown context does not activate threshold");
+                if(mode==5)((Conversations.State)field(app[0],"sessionState")).handoffFresh=true; // 1.28.12: loop guard keeps the 1.28.10 behaviour (error, draft kept); the automatic handoff is covered by Release11212Test
                 ((JTextArea)field(app[0],"input")).setText("pending message");call(app[0],"send",new Class<?>[]{});
                 if(mode==1)((JTextArea)field(app[0],"input")).setText("edited draft");
                 if(mode==2)command(app[0],"/stop");
