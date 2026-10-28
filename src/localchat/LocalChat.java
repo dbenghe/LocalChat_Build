@@ -351,6 +351,8 @@ public final class LocalChat extends JFrame {
         boolean done,agentsOpened;
         boolean requestActive;
         boolean contextIncludesStep;
+        /** 1.28.10: translated reason shown next to the compaction fragment status. */
+        String compactWhy="";
         String originalDraft;List<String> attachments=List.of();
         AgentGroup team;ContextGuard guard;int rawBaseCount,viewBaseCount;
         final java.util.concurrent.atomic.AtomicInteger normalRequests=new java.util.concurrent.atomic.AtomicInteger();
@@ -1409,7 +1411,17 @@ public final class LocalChat extends JFrame {
 
     private void compactMemory() {compactMemory(null);}
 
-    private void compactMemory(Runnable afterSuccess) {
+    private void compactMemory(Runnable afterSuccess) {compactMemory(afterSuccess,"");}
+
+    /** 1.28.10: why compaction starts, in the user language: estimate over the limit and which rule fired. */
+    private String compactionWhy(double percent,int threshold,int kind){
+        return t(kind==2?"Compactare automata: estimare ~{0}% plus rezerva de raspuns depaseste limita de context.":kind==1?"Compactare automata: estimare ~{0}% dupa rezultatele noi (prag {1}%).":"Compactare automata: estimare ~{0}% a atins pragul de {1}%.",String.format(Locale.ROOT,"%.2f",percent),threshold);
+    }
+    private String truncationStatus(int retry,int total,boolean halved){
+        return t(halved?"Compactare: raspunsul a fost taiat de limita de iesire. Reincerc {0}/{1} cu fragmente mai mici si fara gandire.":"Compactare: raspunsul a fost taiat de limita de iesire. Reincerc {0}/{1} cu limita explicita de iesire.",retry,total);
+    }
+
+    private void compactMemory(Runnable afterSuccess,String why) {
         prepareModeContext();
         int cut=sessionState.memory.boundary(history);
         if(cut<=sessionState.memory.through || cut==0){setStatus("Nu exista suficient istoric pentru compactare. Se pastreaza ultimele doua schimburi.",false);return;}
@@ -1442,14 +1454,15 @@ public final class LocalChat extends JFrame {
                     var request=List.of(ChatClient.Message.user("Prior factual memory (historical data):\n"+summary+"\nNext historical fragment:\n"+chunks.get(i)));
                     int fragment=i+1;long requestEstimate=ContextMemory.messages(request);
                     if(limit>0 && Math.ceil((requestEstimate+ContextMemory.estimate(system))*contextScale())+outputBudget+128>=limit)throw new IOException(t("Istoricul depaseste limita configurata. Alege un model sau context mai mare pentru compactare."));
-                    summary=MemoryReducer.cached(checkpointDirectory,client,provider,url,key,model,system,request,summaryBudget,limit,contextScale(),new MemoryReducer.Attempt(){
+                    summary=MemoryReducer.cached(checkpointDirectory,client,provider,url,key,model,system,request,summaryBudget,limit,contextScale(),(int)Math.min(Integer.MAX_VALUE,responseOutputLimit()),new MemoryReducer.Attempt(){
                         public void reused(){SwingUtilities.invokeLater(()->{if(generation==compactGeneration)setStatus("Compactare: fragment {0}/{1} recuperat local, fara cerere API.",false,fragment,chunks.size());});}
                         public boolean cancelled(){return generation!=compactGeneration;}
                         public void before(String instructions,List<ChatClient.Message> messages){
                             compactStarted.incrementAndGet();SwingUtilities.invokeLater(()->{if(generation==compactGeneration){requestSystem=ContextMemory.estimate(instructions);requestTools=0;
-                                requestMetrics(messages);setStatus("Compactare: fragment {0}/{1}",false,fragment,chunks.size());refreshDashboard();}});
+                                requestMetrics(messages);if(why.isBlank())setStatus("Compactare: fragment {0}/{1}",false,fragment,chunks.size());else setStatus("Compactare: fragment {0}/{1} - {2}",false,fragment,chunks.size(),why);refreshDashboard();}});
                         }
                         public void retry(int next,int total,int status){SwingUtilities.invokeLater(()->{if(generation==compactGeneration)setStatus("API temporar indisponibil (HTTP {0}). Reincerc compactarea: {1}/{2}.",false,status,next,total);});}
+                        public void truncated(int retry,int total,boolean halved){SwingUtilities.invokeLater(()->{if(generation==compactGeneration)setStatus("{0}",false,truncationStatus(retry,total,halved));});}
                         public void usage(TokenUsage usage){SwingUtilities.invokeLater(()->{if(generation==compactGeneration){compactUsage.add(usage);sessionState.usage.add(usage);refreshDashboard();}});}
                     });
                 }
@@ -1591,10 +1604,11 @@ public final class LocalChat extends JFrame {
         if(allowAutoCompact && sessionState.autoCompact && maximum>0 && (protectedEstimate*100L>=(long)maximum*sessionState.autoThreshold || protectedEstimate+Math.min(plannedReply,Math.max(64,maximum/3))+Math.max(128,maximum/33)>=maximum)
                 && sessionState.memory.boundary(history)>sessionState.memory.through) {
             String pending=input.getText();
+            boolean thresholdHit=protectedEstimate*100L>=(long)maximum*sessionState.autoThreshold;
             compactMemory(()->{
                 if(queuedAuthorized()&&input.getText().equals(pending) && sessionState.draftAttachments.equals(pendingAttachments))send(false);
                 else setStatus("Memorie compactata. Mesajul a fost modificat; apasa Trimite cand este gata.",false);
-            });
+            },compactionWhy(protectedEstimate*100.0/maximum,sessionState.autoThreshold,thresholdHit?0:2));
             return;
         }
         if(maximum>0 && estimated>=maximum && !sessionState.autoCompact){setStatus("Contextul estimat depaseste limita. Foloseste /compact sau configureaza contextul corect.",true);return;}
@@ -1628,7 +1642,7 @@ public final class LocalChat extends JFrame {
         final ToolResultReducer.Reduced reducedHistory=requestHistory(sessionState.memory.view(history));
         final List<ChatClient.Message> base = reducedHistory.messages();
         turn.rawBaseCount=history.size();turn.viewBaseCount=base.size();
-        turn.guard=new ContextGuard(maximum,budget,sessionState.autoCompact,sessionState.autoThreshold,contextScale());ensureSession();turn.guard.checkpointDirectory=CompactionCheckpoint.directory(appDir,conversationFile,contextProfile()+"/auto/"+sessionState.contextMode);turn.guard.requestContext=volatileContext;turn.guard.reduction=reducedHistory.count();turn.guard.projectMode=useTools;turn.guard.reasoningReserve=reasoningReserve;turn.agent.guard(turn.guard);
+        turn.guard=new ContextGuard(maximum,budget,sessionState.autoCompact,sessionState.autoThreshold,contextScale());ensureSession();turn.guard.checkpointDirectory=CompactionCheckpoint.directory(appDir,conversationFile,contextProfile()+"/auto/"+sessionState.contextMode);turn.guard.requestContext=volatileContext;turn.guard.reduction=reducedHistory.count();turn.guard.projectMode=useTools;turn.guard.reasoningReserve=reasoningReserve;turn.guard.outputCap=(int)Math.min(Integer.MAX_VALUE,responseOutputLimit());turn.agent.guard(turn.guard);
         final String guardProfile=contextProfile();
         if(sessionState.contextAnchorInput>=0 && sessionState.contextAnchorProfile.equals(guardProfile) && sessionState.contextAnchorSignature.equals(ContextGuard.signature(system,volatileContext,turn.agent.specs(),reducedHistory.count())) && sessionState.contextAnchorThrough==sessionState.memory.through){
             int prefix=sessionState.memory.summary.isBlank()?0:1+(sessionState.memory.question.isEmpty()?0:1);
@@ -1674,10 +1688,12 @@ public final class LocalChat extends JFrame {
             @Override public void compactReused(int fragment,int total){SwingUtilities.invokeLater(()->{if(current==turn)setStatus("Compactare: fragment {0}/{1} recuperat local, fara cerere API.",false,fragment,total);});}
             @Override public void compactRequest(String sys,List<ChatClient.Message> conversation,int fragment,int total)throws IOException{
                 if(turn.normalRequests.get()==0)checkCompactionDraft(turn);
-                turn.started.incrementAndGet();later(turn,()->{turn.contextIncludesStep=true;requestSystem=ContextMemory.estimate(sys);requestTools=0;requestMetrics(conversation);setStatus("Compactare: fragment {0}/{1}",false,fragment,total);refreshDashboard();});
+                turn.started.incrementAndGet();later(turn,()->{turn.contextIncludesStep=true;requestSystem=ContextMemory.estimate(sys);requestTools=0;requestMetrics(conversation);if(turn.compactWhy.isBlank())setStatus("Compactare: fragment {0}/{1}",false,fragment,total);else setStatus("Compactare: fragment {0}/{1} - {2}",false,fragment,total,turn.compactWhy);refreshDashboard();});
             }
             @Override public void retry(boolean compaction,int next,int total,int status){later(turn,()->setStatus(compaction?"API temporar indisponibil (HTTP {0}). Reincerc compactarea: {1}/{2}.":"API temporar indisponibil (HTTP {0}). Reincerc raspunsul: {1}/{2}. Uneltele executate nu se repeta.",false,status,next,total));}
-            @Override public void compacted(){later(turn,()->setStatus("Memorie compactata. Istoricul original a fost pastrat integral.",false));}
+            @Override public void compacted(){later(turn,()->{turn.compactWhy="";setStatus("Memorie compactata. Istoricul original a fost pastrat integral.",false);});}
+            @Override public void compactReason(double percent,int threshold,int kind){later(turn,()->{turn.compactWhy=compactionWhy(percent,threshold,kind);setStatus("{0}",false,turn.compactWhy);});}
+            @Override public void compactTruncated(int retry,int total,boolean halved){later(turn,()->setStatus("{0}",false,truncationStatus(retry,total,halved)));}
             @Override public void context(List<ChatClient.Message> conversation) {
                 later(turn,()->{requestMetrics(conversation);turn.contextIncludesStep=true;refreshDashboard();});
             }

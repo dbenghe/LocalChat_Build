@@ -650,7 +650,6 @@
   "Desene si rapoarte": "Çizimler ve raporlar",
   "Disponibile in chat.": "Sohbette kullanılabilir.",
   "Compactarea a esuat: fluxul API s-a inchis inaintea raspunsului complet; istoricul si memoria sunt pastrate.": "Sikistirma basarisiz: API akisi tam yanit gelmeden kapandi; gecmis ve bellek korundu.",
-  "Compactarea a fost oprita de limita de iesire a modelului. Rezumatul incomplet nu a fost salvat; istoricul si memoria sunt pastrate.": "Sıkıştırma modelin çıktı sınırına ulaştı. Eksik özet kaydedilmedi; geçmiş ve bellek korundu.",
   "Pregateste import FAST": "FAST içe aktarımını hazırla",
   "Fisier XLSX sursa": "Kaynak XLSX dosyası",
   "Copie FAST noua": "Yeni FAST kopyası",
@@ -729,5 +728,13 @@
   "Sfat: furnizorul este saturat (HTTP {0}), nu contextul. Reincearca peste putin timp, reincarca lista de modele si reselecteaza modelul, sau alege alt model. Compactarea este separata si porneste singura la pragul de context.": "Ipucu: saglayici doldu (HTTP {0}), baglam degil. Biraz sonra tekrar dene, model listesini yeniden yukle ve modeli yeniden sec ya da baska bir model sec. Sikistirma ayridir ve baglam esiginde kendiliginden baslar.",
   "Furnizorul este saturat (HTTP {0}); contextul nu este plin. Reincearca peste putin timp sau alege optional alt furnizor sau model. Selectia nu trimite mesajul; limitele contului pot fi comune.": "Saglayici dolu (HTTP {0}); baglam dolu degil. Biraz sonra tekrar dene veya istege bagli olarak baska bir saglayici ya da model sec. Secim mesaji gondermez; hesap limitleri ortak olabilir.",
   "{0} modele disponibile — alege din lista. Conversatia curenta ramane ({1} din context); reincarcarea modelelor nu o goleste.": "{0} model mevcut — listeden sec. Mevcut konusma kalir (baglamin {1} kadari); modelleri yeniden yuklemek onu bosaltmaz.",
-  "Conversatia curenta ramane ({0} din context): reincarcarea sau reselectarea modelului nu o goleste. Foloseste /compact sau Conversatie noua pentru a reduce procentul.": "Mevcut konusma kalir (baglamin {0} kadari): modeli yeniden yuklemek veya yeniden secmek onu bosaltmaz. Yuzdeyi dusurmek icin /compact veya Yeni konusma kullan."
+  "Conversatia curenta ramane ({0} din context): reincarcarea sau reselectarea modelului nu o goleste. Foloseste /compact sau Conversatie noua pentru a reduce procentul.": "Mevcut konusma kalir (baglamin {0} kadari): modeli yeniden yuklemek veya yeniden secmek onu bosaltmaz. Yuzdeyi dusurmek icin /compact veya Yeni konusma kullan.",
+  "Compactarea a esuat: gandirea modelului a consumat limita de iesire (~{0} tokeni, motiv oprire: {1}) si rezumatul a ramas incomplet, chiar dupa {2} reincercari cu limita explicita si fragmente mai mici. Rezumatul incomplet nu a fost salvat; istoricul si memoria sunt pastrate. Alege un model care poate opri gandirea sau reincearca.": "Sikistirma basarisiz: modelin akil yurutmesi cikis limitini tuketti (~{0} token, durma nedeni: {1}) ve ozet, acik limit ve daha kucuk parcalarla {2} yeniden denemeden sonra bile eksik kaldi. Eksik ozet kaydedilmedi; gecmis ve bellek korunur. Dusunmeyi kapatabilen bir model sec veya tekrar dene.",
+  "Compactarea a fost oprita de limita de iesire a modelului (motiv oprire: {0}) chiar dupa {1} reincercari cu limita explicita si fragmente mai mici. Rezumatul incomplet nu a fost salvat; istoricul si memoria sunt pastrate.": "Sikistirma, modelin cikis limiti nedeniyle durdu (durma nedeni: {0}); acik limit ve daha kucuk parcalarla {1} yeniden denemeden sonra bile. Eksik ozet kaydedilmedi; gecmis ve bellek korunur.",
+  "Compactare automata: estimare ~{0}% dupa rezultatele noi (prag {1}%).": "Otomatik sikistirma: yeni sonuclardan sonra tahmin ~{0}% (esik {1}%).",
+  "Compactare automata: estimare ~{0}% a atins pragul de {1}%.": "Otomatik sikistirma: ~{0}% tahmin {1}% esigine ulasti.",
+  "Compactare automata: estimare ~{0}% plus rezerva de raspuns depaseste limita de context.": "Otomatik sikistirma: ~{0}% tahmin ve yanit rezervi baglam limitini asiyor.",
+  "Compactare: fragment {0}/{1} - {2}": "Sikistirma: parca {0}/{1} - {2}",
+  "Compactare: raspunsul a fost taiat de limita de iesire. Reincerc {0}/{1} cu limita explicita de iesire.": "Sikistirma: yanit cikis limiti nedeniyle kesildi. Acik cikis limitiyle yeniden deneniyor {0}/{1}.",
+  "Compactare: raspunsul a fost taiat de limita de iesire. Reincerc {0}/{1} cu fragmente mai mici si fara gandire.": "Sikistirma: yanit cikis limiti nedeniyle kesildi. Daha kucuk parcalar ve dusunmeden yeniden deneniyor {0}/{1}."
 }

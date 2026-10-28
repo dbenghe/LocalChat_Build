@@ -30,6 +30,10 @@ final class Agent {
         default void compactReused(int fragment,int total) {}
         default void compactRequest(String system,List<ChatClient.Message> conversation,int fragment,int total) throws IOException {}
         default void compacted() {}
+        /** 1.28.10: why automatic compaction starts. percent = estimate over the limit; kind 0 = threshold reached, 1 = threshold reached after new tool results (4x estimate), 2 = estimate plus reply reserve exceeds the window. */
+        default void compactReason(double percent,int threshold,int kind) {}
+        /** 1.28.10: a compaction reply was cut by the output limit; retry n of total, halved=true when the fragment is split in smaller pieces. */
+        default void compactTruncated(int retry,int total,boolean halved) {}
         default void retry(boolean compaction,int next,int total,int status){}
         default void protocolRepair(int attempt){}
     /** 1.28.9: a reply wrote tool calls as text. Nothing ran and any result it describes is not real. */

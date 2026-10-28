@@ -11,6 +11,8 @@ final class ContextGuard {
     String requestContext="";
     java.nio.file.Path checkpointDirectory;
     boolean projectMode=true;
+    /** Output limit of the model from server metadata (tokens), 0 = unknown; clamps the explicit compaction output limit (1.28.10). */
+    int outputCap;
     String signature="";
     /** Number of old tool results reduced in this turn's request view (ToolResultReducer); part of every anchor signature, so a change invalidates the anchors (1.27.2). */
     int reduction;
@@ -24,6 +26,11 @@ final class ContextGuard {
         if(anchorInput>=0 && memory==anchorMemory && anchorSourceCount<=original.size())
             estimate=Math.max(estimate,anchorInput+4*ContextMemory.messages(original.subList(anchorSourceCount,original.size())));
         return estimate;
+    }
+    /** True when tool results added since the last API anchor (counted 4x) are what pushes the estimate up. */
+    boolean driven(String system,List<ChatClient.Message> original,List<ChatClient.Message> active,List<ChatClient.ToolSpec> tools){
+        return anchorInput>=0 && memory==anchorMemory && anchorSourceCount<original.size()
+            && anchorInput+4*ContextMemory.messages(original.subList(anchorSourceCount,original.size()))>predicted(raw(system,active,tools));
     }
     /** Estimated tokens per compaction fragment: small enough that the silent prefill stays under a ~100 s proxy limit (1.28.7). */
     static final long COMPACTION_FRAGMENT=8000;
@@ -55,7 +62,9 @@ final class ContextGuard {
         signature=signature(system,requestContext,tools,reduction);
         List<ChatClient.Message> active=requestView(original);
         long estimate=estimate(system,original,active,tools);
-        if(maximum>0 && automatic && (estimate+reserve()+margin()>maximum || (step>0 && ContextMemory.messages(active)>256 && estimate*100L>=(long)maximum*threshold))){
+        boolean overWindow=maximum>0 && estimate+reserve()+margin()>maximum;
+        if(maximum>0 && automatic && (overWindow || (step>0 && ContextMemory.messages(active)>256 && estimate*100L>=(long)maximum*threshold))){
+            ui.compactReason(estimate*100.0/maximum,threshold,overWindow?2:driven(system,original,active,tools)?1:0);
             compact(provider,url,key,model,system,original,active,tools,ui);
             active=requestView(original);estimate=estimate(system,original,active,tools);
         }
@@ -97,12 +106,13 @@ final class ContextGuard {
             if(predicted(raw)+summaryLimit+margin()>=maximum)throw new IOException(I18n.text("Compactarea a esuat: {0}","fragment exceeds safe input budget"));
             int fragment=++fragments;
             summary=MemoryReducer.cached(checkpointDirectory==null?null:checkpointDirectory.resolve(signature(reduction>0?system+"\nreduced:"+reduction:system,tools)),summarizer,provider,url,key,model,instructions,request,
-                summaryLimit,maximum,scale,new MemoryReducer.Attempt(){
+                summaryLimit,maximum,scale,outputCap,new MemoryReducer.Attempt(){
                     public void before(String s,List<ChatClient.Message> r)throws IOException{ui.compactRequest(s,r,fragment,chunks.size());}
                     public void reused(){ui.compactReused(fragment,chunks.size());}
                     public void usage(TokenUsage usage){ui.usage(usage);}
                     public boolean cancelled(){return cancelled;}
                     public void retry(int next,int total,int status){ui.retry(true,next,total,status);}
+                    public void truncated(int retry,int total,boolean halved){ui.compactTruncated(retry,total,halved);}
                 });
         }
         if(cancelled)throw new InterruptedIOException("Cancelled");
