@@ -110,6 +110,7 @@ final class Skills {
                 .forEach(p -> b.append("- ").append(p).append('\n'));
         }
         b.append("\nSKILL_CONTENT:\n").append(translatePaths.apply(Files.readString(file, StandardCharsets.UTF_8)));
+        b.append(SkillNotes.forSkill(skill.name()));
 
         return b.toString();
     }

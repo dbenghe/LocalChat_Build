@@ -183,6 +183,10 @@ if ($LASTEXITCODE) { throw 'Parallel read-only tool batch tests failed' }
 if ($LASTEXITCODE) { throw 'Launcher environment (JAVA_TOOL_OPTIONS) tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/skills-cache-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.SkillsCacheTest
 if ($LASTEXITCODE) { throw 'Skills cache tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/skill-notes-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.SkillNotesTest
+if ($LASTEXITCODE) { throw 'Skill adaptation note (read_skill) tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/tool-transcript-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ToolTranscriptTest
+if ($LASTEXITCODE) { throw 'Tool transcript text tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/image-resend-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ImageResendTest
 if ($LASTEXITCODE) { throw 'Image resend tests failed' }
 & "$taskJdk/bin/java.exe" "-Dpdfcontrol.package=$PSScriptRoot/pdfcontrol" "-Dpdfcontrol.projects=$taskBuild/pdfcontrol-tests/PROJECTS" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/token-budget-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.TokenBudgetTest

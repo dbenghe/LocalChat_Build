@@ -1704,14 +1704,14 @@ public final class LocalChat extends JFrame {
             public void toolStarted(ChatClient.ToolCall call) {
                 later(turn, () -> {
                     ensureNewline();
-                    append("» " + (call.name.equals(ComposerAssist.TOOL)?t("Alegeri si propuneri"):describeCall(call)) + "\n", toolStyle);
+                    append("» " + (call.name.equals(ComposerAssist.TOOL)?t("Alegeri si propuneri"):ToolTranscript.describeCall(call)) + "\n", toolStyle);
                     setStatus("Rulez {0}…", false, call.name);
                 });
             }
 
             @Override
             public void toolFinished(ChatClient.ToolCall call, Tools.Result result) {
-                later(turn, () -> {append("    → " + (call.name.equals(ComposerAssist.TOOL)&&!result.isError?t("Disponibile in chat."):preview(result)) + "\n", result.isError ? toolErrorStyle : toolStyle);
+                later(turn, () -> {append("    → " + (call.name.equals(ComposerAssist.TOOL)&&!result.isError?t("Disponibile in chat."):ToolTranscript.preview(result)) + "\n", result.isError ? toolErrorStyle : toolStyle);
                     if(call.name.equals(ComposerAssist.TOOL)&&!result.isError)composerAssist.present(call.args,call.id);if(call.name.equals("run_agents"))agentPanel.result(result.text);if(!result.isError||call.name.equals("run_agents"))addReports(result.text);});
             }
         };
@@ -2030,11 +2030,11 @@ public final class LocalChat extends JFrame {
                 if("PDFCONTROL".equals(m.label))addReports(m.content);
                 for (ChatClient.ToolCall c : m.toolCalls) {
                     ensureNewline();
-                    append("» " + (c.name.equals(ComposerAssist.TOOL)?t("Alegeri si propuneri"):describeCall(c)) + "\n", toolStyle);
+                    append("» " + (c.name.equals(ComposerAssist.TOOL)?t("Alegeri si propuneri"):ToolTranscript.describeCall(c)) + "\n", toolStyle);
                     ChatClient.Message r = results.get(c.id);
                     if (r != null) {
                         Tools.Result res = new Tools.Result(r.content, r.isError);
-                        append("    → " + (c.name.equals(ComposerAssist.TOOL)&&!r.isError?t("Disponibile in chat."):preview(res)) + "\n", r.isError ? toolErrorStyle : toolStyle);
+                        append("    → " + (c.name.equals(ComposerAssist.TOOL)&&!r.isError?t("Disponibile in chat."):ToolTranscript.preview(res)) + "\n", r.isError ? toolErrorStyle : toolStyle);
                         if(!r.isError||c.name.equals("run_agents"))addReports(r.content);
                     }
                 }
@@ -2384,28 +2384,6 @@ public final class LocalChat extends JFrame {
             transcript.select(Math.min(start,document.getLength()),Math.min(end,document.getLength()));
         }catch(BadLocationException ignored){}finally{updatingTranscript=false;markdownFrom=0;markdownDirty=true;formatMarkdown();}
     }
-    private static String describeCall(ChatClient.ToolCall call) {
-        StringBuilder b = new StringBuilder(call.name).append('(');
-        boolean first = true;
-        for (Map.Entry<String, Object> e : call.args.entrySet()) {
-            if (!first) b.append(", ");
-            first = false;
-            Object v = e.getValue();
-            String s = (v instanceof String ? (String) v : Json.write(v)).replace("\r", "").replace("\n", " | ");
-            boolean bulk = Arrays.asList("content", "old_text", "new_text").contains(e.getKey());
-            if (s.length() > 140) s = bulk ? t("({0} caractere)", s.length()) : s.substring(0, 140) + "…";
-            b.append(e.getKey()).append(": ").append(s);
-        }
-        return b.append(')').toString();
-    }
-
-    private static String preview(Tools.Result r) {
-        String[] lines = r.text.strip().split("\r?\n");
-        String first = lines.length == 0 ? "" : lines[0];
-        if (first.length() > 160) first = first.substring(0, 160) + "…";
-        return (r.isError ? t("eroare: ") : "") + first + (lines.length > 1 ? t("   (+{0} randuri)", lines.length - 1) : "");
-    }
-
     // ---- settings ----
 
     private String currentModel() {
