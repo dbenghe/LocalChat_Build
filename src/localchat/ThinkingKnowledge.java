@@ -154,6 +154,10 @@ final class ThinkingKnowledge {
             Boolean thinks = fallback == null ? null : !(fallback.equalsIgnoreCase("off") || fallback.equalsIgnoreCase("none"));
             return new Info(thinks, off, 0);
         }
+        /* 1.28.9: Mistral lists a plain boolean capabilities.reasoning. false = it does not think (no probe needed); true = it can reason, whether it does by default stays unknown (probe decides). */
+        Boolean mistral = bool(Json.get(row, "capabilities", "reasoning"));
+        if (Boolean.FALSE.equals(mistral)) return new Info(Boolean.FALSE, null, 0);
+        if (Boolean.TRUE.equals(mistral)) return UNKNOWN;
         Object parameters = Json.get(row, "supported_parameters");
         if (parameters instanceof List<?> list && !list.isEmpty() && list.stream().noneMatch(v -> "reasoning".equals(v) || "reasoning_effort".equals(v) || "include_reasoning".equals(v)))
             return new Info(Boolean.FALSE, null, 0);
@@ -179,7 +183,7 @@ final class ThinkingKnowledge {
         switch (host) {
             case "api.mistral.ai" -> {
                 if (plain.startsWith("magistral") || plain.contains("glm")) return new Info(Boolean.TRUE, NO_OFF, 0);
-                if (plain.startsWith("mistral-small") || plain.startsWith("mistral-medium-3-5") || plain.startsWith("mistral-large-4"))
+                if (plain.startsWith("mistral-small") || plain.startsWith("mistral-medium") || plain.startsWith("mistral-large-4"))
                     return new Info(null, effortNone, 0);
             }
             case "integrate.api.nvidia.com" -> {

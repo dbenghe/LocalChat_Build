@@ -55,7 +55,7 @@ public final class ProviderSetupTest{
      var cache=new ModelCatalog.Cache(home,entry.prefix(),Provider.CUSTOM,server.url(),"new-fixture-key");
      var decision=ModelSuitability.assess(unknown,cache.get(unknown.id()),server.url(),true);check(decision.allowed()&&!decision.suggested(),"visible unknown model remains MBS unconfirmed");
      ModelCatalogDialog dialog=new ModelCatalogDialog(app[0],"fixture",List.of(unknown),cache,Provider.CUSTOM,server.url(),"",false,e->{},e->{},()->{});
-     dialog.configureProfile(true,true,e->{});check(dialog.visible.size()==1&&!dialog.profileOnly.isSelected(),"catalog falls back to inspectable rows rather than an empty filtered screen");dialog.dispose();
+     dialog.configureProfile(true,true,e->{});check(dialog.visible.size()==1&&dialog.profileOnly.isSelected(),"1.28.9: an unconfirmed model is listed under the MBS filter instead of being hidden");dialog.dispose();var declaredNo=new ModelCatalog.Entry("chat-only",null,false,null,0,0,"fixture");ModelCatalogDialog none=new ModelCatalogDialog(app[0],"fixture",List.of(declaredNo),cache,Provider.CUSTOM,server.url(),"",false,e->{},e->{},()->{});none.configureProfile(true,true,e->{});check(none.visible.size()==1&&!none.profileOnly.isSelected(),"declared tools=false only: catalog falls back to inspectable rows rather than an empty filtered screen");none.dispose();
     });
    }finally{FeatureTest.edt(()->closer[0].stop());}
   }finally{FeatureTest.edt(()->{if(app[0]!=null)app[0].dispose();});}

@@ -58,7 +58,7 @@ final class Tools {
             + "print('[%d pagini; afisate %d-%d]'%(n,a,b));"
             + "[print('--- pagina %d ---\\n%s'%(i+1,d[i].get_text())) for i in range(a-1,b)]";
     static final List<String> BUILTIN = List.of("list_dir", "find_files", "search_text", "read_file",
-            "extract_attachments", "write_file", "append_file", "edit_file", "make_dir", "copy_path", "move_path", "run_command",
+            "extract_attachments", "write_file", "append_file", "edit_file", "make_dir", "copy_path", "move_path", "download_url", "run_command",
             "open_in_explorer", "read_skill", "save_rule", "pdfcontrol_compare_import", "pdfcontrol_prepare_fast_import", ToolRelevance.ENABLE);
 
     enum Access { READ, WRITE, RUN }
@@ -201,6 +201,12 @@ final class Tools {
                 "source", "string", "File or folder.",
                 "destination", "string", "New path or existing folder.",
                 "overwrite", "boolean", "Replace an existing target."));
+        out.add(spec("download_url", "Download a file from a public http(s) URL into a folder inside the working folder (default: downloads). Outlook safelinks are unwrapped and public redirects followed. Only a direct file response is saved (size limit, SHA-256 returned). HTML landing pages are NOT scraped. WeTransfer (we.tl, wetransfer.com) and other sites that need a browser are reported as 'needs a browser': set open_in_browser=true to open the link in the user's default browser after approval, the user then downloads it there. RULES: never script, reverse-engineer or call WeTransfer or any other private download API; never guess tokens, cookies or passwords; if a download needs a browser, a login or a password, say so and ask the user. Report only what this tool returned: never claim a password, an expiry or a processing state unless the tool output says so.", List.of("url"),
+                "url", "string", "Public http(s) address (a safelink is unwrapped).",
+                "directory", "string", "Target folder inside the working folder (default: downloads).",
+                "max_mb", "integer", "Size limit in MB (default 200, max 2048).",
+                "overwrite", "boolean", "Replace an existing file with the same name (default: a numbered name is used).",
+                "open_in_browser", "boolean", "Do not download; open the address in the default browser (asks the user)."));
         String env = ctx.commandEnv().isEmpty() ? "" : " Environment variables: "
                 + String.join(", ", ctx.commandEnv().keySet()) + " (use as %NAME%).";
         out.add(spec("run_command", "Run a Windows command line (cmd.exe .cmd script: write %% for %) and return output and exit code. For programs and scripts, not for reading files. Multiline Python: write_file a .py, then run it with the right cwd; never retry a failed inline program unchanged." + env,
@@ -273,7 +279,7 @@ final class Tools {
     Result execute(ChatClient.ToolCall call) {
         notes.get().clear();
         Result r = run(call);
-        if(!r.isError)try{switch(call.name){case "write_file","append_file","edit_file"->GeneratedFiles.mark(outputRegistry(),List.of(path(required(call.args,"path"))));case "pdfcontrol_prepare_fast_import"->{Object data=Json.parse(r.text);GeneratedFiles.mark(outputRegistry(),List.of(Path.of(Json.str(data,"output"))));}default->{}}}catch(Exception error){notes.get().add(I18n.text("Nu pot inregistra fisierele generate pentru hotfolder: {0}",error.getClass().getSimpleName()));}
+        if(!r.isError)try{switch(call.name){case "write_file","append_file","edit_file"->GeneratedFiles.mark(outputRegistry(),List.of(path(required(call.args,"path"))));case "pdfcontrol_prepare_fast_import"->{Object data=Json.parse(r.text);GeneratedFiles.mark(outputRegistry(),List.of(Path.of(Json.str(data,"output"))));}default->{}}}catch(Exception error){notes.get().add(inventoryNote(error));}
         if (notes.get().isEmpty()) return r;
         return new Result(String.join("\n", notes.get()) + "\n" + r.text, r.isError);
     }
@@ -293,7 +299,7 @@ final class Tools {
                 case "find_files" -> Result.ok(findFiles(required(a, "pattern"), readable(str(a, "path", ".")), str(a, "sort", "path"), integer(a, "offset", 1)));
                 case "search_text" -> Result.ok(searchText(required(a, "query"), readable(str(a, "path", ".")),
                         str(a, "file_pattern", "*"), bool(a, "regex"), bool(a, "case_sensitive"), integer(a, "offset", 1)));
-                case "read_file" -> Result.ok(readRequestedFile(readable(required(a, "path")), integer(a, "offset", 1), a.get("limit") == null ? null : integer(a, "limit", 400)));
+                case "read_file" -> Result.ok(readRequestedFile(guardedRead(readable(required(a, "path"))), integer(a, "offset", 1), a.get("limit") == null ? null : integer(a, "limit", 400)));
                 case "extract_attachments" -> Result.ok(extractAttachments(readable(required(a, "path")), str(a, "destination", null), bool(a, "include_inline")));
                 case "write_file" -> Result.ok(writeFile(writable(required(a, "path")), requiredText(a, "content"), false));
                 case "append_file" -> Result.ok(writeFile(writable(required(a, "path")), requiredText(a, "content"), true));
@@ -301,6 +307,7 @@ final class Tools {
                 case "make_dir" -> Result.ok(makeDir(writable(required(a, "path"))));
                 case "copy_path" -> Result.ok(copyOrMove(path(required(a, "source")), writable(required(a, "destination")), bool(a, "overwrite"), false));
                 case "move_path" -> Result.ok(copyOrMove(path(required(a, "source")), writable(required(a, "destination")), bool(a, "overwrite"), true));
+                case "download_url" -> downloadUrl(a);
                 case "run_command" -> runCommand(required(a, "command"), path(str(a, "cwd", ".")), Math.min(3600, Math.max(1, integer(a, "timeout_seconds", 600))));
                 case "open_in_explorer" -> Result.ok(openInExplorer(path(required(a, "path"))));
                 case "pdfcontrol_compare_import" -> compareImport(a);
@@ -380,6 +387,30 @@ final class Tools {
                 throw new ToolError("Utilizatorul a refuzat: " + title.toLowerCase(Locale.ROOT)
                         + ". Nu incerca acelasi lucru pe alta cale; intreaba utilizatorul ce doreste.");
             }
+        }
+    }
+
+    private Path guardedRead(Path file) throws ToolError {
+        sensitive(SensitiveGuard.scanPath(file), I18n.text("Citire fisier: {0}", String.valueOf(file)));
+        return file;
+    }
+
+    /**
+     * 1.28.9: network drives, credentials and browser cookie/login stores always ask, even in auto/always approval mode.
+     * Only an allowance the user remembered for the same category + target skips the card. A denial is final for the model.
+     */
+    private void sensitive(List<SensitiveGuard.Hit> hits, String what) throws ToolError {
+        if (hits.isEmpty()) return;
+        ensureActive();
+        if (readOnly) throw new ToolError(I18n.text("Mod doar citire: modificarile si comenzile sunt blocate."));
+        synchronized (ASK) {
+            List<SensitiveGuard.Hit> pending = new ArrayList<>();
+            for (SensitiveGuard.Hit hit : hits) if (!SensitiveGuard.allowed(hit)) pending.add(hit);
+            if (pending.isEmpty()) return;
+            Decision d = ctx.permission() == null ? Decision.NO : ctx.permission().ask(SensitiveGuard.TITLE, SensitiveGuard.details(pending, what));
+            ensureActive();
+            if (d == Decision.NO) throw new ToolError(SensitiveGuard.refusal(pending));
+            if (d == Decision.ALWAYS) for (SensitiveGuard.Hit hit : pending) SensitiveGuard.remember(hit);
         }
     }
 
@@ -647,7 +678,7 @@ final class Tools {
         if (count == 0) return "Emailul nu are atasamente de salvat" + (m.attachments().isEmpty() ? "." : " (doar imagini inline/semnatura).");
         allow(Access.WRITE, "Salvare atasamente email", "In folderul: " + dir + list);
         List<String> report = new ArrayList<>();
-        OutlookMsg.extract(m, dir, includeInline, report,produced->{try{GeneratedFiles.mark(outputRegistry(),List.of(produced));}catch(IOException error){notes.get().add(I18n.text("Nu pot inregistra fisierele generate pentru hotfolder: {0}",error.getClass().getSimpleName()));}});
+        OutlookMsg.extract(m, dir, includeInline, report,produced->{try{GeneratedFiles.mark(outputRegistry(),List.of(produced));}catch(IOException error){notes.get().add(inventoryNote(error));}});
         return "Atasamentele din " + file + " → " + dir + "\n" + String.join("\n", report);
     }
 
@@ -735,7 +766,7 @@ final class Tools {
             if(!sourceHash.equals(copyDigest(staged)))throw new IOException(I18n.text("Verificarea SHA-256 a copierii a esuat: {0}",target));
             Files.move(staged,target,overwrite?new StandardCopyOption[]{StandardCopyOption.REPLACE_EXISTING}:new StandardCopyOption[0]);
             if(!sourceHash.equals(copyDigest(target)))throw new IOException(I18n.text("Verificarea SHA-256 a copierii a esuat: {0}",target));
-            try{GeneratedFiles.mark(outputRegistry(),List.of(target));}catch(IOException error){notes.get().add(I18n.text("Nu pot inregistra fisierele generate pentru hotfolder: {0}",error.getClass().getSimpleName()));}return true;
+            try{GeneratedFiles.mark(outputRegistry(),List.of(target));}catch(IOException error){notes.get().add(inventoryNote(error));}return true;
         }finally{Files.deleteIfExists(staged);}
     }
 
@@ -848,12 +879,54 @@ final class Tools {
 
     private Path outputRegistry(){return ctx.secretFile().toAbsolutePath().getParent().resolve("hotfolder-generated.json");}
 
+    /** 1.28.9: see {@link UrlDownload}. Nothing here reads a landing page or calls a private API. */
+    private Result downloadUrl(Map<String, Object> a) throws IOException, ToolError {
+        String url = UrlDownload.unwrapSafelink(required(a, "url"));
+        java.net.URI uri;
+        try {uri = UrlDownload.parse(url);} catch (IOException e) {throw new ToolError(e.getMessage());}
+        String shown = UrlDownload.describe(uri);
+        boolean unwrapped = !url.equals(required(a, "url").trim());
+        if (bool(a, "open_in_browser")) {
+            allow(Access.RUN, "Deschidere in browserul implicit", shown + "\n\n" + I18n.text("Fisierul nu este descarcat de LocalChat; il descarci tu in browser."));
+            try {UrlDownload.open(url);} catch (RuntimeException e) {throw new ToolError("Nu pot deschide browserul: " + e.getMessage());}
+            return Result.ok("Opened in the default browser: " + shown + ". LocalChat did not download anything; the user downloads the file in the browser.");
+        }
+        Path directory = path(str(a, "directory", "downloads"));
+        if (!directory.startsWith(ctx.workDir())) throw new ToolError(I18n.text("Folderul tinta trebuie sa fie in folderul de lucru: {0}", ctx.workDir()));
+        if (Files.exists(directory) && !Files.isDirectory(directory)) throw new ToolError("Nu este folder: " + directory);
+        long max = Math.min(UrlDownload.HARD_MAX, Math.max(1, integer(a, "max_mb", 200)) * 1024L * 1024L);
+        if (UrlDownload.browserOnly(uri.getHost())) return browserNeeded(shown);
+        allow(Access.WRITE, "Descarcare din URL", shown + (unwrapped ? "\n(" + I18n.text("link Outlook dezambalat") + ")" : "") + "\n\n" + I18n.text("In folderul: {0}", directory));
+        UrlDownload.Outcome out;
+        try {
+            out = UrlDownload.fetch(url, directory, max, bool(a, "overwrite"), () -> cancelled);
+        } catch (IOException e) {
+            if (cancelled) throw new ToolError("Oprit de utilizator.");
+            return Result.error("Download failed: " + (e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()) + ". Source: " + shown);
+        }
+        return switch (out.kind()) {
+            case BROWSER -> browserNeeded(out.url());
+            case HTML -> Result.error("Not a file: " + out.url() + " returned a web page (" + (out.contentType() == null || out.contentType().isBlank() ? "no content type" : out.contentType()) + ", " + out.detail() + "). Nothing was downloaded and the page was not read or scraped. If it needs a browser, a login or a password, tell the user; open_in_browser=true opens the address in the default browser. Do not try private APIs.");
+            case FAILED -> Result.error("Not downloaded: " + out.detail() + ". Source: " + out.url());
+            case DOWNLOADED -> {
+                try {GeneratedFiles.mark(outputRegistry(), List.of(out.file()));} catch (IOException error) {notes.get().add(inventoryNote(error));}
+                yield Result.ok("Downloaded: " + out.file() + "\nSize: " + out.size() + " bytes\nSHA-256: " + out.sha256() + "\nContent-Type: " + (out.contentType() == null || out.contentType().isBlank() ? "unknown" : out.contentType()) + "\nSource: " + out.url() + (unwrapped ? " (Outlook safelink unwrapped)" : ""));
+            }
+        };
+    }
+
+    private static Result browserNeeded(String shown) {
+        return Result.error("This site needs a browser to download: " + shown + ". Nothing was downloaded and no private API was used; LocalChat did not read the page, so nothing is known about a password, expiry or processing state. Ask the user whether to open it in the default browser (call download_url again with open_in_browser=true), or ask for a direct download link. Do not script or reverse-engineer the site.");
+    }
+
     private Result runCommand(String command, Path cwd, int timeoutSeconds) throws IOException, ToolError {
         if (!Files.isDirectory(cwd)) throw new ToolError("Folderul pentru comanda nu exista: " + cwd);
         if(command.matches("(?is).*\\b(?:python(?:\\.exe)?|py)\\s+-c\\s+\"[^\"\\r\\n]*\\R.*"))throw new ToolError(I18n.text("Python multiliniar: salveaza codul cu write_file intr-un fisier .py, apoi ruleaza fisierul cu cwd corect. Comanda nu a fost executata."));
+        sensitive(SensitiveGuard.scan(command, cwd), command + "\n\n" + I18n.text("In folderul: {0}", String.valueOf(cwd)));
         allow(Access.RUN, "Rulare comanda", command + "\n\nIn folderul: " + cwd);
         Path script = Files.createTempFile("localchat-", ".cmd");
-        GeneratedFiles.Scope generated=null;try{generated=GeneratedFiles.command(outputRegistry(),cwd,command);}catch(IOException error){notes.get().add(I18n.text("Nu pot inregistra fisierele generate pentru hotfolder: {0}",error.getClass().getSimpleName()));}
+        // 1.28.9: clearly read-only commands (dir, type, git status, ...) cannot produce files, so they are not scoped at all; other commands only fingerprint their declared write targets.
+        GeneratedFiles.Scope generated=null;if(!GeneratedFiles.readOnlyCommand(command))try{generated=GeneratedFiles.command(outputRegistry(),cwd,command);}catch(IOException error){notes.get().add(inventoryNote(error));}
         try {
             String body = command.replace("\r\n", "\n").replace("\n", "\r\n");
             Files.writeString(script, "@echo off\r\nchcp 65001 >nul\r\n" + body + "\r\n", StandardCharsets.UTF_8);
@@ -863,8 +936,14 @@ final class Tools {
             if (!out.finished()) return Result.error("Comanda a depasit " + timeoutSeconds + " s si a fost oprita.\n" + text);
             return new Result("Cod de iesire: " + out.exitCode() + "\n" + text, out.exitCode() != 0);
         } finally {
-            try{Files.deleteIfExists(script);}finally{if(generated!=null)try{generated.close();}catch(IOException error){notes.get().add(I18n.text("Nu pot inregistra fisierele generate pentru hotfolder: {0}",error.getClass().getSimpleName()));}}
+            try{Files.deleteIfExists(script);}finally{if(generated!=null)try{generated.close();}catch(IOException error){notes.get().add(inventoryNote(error));}}
         }
+    }
+
+    /** One short line for a real registry failure (never the folder size: the folder is no longer inventoried). */
+    static String inventoryNote(Exception error){
+        String why=error.getMessage()==null||error.getMessage().isBlank()?error.getClass().getSimpleName():error.getMessage();
+        return I18n.text("Nu pot inregistra fisierele generate pentru hotfolder: {0}",why);
     }
 
     private Output exec(List<String> command, Path cwd, Map<String, String> env, int timeoutSeconds) throws IOException, ToolError {

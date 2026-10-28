@@ -32,6 +32,10 @@ public final class RuleCoverageTest {
   p("1.0.0","do not work around it"),
   p("1.0.0","never invent results"),
   p("1.0.0","ask one precise question and stop"),
+  p("1.28.9","Answer as an expert in the asked domain"),
+  p("1.28.9","first gather what tools, files and skills can supply"),
+  p("1.28.9","never for trivial details"),
+  p("1.28.9","practical examples and actionable recommendations"),
   p("1.0.0","never invent it or silently replace the project ID"),
   p("1.0.0","\"Continue\" is not a restart"),
   p("1.0.0","read the skill pdfcontrol-octop"),
@@ -68,7 +72,7 @@ public final class RuleCoverageTest {
   // no triple duplication: PDFCONTROL operating rules live in the skill, the prompt only keeps the essentials
   check(!skill.contains("wait_seconds=10")&&!skill.contains("Apeleaza pdfcontrol_job_status"),"skill no longer tells the model to poll");
   check(!normal.contains("poll"),"prompt does not tell the model to poll");
-  check(prompt[0].length()<5600,"static MBS system prompt stays compact: "+prompt[0].length());
+  check(prompt[0].length()<5600,"static MBS system prompt stays compact: "+prompt[0].length()); // 1.28.9: 4494 -> 4740 chars (+246, ~+62 tokens) for the expert/ask-only-if-material answer rule
   check(normal.indexOf("independent analysis agents")==normal.lastIndexOf("independent analysis agents"),"delegation rules appear once");
   check(normal.indexOf("localchat_interaction")==normal.lastIndexOf("localchat_interaction"),"interaction rules appear once");
   // 1.28.0: +~1.3k for the summary/findings/catalogue section, offset by ~0.7k trimmed elsewhere; net +0.6k.

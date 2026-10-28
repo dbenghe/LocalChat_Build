@@ -25,13 +25,32 @@ final class ToolResultReducer {
 
     private ToolResultReducer(){}
 
-    static Reduced apply(List<ChatClient.Message> messages){
+    /** Contexts up to this size keep the original behaviour (always reduce older results, 1.27.2). */
+    static final int LARGE_CONTEXT=65536;
+    static final int MAX_KEEP=40;
+    /**
+     * 1.28.9: with a large context (above 64K) old results stay intact while the conversation uses less than 40% of it, and are
+     * reduced only under pressure; the number of recent results kept grows with the context and falls back to the small-context
+     * value at 70%. The pressure is measured on the unreduced history, so it never flips back and the prefix stays stable.
+     */
+    static Reduced apply(List<ChatClient.Message> messages,int contextLimit){
+        if(contextLimit<=LARGE_CONTEXT)return apply(messages);
+        long used=ContextMemory.messages(messages);
+        if(used*10<contextLimit*4L)return new Reduced(messages,0);
+        return reduce(messages,keepRecent(contextLimit,used));
+    }
+    static int keepRecent(int contextLimit,long used){
+        if(contextLimit<=LARGE_CONTEXT||used*10>=contextLimit*7L)return KEEP_RECENT;
+        return Math.min(MAX_KEEP,KEEP_RECENT+contextLimit/16000);
+    }
+    static Reduced apply(List<ChatClient.Message> messages){return reduce(messages,KEEP_RECENT);}
+    private static Reduced reduce(List<ChatClient.Message> messages,int keep){
         Map<String,ChatClient.ToolCall> calls=new HashMap<>();
         for(var m:messages)if(m.role.equals("assistant"))for(var c:m.toolCalls)if(c.id!=null)calls.put(c.id,c);
         List<ChatClient.Message> out=new ArrayList<>(messages);int seen=0,count=0;
         for(int i=messages.size()-1;i>=0;i--){
             var m=messages.get(i);if(!"tool".equals(m.role))continue;
-            if(++seen<=KEEP_RECENT)continue;
+            if(++seen<=keep)continue;
             String stub=stub(m,calls.get(m.toolCallId));
             if(stub!=null){out.set(i,ChatClient.Message.toolResult(m.toolCallId,stub,m.isError));count++;}
         }

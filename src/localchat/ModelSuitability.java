@@ -29,6 +29,6 @@ final class ModelSuitability {
         if(host(base).equals("integrate.api.nvidia.com")&&entry.id().equals("meta/muse-glimmer-30b"))return new Decision("Nerecomandat pentru MBS","Evaluare locala 2026-10-21: identificatorul jobului nu a fost pastrat in proba. Disponibil in Normal; suportul pentru unelte ramane declarat.",true,false,1);
         return new Decision("Compatibil cu MBS","Suport pentru unelte declarat sau verificat. Nu garanteaza corectitudinea regulilor de proiect.",true,true,0);
     }
-    static boolean listed(ModelCatalog.Entry e,ModelCatalog.Probe p,String base,boolean mbs,boolean filtered){var d=assess(e,p,base,mbs);return !filtered||d.suggested();}
+    static boolean listed(ModelCatalog.Entry e,ModelCatalog.Probe p,String base,boolean mbs,boolean filtered){var d=assess(e,p,base,mbs);return !filtered||d.allowed();}
     static String text(Decision d){return I18n.text(d.label())+" · "+I18n.text(d.reason());}
 }

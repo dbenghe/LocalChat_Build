@@ -16,6 +16,23 @@ public final class InferenceRetryTest {
     static ChatClient.Reply request(FeatureTest.Server server,Hooks hooks,boolean stream,ChatClient.Listener listener)throws IOException{
         return InferenceRetry.chat(new ChatClient(),Provider.CUSTOM,server.url(),"","fixture","system",List.of(ChatClient.Message.user("exact question")),List.of(),stream,listener,hooks);
     }
+    /** 1.28.9: HTTP 429 is provider saturation before any reply: short backoff, same body, at most three attempts, never a tool replay. */
+    static void capacity()throws Exception{
+        long backoff=InferenceRetry.capacityBackoffMillis;InferenceRetry.capacityBackoffMillis=10;
+        try{
+            try(var server=new FeatureTest.Server(error(429),FeatureTest.json(FeatureTest.answer("Recovered after 429",15,4)))){
+                Hooks h=new Hooks();check(request(server,h,false,s->{}).text.equals("Recovered after 429")&&h.retries==1&&server.requests.size()==2,"429 is retried once and recovers");
+                check(Json.write(server.requests.get(0)).equals(Json.write(server.requests.get(1))),"429 retry preserves the exact body");
+            }
+            try(var server=new FeatureTest.Server(error(429),error(429),error(429))){
+                Hooks h=new Hooks();try{request(server,h,false,s->{});throw new AssertionError("endless 429 accepted");}catch(ChatClient.HttpFailure expected){check(expected.status==429&&server.requests.size()==3&&h.retries==2&&h.usage==3,"persistent 429 stops after three attempts");}
+            }
+            try(var server=new FeatureTest.Server(error(503),error(503),error(503))){
+                Hooks h=new Hooks();try{request(server,h,false,s->{});throw new AssertionError("endless 503 accepted");}catch(ChatClient.HttpFailure expected){check(expected.status==503&&server.requests.size()==3,"persistent 503 stops after three attempts");}
+            }
+            try(var server=new FeatureTest.Server(error(429))){Hooks h=new Hooks();h.cancelOnRetry=true;try{request(server,h,false,s->{});throw new AssertionError("cancel ignored");}catch(InterruptedIOException expected){check(server.requests.size()==1,"Stop during a 429 backoff prevents another request");}}
+        }finally{InferenceRetry.capacityBackoffMillis=backoff;}
+    }
     static void transport()throws Exception{
         try(var server=new FeatureTest.Server(error(502),error(503),FeatureTest.json(FeatureTest.answer("Recovered",15,4)))){
             Hooks h=new Hooks();check(request(server,h,false,s->{}).text.equals("Recovered"),"502 then 503 recover with the same inference");
@@ -25,7 +42,7 @@ public final class InferenceRetryTest {
         try(var server=new FeatureTest.Server(error(504),error(504),error(504))){
             Hooks h=new Hooks();try{request(server,h,false,s->{});throw new AssertionError("endless retry accepted");}catch(ChatClient.HttpFailure expected){check(expected.status==504&&server.requests.size()==3&&h.usage==3&&h.retries==2,"persistent gateway failure stops after three attempts");}
         }
-        for(int status:new int[]{400,401,403,404,413,429,500})try(var server=new FeatureTest.Server(error(status))){
+        for(int status:new int[]{400,401,403,404,413,500})try(var server=new FeatureTest.Server(error(status))){
             Hooks h=new Hooks();try{request(server,h,false,s->{});throw new AssertionError("failure accepted");}catch(ChatClient.HttpFailure expected){check(expected.status==status&&server.requests.size()==1&&h.retries==0,"no automatic replay for HTTP "+status);}
         }
         try(var server=new FeatureTest.Server(error(502))){Hooks h=new Hooks();h.cancelOnRetry=true;try{request(server,h,false,s->{});throw new AssertionError("cancel ignored");}catch(InterruptedIOException expected){check(server.requests.size()==1&&h.usage==1,"Stop during backoff prevents another request");}}
@@ -93,7 +110,7 @@ public final class InferenceRetryTest {
     }
     public static void main(String[] args)throws Exception{
         Path home=Files.createDirectories(Path.of(System.getProperty("localchat.home")));
-        try{transport();proxyTimeouts();summaries();tools(home);manualUi(home.resolve("success"),false);manualUi(home.resolve("failure"),true);System.out.println("PASS: "+checks+" inference recovery checks; synthetic HTTP, compaction, cancellation, usage and one real write");}
+        try{transport();capacity();proxyTimeouts();summaries();tools(home);manualUi(home.resolve("success"),false);manualUi(home.resolve("failure"),true);System.out.println("PASS: "+checks+" inference recovery checks; synthetic HTTP, compaction, cancellation, usage and one real write");}
         finally{FeatureTest.edt(()->{for(var w:java.awt.Window.getWindows())w.dispose();});}System.exit(0);
     }
 }

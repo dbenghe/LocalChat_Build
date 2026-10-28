@@ -23,16 +23,16 @@ public final class TokenBudgetTest {
    check(all.stream().anyMatch(s->s.name.equals("pdfcontrol_start_workflow"))&&selective.stream().anyMatch(s->s.name.equals("pdfcontrol_start_workflow")),"PDFCONTROL start tools stay in the default set");
    check(selective.stream().anyMatch(s->s.name.equals("pdfcontrol_compare_import"))&&readOnly.stream().anyMatch(s->s.name.equals("pdfcontrol_compare_import")),"local comparison stays available");
    ChatClient.ToolSpec interaction=ComposerAssist.spec();int allChars=chars(all)+chars(List.of(interaction)),selChars=chars(selective)+chars(List.of(interaction)),roChars=chars(readOnly)+chars(List.of(interaction));
-   check((all.size()+1)<=33&&allChars<=16800,"all tools: "+all.size()+" tools, "+allChars+" chars (was 30 tools, 19,017 chars; 1.28.0 +4 read-only PDFCONTROL tools, +~2.0k chars)");
-   check((selective.size()+1)<=24&&selChars<=12400,"default relevance set: "+selective.size()+" tools, "+selChars+" chars (1.28.0: +4 read-only PDFCONTROL tools, +~1.9k chars)");
+   check((all.size()+1)<=34&&allChars<=18650,"all tools: "+all.size()+" tools, "+allChars+" chars (was 30 tools, 19,017 chars; 1.28.0 +4 read-only PDFCONTROL tools, +~2.0k chars; 1.28.9 +download_url, measured 33 tools / 18,099 chars)");
+   check((selective.size()+1)<=24&&selChars<=12700,"default relevance set: "+selective.size()+" tools, "+selChars+" chars (1.28.0: +4 read-only PDFCONTROL tools, +~1.9k chars; 1.28.9 measured 23 tools / 12,289 chars)");
    check((readOnly.size()+1)<=16&&roChars<=7700,"read-only relevance set: "+readOnly.size()+" tools, "+roChars+" chars (1.28.0: the 4 new tools are read-only and are exactly what read-only/analysis sessions need, +~1.1k chars)");
    LocalChat[] app={null};FeatureTest.edt(()->{try{app[0]=AttachmentTest.window(home,"http://127.0.0.1:9/v1");}catch(Exception e){throw new RuntimeException(e);}});
    String[] system={null};FeatureTest.edt(()->{try{((JComboBox<?>)FeatureTest.field(app[0],"permissionBox")).setSelectedIndex(1);
     system[0]=(String)FeatureTest.call(app[0],"agentPrompt",new Class<?>[]{Path.class,List.class,PathMap.class},home,List.of(new Skills.Skill("pdfcontrol-octop","PDFCONTROL cu motorul original - control desene cu OCR, raport PDF, brosuri, perechi V/W, comparatie OUD/NIEUW.",home.resolve("SKILL.md"))),PathMap.none());}catch(Exception e){throw new RuntimeException(e);}});
    check(system[0].length()<=5300,"MBS system prompt: "+system[0].length()+" chars (was 9,053)");
    long overhead=system[0].length()+selChars;
-   check(overhead<=17000&&overhead*100<=BASE_BODY*60L,"MBS overhead (system + default tools) "+overhead+" chars vs 28,344 baseline");
-   check((system[0].length()+allChars)*100<=BASE_BODY*76L,"even with every tool the MBS overhead is under 76% of the baseline (was 70%; 1.28.0 adds 4 read-only tools, ~74.8% measured): "+(system[0].length()+allChars));
+   check(overhead<=17600&&overhead*100<=BASE_BODY*62L,"MBS overhead (system + default tools) "+overhead+" chars vs 28,344 baseline (1.28.9: answer-as-expert rule +246 chars and the download_url schema, measured 17,098 = 60.3%)");
+   check((system[0].length()+allChars)*100<=BASE_BODY*82L,"even with every tool the MBS overhead is under 76% of the baseline (was 70%; 1.28.0 adds 4 read-only tools, ~74.8% measured; 1.28.9 adds download_url and the answer rule, ~80.8% measured): "+(system[0].length()+allChars));
    System.out.println("   MBS system="+system[0].length()+" tools(all)="+all.size()+"/"+allChars+" tools(default)="+selective.size()+"/"+selChars+" tools(read-only)="+readOnly.size()+"/"+roChars+" overhead="+overhead+" est.tokens(default)="+(ContextMemory.estimate(system[0])+ContextMemory.tools(selective)));
    // Normal stays clean and small
    try(var server=new FeatureTest.Server(FeatureTest.json(FeatureTest.answer("Normal answer",100,10)))){

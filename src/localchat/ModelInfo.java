@@ -41,11 +41,17 @@ final class ModelInfo {
     }
     static boolean local(String base){String host=URI.create(base).getHost();return host!=null&&(host.equalsIgnoreCase("localhost")||host.equals("[::1]")||host.startsWith("127.")||host.startsWith("10.")||host.startsWith("192.168.")||host.matches("172[.](1[6-9]|2[0-9]|3[01])[.].*"));}
     static long recommendedBudget(String base){try{return "api.gonkarouter.io".equalsIgnoreCase(URI.create(base).getHost())?180000:0;}catch(RuntimeException e){return 0;}}
+    private static final Map<String,Long> NATIVE_MISSING=new java.util.concurrent.ConcurrentHashMap<>();
+    static boolean nativeMissing(String url){Long at=NATIVE_MISSING.get(url);return at!=null&&System.nanoTime()-at<java.util.concurrent.TimeUnit.HOURS.toNanos(1);}
+    static void markNativeMissing(String url){NATIVE_MISSING.put(url,System.nanoTime());}
+    static void resetNativeMissing(){NATIVE_MISSING.clear();}
     static Info fetch(String base,String key,String selected)throws IOException{return fetch(base,key,selected,Provider.CUSTOM);}
     static Info fetch(String base,String key,String selected,Provider protocol)throws IOException {
         ProviderHeaders.validateKey(base,key);URI uri=URI.create(base);String path=Objects.toString(uri.getPath(),"").replaceFirst("/v1/?$","").replaceFirst("/$","");
         String prefix=uri.getScheme()+"://"+uri.getRawAuthority()+path;String catalog=base.replaceFirst("/+$","")+"/models";
-        List<String> urls=local(base)?List.of(prefix+"/api/v1/models",prefix+"/api/v0/models",catalog):List.of(catalog);
+        boolean lan=local(base);String nativeUrl=prefix+"/api/v1/models";
+        /* 1.28.9: a non-LAN LM Studio behind a tunnel answers /v1/models without context; its native endpoint is asked second (once per hour per host when it does not exist, e.g. a relay that proxies only /v1/*). */
+        List<String> urls=lan?List.of(nativeUrl,prefix+"/api/v0/models",catalog):protocol==Provider.CUSTOM&&!nativeMissing(nativeUrl)?List.of(catalog,nativeUrl):List.of(catalog);
         IOException failure=null;Info valid=null;
         for(String address:urls) {
             HttpURLConnection c=(HttpURLConnection)new URL(address).openConnection();
@@ -54,9 +60,10 @@ final class ModelInfo {
             try {int status=c.getResponseCode();if(status!=200)throw ProviderHeaders.metadataError(c,status);
                 byte[] bytes=c.getInputStream().readNBytes(4*1024*1024+1);if(bytes.length>4*1024*1024)throw new IOException("Metadata too large");
                 Object data=Json.parse(new String(bytes,StandardCharsets.UTF_8));if(!(Json.get(data,"models") instanceof List)&&!(Json.get(data,"data") instanceof List))throw new IOException("Invalid model catalog");
-                Info info=parse(data,selected,address);valid=info;
-                if(address.equals(catalog)||info.maximum()>0||info.loaded()>0||info.inputLimit()>0||info.outputLimit()>0||info.parallel()>0)return info;
-            }catch(IOException e){failure=e;}catch(RuntimeException e){failure=new IOException("Invalid metadata",e);}finally{c.disconnect();}
+                Info info=parse(data,selected,address);if(valid==null||address.equals(catalog))valid=info;
+                boolean useful=info.maximum()>0||info.loaded()>0||info.inputLimit()>0||info.outputLimit()>0||info.parallel()>0;
+                if(useful||(address.equals(catalog)&&(lan||urls.size()==1)))return info;
+            }catch(IOException e){if(!lan&&address.equals(nativeUrl))markNativeMissing(nativeUrl);else failure=e;}catch(RuntimeException e){if(!lan&&address.equals(nativeUrl))markNativeMissing(nativeUrl);else failure=new IOException("Invalid metadata",e);}finally{c.disconnect();}
         }
         if(valid!=null)return valid;if(failure!=null)throw failure;return new Info(0,0,"");
     }

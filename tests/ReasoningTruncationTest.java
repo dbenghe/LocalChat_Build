@@ -128,7 +128,7 @@ public final class ReasoningTruncationTest {
 
     public static void main(String[] args)throws Exception{
         Path home=Files.createTempDirectory(Files.createDirectories(Path.of(System.getProperty("localchat.home"))),"run-");System.out.println("QA home: "+home);
-        try{reasoningStream(home);truncation(home);fallback();retry();budgets();System.out.println("PASS: "+checks+" reasoning/truncation checks; reasoning stream, adaptive reserve, verified thinking parameter with 400 fallback, localized truncation, retry limited to 502/503/504/522/523/524");}
+        try{reasoningStream(home);truncation(home);fallback();retry();budgets();System.out.println("PASS: "+checks+" reasoning/truncation checks; reasoning stream, adaptive reserve, verified thinking parameter with 400 fallback, localized truncation, retry limited to 429/502/503/504/522/523/524");}
         finally{FeatureTest.edt(()->{for(var w:java.awt.Window.getWindows())w.dispose();});}
         System.exit(0);
     }

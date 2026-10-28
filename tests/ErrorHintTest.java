@@ -8,13 +8,17 @@ public final class ErrorHintTest {
         if (!LocalChat.streamingHint("the stream closed before completion")) throw new AssertionError("stream transport lost its hint");
         if (!LocalChat.streamingHint("response was not text/event-stream")) throw new AssertionError("event-stream lost its hint");
         if (LocalChat.streamingHint("connection reset")) throw new AssertionError("unrelated transport gained a streaming hint");
-        String key = "Sfat: furnizorul este ocupat (HTTP 429). Incearca din nou peste putin timp sau alege alt model.";
+        // 1.28.9: 429/503 = provider saturated, never context; hint is explicit and in every language.
+        String key = LocalChat.CAPACITY_HINT;
         if (!I18n.contains(key)) throw new AssertionError("capacity hint missing from catalogs");
+        if (LocalChat.capacityStatus("http 429: upstream capacity") != 429 || LocalChat.capacityStatus("http 503: busy") != 503) throw new AssertionError("429/503 not detected");
+        if (LocalChat.capacityStatus("http 5030") != 0 || LocalChat.capacityStatus("http 524 (proxy)") != 0 || LocalChat.capacityStatus("http 502: bad gateway") != 0 || LocalChat.capacityStatus(null) != 0) throw new AssertionError("unrelated status gained the capacity hint");
         for (String code : I18n.CODES) {
             I18n.setLanguage(code);
             String text = I18n.text(key);
             if (text.isBlank() || text.equals(key) && !code.equals("ro")) throw new AssertionError("untranslated capacity hint: " + code);
-            if (code.equals("ro") && text.matches("(?s).*[ăâîșşțţĂÂÎȘŞȚŢ].*")) throw new AssertionError("Romanian capacity hint has diacritics");
+            if (!text.contains("{0}")) throw new AssertionError("capacity hint lost its status placeholder: " + code);
+            if (code.equals("ro") && !text.equals(I18n.romanianAscii(text))) throw new AssertionError("Romanian capacity hint has diacritics");
         }
         // 1.28.7: the 524 hint says where thinking is switched off and no longer sends the user to the Streaming box.
         if (!LocalChat.proxyTimeoutHint("http 524 (proxy timeout ~100 s)")) throw new AssertionError("524 lost its hint");

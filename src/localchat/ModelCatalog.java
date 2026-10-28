@@ -19,7 +19,9 @@ final class ModelCatalog {
         Entry(String id,Boolean vision,Boolean tools,Boolean reasoning,long maximum,long documentedMaximum,String source){this(id,vision,tools,reasoning,maximum,documentedMaximum,source,documentedMaximum>0?Long.toString(documentedMaximum):"");}
         Object json(){return Json.obj("id",id,"vision",vision,"tools",tools,"reasoning",reasoning,"maximum",maximum,"documentedMaximum",documentedMaximum,"source",source,"documentedLabel",documentedLabel,"purpose",purpose,"chat",chat,"parallel",parallel,"cost",cost);}
         static Entry from(Object o){return new Entry(Json.str(o,"id"),bool(Json.get(o,"vision")),bool(Json.get(o,"tools")),bool(Json.get(o,"reasoning")),ModelInfo.first(o,"maximum"),ModelInfo.first(o,"documentedMaximum"),Objects.toString(Json.str(o,"source"),""),Objects.toString(Json.str(o,"documentedLabel"),ModelInfo.first(o,"documentedMaximum")>0?Long.toString(ModelInfo.first(o,"documentedMaximum")):""),Objects.toString(Json.str(o,"purpose"),""),bool(Json.get(o,"chat")),ModelInfo.first(o,"parallel"),Objects.toString(Json.str(o,"cost"),"unknown"));}
-        long suggestedBudget(String base){return ModelInfo.recommendedBudget(base)>0?ModelInfo.recommendedBudget(base):Math.min(131072,maximum>0?maximum:documentedMaximum);}
+        long suggestedBudget(String base){return ModelInfo.recommendedBudget(base)>0?ModelInfo.recommendedBudget(base):Math.min(131072,maximum>0?maximum:documentedMaximum>0?documentedMaximum:nameContext(id));}
+    /** 1.28.9 (explicit request): Qwen3.5+ families (qwen3.6-35b-a3b, Tileward-Qwen3.6-...) have a native 262144 window; used only when no server or documentation value exists, and the server's loaded context still caps it. */
+    static long nameContext(String id){return id!=null&&java.util.regex.Pattern.compile("(?i)(^|[^a-z0-9])qwen3\\.[5-9]").matcher(id).find()?262144:0;}
     }
     record Doc(Boolean vision,Boolean tools,Boolean reasoning,long context,String label,String source){}
     // Reviewed 2026-10-20. Model-card figures are documentary facts, never route limits.

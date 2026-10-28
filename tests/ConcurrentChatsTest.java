@@ -98,7 +98,7 @@ public final class ConcurrentChatsTest {
   }finally{FeatureTest.edt(()->{if(second[0]!=null)second[0].dispose();if(first[0]!=null)first[0].dispose();});}
  }
  static void routing(Path home)throws Exception{
-  Files.createDirectories(home);LocalChat[] app={null};try(FeatureTest.Server server=new FeatureTest.Server(new FeatureTest.Response(429,"application/json","{\"error\":\"rate limit\"}"))){
+  InferenceRetry.capacityBackoffMillis=10;Files.createDirectories(home);LocalChat[] app={null};try(FeatureTest.Server server=new FeatureTest.Server(new FeatureTest.Response(429,"application/json","{\"error\":\"rate limit\"}"),new FeatureTest.Response(429,"application/json","{\"error\":\"rate limit\"}"),new FeatureTest.Response(429,"application/json","{\"error\":\"rate limit\"}"))){
    FeatureTest.edt(()->{
     app[0]=AttachmentTest.window(home,server.url());FeatureTest.<JCheckBox>field(app[0],"toolsBox").setSelected(false);
     Properties p=FeatureTest.field(app[0],"config");var saved=SavedProviders.save(p,"Alternative",Provider.CUSTOM,"http://127.0.0.1:9/v1","","alternate");
@@ -109,7 +109,7 @@ public final class ConcurrentChatsTest {
     Map<String,String> answers=FeatureTest.field(card,"answers");answers.put("provider-alternative",option.label());FeatureTest.call(app[0],"submitInteraction",new Class<?>[]{String.class},"unused");
     check(FeatureTest.<JComboBox<?>>field(app[0],"modelBox").getSelectedItem().equals("alternate"),"explicit card selects alternate model");
     check(AttachmentTest.input(app[0]).getText().equals("retry original"),"choice preserves restored user draft");
-    check(server.requests.size()==1&&!FeatureTest.<Boolean>field(app[0],"busy"),"choice never resends failed task automatically");
+    check(server.requests.size()==3&&!FeatureTest.<Boolean>field(app[0],"busy"),"429: three bounded attempts, choice never resends failed task automatically");
    });
   }finally{FeatureTest.edt(()->{if(app[0]!=null)app[0].dispose();});}
  }

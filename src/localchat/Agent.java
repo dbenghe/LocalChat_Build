@@ -32,6 +32,10 @@ final class Agent {
         default void compacted() {}
         default void retry(boolean compaction,int next,int total,int status){}
         default void protocolRepair(int attempt){}
+    /** 1.28.9: a reply wrote tool calls as text. Nothing ran and any result it describes is not real. */
+    default void malformedNotice(int attempt){}
+    /** 1.28.9: the final text followed an unexecuted text tool call and no real tool ran afterwards. */
+    default void unverifiedReply(){}
         default void discoveryRecovery(boolean finalResponse){}
         default void usage(TokenUsage usage) {}
         default void agentProgress(String title,String state) {}
@@ -104,7 +108,7 @@ final class Agent {
             synchronized(added){added.add(ChatClient.Message.toolResult(call.id,result.text,result.isError));}
             ui.toolFinished(call,result);publishContext(base,ui);if(cancelled)return;
         }
-        int protocolRepairs=0;
+        int protocolRepairs=0;boolean toolRanSinceMalformed=false;
         int interactionFailures=0,discoveryRepairs=0,discoveryStarted=-1;boolean discoveryFinal=false;String discoveryHint="",lastRepeated="";
         for (int step = 0; step < maximumSteps; step++) {
             if (cancelled) return;
@@ -138,14 +142,15 @@ final class Agent {
             }
             publishContext(base, ui);
             if(reply.truncated())throw new IOException(truncationMessage(reply,client.usage()));
-            if(reply.calls.isEmpty()&&tools!=null&&ToolProtocol.malformed(reply.text)){if(protocolRepairs>=2)throw new IOException(I18n.text("Modelul a trimis apeluri de unelte ca text de trei ori. Niciun apel XML nu a fost executat; actiunile confirmate sunt pastrate."));ui.protocolRepair(++protocolRepairs);continue;}
+            if(reply.calls.isEmpty()&&tools!=null&&ToolProtocol.malformed(reply.text)){toolRanSinceMalformed=false;synchronized(added){if(!added.isEmpty()&&added.get(added.size()-1).role.equals("assistant"))added.set(added.size()-1,ChatClient.Message.assistant(ToolProtocol.markMalformed(reply.text),List.of(),label));}ui.malformedNotice(protocolRepairs+1);if(protocolRepairs>=2)throw new IOException(I18n.text("Modelul a trimis apeluri de unelte ca text de trei ori. Niciun apel XML nu a fost executat; actiunile confirmate sunt pastrate."));ui.protocolRepair(++protocolRepairs);continue;}
+            if (reply.calls.isEmpty()&&protocolRepairs>0&&!toolRanSinceMalformed&&!reply.text.isBlank()){synchronized(added){if(!added.isEmpty()&&added.get(added.size()-1).role.equals("assistant"))added.set(added.size()-1,ChatClient.Message.assistant(ToolProtocol.markUnverified(reply.text),List.of(),label));}ui.unverifiedReply();}
             if (reply.calls.isEmpty()){if(discoveryRepairs>0&&reply.text.isBlank())recoveryFallback(lastRepeated,base,ui);return;}
             // Recovery is presentation-only: never run operational calls after a rejected card.
             if(interactionFailures>1||discoveryFinal){
                 synchronized(added){for(var call:reply.calls)added.add(ChatClient.Message.toolResult(call.id,I18n.text(discoveryFinal?"Citire repetata fara progres. Foloseste rezultatele existente; recuperarea este limitata.":"Propunere invalida. Continua in text."),true));}
                 publishContext(base,ui);if(discoveryFinal&&reply.text.isBlank())recoveryFallback(lastRepeated,base,ui);return;
             }
-            List<ChatClient.ToolCall> callsToRun=reply.calls;
+            List<ChatClient.ToolCall> callsToRun=reply.calls;toolRanSinceMalformed=true;
             if(interactive&&tools!=null){var interaction=reply.calls.stream().filter(c->c.name.equals(ComposerAssist.TOOL)).findFirst();if(interaction.isPresent()){
                 callsToRun=List.of(interaction.get());
                 synchronized(added){for(var sibling:reply.calls)if(sibling!=interaction.get())added.add(ChatClient.Message.toolResult(sibling.id,I18n.text("Anulat inainte de confirmarea rezultatului; verifica starea reala inainte de repetarea operatiei."),true));}
