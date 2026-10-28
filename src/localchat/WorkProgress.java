@@ -2,7 +2,7 @@ package localchat;
 import java.util.*;
 /** Bounded factual index rebuilt from the original per-chat archive, independently of LLM summaries. */
 final class WorkProgress {
- static final Set<String> TRACKED=Set.of("read_skill","read_file","copy_path","move_path","write_file","append_file","edit_file","make_dir","run_command","run_agents");
+ static final Set<String> TRACKED=Set.of("read_skill","read_file","copy_path","move_path","write_file","append_file","edit_file","make_dir","run_command","run_agents","cleanup_stray_files");
  static boolean agentsRequested(String text){
   StringBuilder plain=new StringBuilder();boolean code=false;for(String line:text.split("\\R")){if(line.stripLeading().startsWith("```")){code=!code;continue;}if(!code&&!line.stripLeading().startsWith(">"))plain.append(line).append('\n');}
   String value=I18n.romanianAscii(plain.toString().toLowerCase(Locale.ROOT));String noun="(?:agent|agenti|agents|agenten|agentes|agentow|agentów|ajan|ajanlar|agenty|subagenti|subagents|subagenten|subagentes)";

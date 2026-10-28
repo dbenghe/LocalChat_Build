@@ -61,6 +61,7 @@ final class Agent {
     Agent group(AgentGroup value){team=value;return this;}
     private static final Object MUTATION_LOCK=new Object();
     private final ToolLoopGuard loopGuard=new ToolLoopGuard();
+    private int seenCompactions;
     private ContextGuard guard;
     Agent guard(ContextGuard value){guard=value;return this;}
     private final ChatClient client = new ChatClient();
@@ -126,7 +127,7 @@ final class Agent {
             final List<ChatClient.ToolSpec> specs=specs(); // recomputed per step: localchat_enable_tools takes effect on the next request
             final List<ChatClient.ToolSpec> requestSpecs=discoveryFinal?List.of():interactionFailures==0?specs:interactionFailures==1?List.of(ComposerAssist.spec()):List.of();
             String effectiveSystem=system+(protocolRepairs>0?ToolProtocol.REPAIR:"")+(interactionFailures>0?INTERACTION_REPAIR:"")+(interactionFailures>1?INTERACTION_TEXT:"")+(discoveryRepairs>0?DISCOVERY_REPAIR+discoveryHint:"")+(discoveryFinal?DISCOVERY_TEXT:"");
-            if(guard!=null){conversation=guard.prepare(p,url,key,model,effectiveSystem,conversation,requestSpecs,step,ui);client.outputLimit(guard.outputLimit());}
+            if(guard!=null){conversation=guard.prepare(p,url,key,model,effectiveSystem,conversation,requestSpecs,step,ui);client.outputLimit(guard.outputLimit());if(guard.compactions!=seenCompactions){seenCompactions=guard.compactions;loopGuard.afterCompaction();}}
             if(cancelled)return;
             ChatClient.Reply reply=InferenceRetry.chat(client,p,url,key,model,effectiveSystem,conversation,requestSpecs,stream,new ChatClient.Listener(){
                 public void onText(String delta){ui.text(delta);}
@@ -222,7 +223,7 @@ final class Agent {
     private static final String INTERACTION_REPAIR="\nThe preceding localchat_interaction was rejected: no card, approval or operation was created. Repair the card ONCE using native tool_calls and the supplied schema. questions and suggestions must be JSON arrays, never JSON strings; options must be arrays of strings. Keep useful findings in accompanying assistant text. Resume from confirmed results; do not repeat operations, request new operational tools, or treat proposed choices as consent. If the card cannot be expressed correctly, give the findings and pending clarification in normal text.\n";
     private static final String INTERACTION_TEXT="\nThe repair did not produce a valid card. No tools are available for this final recovery response. Give a normal visible final answer with the findings and any pending question, in the selected response language. Do not claim pending work was executed. Do not emit tool calls or XML.\n";
 
-    private static boolean isMutation(String name){if(name.matches("(?:.*_)?pdfcontrol_start_(?:check|extract|pairs|compare|workflow)"))return false;return !Set.of("read_skill","read_file","list_dir","find_files","search_text").contains(name)&&!name.endsWith("pdfcontrol_job_status")&&!name.endsWith("pdfcontrol_project_files")&&!name.endsWith("pdfcontrol_list_projects")&&!name.endsWith("pdfcontrol_read_document");}
+    private static boolean isMutation(String name){if(name.matches("(?:.*_)?pdfcontrol_start_(?:check|extract|pairs|compare|workflow)"))return false;return !Set.of("read_skill","read_file","list_dir","find_files","search_text","list_stray_files").contains(name)&&!name.endsWith("pdfcontrol_job_status")&&!name.endsWith("pdfcontrol_project_files")&&!name.endsWith("pdfcontrol_list_projects")&&!name.endsWith("pdfcontrol_read_document");}
 
     private void publishContext(List<ChatClient.Message> base, Ui ui) {
         List<ChatClient.Message> snapshot = new ArrayList<>(base);

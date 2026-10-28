@@ -28,14 +28,17 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -58,7 +61,7 @@ final class Tools {
             + "print('[%d pagini; afisate %d-%d]'%(n,a,b));"
             + "[print('--- pagina %d ---\\n%s'%(i+1,d[i].get_text())) for i in range(a-1,b)]";
     static final List<String> BUILTIN = List.of("list_dir", "find_files", "search_text", "read_file",
-            "extract_attachments", "write_file", "append_file", "edit_file", "make_dir", "copy_path", "move_path", "download_url", "run_command",
+            "extract_attachments", "write_file", "append_file", "edit_file", "make_dir", "copy_path", "move_path", "download_url", "run_command", "list_stray_files", "cleanup_stray_files",
             "open_in_explorer", "read_skill", "save_rule", "pdfcontrol_compare_import", "pdfcontrol_prepare_fast_import", ToolRelevance.ENABLE);
 
     enum Access { READ, WRITE, RUN }
@@ -124,6 +127,10 @@ final class Tools {
     Tools analysisOnly(){analysisReports=!readOnly;readOnly=true;analysisOnly=true;return this;}
     private boolean analysisTool(String name){McpRef ref=mcpTools.get(name);return ref!=null?ref.tool().readOnly:Set.of("list_dir","find_files","search_text","read_file","read_skill").contains(name)||(analysisReports&&name.equals("pdfcontrol_compare_import"));}
     Tools readOnly(boolean value){readOnly=value;return this;}
+    private FileGuard guard=FileGuard.disabled();
+    /** 1.28.11: scratch folder, helper-file guard and server-write guard of this turn. Without it (tests, helpers) Tools behave as before. */
+    Tools guard(FileGuard value){guard=value==null?FileGuard.disabled():value;return this;}
+    FileGuard guard(){return guard;}
 
     Tools(Context ctx, List<Skills.Skill> skills) {
         this.ctx = ctx;
@@ -209,11 +216,16 @@ final class Tools {
                 "open_in_browser", "boolean", "Do not download; open the address in the default browser (asks the user)."));
         String env = ctx.commandEnv().isEmpty() ? "" : " Environment variables: "
                 + String.join(", ", ctx.commandEnv().keySet()) + " (use as %NAME%).";
-        out.add(spec("run_command", "Run a Windows command line (cmd.exe .cmd script: write %% for %) and return output and exit code. For programs and scripts, not for reading files. Multiline Python: write_file a .py, then run it with the right cwd; never retry a failed inline program unchanged." + env,
+        out.add(spec("run_command", "Run a Windows command line (cmd.exe .cmd script: write %% for %) and return output and exit code. For programs and scripts, not for reading files. Multiline Python: write_file a .py into the scratch folder (system prompt), run it by absolute path; cwd may stay the project. Never leave scripts or temp files in a project or on a server; never retry a failed inline program unchanged." + env,
                 List.of("command"),
                 "command", "string", "Command line.",
                 "cwd", "string", "Folder (default: working folder).",
                 "timeout_seconds", "integer", "Default 600, max 3600."));
+        out.add(spec("list_stray_files", "List helper files wrongly left in a project folder (scripts, .md, _* and tmp* names). Allowed files and Output/Controle are never listed.", List.of(),
+                "path", "string", "Project folder (default: working folder)."));
+        out.add(spec("cleanup_stray_files", "Delete the stray files list_stray_files shows, only after the user confirms the exact list. Never deletes allowed files.", List.of(),
+                "path", "string", "Project folder (default: working folder).",
+                "pattern", "string", "Only file names matching this glob."));
         out.add(spec("open_in_explorer", "Show a folder (or a file's folder) in Windows Explorer.", List.of("path"),
                 "path", "string", "Folder or file."));
         out.add(spec("read_skill", "Load a skill's full instructions (SKILL.md) and file list before working on a task it covers.", List.of("name"),
@@ -279,7 +291,7 @@ final class Tools {
     Result execute(ChatClient.ToolCall call) {
         notes.get().clear();
         Result r = run(call);
-        if(!r.isError)try{switch(call.name){case "write_file","append_file","edit_file"->GeneratedFiles.mark(outputRegistry(),List.of(path(required(call.args,"path"))));case "pdfcontrol_prepare_fast_import"->{Object data=Json.parse(r.text);GeneratedFiles.mark(outputRegistry(),List.of(Path.of(Json.str(data,"output"))));}default->{}}}catch(Exception error){notes.get().add(inventoryNote(error));}
+        if(!r.isError)try{switch(call.name){case "write_file","append_file","edit_file"->{Path written=path(required(call.args,"path"));if(!guard.inScratch(written))GeneratedFiles.mark(outputRegistry(),List.of(written));}case "pdfcontrol_prepare_fast_import"->{Object data=Json.parse(r.text);GeneratedFiles.mark(outputRegistry(),List.of(Path.of(Json.str(data,"output"))));}default->{}}}catch(Exception error){notes.get().add(inventoryNote(error));}
         if (notes.get().isEmpty()) return r;
         return new Result(String.join("\n", notes.get()) + "\n" + r.text, r.isError);
     }
@@ -309,6 +321,8 @@ final class Tools {
                 case "move_path" -> Result.ok(copyOrMove(path(required(a, "source")), writable(required(a, "destination")), bool(a, "overwrite"), true));
                 case "download_url" -> downloadUrl(a);
                 case "run_command" -> runCommand(required(a, "command"), path(str(a, "cwd", ".")), Math.min(3600, Math.max(1, integer(a, "timeout_seconds", 600))));
+                case "list_stray_files" -> Result.ok(listStrays(path(str(a, "path", "."))));
+                case "cleanup_stray_files" -> Result.ok(cleanupStrays(path(str(a, "path", ".")), str(a, "pattern", null)));
                 case "open_in_explorer" -> Result.ok(openInExplorer(path(required(a, "path"))));
                 case "pdfcontrol_compare_import" -> compareImport(a);
                 case "pdfcontrol_prepare_fast_import" -> prepareFastImport(a);
@@ -351,7 +365,7 @@ final class Tools {
     /** Reading inside the working folder (or skills) is free; anywhere else asks first. */
     private Path readable(String raw) throws ToolError {
         Path p = guarded(raw);
-        if (!p.startsWith(ctx.workDir()) && !p.startsWith(ctx.skillsDir()) && !p.equals(ctx.rulesFile()) && !AttachmentSupport.grantsRead(p,attachedPaths)) {
+        if (!p.startsWith(ctx.workDir()) && !guard.inScratch(p) && !p.startsWith(ctx.skillsDir()) && !p.equals(ctx.rulesFile()) && !AttachmentSupport.grantsRead(p,attachedPaths)) {
             allow(Access.READ, "Citire in afara folderului de lucru", p.toString());
         }
         return p;
@@ -412,6 +426,42 @@ final class Tools {
             if (d == Decision.NO) throw new ToolError(SensitiveGuard.refusal(pending));
             if (d == Decision.ALWAYS) for (SensitiveGuard.Hit hit : pending) SensitiveGuard.remember(hit);
         }
+    }
+
+    private void refuseHelper(Path p, boolean directory) throws ToolError {
+        String refusal = guard.refuse(p, directory);
+        if (refusal != null) throw new ToolError(refusal);
+    }
+
+    /** 1.28.11: server writes always ask with the exact file list, also in allow-all mode; the answer is never remembered. */
+    private boolean serverCard(Collection<Path> files) throws ToolError {
+        return serverCard(files, null);
+    }
+
+    private boolean serverCard(Collection<Path> files, String command) throws ToolError {
+        ensureActive();
+        if (readOnly) throw new ToolError(I18n.text("Mod doar citire: modificarile si comenzile sunt blocate."));
+        synchronized (ASK) {
+            Decision d = ctx.permission() == null ? Decision.NO : ctx.permission().ask(FileGuard.COPY_TITLE, FileGuard.serverDetails(files) + (command == null ? "" : "\n\n" + I18n.text("Comanda atinge o cale de server (analiza aproximativa, deci confirmarea listeaza tot ce atinge calea):\n{0}", clip(command, 600))));
+            ensureActive();
+            if (d == Decision.NO) throw new ToolError(I18n.text("Utilizatorul a refuzat scrierea pe server. Nu o repeta si nu o ocoli pe alta cale; spune ce nu ai putut face si intreaba ce doreste."));
+        }
+        return true;
+    }
+
+    /** A server write asks with its file list instead of the generic card; scratch files need no card (read-only mode still blocks them). */
+    private void permit(Path p, Access access, String title, String details) throws ToolError {
+        if (guard.server(p) && serverCard(List.of(p))) return;
+        plainPermit(p, access, title, details);
+    }
+
+    private void plainPermit(Path p, Access access, String title, String details) throws ToolError {
+        if (guard.inScratch(p)) {
+            ensureActive();
+            if (readOnly) throw new ToolError(I18n.text("Mod doar citire: modificarile si comenzile sunt blocate."));
+            return;
+        }
+        allow(access, title, details);
     }
 
     /** True for calls with no side effects that may run beside other reads of the same model step. */
@@ -687,7 +737,8 @@ final class Tools {
     private String writeFile(Path p, String content, boolean append) throws IOException, ToolError {
         if (Files.isDirectory(p)) throw new ToolError("E un folder: " + p);
         boolean exists = Files.exists(p);
-        allow(Access.WRITE, append ? "Adaugare la fisier" : exists ? "Suprascriere fisier" : "Fisier nou",
+        refuseHelper(p, false);
+        permit(p, Access.WRITE, append ? "Adaugare la fisier" : exists ? "Suprascriere fisier" : "Fisier nou",
                 p + "\n(" + content.length() + " caractere)\n\n" + clip(content, 1500));
         Files.createDirectories(p.getParent());
         if (append) {
@@ -716,7 +767,8 @@ final class Tools {
         for (int i = text.indexOf(oldText); i >= 0; i = text.indexOf(oldText, i + oldText.length())) count++;
         if (count == 0) throw new ToolError("Textul de inlocuit nu a fost gasit in " + p + ". Citeste din nou fisierul si copiaza textul exact.");
         if (count > 1 && !all) throw new ToolError("Textul apare de " + count + " ori; include mai mult context sau foloseste replace_all=true.");
-        allow(Access.WRITE, "Modificare fisier", p + "\n\n− " + clip(oldText, 700) + "\n+ " + clip(newText, 700));
+        if (guard.server(p)) refuseHelper(p, false);
+        permit(p, Access.WRITE, "Modificare fisier", p + "\n\n− " + clip(oldText, 700) + "\n+ " + clip(newText, 700));
         String updated = all ? text.replace(oldText, newText) : text.replaceFirst(Pattern.quote(oldText), Matcher.quoteReplacement(newText));
         Files.writeString(p, updated, t.charset());
         return "Modificat " + p + " (" + (all ? count : 1) + " inlocuiri)";
@@ -724,7 +776,8 @@ final class Tools {
 
     private String makeDir(Path p) throws IOException, ToolError {
         if (Files.isDirectory(p)) return "Exista deja: " + p;
-        allow(Access.WRITE, "Creare folder", p.toString());
+        refuseHelper(p, true);
+        permit(p, Access.WRITE, "Creare folder", p.toString());
         Files.createDirectories(p);
         return "Creat folderul " + p;
     }
@@ -778,17 +831,44 @@ final class Tools {
         protectCopyPath(target);
         if (!target.equals(source) && target.startsWith(source)) throw new ToolError("Destinatia e in interiorul sursei.");
         if (move && Files.exists(target) && !overwrite) throw new FileAlreadyExistsException(target.toString());
-        allow(Access.WRITE, move ? "Mutare" : "Copiere", source + "\n→ " + target + (overwrite ? "\n(inlocuieste ce exista)" : ""));
+        List<Path> landing = List.of(target);
+        // 1.28.11: into a project folder or onto a server, helper files are filtered out of a folder copy and refused for a single file.
+        final java.util.function.BiPredicate<Path, Boolean> skip = (guard.project(target) || guard.server(target)) && Files.isDirectory(source)
+                ? (path, isDir) -> guard.refuse(target.resolve(source.relativize(path).toString()), isDir) != null : null;
+        if (skip != null) {
+            List<Path> kept = new ArrayList<>(), dropped = new ArrayList<>();
+            Files.walkFileTree(source, new SimpleFileVisitor<>() {
+                @Override public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                    if (!dir.equals(source) && skip.test(dir, true)) { dropped.add(dir); return FileVisitResult.SKIP_SUBTREE; }
+                    return FileVisitResult.CONTINUE;
+                }
+                @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    if (kept.size() + dropped.size() >= FileGuard.LIMIT) return FileVisitResult.TERMINATE;
+                    if (skip.test(file, false)) dropped.add(file); else kept.add(target.resolve(source.relativize(file).toString()));
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+            if (!dropped.isEmpty() && (move || kept.isEmpty())) {
+                Path first = dropped.get(0);
+                throw new ToolError(guard.refuse(target.resolve(source.relativize(first).toString()), Files.isDirectory(first)) + (dropped.size() > 1 ? "\n" + I18n.text("Refuzate {0} elemente: {1}", dropped.size(), FileGuard.list(dropped)) : ""));
+            }
+            if (!dropped.isEmpty()) notes.get().add(I18n.text("Omise {0} fisiere ajutatoare sau nepermise din copiere: {1}", dropped.size(), FileGuard.list(dropped).replace('\n', ' ')));
+            landing = kept;
+        } else if (guard.project(target) || guard.server(target)) refuseHelper(target, false);
+        if (!(guard.server(target) && serverCard(landing)))
+            plainPermit(target, Access.WRITE, move ? "Mutare" : "Copiere", source + "\n→ " + target + (overwrite ? "\n(inlocuieste ce exista)" : ""));
         checkCopyCancelled();
         if (Files.isDirectory(source)) {
             // Validate the entire source/target tree before the first mutation, including nested settings.
             Files.walkFileTree(source,new SimpleFileVisitor<>(){
                 @Override public FileVisitResult preVisitDirectory(Path dir,BasicFileAttributes attrs)throws IOException{
+                    if(skip!=null&&!dir.equals(source)&&skip.test(dir,true))return FileVisitResult.SKIP_SUBTREE;
                     checkCopyCancelled();Path planned=target.resolve(source.relativize(dir).toString());
                     if(Files.exists(planned)&&!Files.isDirectory(planned))throw new FileAlreadyExistsException(planned.toString());
                     return FileVisitResult.CONTINUE;
                 }
                 @Override public FileVisitResult visitFile(Path file,BasicFileAttributes attrs)throws IOException{
+                    if(skip!=null&&skip.test(file,false))return FileVisitResult.CONTINUE;
                     checkCopyCancelled();Path planned=target.resolve(source.relativize(file).toString());
                     try{protectCopyPath(file);protectCopyPath(planned);}catch(ToolError error){throw new IOException(error.getMessage());}
                     if(!move && Files.exists(planned) && (!Files.isRegularFile(planned) || (!overwrite && (Files.size(file)!=Files.size(planned)||!copyDigest(file).equals(copyDigest(planned))))))
@@ -810,9 +890,11 @@ final class Tools {
         long[] totals = {0, 0};
         Files.walkFileTree(source, new SimpleFileVisitor<>() {
             @Override public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                if (skip != null && !dir.equals(source) && skip.test(dir, true)) return FileVisitResult.SKIP_SUBTREE;
                 checkCopyCancelled();Files.createDirectories(target.resolve(source.relativize(dir).toString()));return FileVisitResult.CONTINUE;
             }
             @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                if (skip != null && skip.test(file, false)) return FileVisitResult.CONTINUE;
                 checkCopyCancelled();
                 try{if(copyVerifiedFile(file,target.resolve(source.relativize(file).toString()),overwrite))totals[0]++;else totals[1]++;}
                 catch(ToolError error){throw new IOException(error.getMessage());}
@@ -921,9 +1003,11 @@ final class Tools {
 
     private Result runCommand(String command, Path cwd, int timeoutSeconds) throws IOException, ToolError {
         if (!Files.isDirectory(cwd)) throw new ToolError("Folderul pentru comanda nu exista: " + cwd);
-        if(command.matches("(?is).*\\b(?:python(?:\\.exe)?|py)\\s+-c\\s+\"[^\"\\r\\n]*\\R.*"))throw new ToolError(I18n.text("Python multiliniar: salveaza codul cu write_file intr-un fisier .py, apoi ruleaza fisierul cu cwd corect. Comanda nu a fost executata."));
+        if(command.matches("(?is).*\\b(?:python(?:\\.exe)?|py)\\s+-c\\s+\"[^\"\\r\\n]*\\R.*"))throw new ToolError(I18n.text("Python multiliniar: salveaza codul cu write_file intr-un fisier .py din folderul scratch {0} (nu in proiect), apoi ruleaza-l cu calea absoluta; folderul curent poate ramane proiectul. Comanda nu a fost executata.",guard.scratchText()));
+        guardCommand(command, cwd);
         sensitive(SensitiveGuard.scan(command, cwd), command + "\n\n" + I18n.text("In folderul: {0}", String.valueOf(cwd)));
         allow(Access.RUN, "Rulare comanda", command + "\n\nIn folderul: " + cwd);
+        List<Path> strayBefore = guard.project(cwd) ? strayNames(cwd) : List.of();
         Path script = Files.createTempFile("localchat-", ".cmd");
         // 1.28.9: clearly read-only commands (dir, type, git status, ...) cannot produce files, so they are not scoped at all; other commands only fingerprint their declared write targets.
         GeneratedFiles.Scope generated=null;if(!GeneratedFiles.readOnlyCommand(command))try{generated=GeneratedFiles.command(outputRegistry(),cwd,command);}catch(IOException error){notes.get().add(inventoryNote(error));}
@@ -932,12 +1016,103 @@ final class Tools {
             Files.writeString(script, "@echo off\r\nchcp 65001 >nul\r\n" + body + "\r\n", StandardCharsets.UTF_8);
             Output out = exec(List.of("cmd.exe", "/d", "/c", script.toString()), cwd, ctx.commandEnv(), timeoutSeconds);
             if (cancelled) throw new ToolError("Oprit de utilizator.");
+            if (guard.project(cwd)) {
+                List<Path> left = strayNames(cwd);
+                left.removeAll(strayBefore);
+                if (!left.isEmpty()) notes.get().add(I18n.text("Atentie: comanda a lasat fisiere ajutatoare in folderul proiectului: {0}. Muta-le in scratch ({1}) sau curata-le cu cleanup_stray_files; nu le lasa acolo.", FileGuard.list(left.subList(0, Math.min(8, left.size()))).replace('\n', ' '), guard.scratchText()));
+            }
             String text = out.text().isBlank() ? "(fara output)" : cap(out.text());
             if (!out.finished()) return Result.error("Comanda a depasit " + timeoutSeconds + " s si a fost oprita.\n" + text);
             return new Result("Cod de iesire: " + out.exitCode() + "\n" + text, out.exitCode() != 0);
         } finally {
             try{Files.deleteIfExists(script);}finally{if(generated!=null)try{generated.close();}catch(IOException error){notes.get().add(inventoryNote(error));}}
         }
+    }
+
+    private List<Path> strayNames(Path folder) {
+        try {
+            return new ArrayList<>(guard.strays(folder, 3));
+        } catch (IOException | RuntimeException e) {
+            return new ArrayList<>();
+        }
+    }
+
+    /** 1.28.11: refuses visible helper-file writes and unlistable server copies of a shell command; server writes ask with the file list, always. */
+    private void guardCommand(String command, Path cwd) throws ToolError {
+        if (!guard.active()) return;
+        Set<Path> server = new LinkedHashSet<>();
+        for (FileGuard.Op op : FileGuard.parse(command)) {
+            Path dest = FileGuard.resolve(op.dest(), cwd);
+            if (dest == null) continue;
+            if (op.kind() == FileGuard.Kind.WRITE || op.kind() == FileGuard.Kind.DIR) {
+                boolean dir = op.kind() == FileGuard.Kind.DIR;
+                refuseHelper(dest, dir);
+                if (!dir && guard.server(dest)) server.add(dest);
+                continue;
+            }
+            boolean toServer = guard.server(dest);
+            if (!toServer && !guard.project(dest)) continue;
+            if (toServer && op.mirror()) throw new ToolError(I18n.text("Sincronizarea cu stergere (/MIR, /PURGE) pe server este interzisa: {0}. Foloseste copy_path pentru fisierele de productie.", dest));
+            List<FileGuard.Item> items = FileGuard.sources(op, cwd);
+            if (items == null) {
+                if (toServer) throw new ToolError(I18n.text("Copierea pe server dintr-o sursa care nu poate fi listata ({0}) nu e permisa din run_command. Foloseste copy_path, ca utilizatorul sa vada lista exacta.", op.source()));
+                if (!Files.isDirectory(dest)) refuseHelper(dest, false);
+                continue;
+            }
+            List<Path> planned = FileGuard.planned(op, items, cwd);
+            if (planned == null) continue;
+            for (Path target : planned) refuseHelper(target, false);
+            if (toServer) server.addAll(planned);
+        }
+        List<Path> fuzzy = guard.networkWrites(command, cwd);
+        if (!server.isEmpty() || !fuzzy.isEmpty()) {
+            server.addAll(fuzzy);
+            serverCard(server, fuzzy.isEmpty() ? null : command);
+        }
+    }
+
+    private String listStrays(Path folder) throws IOException, ToolError {
+        if (!guard.project(folder)) throw new ToolError(I18n.text("Nu e un folder de proiect: {0}. Fisierele ajutatoare se cauta numai intr-un folder de proiect.", folder));
+        List<Path> files = guard.strays(folder, 8);
+        if (files.isEmpty()) return I18n.text("Niciun fisier ajutator in {0}.", folder);
+        return I18n.text("Fisiere ajutatoare in {0}: {1}. Sterge-le cu cleanup_stray_files (cere confirmarea utilizatorului).", folder, files.size()) + "\n" + FileGuard.list(files);
+    }
+
+    private String cleanupStrays(Path folder, String pattern) throws IOException, ToolError {
+        if (!guard.project(folder)) throw new ToolError(I18n.text("Nu e un folder de proiect: {0}. Fisierele ajutatoare se cauta numai intr-un folder de proiect.", folder));
+        ensureActive();
+        if (readOnly) throw new ToolError(I18n.text("Mod doar citire: modificarile si comenzile sunt blocate."));
+        List<Path> files = new ArrayList<>(guard.strays(folder, 8));
+        if (pattern != null && !pattern.isBlank()) {
+            PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + pattern.trim());
+            files.removeIf(f -> !matcher.matches(f.getFileName()));
+        }
+        files.removeIf(f -> guard.allowed(f, false));
+        if (files.isEmpty()) return I18n.text("Niciun fisier ajutator de sters in {0}.", folder);
+        synchronized (ASK) {
+            Decision answer = ctx.permission() == null ? Decision.NO : ctx.permission().ask(FileGuard.CLEAN_TITLE,
+                    I18n.text("Se sterg {0} fisier(e) ajutatoare din {1}:\n{2}\nNu se sterg PROJECT_INFO.md, Pentru_ChatGPT_*.txt, Output si Controle. Confirmarea apare de fiecare data si nu se retine.", files.size(), folder, FileGuard.list(files)));
+            ensureActive();
+            if (answer == Decision.NO) throw new ToolError(I18n.text("Utilizatorul a refuzat stergerea fisierelor ajutatoare. Nu le sterge pe alta cale."));
+        }
+        int deleted = 0;
+        Set<Path> parents = new TreeSet<>(Comparator.reverseOrder());
+        for (Path f : files) {
+            ensureActive();
+            if (guard.allowed(f, false)) continue;
+            Files.deleteIfExists(f);
+            deleted++;
+            for (Path up = f.getParent(); up != null && !up.equals(folder) && up.startsWith(folder); up = up.getParent()) parents.add(up);
+        }
+        for (Path up : parents) {
+            if (!FileGuard.helperDir(up.getFileName().toString())) continue;
+            try (DirectoryStream<Path> rest = Files.newDirectoryStream(up)) {
+                if (!rest.iterator().hasNext()) Files.delete(up);
+            } catch (IOException ignored) {
+                // A folder that cannot be removed stays; the files are gone.
+            }
+        }
+        return I18n.text("Sterse {0} fisiere ajutatoare din {1}.", deleted, folder);
     }
 
     /** One short line for a real registry failure (never the folder size: the folder is no longer inventoried). */
@@ -951,6 +1126,7 @@ final class Tools {
         pb.environment().putAll(env);
         pb.environment().put("PYTHONIOENCODING", "utf-8");
         pb.environment().put("PYTHONUTF8", "1");
+        if (guard.scratch() != null) pb.environment().put("LOCALCHAT_SCRATCH", guard.scratch().toString());
         Process proc = pb.start();
         running = proc;
         try {

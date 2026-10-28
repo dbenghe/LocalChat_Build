@@ -2,7 +2,7 @@ package localchat;
 import java.util.*;
 /** Limits exact repeated discovery calls; job-status polling and changed work are not duplicates. */
 final class ToolLoopGuard {
- private static final Set<String> READS=Set.of("pdfcontrol_compare_import","read_skill","list_dir","find_files","read_file","search_text","run_agents",ComposerAssist.TOOL);
+ private static final Set<String> READS=Set.of("pdfcontrol_compare_import","list_stray_files","read_skill","list_dir","find_files","read_file","search_text","run_agents",ComposerAssist.TOOL);
  private final Map<String,Integer> counts=new HashMap<>();private final Map<String,Tools.Result> skills=new HashMap<>();
  private final Set<String> evidence=new HashSet<>();
  private boolean read(String name){return READS.contains(name)||name.endsWith("pdfcontrol_project_files")||name.endsWith("pdfcontrol_read_document")||name.endsWith("pdfcontrol_list_projects")||name.endsWith("pdfcontrol_job_summary")||name.endsWith("pdfcontrol_job_findings")||name.endsWith("pdfcontrol_catalogue_status");}
@@ -14,6 +14,8 @@ final class ToolLoopGuard {
   if(call.name.equals("read_skill")&&skills.containsKey(id))return Tools.Result.ok(I18n.text("Skill deja citit in aceasta tura: {0}. Continua etapa ceruta; pentru un detaliu lipsa citeste sectiunea necesara din fisier, fara reluarea intregii proceduri.",Objects.toString(Json.get(call.args,"name"),""))+"\n"+Skills.resourceIndex(skills.get(id).text));
   return null;
  }
+ /** After a compaction the skill text is gone from the context: read_skill must return the full text again. */
+ void afterCompaction(){skills.clear();counts.keySet().removeIf(k->k.startsWith("read_skill|"));}
  void completed(ChatClient.ToolCall call,Tools.Result result){
   if(call.name.equals("read_skill")&&!result.isError)skills.putIfAbsent(signature(call),result);
   boolean changed=Set.of("write_file","append_file","edit_file","move_path","extract_attachments").contains(call.name)||call.name.contains("pdfcontrol_start_")||call.name.endsWith("pdfcontrol_regenerate_report");
