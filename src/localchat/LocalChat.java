@@ -82,7 +82,7 @@ public final class LocalChat extends JFrame {
     private static Color TOOL_COLOR = new Color(0x6B7280);
     private static final String DEFAULT_TOOLS_CONFIG = "{\n  \"mcpServers\": {},\n  \"commandEnv\": {},\n  \"pdfPython\": \"\"\n}\n";
 
-    private final Path appDir = appDir();
+    private final Path appDir = AppPaths.appDir();
     private final Path configFile = appDir.resolve("setari.properties");
     private final Path rulesFile = appDir.resolve("reguli.md");
     private final Path skillsDir = appDir.resolve("skills");
@@ -2049,7 +2049,7 @@ public final class LocalChat extends JFrame {
         mcpSummary = null;
         toolsStatus.setText(t("Pornesc tool-urile…"));
         Thread t = new Thread(() -> {
-            downloadsDir = resolveDownloads();
+            downloadsDir = AppPaths.resolveDownloads();
             toolsConfig = readToolsConfig();toolsConfigLoaded=true;
             mcp.reload(toolsConfig, this::expandVars);
             SwingUtilities.invokeLater(() -> {
@@ -2114,7 +2114,7 @@ public final class LocalChat extends JFrame {
     /** Opens the Downloads folder of whoever runs the app, on whichever PC the folder was copied to. */
     private void openDownloads() {
         try {
-            if (isWindows()) {
+            if (AppPaths.isWindows()) {
                 // shell:Downloads also finds a Downloads folder that was moved to another drive or to OneDrive.
                 new ProcessBuilder("explorer.exe", "shell:Downloads").start();
             } else {
@@ -2129,7 +2129,7 @@ public final class LocalChat extends JFrame {
     private void openFolder(Path dir) {
         try {
             Files.createDirectories(dir);
-            if (isWindows()) new ProcessBuilder("explorer.exe", dir.toString()).start();
+            if (AppPaths.isWindows()) new ProcessBuilder("explorer.exe", dir.toString()).start();
             else Desktop.getDesktop().open(dir.toFile());
         } catch (Exception e) {
             setStatus("Nu pot deschide {0}: {1}", true, dir, describe(e));
@@ -2139,7 +2139,7 @@ public final class LocalChat extends JFrame {
     private void openInEditor(Path file, String template) {
         try {
             if (!Files.exists(file)) Files.writeString(file, template, StandardCharsets.UTF_8);
-            if (isWindows()) new ProcessBuilder("notepad.exe", file.toString()).start();
+            if (AppPaths.isWindows()) new ProcessBuilder("notepad.exe", file.toString()).start();
             else Desktop.getDesktop().open(file.toFile());
             if (file.equals(toolsConfigFile)) setStatus("Dupa ce salvezi unelte.json, alege Unelte > Reporneste serverele MCP.", false);
         } catch (Exception e) {
@@ -2514,44 +2514,6 @@ public final class LocalChat extends JFrame {
         } catch (IOException e) {
             setStatus("Nu pot salva setarile in {0}: {1}", true, configFile, e.getMessage());return false;
         }
-    }
-
-    /** Settings, conversations, skills and rules live next to LocalChat.jar, so the whole folder stays portable. */
-    private static Path appDir() {
-        String override = System.getProperty("localchat.home");
-        if (override != null) return Paths.get(override).toAbsolutePath();
-        try {
-            File location = new File(LocalChat.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-            return (location.isFile() ? location.getParentFile() : location).toPath();
-        } catch (Exception e) {
-            return Paths.get(System.getProperty("user.home"), "LocalChat");
-        }
-    }
-
-    /** The real Downloads folder (it can be moved to another drive or OneDrive), from the registry. */
-    private static String resolveDownloads() {
-        String fallback = System.getProperty("user.home") + File.separator + "Downloads";
-        if (!isWindows()) return fallback;
-        try {
-            Process p = new ProcessBuilder("reg", "query", "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders",
-                    "/v", "{374DE290-123F-4565-9164-39C4925E467B}").redirectErrorStream(true).start();
-            String out = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            p.waitFor(5, TimeUnit.SECONDS);
-            Matcher m = Pattern.compile("REG_(?:EXPAND_)?SZ\\s+(.+)").matcher(out);
-            if (m.find()) {
-                String path = Tools.expand(m.group(1).trim());
-                if (new File(path).isDirectory()) return path;
-            }
-        } catch (IOException e) {
-            // keep the default
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-        return fallback;
-    }
-
-    private static boolean isWindows() {
-        return System.getProperty("os.name").toLowerCase(Locale.ROOT).startsWith("windows");
     }
 
     private static String describe(Throwable e) {
