@@ -177,6 +177,12 @@ if ($LASTEXITCODE) { throw 'PDFCONTROL workflow tests failed; distribution was n
 if ($LASTEXITCODE) { throw 'Direct PDFCONTROL UI/MCP tests failed; distribution was not changed' }
 & "$taskJdk/bin/java.exe" "-Dpdfcontrol.package=$PSScriptRoot/pdfcontrol" "-Dpdfcontrol.projects=$taskBuild/pdfcontrol-tests/PROJECTS" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.PdfAgentTest
 if ($LASTEXITCODE) { throw 'Model to PDFCONTROL workflow tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/tool-batch-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ToolBatchTest
+if ($LASTEXITCODE) { throw 'Parallel read-only tool batch tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/skills-cache-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.SkillsCacheTest
+if ($LASTEXITCODE) { throw 'Skills cache tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/image-resend-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ImageResendTest
+if ($LASTEXITCODE) { throw 'Image resend tests failed' }
 & "$taskJdk/bin/java.exe" "-Dpdfcontrol.package=$PSScriptRoot/pdfcontrol" "-Dpdfcontrol.projects=$taskBuild/pdfcontrol-tests/PROJECTS" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/token-budget-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.TokenBudgetTest
 if ($LASTEXITCODE) { throw 'Token budget (MBS overhead / Normal) tests failed' }
 $taskJar = Join-Path $taskBuild 'LocalChat.jar'

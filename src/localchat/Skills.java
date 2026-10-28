@@ -23,14 +23,70 @@ final class Skills {
     private Skills() {
     }
 
+    /** Last modified time and size of one scanned path (size -1 for folders): enough to notice any change. */
+    private record Stamp(long time, long size) {
+    }
+
+    private record Cached(List<Skill> skills, java.util.Map<Path, Stamp> stamps) {
+    }
+
+    private static final java.util.Map<Path, Cached> CACHE = new java.util.HashMap<>();
+    private static final java.util.concurrent.atomic.AtomicInteger SCANS = new java.util.concurrent.atomic.AtomicInteger();
+
+    /** Full folder scans since start (tests and diagnostics). */
+    static int scans() {
+        return SCANS.get();
+    }
+
+    /** The installed skills. Repeated calls reuse the last scan until a folder or SKILL.md under it changes. */
     static List<Skill> load(Path dir) {
+        return load(dir, false);
+    }
+
+    /** Rescans the folder even when nothing seems to have changed (the /skills command, reloading tools and settings). */
+    static List<Skill> reload(Path dir) {
+        return load(dir, true);
+    }
+
+    /** Forgets every cached scan; the next load rescans. */
+    static synchronized void invalidate() {
+        CACHE.clear();
+    }
+
+    private static Stamp stamp(Path p) throws IOException {
+        java.nio.file.attribute.BasicFileAttributes a = Files.readAttributes(p, java.nio.file.attribute.BasicFileAttributes.class);
+        return new Stamp(a.lastModifiedTime().toMillis(), a.isDirectory() ? -1 : a.size());
+    }
+
+    private static boolean fresh(Cached cached) {
+        try {
+            for (java.util.Map.Entry<Path, Stamp> e : cached.stamps().entrySet()) if (!stamp(e.getKey()).equals(e.getValue())) return false;
+            return true;
+        } catch (IOException | RuntimeException gone) {
+            return false;
+        }
+    }
+
+    private static synchronized List<Skill> load(Path dir, boolean force) {
+        Path key = dir.toAbsolutePath().normalize();
+        Cached cached = CACHE.get(key);
+        if (!force && cached != null && fresh(cached)) return new ArrayList<>(cached.skills());
+        CACHE.remove(key);
+        SCANS.incrementAndGet();
         List<Skill> out = new ArrayList<>();
         try {
             Files.createDirectories(dir);
             unpackZips(dir);
+            java.util.Map<Path, Stamp> stamps = new java.util.HashMap<>();
+            List<Path> manifests;
             try (Stream<Path> files = Files.walk(dir, 4)) {
-                files.filter(p -> p.getFileName().toString().equalsIgnoreCase("SKILL.md")).sorted().forEach(p -> out.add(parse(p)));
+                List<Path> all = files.toList();
+                // Stamped before parsing: a change in between only causes one more scan, never a stale list.
+                for (Path p : all) if (Files.isDirectory(p) || p.getFileName().toString().equalsIgnoreCase("SKILL.md")) stamps.put(p, stamp(p));
+                manifests = all.stream().filter(p -> p.getFileName().toString().equalsIgnoreCase("SKILL.md")).sorted().toList();
             }
+            for (Path p : manifests) out.add(parse(p));
+            CACHE.put(key, new Cached(List.copyOf(out), stamps));
         } catch (IOException ignored) {
             // no skills folder (read-only medium): run without skills
         }

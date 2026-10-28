@@ -150,8 +150,12 @@ final class Agent {
                 callsToRun=List.of(interaction.get());
                 synchronized(added){for(var sibling:reply.calls)if(sibling!=interaction.get())added.add(ChatClient.Message.toolResult(sibling.id,I18n.text("Anulat inainte de confirmarea rezultatului; verifica starea reala inainte de repetarea operatiei."),true));}
             }}
-            for (ChatClient.ToolCall call : callsToRun) {
+            ToolBatch batch=new ToolBatch();
+            try{
+            for (int index=0;index<callsToRun.size();index++) {
+                ChatClient.ToolCall call=callsToRun.get(index);
                 if (cancelled) return;
+                if(tools!=null&&interactionFailures==0)batch.prefetch(c->tools.parallelSafe(c.name),tools::execute,callsToRun,index);
                 ui.toolStarted(call);
                 boolean pdfStart=call.name.contains("pdfcontrol_start_")||call.name.endsWith("pdfcontrol_regenerate_report");
                 String signature=pdfStart?call.name+"|"+Json.write(new java.util.TreeMap<>(call.args)):"";
@@ -165,7 +169,7 @@ final class Agent {
                     else if(team!=null&&call.name.equals("run_agents"))result=team.run(call,p,url,key,model,label,system,ui);
                     else if(tools==null)result=Tools.Result.error("Tool-urile sunt dezactivate in aplicatie.");
                     else if(isMutation(call.name)){synchronized(MUTATION_LOCK){if(cancelled)return;result=tools.execute(call);}}
-                    else result=tools.execute(call);
+                    else result=batch.execute(tools::execute,call);
                 }
                 loopGuard.completed(call,result);
                 if(pdfStart&&!result.isError)startedPdfJobs.put(signature,result);
@@ -187,6 +191,7 @@ final class Agent {
                 if(loopGuard.stalled(call))throw new IOException(result.text);
                 if(pdfStart&&failedPdfCalls.getOrDefault(signature,0)>=3)throw new IOException(I18n.text("PDFCONTROL: acelasi apel a esuat de trei ori. Verifica eroarea si sursele; lucrarea nu este finalizata."));
             }
+            }finally{batch.discard();}
             if(interactionFailures>0||discoveryRepairs>0){
                 synchronized(added){
                     Set<String> answered=new HashSet<>();for(var message:added)if(message.role.equals("tool"))answered.add(message.toolCallId);

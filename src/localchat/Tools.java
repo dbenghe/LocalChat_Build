@@ -112,7 +112,8 @@ final class Tools {
     private final Context ctx;
     private final List<Skills.Skill> skills;
     private final Map<String, McpRef> mcpTools = new LinkedHashMap<>();
-    private final List<String> notes = new ArrayList<>(); // told to the model with the current call's result
+    private final ThreadLocal<List<String>> notes = ThreadLocal.withInitial(ArrayList::new); // told to the model with the current call's result; per thread because read-only calls may run in parallel
+    private static final Object ASK = new Object(); // one permission question at a time, also across parallel calls
     private volatile Process running;
     private volatile boolean cancelled;
     private List<String> attachedPaths=List.of();
@@ -270,11 +271,11 @@ final class Tools {
     private String resolve(String name) {return name.equals("pdfcontrol_live_status") && !mcpTools.containsKey(name) && mcpTools.containsKey("pdfcontrol_status") ? "pdfcontrol_status" : name;}
 
     Result execute(ChatClient.ToolCall call) {
-        notes.clear();
+        notes.get().clear();
         Result r = run(call);
-        if(!r.isError)try{switch(call.name){case "write_file","append_file","edit_file"->GeneratedFiles.mark(outputRegistry(),List.of(path(required(call.args,"path"))));case "pdfcontrol_prepare_fast_import"->{Object data=Json.parse(r.text);GeneratedFiles.mark(outputRegistry(),List.of(Path.of(Json.str(data,"output"))));}default->{}}}catch(Exception error){notes.add(I18n.text("Nu pot inregistra fisierele generate pentru hotfolder: {0}",error.getClass().getSimpleName()));}
-        if (notes.isEmpty()) return r;
-        return new Result(String.join("\n", notes) + "\n" + r.text, r.isError);
+        if(!r.isError)try{switch(call.name){case "write_file","append_file","edit_file"->GeneratedFiles.mark(outputRegistry(),List.of(path(required(call.args,"path"))));case "pdfcontrol_prepare_fast_import"->{Object data=Json.parse(r.text);GeneratedFiles.mark(outputRegistry(),List.of(Path.of(Json.str(data,"output"))));}default->{}}}catch(Exception error){notes.get().add(I18n.text("Nu pot inregistra fisierele generate pentru hotfolder: {0}",error.getClass().getSimpleName()));}
+        if (notes.get().isEmpty()) return r;
+        return new Result(String.join("\n", notes.get()) + "\n" + r.text, r.isError);
     }
 
     private Result run(ChatClient.ToolCall call) {
@@ -329,7 +330,7 @@ final class Tools {
         String given = expand(raw == null || raw.isBlank() ? "." : raw.trim());
         String s = ctx.paths().path(given);
         if (!s.equals(given) && !s.equalsIgnoreCase(given.replace('/', '\\'))) {
-            notes.add("Nota: calea „" + given + "” e de pe alt calculator; pe acesta am folosit „" + s + "”. Foloseste de acum calea de aici.");
+            notes.get().add("Nota: calea „" + given + "” e de pe alt calculator; pe acesta am folosit „" + s + "”. Foloseste de acum calea de aici.");
         }
         try {
             Path p = Paths.get(s);
@@ -368,15 +369,26 @@ final class Tools {
     private void allow(Access access, String title, String details) throws ToolError {
         ensureActive();
         if(readOnly && access!=Access.READ)throw new ToolError(I18n.text("Mod doar citire: modificarile si comenzile sunt blocate."));
-        if (ctx.autoApprove() || ctx.alwaysAllowed().contains(access)) {ensureActive();return;}
-        Decision d = ctx.permission().ask(title, details);
-        // Stop can arrive while the approval dialog is open; a late YES/ALWAYS cannot revive the tool.
-        ensureActive();
-        if (d == Decision.ALWAYS) ctx.alwaysAllowed().add(access);
-        if (d == Decision.NO) {
-            throw new ToolError("Utilizatorul a refuzat: " + title.toLowerCase(Locale.ROOT)
-                    + ". Nu incerca acelasi lucru pe alta cale; intreaba utilizatorul ce doreste.");
+        // Serialized: parallel read-only calls must not open several approval cards, and "always" decided by the first applies to the rest.
+        synchronized (ASK) {
+            if (ctx.autoApprove() || ctx.alwaysAllowed().contains(access)) {ensureActive();return;}
+            Decision d = ctx.permission().ask(title, details);
+            // Stop can arrive while the approval dialog is open; a late YES/ALWAYS cannot revive the tool.
+            ensureActive();
+            if (d == Decision.ALWAYS) ctx.alwaysAllowed().add(access);
+            if (d == Decision.NO) {
+                throw new ToolError("Utilizatorul a refuzat: " + title.toLowerCase(Locale.ROOT)
+                        + ". Nu incerca acelasi lucru pe alta cale; intreaba utilizatorul ce doreste.");
+            }
         }
+    }
+
+    /** True for calls with no side effects that may run beside other reads of the same model step. */
+    boolean parallelSafe(String name) {
+        McpRef ref = mcpTools.get(resolve(name));
+        if (ref != null) return ref.tool().readOnly && !name.contains("pdfcontrol_start_") && !ref.tool().name.startsWith("pdfcontrol_start_")
+                && !name.endsWith("pdfcontrol_regenerate_report") && !ref.tool().name.equals("pdfcontrol_regenerate_report");
+        return Set.of("read_file", "list_dir", "find_files", "search_text").contains(name);
     }
 
     static String expand(String s) {
@@ -635,7 +647,7 @@ final class Tools {
         if (count == 0) return "Emailul nu are atasamente de salvat" + (m.attachments().isEmpty() ? "." : " (doar imagini inline/semnatura).");
         allow(Access.WRITE, "Salvare atasamente email", "In folderul: " + dir + list);
         List<String> report = new ArrayList<>();
-        OutlookMsg.extract(m, dir, includeInline, report,produced->{try{GeneratedFiles.mark(outputRegistry(),List.of(produced));}catch(IOException error){notes.add(I18n.text("Nu pot inregistra fisierele generate pentru hotfolder: {0}",error.getClass().getSimpleName()));}});
+        OutlookMsg.extract(m, dir, includeInline, report,produced->{try{GeneratedFiles.mark(outputRegistry(),List.of(produced));}catch(IOException error){notes.get().add(I18n.text("Nu pot inregistra fisierele generate pentru hotfolder: {0}",error.getClass().getSimpleName()));}});
         return "Atasamentele din " + file + " → " + dir + "\n" + String.join("\n", report);
     }
 
@@ -723,7 +735,7 @@ final class Tools {
             if(!sourceHash.equals(copyDigest(staged)))throw new IOException(I18n.text("Verificarea SHA-256 a copierii a esuat: {0}",target));
             Files.move(staged,target,overwrite?new StandardCopyOption[]{StandardCopyOption.REPLACE_EXISTING}:new StandardCopyOption[0]);
             if(!sourceHash.equals(copyDigest(target)))throw new IOException(I18n.text("Verificarea SHA-256 a copierii a esuat: {0}",target));
-            try{GeneratedFiles.mark(outputRegistry(),List.of(target));}catch(IOException error){notes.add(I18n.text("Nu pot inregistra fisierele generate pentru hotfolder: {0}",error.getClass().getSimpleName()));}return true;
+            try{GeneratedFiles.mark(outputRegistry(),List.of(target));}catch(IOException error){notes.get().add(I18n.text("Nu pot inregistra fisierele generate pentru hotfolder: {0}",error.getClass().getSimpleName()));}return true;
         }finally{Files.deleteIfExists(staged);}
     }
 
@@ -841,7 +853,7 @@ final class Tools {
         if(command.matches("(?is).*\\b(?:python(?:\\.exe)?|py)\\s+-c\\s+\"[^\"\\r\\n]*\\R.*"))throw new ToolError(I18n.text("Python multiliniar: salveaza codul cu write_file intr-un fisier .py, apoi ruleaza fisierul cu cwd corect. Comanda nu a fost executata."));
         allow(Access.RUN, "Rulare comanda", command + "\n\nIn folderul: " + cwd);
         Path script = Files.createTempFile("localchat-", ".cmd");
-        GeneratedFiles.Scope generated=null;try{generated=GeneratedFiles.command(outputRegistry(),cwd,command);}catch(IOException error){notes.add(I18n.text("Nu pot inregistra fisierele generate pentru hotfolder: {0}",error.getClass().getSimpleName()));}
+        GeneratedFiles.Scope generated=null;try{generated=GeneratedFiles.command(outputRegistry(),cwd,command);}catch(IOException error){notes.get().add(I18n.text("Nu pot inregistra fisierele generate pentru hotfolder: {0}",error.getClass().getSimpleName()));}
         try {
             String body = command.replace("\r\n", "\n").replace("\n", "\r\n");
             Files.writeString(script, "@echo off\r\nchcp 65001 >nul\r\n" + body + "\r\n", StandardCharsets.UTF_8);
@@ -851,7 +863,7 @@ final class Tools {
             if (!out.finished()) return Result.error("Comanda a depasit " + timeoutSeconds + " s si a fost oprita.\n" + text);
             return new Result("Cod de iesire: " + out.exitCode() + "\n" + text, out.exitCode() != 0);
         } finally {
-            try{Files.deleteIfExists(script);}finally{if(generated!=null)try{generated.close();}catch(IOException error){notes.add(I18n.text("Nu pot inregistra fisierele generate pentru hotfolder: {0}",error.getClass().getSimpleName()));}}
+            try{Files.deleteIfExists(script);}finally{if(generated!=null)try{generated.close();}catch(IOException error){notes.get().add(I18n.text("Nu pot inregistra fisierele generate pentru hotfolder: {0}",error.getClass().getSimpleName()));}}
         }
     }
 

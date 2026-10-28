@@ -10,7 +10,7 @@ final class ContextMemory {
         return text==null || text.isEmpty() ? 0 : (text.getBytes(StandardCharsets.UTF_8).length+3L)/4L;
     }
     static long messages(List<ChatClient.Message> messages) {
-        long n=0; for(var m:messages)n+=estimate(Json.write(m.toJson()))+4096L*m.images.size()+4+(m.requestControl.isBlank()?0:estimate(m.requestControl)+12);return n;
+        long n=0;var live=ChatClient.imageTurn(messages); for(var m:messages)n+=estimate(Json.write(m.toJson()))+(m==live?4096L*m.images.size():0)+4+(m.requestControl.isBlank()?0:estimate(m.requestControl)+12);return n;
     }
     /** Estimated size of tool-result messages alone (included in messages()); shown separately so large outputs are visible. */
     static long toolResults(List<ChatClient.Message> messages) {

@@ -1290,7 +1290,7 @@ public final class LocalChat extends JFrame {
                 try{int value=Integer.parseInt(arg);if(value<0 || value>2000000)throw new NumberFormatException();workspace.limit.setValue(value);refreshDashboard();}
                 catch(NumberFormatException e){setStatus("Utilizare: /context numar_tokeni (0 = necunoscut)",true);}
             }
-            case "/skills" -> {installedSkills=Skills.load(skillsDir);StringBuilder text=new StringBuilder();for(var skill:installedSkills)text.append(skill.name()).append(" — ").append(skill.description()).append('\n');
+            case "/skills" -> {installedSkills=Skills.reload(skillsDir);StringBuilder text=new StringBuilder();for(var skill:installedSkills)text.append(skill.name()).append(" — ").append(skill.description()).append('\n');
                 notice(text.length()==0?t("Niciun skill instalat."):text.toString());}
             case "/connectors" -> notice(t("Conectori MCP")+": "+(mcp.status().isBlank()?t("niciunul"):mcp.status()));
             case "/archive" -> archiveSession();
@@ -2055,7 +2055,7 @@ public final class LocalChat extends JFrame {
             SwingUtilities.invokeLater(() -> {
                 String m = mcp.status();
                 mcpSummary = m;
-                installedSkills=Skills.load(skillsDir);
+                installedSkills=Skills.reload(skillsDir);
                 refreshDashboard();
                 toolsStatus.setText(t("Tool-uri: {0} interne · MCP: {1}", Tools.BUILTIN.size(), m.isEmpty() ? t("niciunul") : m));
                 toolsStatus.setToolTipText(t("Configurare: {0}", toolsConfigFile));

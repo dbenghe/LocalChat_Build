@@ -827,6 +827,8 @@ Sursa si fisierele existente nu sunt suprascrise. Verifica copia/auditul in FAST
 
 Lipirea unei capturi sau atasarea unui PNG/JPEG/GIF static trimite continutul vizual la apasarea Trimite, catre furnizorul selectat. Sunt necesare un model si o ruta API cu suport vizual; capabilitatile necunoscute nu sunt presupuse negative. In Normal imaginile nu activeaza uneltele MBS; in MBS modelul poate analiza captura si continua cu uneltele permise. Selectia unui folder nu incarca automat imaginile din el.
 
+Din 1.28.2, imaginile sunt retrimise doar in mesajul curent: in mesajele anterioare modelul vede un marcaj text in locul imaginii (cererile raman mici). Daca are nevoie din nou de o imagine, atasati-o din nou.
+
 Maximum 4 imagini/mesaj, 5 MiB/imagine si 16 megapixeli. Copiile originale cu hash se pastreaza privat in `atasamente_imagini`; JSON-ul conversatiei retine doar referintele. Acest director trebuie inclus la mutarea completa a datelor aplicatiei. Exportul JSON singur nu include pixelii. Vechile mesaje cu simple cai locale necesita reatasarea imaginii. Contextul vizual este estimat (~4096 tokeni/imagine), nu consum facturat. Modelul poate interpreta gresit o imagine; verificarile FAST raman deterministe in unealta locala.
 
 Protocol: [OpenAI image input](https://developers.openai.com/api/docs/guides/images-vision), [Anthropic image blocks](https://platform.claude.com/docs/en/build-with-claude/vision). Nu sunt create incarcari separate sau trimiteri catre alt furnizor.

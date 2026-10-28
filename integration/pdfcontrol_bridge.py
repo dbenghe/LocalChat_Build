@@ -148,7 +148,10 @@ def load_portable(require_ocr=False):
         ] if (p/'eng.traineddata').is_file() and (p/'nld.traineddata').is_file()),None)
         if data:os.environ['TESSDATA_PREFIX']=data
         try:
-            probe=subprocess.run([executable,'--list-langs'],capture_output=True,text=True,timeout=20)
+            # A cold first start of a freshly copied tesseract.exe (antivirus scan, disk cache) can exceed 20 s;
+            # retry once with a longer limit before declaring OCR unavailable. A broken binary still fails fast (non-zero exit).
+            try:probe=subprocess.run([executable,'--list-langs'],capture_output=True,text=True,timeout=20)
+            except subprocess.TimeoutExpired:probe=subprocess.run([executable,'--list-langs'],capture_output=True,text=True,timeout=60)
             languages=[v.strip() for v in probe.stdout.splitlines()[1:] if v.strip()]
             ocr.update(executable=executable,languages=languages,
                        available=probe.returncode==0 and {'eng','nld'}.issubset(languages))

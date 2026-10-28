@@ -11,13 +11,19 @@ import javax.imageio.stream.ImageInputStream;
 final class ImageInput {
     static final long MAX_BYTES=5*1024*1024;
     static final int MAX_IMAGES=4;
+    /** Verified encodings of the current question's images, reused by the steps of a tool loop; a changed file (size or time) misses. */
+    private static final Map<String,String> ENCODED=new LinkedHashMap<>(8,0.75f,true){protected boolean removeEldestEntry(Map.Entry<String,String> eldest){return size()>MAX_IMAGES;}};
     record Ref(String path,String sha256,String mime) {
         Object json(){return Json.obj("path",path,"sha256",sha256,"mime",mime);}
         static Ref from(Object o){return new Ref(Json.str(o,"path"),Json.str(o,"sha256"),Json.str(o,"mime"));}
         String data(){try{
-            Path file=Path.of(path);if(Files.size(file)>MAX_BYTES)throw new IOException("Image too large");
+            Path file=Path.of(path);long size=Files.size(file),time=Files.getLastModifiedTime(file).toMillis();if(size>MAX_BYTES)throw new IOException("Image too large");
+            String key=path+"|"+sha256+"|"+mime+"|"+size+"|"+time;
+            synchronized(ENCODED){String known=ENCODED.get(key);if(known!=null)return known;}
             byte[] bytes=Files.readAllBytes(file);if(!hash(bytes).equals(sha256)||!Set.of("image/png","image/jpeg","image/gif").contains(mime))throw new IOException("Image changed");
-            return Base64.getEncoder().encodeToString(bytes);
+            String encoded=Base64.getEncoder().encodeToString(bytes);
+            synchronized(ENCODED){ENCODED.put(key,encoded);}
+            return encoded;
         }catch(IOException|RuntimeException error){throw new IllegalArgumentException(I18n.text("Imaginea salvata nu mai este disponibila. Reataseaza imaginea."),error);}}
     }
     static boolean candidate(String path){return path.toLowerCase(Locale.ROOT).matches(".*\\.(png|jpe?g|gif)$");}

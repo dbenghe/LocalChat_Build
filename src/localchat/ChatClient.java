@@ -244,10 +244,26 @@ final class ChatClient {
         }
     }
 
+    /**
+     * Images are sent with the current question only. Older turns would resend every pixel on each request
+     * (and on each step of a tool loop) while the answer already exists in the conversation text.
+     */
+    static Message imageTurn(List<Message> history) {
+        for (int i = history.size() - 1; i >= 0; i--) if (history.get(i).role.equals("user")) return history.get(i);
+        return null;
+    }
+
+    /** The text that stands in for the images of an earlier question. */
+    static String omittedImages(Message m) {
+        return m.content + "\n[" + m.images.size() + " image attachment" + (m.images.size() == 1 ? "" : "s")
+                + " of this earlier message not resent to save tokens; ask the user to attach again if they are needed.]";
+    }
+
     private static Map<String, Object> openAiBody(String model, String system, List<Message> history,
                                                   List<ToolSpec> tools, boolean stream) {
         List<Object> messages = new ArrayList<>();
         if (!system.isEmpty()) messages.add(Json.obj("role", "system", "content", system));
+        Message live = imageTurn(history);
         for (Message m : history) {
             switch (m.role) {
                 case "assistant" -> {
@@ -265,7 +281,7 @@ final class ChatClient {
                 }
                 case "tool" -> messages.add(Json.obj("role", "tool", "tool_call_id", m.toolCallId, "content", m.content));
                 default -> {Object content=m.content;
-                    if(!m.images.isEmpty()){List<Object> blocks=new ArrayList<>();blocks.add(Json.obj("type","text","text",m.content));for(var ref:m.images)blocks.add(Json.obj("type","image_url","image_url",Json.obj("url","data:"+ref.mime()+";base64,"+ref.data())));content=blocks;}
+                    if(!m.images.isEmpty()&&m!=live)content=omittedImages(m);else if(!m.images.isEmpty()){List<Object> blocks=new ArrayList<>();blocks.add(Json.obj("type","text","text",m.content));for(var ref:m.images)blocks.add(Json.obj("type","image_url","image_url",Json.obj("url","data:"+ref.mime()+";base64,"+ref.data())));content=blocks;}
                     messages.add(Json.obj("role", "user", "content", content));if(!m.requestControl.isBlank())messages.add(Json.obj("role","user","content",m.requestControl));}
             }
         }
@@ -285,6 +301,7 @@ final class ChatClient {
     private static Map<String, Object> anthropicBody(String model, String system, List<Message> history,
                                                      List<ToolSpec> tools, boolean stream) {
         List<Map<String, Object>> messages = new ArrayList<>();
+        Message live = imageTurn(history);
         for (Message m : history) {
             if (m.role.equals("assistant")) {
                 List<Object> blocks = new ArrayList<>();
@@ -302,7 +319,7 @@ final class ChatClient {
                         "content", m.content.isEmpty() ? "(gol)" : m.content);
                 if (m.isError) block.put("is_error", true);
             } else {
-                block = Json.obj("type", "text", "text", m.content);
+                block = Json.obj("type", "text", "text", !m.images.isEmpty() && m != live ? omittedImages(m) : m.content);
             }
             // Tool results and the user's next text share one user message; Anthropic wants strict alternation.
             Map<String, Object> last = messages.isEmpty() ? null : messages.get(messages.size() - 1);
@@ -313,7 +330,7 @@ final class ChatClient {
                 content.add(block);
                 messages.add(Json.obj("role", "user", "content", content));
             }
-            if(m.role.equals("user"))for(var ref:m.images)((List<Object>)messages.get(messages.size()-1).get("content")).add(Json.obj("type","image","source",Json.obj("type","base64","media_type",ref.mime(),"data",ref.data())));
+            if(m.role.equals("user")&&m==live)for(var ref:m.images)((List<Object>)messages.get(messages.size()-1).get("content")).add(Json.obj("type","image","source",Json.obj("type","base64","media_type",ref.mime(),"data",ref.data())));
             if(m.role.equals("user")&&!m.requestControl.isBlank())((List<Object>)messages.get(messages.size()-1).get("content")).add(Json.obj("type","text","text",m.requestControl));
         }
         // Cache the conversation so far: an agent loop resends all of it on every step.
