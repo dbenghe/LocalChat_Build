@@ -109,8 +109,9 @@ final class Skills {
             files.filter(Files::isRegularFile).filter(p -> !p.equals(file)).sorted()
                 .forEach(p -> b.append("- ").append(p).append('\n'));
         }
-        b.append("\nSKILL_CONTENT:\n").append(translatePaths.apply(Files.readString(file, StandardCharsets.UTF_8)));
-        b.append(SkillNotes.forSkill(skill.name()));
+        String text = Files.readString(file, StandardCharsets.UTF_8);
+        b.append("\nSKILL_CONTENT:\n").append(translatePaths.apply(text));
+        b.append(SkillNotes.forSkill(skill.name(), text));
 
         return b.toString();
     }

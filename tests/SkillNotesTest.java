@@ -3,7 +3,7 @@ package localchat;
 import java.nio.file.*;
 import java.util.*;
 
-/** 1.28.5: the productie-projecten skill gets a generic LocalChat mapping on read_skill only; the skill files and the base prompt are untouched. */
+/** 1.28.5: the productie-projecten skill gets a generic LocalChat mapping on read_skill only; the skill files and the base prompt are untouched. 1.28.6: an adapted copy gets the compact note. */
 public final class SkillNotesTest {
     static int checks;
     static void check(boolean ok, String why) { checks++; if (!ok) throw new AssertionError(why); }
@@ -37,6 +37,26 @@ public final class SkillNotesTest {
         check(SkillNotes.forSkill("productie-projecten").length() < 2300, "the note stays token-cheap: " + SkillNotes.forSkill("productie-projecten").length() + " chars");
         check(Files.readString(legacy).equals(before), "the skill file itself is never rewritten");
         check(Skills.resourceIndex(note).indexOf(SkillNotes.MARKER) < 0, "the resource index kept for repeated loads carries no note");
+
+        // 1.28.6: an adapted copy (its text already points to pdfcontrol-octop) gets only the compact note.
+        Path dir2 = home.resolve("skills-adapted");
+        Files.createDirectories(dir2.resolve("productie-projecten"));
+        Path adapted = dir2.resolve("productie-projecten").resolve("SKILL.md");
+        Files.writeString(adapted, "---\nname: productie-projecten\ndescription: Adapted fixture\n---\nExecuta cu uneltele pdfcontrol_* ; apelurile urmeaza skillul pdfcontrol-octop.\n");
+        String adaptedBefore = Files.readString(adapted);
+        String compact = Skills.read(Skills.load(dir2), "productie-projecten", s -> s);
+        check(compact.contains("SKILL_CONTENT:\n---\nname: productie-projecten") && compact.contains("urmeaza skillul pdfcontrol-octop"), "the adapted skill text is delivered first and unchanged");
+        check(compact.contains(SkillNotes.MARKER) && compact.indexOf(SkillNotes.MARKER) > compact.indexOf("SKILL_CONTENT:"), "the compact note still follows the skill text");
+        check(compact.contains("pending_cloud_transfer") && compact.contains("NOT integrated") && compact.contains("run_command") && compact.contains("UNC"), "the compact note keeps what the text cannot know");
+        for (String gone : List.of("START_WEBAPP.bat", "127.0.0.1:8756", "mbs_webapp.py", "pdfcontrol_start_extract", "pdfcontrol_compare_import", "start_wapening"))
+            check(!compact.contains(gone), "the compact note drops the redundant toolchain text: " + gone);
+        int compactLength = compact.length() - compact.indexOf(SkillNotes.MARKER);
+        check(compactLength < note.length() - note.indexOf(SkillNotes.MARKER) - 800 && compactLength < 900, "the compact note is much cheaper: " + compactLength + " chars");
+        check(SkillNotes.forSkill("productie-projecten", "no pointer here").equals(SkillNotes.forSkill("productie-projecten")), "a text without the pointer keeps the full note");
+        check(SkillNotes.forSkill("productie-projecten", null).equals(SkillNotes.forSkill("productie-projecten")), "no text keeps the full note");
+        check(SkillNotes.forSkill("other-skill", "pdfcontrol-octop").isEmpty(), "other skills still get no note");
+        check(Files.readString(adapted).equals(adaptedBefore), "the adapted skill file is never rewritten");
+        check(Skills.resourceIndex(compact).indexOf(SkillNotes.MARKER) < 0, "the resource index carries no compact note");
 
         // Not in the base prompt.
         LocalChat[] app = {null};
