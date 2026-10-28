@@ -681,5 +681,13 @@
   "Gandire: {0}": "Düşünme: {0}",
   "Trimite toate uneltele (fara selectie dupa relevanta)": "Tüm araçları gönder (alaka seçimi yok)",
   "Reduce rezultatele vechi ale uneltelor in cerere (arhiva ramane intreaga)": "Eski araç sonuçlarını istekte küçült (arşiv eksiksiz kalır)",
-  "Contextul estimat este la ~{0}% din limita. Activeaza compactarea automata (/autocompact on) sau foloseste /compact inainte sa se umple.": "Tahmini bağlam sınırın ~{0}% seviyesinde. Dolmadan önce otomatik sıkıştırmayı (/autocompact on) açın veya /compact kullanın."
+  "Contextul estimat este la ~{0}% din limita. Activeaza compactarea automata (/autocompact on) sau foloseste /compact inainte sa se umple.": "Tahmini bağlam sınırın ~{0}% seviyesinde. Dolmadan önce otomatik sıkıştırmayı (/autocompact on) açın veya /compact kullanın.",
+  "Modelul gandeste: ~{0} tokeni de ratiocinare, {1} s. Raspunsul vizibil urmeaza.": "Model düşünüyor: ~{0} akıl yürütme belirteci, {1} sn. Görünür yanıt arkasından gelecek.",
+  "Modelul a folosit toata limita de iesire pe gandire (~{0} tokeni) si nu a produs niciun raspuns vizibil. Niciun apel din acest raspuns nu a fost executat. Mareste profilul de raspuns sau opreste gandirea (setari rapide, Gandire).": "Model tüm çıktı sınırını düşünmeye harcadı (~{0} belirteç) ve görünür bir yanıt üretmedi. Bu yanıttaki hiçbir çağrı yürütülmedi. Yanıt profilini artır veya düşünmeyi kapat (hızlı ayarlar, Düşünme).",
+  "Gandire": "Düşünme",
+  "Automata (setarea modelului)": "Otomatik (modelin varsayılanı)",
+  "Oprita (reasoning_effort=none)": "Kapalı (reasoning_effort=none)",
+  "Oprita: cere serverului custom sa nu gandeasca (reasoning_effort=none). Daca serverul o respinge, parametrul este dezactivat automat pentru acest model. Doar API custom compatibil OpenAI.": "Kapalı: özel sunucudan düşünmemesini ister (reasoning_effort=none). Sunucu reddederse parametre bu model için otomatik kapatılır. Yalnızca OpenAI uyumlu özel API.",
+  "Serverul a respins parametrul de gandire; continui fara el pentru acest model.": "Sunucu düşünme parametresini reddetti; bu model için onsuz devam ediyorum.",
+  "Sfat: proxy-ul a inchis conexiunea dupa ~100 s fara date (HTTP 524). Bifeaza Streaming, alege un profil de raspuns mai mic sau opreste gandirea din setari rapide.": "İpucu: proxy ~100 sn veri gelmeyince bağlantıyı kapattı (HTTP 524). Streaming'i aç, daha küçük bir yanıt profili seç veya hızlı ayarlardan düşünmeyi kapat."
 }

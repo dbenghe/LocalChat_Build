@@ -681,5 +681,13 @@
   "Gandire: {0}": "Reasoning: {0}",
   "Trimite toate uneltele (fara selectie dupa relevanta)": "Send all tools (no relevance selection)",
   "Reduce rezultatele vechi ale uneltelor in cerere (arhiva ramane intreaga)": "Reduce old tool results in the request (the archive stays complete)",
-  "Contextul estimat este la ~{0}% din limita. Activeaza compactarea automata (/autocompact on) sau foloseste /compact inainte sa se umple.": "Estimated context is at ~{0}% of the limit. Turn on automatic compaction (/autocompact on) or use /compact before it fills up."
+  "Contextul estimat este la ~{0}% din limita. Activeaza compactarea automata (/autocompact on) sau foloseste /compact inainte sa se umple.": "Estimated context is at ~{0}% of the limit. Turn on automatic compaction (/autocompact on) or use /compact before it fills up.",
+  "Modelul gandeste: ~{0} tokeni de ratiocinare, {1} s. Raspunsul vizibil urmeaza.": "The model is thinking: ~{0} reasoning tokens, {1} s. The visible answer follows.",
+  "Modelul a folosit toata limita de iesire pe gandire (~{0} tokeni) si nu a produs niciun raspuns vizibil. Niciun apel din acest raspuns nu a fost executat. Mareste profilul de raspuns sau opreste gandirea (setari rapide, Gandire).": "The model spent the whole output limit on thinking (~{0} tokens) and produced no visible answer. No call from this reply was executed. Raise the response profile or turn thinking off (quick settings, Thinking).",
+  "Gandire": "Thinking",
+  "Automata (setarea modelului)": "Automatic (model default)",
+  "Oprita (reasoning_effort=none)": "Off (reasoning_effort=none)",
+  "Oprita: cere serverului custom sa nu gandeasca (reasoning_effort=none). Daca serverul o respinge, parametrul este dezactivat automat pentru acest model. Doar API custom compatibil OpenAI.": "Off: asks the custom server not to think (reasoning_effort=none). If the server rejects it, the parameter is turned off automatically for this model. OpenAI-compatible custom API only.",
+  "Serverul a respins parametrul de gandire; continui fara el pentru acest model.": "The server rejected the thinking parameter; continuing without it for this model.",
+  "Sfat: proxy-ul a inchis conexiunea dupa ~100 s fara date (HTTP 524). Bifeaza Streaming, alege un profil de raspuns mai mic sau opreste gandirea din setari rapide.": "Tip: the proxy closed the connection after ~100 s without data (HTTP 524). Turn on Streaming, pick a smaller response profile or turn thinking off in quick settings."
 }

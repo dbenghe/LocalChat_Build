@@ -681,5 +681,13 @@
   "Gandire: {0}": "Razonamiento: {0}",
   "Trimite toate uneltele (fara selectie dupa relevanta)": "Enviar todas las herramientas (sin selección por relevancia)",
   "Reduce rezultatele vechi ale uneltelor in cerere (arhiva ramane intreaga)": "Reducir los resultados antiguos de las herramientas en la solicitud (el archivo queda íntegro)",
-  "Contextul estimat este la ~{0}% din limita. Activeaza compactarea automata (/autocompact on) sau foloseste /compact inainte sa se umple.": "El contexto estimado está al ~{0}% del límite. Activa la compactación automática (/autocompact on) o usa /compact antes de que se llene."
+  "Contextul estimat este la ~{0}% din limita. Activeaza compactarea automata (/autocompact on) sau foloseste /compact inainte sa se umple.": "El contexto estimado está al ~{0}% del límite. Activa la compactación automática (/autocompact on) o usa /compact antes de que se llene.",
+  "Modelul gandeste: ~{0} tokeni de ratiocinare, {1} s. Raspunsul vizibil urmeaza.": "El modelo está razonando: ~{0} tokens de razonamiento, {1} s. La respuesta visible llegará después.",
+  "Modelul a folosit toata limita de iesire pe gandire (~{0} tokeni) si nu a produs niciun raspuns vizibil. Niciun apel din acest raspuns nu a fost executat. Mareste profilul de raspuns sau opreste gandirea (setari rapide, Gandire).": "El modelo usó todo el límite de salida en razonar (~{0} tokens) y no produjo ninguna respuesta visible. No se ejecutó ninguna llamada de esta respuesta. Aumenta el perfil de respuesta o desactiva el razonamiento (ajustes rápidos, Razonamiento).",
+  "Gandire": "Razonamiento",
+  "Automata (setarea modelului)": "Automático (ajuste del modelo)",
+  "Oprita (reasoning_effort=none)": "Desactivado (reasoning_effort=none)",
+  "Oprita: cere serverului custom sa nu gandeasca (reasoning_effort=none). Daca serverul o respinge, parametrul este dezactivat automat pentru acest model. Doar API custom compatibil OpenAI.": "Desactivado: pide al servidor personalizado que no razone (reasoning_effort=none). Si el servidor lo rechaza, el parámetro se desactiva automáticamente para este modelo. Solo API personalizada compatible con OpenAI.",
+  "Serverul a respins parametrul de gandire; continui fara el pentru acest model.": "El servidor rechazó el parámetro de razonamiento; continúo sin él para este modelo.",
+  "Sfat: proxy-ul a inchis conexiunea dupa ~100 s fara date (HTTP 524). Bifeaza Streaming, alege un profil de raspuns mai mic sau opreste gandirea din setari rapide.": "Consejo: el proxy cerró la conexión tras ~100 s sin datos (HTTP 524). Activa Streaming, elige un perfil de respuesta menor o desactiva el razonamiento en ajustes rápidos."
 }

@@ -1,6 +1,6 @@
 # LocalChat — raport de dezvoltare si probleme cunoscute
 
-Actualizat: 28 octombrie 2026. Livrare: 1.27.2.
+Actualizat: 28 octombrie 2026. Livrare: 1.27.3.
 
 Acest raport sintetizeaza dezvoltarea aplicatiei si diagnosticele confirmate. Cronologia completa a modificarilor functionale ramane in CHANGELOG.md; sursele si commiturile sunt in repository-ul personal LocalChat_Build. Datele proiectelor, conversatiile, cheile, cataloagele private si jurnalele nu fac parte din publicarea Git.
 
@@ -47,6 +47,15 @@ Rezultatele vechi ale uneltelor (peste ultimele 6) sunt reduse deterministic num
 Plafonul per rezultat este 16000 de caractere (MCP 24000) cu paginare: offset pentru list_dir, find_files, search_text si read_file, pagini PDF taiate la limita paginii. Compactarea automata este pornita implicit numai in chaturile noi; alegerile explicite raman, iar la ~80% din limita cu compactarea oprita apare un avertisment.
 
 Teste: ContextReductionTest in Build.ps1; FeatureTest si ContextGuardTest adaptate. Amanat: reducerea in mijlocul turului curent si reducerea prefixului /compact manual.
+## Gandire si trunchiere (1.27.3)
+
+Streamingul ramane implicit; deltele reasoning_content alimenteaza un indicator in bara de stare ("Modelul gandeste: ~N tokeni ...") si mentin conexiunea activa (fara HTTP 524 la ~100 s). Gandirea nu se afiseaza ca raspuns, nu se salveaza si nu se retrimite.
+
+Control verificat pe serverul real (qwen3.6-35b-a3b): numai reasoning_effort="none" opreste gandirea (~1 s, 0 tokeni, fata de ~50-80 s si ~1,6k-2,7k tokeni); celelalte variante (chat_template_kwargs, enable_thinking, reasoning {effort}, thinking {type}, /no_think, minimal/low/high, bugete) sunt acceptate dar ignorate, deci nu sunt oferite. Meniul "Gandire" din setari rapide: Automata sau Oprita, doar API custom. 400/422 pe parametru => o reluare fara el, memorata per url|model in thinking.rejected numai dupa ce reluarea reuseste.
+
+Rezerva adaptiva pentru gandire (~1,25 x observat, plafon 8192, sub limita API/context) se adauga numai la max_tokens; la finish_reason=length fara raspuns vizibil mesajul explica ca gandirea a consumat limita; nicio unealta dintr-un raspuns trunchiat nu ruleaza; reincercari numai 502/503/504, maximum 3; sfat dedicat la HTTP 524.
+
+Teste: ReasoningTruncationTest in Build.ps1 (62 verificari). Amanat: controlul de gandire pentru clientii de compactare/MemoryReducer si mod "buget" (niciun parametru de buget verificat). Testul de tastatura reala nu poate rula pe sesiune blocata (build cu -SkipNativeQA).
 ## Ce este implementat pana acum
 
 | Domeniu | Functionalitate disponibila |

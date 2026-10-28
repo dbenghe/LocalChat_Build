@@ -15,6 +15,9 @@ final class Agent {
         /** Streamed reply text. */
         void text(String delta);
 
+        /** Provider reasoning_content / thinking delta while streaming: drives the activity indicator only; never stored, shown as answer or resent (1.27.3). */
+        default void reasoning(String delta) {}
+
         /** A new model request starts after tool results. */
         void step();
 
@@ -65,6 +68,7 @@ final class Agent {
     }
 
     void outputLimit(int tokens) {client.outputLimit(tokens);}
+    Agent thinking(ThinkingControl.Mode mode) {client.thinking(mode);return this;}
 
     /** Every tool offered to the model for the next request; also the basis of the context anchor signature. */
     List<ChatClient.ToolSpec> specs() {
@@ -72,6 +76,16 @@ final class Agent {
         if(team!=null&&tools!=null)specs.add(AgentGroup.spec());
         if(interactive&&tools!=null)specs.add(ComposerAssist.spec());
         return specs;
+    }
+
+    /** Reasoning tokens a truncated reply spent: the provider count when reported, otherwise ~4 characters per token. */
+    static long reasoningSpent(ChatClient.Reply reply,TokenUsage usage){return Math.max(Math.max(0,usage.reasoning()),reply.reasoning.length()/4);}
+
+    /** finish_reason=length: when reasoning ate the output limit and left no visible answer, say so clearly. No call of a truncated reply ever runs. */
+    static String truncationMessage(ChatClient.Reply reply,TokenUsage usage){
+        long spent=reasoningSpent(reply,usage);
+        if(spent>0&&ReasoningDisplay.answer(reply.text).isBlank())return I18n.text("Modelul a folosit toata limita de iesire pe gandire (~{0} tokeni) si nu a produs niciun raspuns vizibil. Niciun apel din acest raspuns nu a fost executat. Mareste profilul de raspuns sau opreste gandirea (setari rapide, Gandire).",spent);
+        return I18n.text("Raspunsul modelului a fost trunchiat. Niciun apel din acest raspuns nu a fost executat; istoricul si rezultatele anterioare sunt pastrate.");
     }
 
     void cancel() {
@@ -106,7 +120,10 @@ final class Agent {
             String effectiveSystem=system+(protocolRepairs>0?ToolProtocol.REPAIR:"")+(interactionFailures>0?INTERACTION_REPAIR:"")+(interactionFailures>1?INTERACTION_TEXT:"")+(discoveryRepairs>0?DISCOVERY_REPAIR+discoveryHint:"")+(discoveryFinal?DISCOVERY_TEXT:"");
             if(guard!=null){conversation=guard.prepare(p,url,key,model,effectiveSystem,conversation,requestSpecs,step,ui);client.outputLimit(guard.outputLimit());}
             if(cancelled)return;
-            ChatClient.Reply reply=InferenceRetry.chat(client,p,url,key,model,effectiveSystem,conversation,requestSpecs,stream,ui::text,new InferenceRetry.Hooks(){
+            ChatClient.Reply reply=InferenceRetry.chat(client,p,url,key,model,effectiveSystem,conversation,requestSpecs,stream,new ChatClient.Listener(){
+                public void onText(String delta){ui.text(delta);}
+                public void onReasoning(String delta){ui.reasoning(delta);}
+            },new InferenceRetry.Hooks(){
                 public void before(String s,List<ChatClient.Message> messages)throws IOException{ui.request(s,messages,requestSpecs);}
                 public void usage(TokenUsage usage){if(guard!=null)guard.observe(usage,ui);ui.usage(usage);}
                 public boolean cancelled(){return cancelled;}
@@ -120,7 +137,7 @@ final class Agent {
                 replyPending = false;
             }
             publishContext(base, ui);
-            if(reply.truncated())throw new IOException(I18n.text("Raspunsul modelului a fost trunchiat. Niciun apel din acest raspuns nu a fost executat; istoricul si rezultatele anterioare sunt pastrate."));
+            if(reply.truncated())throw new IOException(truncationMessage(reply,client.usage()));
             if(reply.calls.isEmpty()&&tools!=null&&ToolProtocol.malformed(reply.text)){if(protocolRepairs>=2)throw new IOException(I18n.text("Modelul a trimis apeluri de unelte ca text de trei ori. Niciun apel XML nu a fost executat; actiunile confirmate sunt pastrate."));ui.protocolRepair(++protocolRepairs);continue;}
             if (reply.calls.isEmpty()){if(discoveryRepairs>0&&reply.text.isBlank())recoveryFallback(lastRepeated,base,ui);return;}
             // Recovery is presentation-only: never run operational calls after a rejected card.

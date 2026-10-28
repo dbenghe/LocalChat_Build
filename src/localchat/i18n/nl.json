@@ -681,5 +681,13 @@
   "Gandire: {0}": "Redeneren: {0}",
   "Trimite toate uneltele (fara selectie dupa relevanta)": "Alle tools naar het model sturen (zonder selectie op relevantie)",
   "Reduce rezultatele vechi ale uneltelor in cerere (arhiva ramane intreaga)": "Oude toolresultaten in het verzoek verkleinen (het archief blijft volledig)",
-  "Contextul estimat este la ~{0}% din limita. Activeaza compactarea automata (/autocompact on) sau foloseste /compact inainte sa se umple.": "De geschatte context zit op ~{0}% van de limiet. Zet automatisch samenvatten aan (/autocompact on) of gebruik /compact voordat hij vol raakt."
+  "Contextul estimat este la ~{0}% din limita. Activeaza compactarea automata (/autocompact on) sau foloseste /compact inainte sa se umple.": "De geschatte context zit op ~{0}% van de limiet. Zet automatisch samenvatten aan (/autocompact on) of gebruik /compact voordat hij vol raakt.",
+  "Modelul gandeste: ~{0} tokeni de ratiocinare, {1} s. Raspunsul vizibil urmeaza.": "Het model denkt na: ~{0} redeneertokens, {1} s. Het zichtbare antwoord volgt.",
+  "Modelul a folosit toata limita de iesire pe gandire (~{0} tokeni) si nu a produs niciun raspuns vizibil. Niciun apel din acest raspuns nu a fost executat. Mareste profilul de raspuns sau opreste gandirea (setari rapide, Gandire).": "Het model heeft de hele uitvoerlimiet aan denken besteed (~{0} tokens) en gaf geen zichtbaar antwoord. Geen enkele aanroep uit dit antwoord is uitgevoerd. Verhoog het antwoordprofiel of zet denken uit (snelle instellingen, Denken).",
+  "Gandire": "Denken",
+  "Automata (setarea modelului)": "Automatisch (modelinstelling)",
+  "Oprita (reasoning_effort=none)": "Uit (reasoning_effort=none)",
+  "Oprita: cere serverului custom sa nu gandeasca (reasoning_effort=none). Daca serverul o respinge, parametrul este dezactivat automat pentru acest model. Doar API custom compatibil OpenAI.": "Uit: vraagt de aangepaste server niet na te denken (reasoning_effort=none). Weigert de server dit, dan wordt de parameter automatisch uitgezet voor dit model. Alleen OpenAI-compatibele aangepaste API.",
+  "Serverul a respins parametrul de gandire; continui fara el pentru acest model.": "De server weigerde de denkparameter; ik ga zonder verder voor dit model.",
+  "Sfat: proxy-ul a inchis conexiunea dupa ~100 s fara date (HTTP 524). Bifeaza Streaming, alege un profil de raspuns mai mic sau opreste gandirea din setari rapide.": "Tip: de proxy sloot de verbinding na ~100 s zonder gegevens (HTTP 524). Vink Streaming aan, kies een kleiner antwoordprofiel of zet denken uit via snelle instellingen."
 }

@@ -173,6 +173,8 @@ final class ChatClient {
     private int outputLimit;
     void outputLimit(int tokens) {outputLimit=tokens;}
     private boolean omitUsageOption;
+    private ThinkingControl.Mode thinking = ThinkingControl.Mode.AUTO;
+    void thinking(ThinkingControl.Mode mode) {thinking = mode == null ? ThinkingControl.Mode.AUTO : mode;}
     private volatile TokenUsage lastUsage = TokenUsage.UNKNOWN;
     TokenUsage usage() { return lastUsage; }
 
@@ -193,6 +195,11 @@ final class ChatClient {
     /** Sends the conversation; reply text is also pushed to the listener as it arrives. */
     Reply chat(Provider p, String baseUrl, String apiKey, String model, String system, List<Message> history,
                List<ToolSpec> tools, boolean stream, Listener listener) throws IOException {
+        return chat(p, baseUrl, apiKey, model, system, history, tools, stream, listener, true);
+    }
+
+    private Reply chat(Provider p, String baseUrl, String apiKey, String model, String system, List<Message> history,
+               List<ToolSpec> tools, boolean stream, Listener listener, boolean allowThinking) throws IOException {
         lastUsage = TokenUsage.UNKNOWN;
         boolean anthropic = p.format == Provider.Format.ANTHROPIC;
         Map<String, Object> body = anthropic
@@ -201,6 +208,8 @@ final class ChatClient {
 
         if(outputLimit>0)body.put(p==Provider.OPENAI?"max_completion_tokens":"max_tokens",outputLimit);
         if (stream && !anthropic && !omitUsageOption) body.put("stream_options", Json.obj("include_usage", true));
+        final boolean thinkingSent = allowThinking && !anthropic && ThinkingControl.sends(p, thinking, baseUrl, model);
+        if (thinkingSent) ThinkingControl.apply(body);
         HttpURLConnection conn = open(p, baseUrl + (anthropic ? "/messages" : "/chat/completions"), apiKey, "POST");
         conn.setReadTimeout(remainingMillis());
         if(deadlineNanos!=0)conn.setConnectTimeout(Math.min(30_000,remainingMillis()));
@@ -218,7 +227,14 @@ final class ChatClient {
             if (cancelled) return new Reply("", Collections.emptyList());
             if(p==Provider.CUSTOM && stream && !omitUsageOption && e.getMessage()!=null
                     && e.getMessage().contains("400") && e.getMessage().toLowerCase(java.util.Locale.ROOT).contains("stream_options")) {
-                omitUsageOption=true;conn.disconnect();return chat(p,baseUrl,apiKey,model,system,history,tools,stream,listener);
+                omitUsageOption=true;conn.disconnect();return chat(p,baseUrl,apiKey,model,system,history,tools,stream,listener,allowThinking);
+            }
+            // A server that rejects the thinking parameter: retry this request without it and never send it again to this provider/model.
+            if(thinkingSent && e instanceof HttpFailure failure && (failure.status==400||failure.status==422)) {
+                conn.disconnect();
+                Reply retried=chat(p,baseUrl,apiKey,model,system,history,tools,stream,listener,false);
+                ThinkingControl.reject(baseUrl,model);
+                return retried;
             }
             if(history.stream().anyMatch(m->!m.images.isEmpty())&&e.getMessage()!=null&&e.getMessage().matches("(?is).*(HTTP (400|415|422)).*")&&e.getMessage().matches("(?is).*(image|vision|multimodal).*"))throw new IOException(I18n.text("Ruta API a respins imaginea. Verifica suportul vizual al modelului: {0}",e.getMessage()),e);
             throw e;

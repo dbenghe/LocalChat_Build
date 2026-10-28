@@ -13,6 +13,9 @@ final class AgentGroup {
     private final Supplier<Tools> factory;
     private final Path archiveDir;
     private final int contextLimit,outputLimit,threshold;
+    private ThinkingControl.Mode thinking=ThinkingControl.Mode.AUTO;private int reasoningReserve;
+    /** Child agents follow the parent turn: same thinking control and reasoning reserve (1.27.3). */
+    AgentGroup reasoning(ThinkingControl.Mode mode,int reserve){thinking=mode==null?ThinkingControl.Mode.AUTO:mode;reasoningReserve=Math.max(0,reserve);return this;}
     private final boolean autoCompact;
     private final Set<Agent> active=ConcurrentHashMap.newKeySet(),children=ConcurrentHashMap.newKeySet();
     private volatile ExecutorService executor;
@@ -88,8 +91,8 @@ final class AgentGroup {
         String childLabel=label+" / "+task.title;
         try{
             if(cancelled||Thread.currentThread().isInterrupted())return notStarted(task,"cancelled","cancelled");
-            child=new Agent(factory.get()).maxSteps(CHILD_STEPS);state.child=child;children.add(child);child.outputLimit(outputLimit);
-            child.guard(new ContextGuard(contextLimit,outputLimit,autoCompact,threshold,1.25));active.add(child);
+            child=new Agent(factory.get()).maxSteps(CHILD_STEPS);state.child=child;children.add(child);child.outputLimit(outputLimit+reasoningReserve);child.thinking(thinking);
+            ContextGuard childGuard=new ContextGuard(contextLimit,outputLimit,autoCompact,threshold,1.25);childGuard.reasoningReserve=reasoningReserve;child.guard(childGuard);active.add(child);
             if(cancelled){child.cancel();return notStarted(task,"cancelled","cancelled");}
             parentUi.agentUpdate(group+"-"+(index+1),task.title,"running");
             Agent.Ui ui=new Agent.Ui(){

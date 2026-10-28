@@ -355,6 +355,9 @@ public final class LocalChat extends JFrame {
         ModelCatalog.Cache modelCache;String modelId;
         final java.util.concurrent.atomic.AtomicInteger started=new java.util.concurrent.atomic.AtomicInteger();
         final TokenUsage.Ledger usage=new TokenUsage.Ledger();
+        /** Reasoning activity of the request in progress (1.27.3): characters streamed, start time and last indicator refresh. */
+        final java.util.concurrent.atomic.AtomicLong thinkingChars=new java.util.concurrent.atomic.AtomicLong(),thinkingStart=new java.util.concurrent.atomic.AtomicLong(),thinkingShown=new java.util.concurrent.atomic.AtomicLong();
+        boolean thinkingActive; // UI thread only
 
         Turn(ChatClient.Message question, Agent agent, String label) {
             this.question = question;
@@ -1356,7 +1359,10 @@ public final class LocalChat extends JFrame {
         JMenu profile=new JMenu(t("Profil raspuns"));for(int i=0;i<responseProfile.getItemCount();i++){int index=i;javax.swing.JRadioButtonMenuItem item=new javax.swing.JRadioButtonMenuItem(responseProfile.getItemAt(i),i==responseProfile.getSelectedIndex());item.addActionListener(e->responseProfile.setSelectedIndex(index));profile.add(item);}profile.setEnabled(!busy);popup.add(profile);
         JMenu approvals=new JMenu(t("Aprobari executii"));for(int i=0;i<permissionBox.getItemCount();i++){int index=i;javax.swing.JRadioButtonMenuItem item=new javax.swing.JRadioButtonMenuItem(permissionBox.getItemAt(i),i==permissionBox.getSelectedIndex());item.addActionListener(e->{alwaysAllowed.clear();permissionBox.setSelectedIndex(index);saveConfig();saveConversation();});approvals.add(item);}approvals.setEnabled(!busy);popup.add(approvals);
         javax.swing.JCheckBoxMenuItem tools=new javax.swing.JCheckBoxMenuItem(toolsBox.getText(),toolsBox.isSelected());tools.setEnabled(!busy);tools.addActionListener(e->{toolsBox.doClick();permissionBox.setEnabled(toolsBox.isSelected());saveConfig();saveConversation();refreshDashboard();});popup.add(tools);
-        javax.swing.JCheckBoxMenuItem automatic=new javax.swing.JCheckBoxMenuItem(t("Compactare automata"),sessionState.autoCompact);automatic.setEnabled(!busy);automatic.addActionListener(e->workspace.autoCompact.doClick());popup.add(automatic);return popup;
+        javax.swing.JCheckBoxMenuItem automatic=new javax.swing.JCheckBoxMenuItem(t("Compactare automata"),sessionState.autoCompact);automatic.setEnabled(!busy);automatic.addActionListener(e->workspace.autoCompact.doClick());popup.add(automatic);
+        JMenu thinking=new JMenu(t("Gandire"));ThinkingControl.Mode chosenThinking=thinkingMode();for(ThinkingControl.Mode mode:ThinkingControl.Mode.values()){javax.swing.JRadioButtonMenuItem item=new javax.swing.JRadioButtonMenuItem(t(mode==ThinkingControl.Mode.AUTO?"Automata (setarea modelului)":"Oprita (reasoning_effort=none)"),mode==chosenThinking);item.addActionListener(e->{config.setProperty(contextProfile()+".thinking",mode.id());saveConfig();refreshDashboard();});thinking.add(item);}
+        thinking.setToolTipText(t("Oprita: cere serverului custom sa nu gandeasca (reasoning_effort=none). Daca serverul o respinge, parametrul este dezactivat automat pentru acest model. Doar API custom compatibil OpenAI."));thinking.setEnabled(!busy&&shownProvider==Provider.CUSTOM);popup.add(thinking);
+        return popup;
     }
     private void reportAction(int action) {
         reportAction((Path)reports.getSelectedItem(),action);
@@ -1587,18 +1593,21 @@ public final class LocalChat extends JFrame {
         final boolean stream = streamBox.isSelected();
         final Turn turn = new Turn(ChatClient.Message.user(text).withImages(imageInputs), new Agent(tools).interactions(useTools), label);turn.originalDraft=draft;turn.attachments=pendingAttachments;turn.modelCache=currentModelCache();turn.modelId=model;
         int budget=responseBudget();
+        final ThinkingControl.Mode thinkingMode=thinkingMode();
+        final int reasoningReserve=thinkingMode==ThinkingControl.Mode.OFF?0:ResponseBudget.reasoningReserve(budget,observedReasoning(contextProfile()),responseOutputLimit());
+        turn.agent.thinking(thinkingMode);
         final List<Map<String,Object>> autoTasks=useTools&&Boolean.parseBoolean(config.getProperty("agents.automatic","true"))?AutoDelegation.plan(draft,workDir,ProjectLocations.project(draft,workDir,sessionState.factoryProject)):List.of();
         if(useTools&&(WorkProgress.agentsRequested(draft)||!autoTasks.isEmpty())){
             final int approvals=permissionBox.getSelectedIndex();final Map<String,String> childEnv=commandEnv();final String childPython=pdfPython();final List<String> childAccess=List.copyOf(attachmentAccess(pendingAttachments));
             turn.team=new AgentGroup(()->{Tools child=new Tools(new Tools.Context(workDir,skillsDir,rulesFile,configFile,childEnv,childPython,mcp,paths,approvals==1,alwaysAllowed,this::askPermission),skills).readOnly(approvals==2).attachments(childAccess);return autoTasks.isEmpty()?child:child.analysisOnly();},appDir.resolve("agent-runs").resolve(java.util.UUID.randomUUID().toString()),maximum,budget,sessionState.autoCompact,sessionState.autoThreshold);
-            turn.agent.group(turn.team).automaticDelegation(autoTasks);
+            turn.team.reasoning(thinkingMode,reasoningReserve);turn.agent.group(turn.team).automaticDelegation(autoTasks);
         }
-        turn.agent.outputLimit(ResponseBudget.available(budget,maximum,protectedEstimate));
+        turn.agent.outputLimit(ResponseBudget.available(budget+reasoningReserve,maximum,protectedEstimate));
         history.add(turn.question);
         final ToolResultReducer.Reduced reducedHistory=requestHistory(sessionState.memory.view(history));
         final List<ChatClient.Message> base = reducedHistory.messages();
         turn.rawBaseCount=history.size();turn.viewBaseCount=base.size();
-        turn.guard=new ContextGuard(maximum,budget,sessionState.autoCompact,sessionState.autoThreshold,contextScale());ensureSession();turn.guard.checkpointDirectory=CompactionCheckpoint.directory(appDir,conversationFile,contextProfile()+"/auto/"+sessionState.contextMode);turn.guard.requestContext=volatileContext;turn.guard.reduction=reducedHistory.count();turn.guard.projectMode=useTools;turn.agent.guard(turn.guard);
+        turn.guard=new ContextGuard(maximum,budget,sessionState.autoCompact,sessionState.autoThreshold,contextScale());ensureSession();turn.guard.checkpointDirectory=CompactionCheckpoint.directory(appDir,conversationFile,contextProfile()+"/auto/"+sessionState.contextMode);turn.guard.requestContext=volatileContext;turn.guard.reduction=reducedHistory.count();turn.guard.projectMode=useTools;turn.guard.reasoningReserve=reasoningReserve;turn.agent.guard(turn.guard);
         final String guardProfile=contextProfile();
         if(sessionState.contextAnchorInput>=0 && sessionState.contextAnchorProfile.equals(guardProfile) && sessionState.contextAnchorSignature.equals(ContextGuard.signature(system,volatileContext,turn.agent.specs(),reducedHistory.count())) && sessionState.contextAnchorThrough==sessionState.memory.through){
             int prefix=sessionState.memory.summary.isBlank()?0:1+(sessionState.memory.question.isEmpty()?0:1);
@@ -1632,6 +1641,7 @@ public final class LocalChat extends JFrame {
                     throw new IOException(t("Contextul estimat depaseste limita. Foloseste /compact sau configureaza contextul corect."));
                 // ContextGuard has reserved output and safety space using calibrated estimates.
                 turn.started.incrementAndGet();
+                turn.thinkingChars.set(0);turn.thinkingStart.set(0);turn.thinkingShown.set(0);
                 later(turn,()->{turn.contextIncludesStep=false;turn.requestActive=true;requestSystem=ContextMemory.estimate(sys);requestTools=ContextMemory.tools(specs);
                     requestMetrics(conversation);refreshDashboard();});
             }
@@ -1653,7 +1663,9 @@ public final class LocalChat extends JFrame {
             @Override public void discoveryRecovery(boolean finalResponse){later(turn,()->setStatus(finalResponse?"Pregatesc rezultatul partial; limita de recuperare a fost atinsa.":"Recuperez dupa citiri repetitive; operatiile confirmate raman pastrate.",false));}
             @Override public void protocolRepair(int attempt){later(turn,()->setStatus("Corectez formatul apelului de unealta: {0}/2.",false,attempt));}
             @Override public void usage(TokenUsage value) {
-                later(turn,()->{turn.requestActive=false;turn.usage.add(value);sessionState.usage.add(value);refreshDashboard();});
+                later(turn,()->{turn.requestActive=false;turn.usage.add(value);sessionState.usage.add(value);
+                    if(value.complete()&&thinkingMode==ThinkingControl.Mode.AUTO){long before=observedReasoning(guardProfile),after=ResponseBudget.observe(before,value.reasoning());if(after!=before){config.setProperty(guardProfile+".reasoningTokens",Long.toString(after));saveConfig();}}
+                    refreshDashboard();});
             }
             @Override
             public void text(String delta) {
@@ -1661,7 +1673,22 @@ public final class LocalChat extends JFrame {
                     turn.stepText.append(delta);
                     refreshDashboard();
                     appendMarkdown(delta);timeline.answer(history.indexOf(turn.question),turn.stepText.toString());
+                    String raw=turn.stepText.toString();
+                    // Inline <think> text (no reasoning_content field) keeps the indicator alive until the visible answer starts.
+                    if(!raw.isBlank()&&ReasoningDisplay.answer(raw,false).isBlank()){turn.thinkingStart.compareAndSet(0,System.nanoTime());turn.thinkingActive=true;thinkingStatus(turn,raw.length());}
+                    else if(turn.thinkingActive){turn.thinkingActive=false;setStatus("Se genereaza raspunsul.",false);}
                 });
+            }
+
+            /** reasoning_content deltas: a throttled "model is thinking" indicator; the text itself is never shown, stored or resent. */
+            @Override
+            public void reasoning(String delta) {
+                long chars=turn.thinkingChars.addAndGet(delta.length()),now=System.nanoTime();
+                turn.thinkingStart.compareAndSet(0,now);
+                long shown=turn.thinkingShown.get();
+                if(shown!=0&&now-shown<250_000_000L)return;
+                turn.thinkingShown.set(now);
+                later(turn,()->{turn.thinkingActive=true;thinkingStatus(turn,chars);});
             }
 
             @Override
@@ -1798,6 +1825,8 @@ public final class LocalChat extends JFrame {
         if(lower.contains("http 429")){
             append("\n" + t("Sfat: furnizorul este ocupat (HTTP 429). Incearca din nou peste putin timp sau alege alt model."), errorStyle);
             SwingUtilities.invokeLater(()->{if(!busy)offerAlternatives();});
+        } else if(lower.contains("http 524")){
+            append("\n" + t("Sfat: proxy-ul a inchis conexiunea dupa ~100 s fara date (HTTP 524). Bifeaza Streaming, alege un profil de raspuns mai mic sau opreste gandirea din setari rapide."), errorStyle);
         } else if (streamBox.isSelected() && streamingHint(lower)) {
             append("\n" + t("Sfat: debifeaza „Streaming” si incearca din nou."), errorStyle);
         }
@@ -1864,6 +1893,9 @@ public final class LocalChat extends JFrame {
         return b.toString();
     }
 
+    private void thinkingStatus(Turn turn,long chars){long start=turn.thinkingStart.get();long seconds=start==0?0:(System.nanoTime()-start)/1_000_000_000L;setStatus("Modelul gandeste: ~{0} tokeni de ratiocinare, {1} s. Raspunsul vizibil urmeaza.",false,chars/4,seconds);}
+    private ThinkingControl.Mode thinkingMode(){return ThinkingControl.Mode.parse(config.getProperty(contextProfile()+".thinking","auto"));}
+    private long observedReasoning(String profile){try{return Math.max(0,Long.parseLong(config.getProperty(profile+".reasoningTokens","0")));}catch(NumberFormatException e){return 0;}}
     private long responseOutputLimit(){String raw=config.getProperty(contextProfile()+".metadata","");try{return raw.isBlank()?0:Math.max(0,ModelInfo.Info.from(Json.parse(raw)).outputLimit());}catch(RuntimeException ignored){return 0;}}
     private int responseBudget(){return ResponseBudget.maximum(responseProfile.getSelectedIndex(),responseOutputLimit());}
     private String responseLanguage(){return InternationalChat.code(responseLanguageBox.getSelectedIndex());}
@@ -2440,6 +2472,8 @@ public final class LocalChat extends JFrame {
         for(var saved:SavedProviders.list(config))providerBox.addItem(saved);
         systemField.setText(config.getProperty("system", ""));
         streamBox.setSelected(!"false".equals(config.getProperty("stream")));
+        ThinkingControl.load(config.getProperty("thinking.rejected",""));
+        ThinkingControl.onChange(()->SwingUtilities.invokeLater(()->{config.setProperty("thinking.rejected",ThinkingControl.serialize());saveConfig();setStatus("Serverul a respins parametrul de gandire; continui fara el pentru acest model.",false);}));
         workDirField.setText(pathMap().path(config.getProperty("workdir",config.getProperty("default.workdir", ""))));
         toolsBox.setSelected(!"false".equals(config.getProperty("tools")));
         permissionBox.setSelectedIndex("read".equals(config.getProperty("permission"))?2:"auto".equals(config.getProperty("permission")) ? 1 : 0);

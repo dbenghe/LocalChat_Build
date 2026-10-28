@@ -861,3 +861,10 @@ Grupurile de agenti nu mai au o limita comuna de trei minute. Stop si protectiil
 - Plafonul per rezultat este 16000 de caractere (MCP 24000), cu paginare: list_dir, find_files, search_text si read_file continua cu offset=N; citirea PDF se opreste la limita paginii.
 - Compactarea automata este pornita implicit pentru chaturile noi; chaturile existente si valoarea salvata explicit in setari se pastreaza. Cu compactarea oprita, la ~80% din limita apare un avertisment (/autocompact on sau /compact).
 - Pe o bucla sintetica de 40 de rezultate, cererea scade de la ~297k la ~29k tokeni estimati (~-90%).
+
+## Gandire si trunchiere (1.27.3)
+
+- Bara de stare arata "Modelul gandeste: ~N tokeni de ratiocinare" cat timp modelul gandeste in streaming; gandirea nu apare ca raspuns, nu se salveaza si nu se retrimite. Streamingul ramane implicit, deci conexiunea nu ramane tacuta ~100 s (HTTP 524).
+- Setari rapide, Gandire: Automata (implicit) sau Oprita (reasoning_effort=none), numai pentru API custom compatibil OpenAI. Verificat pe serverul real: oprita = ~1 s si 0 tokeni, fata de ~50-80 s si ~1,6k-2,7k tokeni; celelalte parametri incercati sunt ignorati de server si nu sunt oferiti.
+- Daca un server respinge parametrul (400/422), cererea se reia o singura data fara el si respingerea se tine minte pentru acel url si model.
+- Rezerva adaptiva (~1,25 x gandirea observata, plafon 8192) in max_tokens; mesaj clar cand gandirea a consumat toata limita; raspunsurile trunchiate nu ruleaza unelte; reincercari numai la 502/503/504 (max 3).

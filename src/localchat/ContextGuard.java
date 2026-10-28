@@ -63,7 +63,9 @@ final class ContextGuard {
     }
     List<ChatClient.Message> requestView(List<ChatClient.Message> original){return languageView(view(original));}
     private List<ChatClient.Message> languageView(List<ChatClient.Message> messages){if(requestContext.isBlank())return messages;List<ChatClient.Message> copy=new ArrayList<>(messages);for(int i=copy.size()-1;i>=0;i--)if(copy.get(i).role.equals("user")){copy.set(i,copy.get(i).withRequestControl(requestContext));break;}return copy;}
-    int outputLimit(){return maximum>0?(int)Math.max(1,Math.min(replyBudget,maximum-requestEstimate-margin())):replyBudget;}
+    /** Extra output tokens for observed reasoning (1.27.3). Only the request limit grows; reserve() and the compaction thresholds keep using replyBudget. */
+    int reasoningReserve;
+    int outputLimit(){int desired=replyBudget+Math.max(0,reasoningReserve);return maximum>0?(int)Math.max(1,Math.min(desired,maximum-requestEstimate-margin())):desired;}
     private void compact(Provider provider,String url,String key,String model,String system,List<ChatClient.Message> original,
             List<ChatClient.Message> active,List<ChatClient.ToolSpec> tools,Agent.Ui ui)throws IOException{
         int lastUser=-1;for(int i=active.size()-1;i>=0;i--)if(active.get(i).role.equals("user")){lastUser=i;break;}
