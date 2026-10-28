@@ -1092,6 +1092,7 @@ public final class LocalChat extends JFrame {
         if(shownProvider==null || currentModel().isBlank() || currentUrl().isBlank())return;
         String profile=contextProfile();long now=System.currentTimeMillis();
         if(!profile.equals(pendingMetadataProfile)){pendingMetadataProfile=profile;metadataProfileSince=now;return;}
+        if(now-metadataProfileSince>=750)detectThinking(false);
         if(now-metadataProfileSince<750 || inspectingModel || now-metadataAttempts.getOrDefault(profile,0L)<60000)return;
         inspectModel(true);
     }
@@ -1361,7 +1362,9 @@ public final class LocalChat extends JFrame {
         javax.swing.JCheckBoxMenuItem tools=new javax.swing.JCheckBoxMenuItem(toolsBox.getText(),toolsBox.isSelected());tools.setEnabled(!busy);tools.addActionListener(e->{toolsBox.doClick();permissionBox.setEnabled(toolsBox.isSelected());saveConfig();saveConversation();refreshDashboard();});popup.add(tools);
         javax.swing.JCheckBoxMenuItem automatic=new javax.swing.JCheckBoxMenuItem(t("Compactare automata"),sessionState.autoCompact);automatic.setEnabled(!busy);automatic.addActionListener(e->workspace.autoCompact.doClick());popup.add(automatic);
         JMenu thinking=new JMenu(t("Gandire"));ThinkingControl.Mode chosenThinking=thinkingMode();for(ThinkingControl.Mode mode:ThinkingControl.Mode.values()){javax.swing.JRadioButtonMenuItem item=new javax.swing.JRadioButtonMenuItem(t(mode==ThinkingControl.Mode.AUTO?"Automata (setarea modelului)":"Oprita (reasoning_effort=none)"),mode==chosenThinking);item.addActionListener(e->{ThinkingControl.choose(config,contextProfile(),mode);saveConfig();refreshDashboard();});thinking.add(item);}
-        thinking.setToolTipText(t("Implicit oprita pentru API custom (reasoning_effort=none): alege Automata ca modelul sa gandeasca. Daca serverul respinge parametrul, acesta este dezactivat automat pentru acest model. Doar API custom compatibil OpenAI."));thinking.setEnabled(!busy&&shownProvider==Provider.CUSTOM);popup.add(thinking);
+        thinking.addSeparator();JMenuItem detectedNote=new JMenuItem(t(ThinkingControl.detected(currentUrl(),currentModel()).label));detectedNote.setEnabled(false);thinking.add(detectedNote);
+        JMenuItem testThinking=new JMenuItem(t("Testeaza gandirea"));testThinking.setEnabled(!busy);testThinking.addActionListener(e->detectThinking(true));thinking.add(testThinking);
+        thinking.setToolTipText(t("Implicit aplicatia detecteaza daca modelul gandeste si daca gandirea poate fi oprita (metadate, nume sau un test scurt) si o opreste doar atunci. Alegerea ta ramane mereu valabila. Daca serverul respinge parametrul, acesta este dezactivat automat pentru acest model. Doar API custom compatibil OpenAI."));thinking.setEnabled(!busy&&shownProvider==Provider.CUSTOM);popup.add(thinking);
         return popup;
     }
     private void reportAction(int action) {
@@ -1898,7 +1901,42 @@ public final class LocalChat extends JFrame {
     }
 
     private void thinkingStatus(Turn turn,long chars){long start=turn.thinkingStart.get();long seconds=start==0?0:(System.nanoTime()-start)/1_000_000_000L;setStatus("Modelul gandeste: ~{0} tokeni de ratiocinare, {1} s. Raspunsul vizibil urmeaza.",false,chars/4,seconds);}
-    private ThinkingControl.Mode thinkingMode(){return ThinkingControl.effective(config,contextProfile(),shownProvider);}
+    private ThinkingControl.Mode thinkingMode(){return ThinkingControl.effective(config,contextProfile(),shownProvider,currentUrl(),currentModel());}
+    private final java.util.Set<String> thinkingAttempts=java.util.concurrent.ConcurrentHashMap.newKeySet(),thinkingRunning=java.util.concurrent.ConcurrentHashMap.newKeySet(),thinkingCatalogs=java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private boolean thinkingSavePending;
+    /** One short, non-modal notice per model when the default (not the user) switched thinking off. */
+    private void thinkingNotice(String profile,String url,String model){
+        if(busy||!ThinkingControl.defaultedOff(config,profile,shownProvider,url,model)||!ThinkingControl.noticeDue(config,url,model))return;
+        ThinkingControl.markNoticed(config,url,model);saveConfig();setStatus("Gandirea este oprita pentru raspunsuri mai rapide. Porneste-o din setari rapide > Gandire pentru raspunsuri mai atente.",false);
+    }
+    /**
+     * Finds out, in the background, whether the selected custom model thinks and whether thinking can be switched off (1.28.8). Automatic: only when metadata and
+     * name rules leave it open, never while a turn runs, once per model per session, never when the user already chose. Manual (quick settings): always probes.
+     */
+    private void detectThinking(boolean manual){
+        if(shownProvider!=Provider.CUSTOM||unavailableProvider()||currentModel().isBlank()||currentUrl().isBlank())return;
+        final String profile=contextProfile(),url=currentUrl(),model=currentModel(),key=currentKey(shownProvider),stateKey=ThinkingControl.key(url,model);final Provider protocol=shownProvider;
+        if(!manual){
+            if(busy)return;
+            if(ThinkingControl.explicit(config,profile)||ThinkingKnowledge.probed(url,model)||ThinkingKnowledge.lookup(url,model).confirmed()){thinkingNotice(profile,url,model);return;}
+            if(!thinkingAttempts.add(stateKey))return;
+        }
+        if(!thinkingRunning.add(stateKey))return;
+        if(manual)setStatus("Testez gandirea modelului (doua cereri scurte)...",false);
+        Thread worker=new Thread(()->{ThinkingProbe.Result result=null;
+            try{
+                if(!manual&&thinkingCatalogs.add(url.toLowerCase(java.util.Locale.ROOT)))try{ModelCatalog.fetch(protocol,url,key);}catch(IOException|RuntimeException ignored){}
+                if(manual||!ThinkingKnowledge.lookup(url,model).confirmed()){
+                    result=ThinkingProbe.run(protocol,url,key,model,ThinkingControl.Style.parse(ThinkingKnowledge.lookup(url,model).off()));
+                    if(result.info()!=null)ThinkingKnowledge.recordProbe(url,model,result.info());
+                }
+            }finally{thinkingRunning.remove(stateKey);}
+            final ThinkingProbe.Result done=result;
+            SwingUtilities.invokeLater(()->{refreshDashboard();
+                if(manual){if(done==null||done.outcome()==ThinkingProbe.Outcome.ERROR)setStatus("Testul de gandire nu a reusit: {0}",true,done==null?"":done.detail());else setStatus("Test gandire: {0}",false,t(ThinkingControl.detected(url,model).label));}
+                else thinkingNotice(profile,url,model);});
+        },"thinking-probe");worker.setDaemon(true);worker.start();
+    }
     private long observedReasoning(String profile){try{return Math.max(0,Long.parseLong(config.getProperty(profile+".reasoningTokens","0")));}catch(NumberFormatException e){return 0;}}
     private long responseOutputLimit(){String raw=config.getProperty(contextProfile()+".metadata","");try{return raw.isBlank()?0:Math.max(0,ModelInfo.Info.from(Json.parse(raw)).outputLimit());}catch(RuntimeException ignored){return 0;}}
     private int responseBudget(){return ResponseBudget.maximum(responseProfile.getSelectedIndex(),responseOutputLimit());}
@@ -2454,7 +2492,8 @@ public final class LocalChat extends JFrame {
         for(var saved:SavedProviders.list(config))providerBox.addItem(saved);
         systemField.setText(config.getProperty("system", ""));
         streamBox.setSelected(!"false".equals(config.getProperty("stream")));
-        ThinkingControl.load(config.getProperty("thinking.rejected",""));
+        ThinkingControl.load(config.getProperty("thinking.rejected",""));ThinkingKnowledge.load(config);
+        ThinkingKnowledge.onStore((name,value)->SwingUtilities.invokeLater(()->{config.setProperty(name,value);if(!thinkingSavePending){thinkingSavePending=true;SwingUtilities.invokeLater(()->{thinkingSavePending=false;saveConfig();});}}));
         ThinkingControl.onChange(()->SwingUtilities.invokeLater(()->{config.setProperty("thinking.rejected",ThinkingControl.serialize());saveConfig();setStatus("Serverul a respins parametrul de gandire; continui fara el pentru acest model.",false);}));
         workDirField.setText(pathMap().path(config.getProperty("workdir",config.getProperty("default.workdir", ""))));
         toolsBox.setSelected(!"false".equals(config.getProperty("tools")));

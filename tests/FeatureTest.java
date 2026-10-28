@@ -384,6 +384,7 @@ public final class FeatureTest {
                 ((JComboBox<Provider>)field(app[0],"providerBox")).setSelectedItem(Provider.CUSTOM);
                 ((JComboBox<String>)field(app[0],"modelBox")).setSelectedItem("auto-model");((JTextField)field(app[0],"urlField")).setText(server.url());
                 ((JTextField)field(app[0],"workDirField")).setText(home.toString());
+                ((java.util.Set<String>)field(app[0],"thinkingAttempts")).add(ThinkingControl.key(server.url(),"auto-model")); // thinking probe (POST) is covered by ThinkingDetectTest; this check is about the context GET only
                 call(app[0],"autoInspectModel",new Class<?>[]{});
                 check(server.requests.isEmpty(),"automatic metadata is debounced");
                 Field since=LocalChat.class.getDeclaredField("metadataProfileSince");since.setAccessible(true);since.setLong(app[0],System.currentTimeMillis()-1000);

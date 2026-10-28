@@ -63,7 +63,7 @@ if ($LASTEXITCODE) { throw 'Offline audit permissions/integration tests failed' 
 if ($LASTEXITCODE) { throw 'Compaction time budget tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/compaction-resume-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.CompactionResumeTest
 if ($LASTEXITCODE) { throw 'Compaction checkpoint recovery tests failed' }
-foreach($taskNewTest in @('AutomaticDelegationTest','InlineApprovalTest','InlineScrollTest','StablePrefixTest','ToolRelevanceTest','RuleCoverageTest','ContextReductionTest','ReasoningTruncationTest','CompactionThinkingTest','ThinkingDefaultTest')){
+foreach($taskNewTest in @('AutomaticDelegationTest','InlineApprovalTest','InlineScrollTest','StablePrefixTest','ToolRelevanceTest','RuleCoverageTest','ContextReductionTest','ReasoningTruncationTest','CompactionThinkingTest','ThinkingDefaultTest','ThinkingDetectTest')){
     & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/$taskNewTest-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" "localchat.$taskNewTest"
     if ($LASTEXITCODE) { throw "Failed: $taskNewTest" }
 }

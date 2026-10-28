@@ -175,6 +175,9 @@ final class ChatClient {
     private boolean omitUsageOption;
     private ThinkingControl.Mode thinking = ThinkingControl.Mode.AUTO;
     void thinking(ThinkingControl.Mode mode) {thinking = mode == null ? ThinkingControl.Mode.AUTO : mode;}
+    /** Probe support: always send this off parameter, never retry without it and never remember a rejection. */
+    private ThinkingControl.Style forcedStyle;
+    void forceThinking(ThinkingControl.Style style) {forcedStyle = style;}
     private volatile TokenUsage lastUsage = TokenUsage.UNKNOWN;
     TokenUsage usage() { return lastUsage; }
 
@@ -208,8 +211,9 @@ final class ChatClient {
 
         if(outputLimit>0)body.put(p==Provider.OPENAI?"max_completion_tokens":"max_tokens",outputLimit);
         if (stream && !anthropic && !omitUsageOption) body.put("stream_options", Json.obj("include_usage", true));
-        final boolean thinkingSent = allowThinking && !anthropic && ThinkingControl.sends(p, thinking, baseUrl, model);
-        if (thinkingSent) ThinkingControl.apply(body);
+        final ThinkingControl.Style forced = forcedStyle;
+        final boolean thinkingSent = allowThinking && !anthropic && (forced != null || ThinkingControl.sends(p, thinking, baseUrl, model));
+        if (thinkingSent) {if (forced != null) forced.apply(body); else ThinkingControl.apply(body, baseUrl, model);}
         HttpURLConnection conn = open(p, baseUrl + (anthropic ? "/messages" : "/chat/completions"), apiKey, "POST");
         conn.setReadTimeout(remainingMillis());
         if(deadlineNanos!=0)conn.setConnectTimeout(Math.min(30_000,remainingMillis()));
@@ -230,7 +234,7 @@ final class ChatClient {
                 omitUsageOption=true;conn.disconnect();return chat(p,baseUrl,apiKey,model,system,history,tools,stream,listener,allowThinking);
             }
             // A server that rejects the thinking parameter: retry this request without it and never send it again to this provider/model.
-            if(thinkingSent && e instanceof HttpFailure failure && (failure.status==400||failure.status==422)) {
+            if(thinkingSent && forced==null && e instanceof HttpFailure failure && (failure.status==400||failure.status==422)) {
                 conn.disconnect();
                 Reply retried=chat(p,baseUrl,apiKey,model,system,history,tools,stream,listener,false);
                 ThinkingControl.reject(baseUrl,model);
@@ -436,7 +440,55 @@ final class ChatClient {
     static String reasoningDelta(Object event, boolean anthropic) {
         if (anthropic) return "thinking_delta".equals(Json.str(event, "delta", "type")) ? Json.str(event, "delta", "thinking") : null;
         String value = Json.str(event, "choices", 0, "delta", "reasoning_content");
-        return value != null && !value.isEmpty() ? value : Json.str(event, "choices", 0, "delta", "reasoning");
+        if (value != null && !value.isEmpty()) return value;
+        value = Json.str(event, "choices", 0, "delta", "reasoning");
+        if (value != null && !value.isEmpty()) return value;
+        Object content = Json.get(event, "choices", 0, "delta", "content");
+        if (content instanceof List) {
+            StringBuilder visible = new StringBuilder(), thought = new StringBuilder();
+            contentParts(content, visible, thought);
+            if (thought.length() > 0) return thought.toString();
+        }
+        return value;
+    }
+
+    /**
+     * Mistral (and others) return message.content / delta.content as a chunk list: [{type:"thinking",thinking:[{type:"text",text}]},{type:"text",text}].
+     * Text chunks are the answer; thinking chunks are reasoning (observability only, like reasoning_content).
+     */
+    static void contentParts(Object content, StringBuilder text, StringBuilder reasoning) {
+        if (content instanceof String s) {
+            text.append(s);
+            return;
+        }
+        if (!(content instanceof List<?> list)) return;
+        for (Object part : list) {
+            if (part instanceof String s) {
+                text.append(s);
+                continue;
+            }
+            String type = Json.str(part, "type");
+            if ("thinking".equals(type) || "reasoning".equals(type)) {
+                Object inner = Json.get(part, "thinking");
+                if (inner == null) inner = Json.get(part, "text");
+                chunkText(inner, reasoning);
+            } else if (type == null || "text".equals(type) || "output_text".equals(type)) {
+                String s = Json.str(part, "text");
+                if (s != null) text.append(s);
+            }
+        }
+    }
+
+    private static void chunkText(Object node, StringBuilder out) {
+        if (node instanceof String s) out.append(s);
+        else if (node instanceof List<?> list) for (Object item : list) chunkText(item instanceof Map ? Json.get(item, "text") : item, out);
+    }
+
+    /** The visible answer of a message.content value of any shape (string or chunk list). */
+    static String contentText(Object content) {
+        StringBuilder text = new StringBuilder();
+        contentParts(content, text, new StringBuilder());
+        return text.toString();
     }
 
     private static String anthropicEvent(Object event, Map<Integer, CallBuilder> calls) {
@@ -477,7 +529,8 @@ final class ChatClient {
                 else if (args instanceof Map) b.args.append(Json.write(args));
             }
         }
-        return Json.str(event, "choices", 0, "delta", "content");
+        Object content = Json.get(event, "choices", 0, "delta", "content");
+        return content instanceof List ? contentText(content) : content instanceof String s ? s : null;
     }
 
     private static List<ToolCall> build(Map<Integer, CallBuilder> calls) {
@@ -512,8 +565,9 @@ final class ChatClient {
                 }
             }
         } else {
-            String s = Json.str(resp, "choices", 0, "message", "content");
-            if (s != null) text.append(s);
+            Object content = Json.get(resp, "choices", 0, "message", "content");
+            if (content instanceof List) contentParts(content, text, reasoning);
+            else if (content instanceof String s) text.append(s);
             String thought = Json.str(resp, "choices", 0, "message", "reasoning_content");
             if (thought == null || thought.isEmpty()) thought = Json.str(resp, "choices", 0, "message", "reasoning");
             if (thought != null) reasoning.append(thought);
