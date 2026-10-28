@@ -47,6 +47,7 @@ public final class SkillsCacheTest {
         Path nested = dir.resolve("skill-05").resolve("references").resolve("deeper"); Files.createDirectories(nested); Files.writeString(nested.resolve("SKILL.md"), "---\nname: nested\ndescription: Deep\n---\n");
         check(names(Skills.load(dir)).contains("nested"), "a skill added below an existing skill is found");
         int afterNested = Skills.scans();
+        Thread.sleep(80); // directory timestamps are coarse; the zip must land in a later tick than the scan above (intermittent failure otherwise)
         Path zip = dir.resolve("packed.zip");
         try (ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(zip))) { out.putNextEntry(new ZipEntry("packed/SKILL.md")); out.write("---\nname: packed\ndescription: From zip\n---\n".getBytes("UTF-8")); out.closeEntry(); }
         check(names(Skills.load(dir)).contains("packed") && Skills.scans() == afterNested + 1, "a dropped zip is unpacked and listed");

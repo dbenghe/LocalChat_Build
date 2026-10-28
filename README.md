@@ -86,6 +86,7 @@ textul rămâne în `Pentru_ChatGPT_<nr>.txt`), `.xls`/`.doc` vechi, importul î
 - **Eroare de transport SSE** (streaming sau event-stream) — debifează **Streaming**.
 - **Eroare care pomenește „tool”** — modelul nu suportă tool-uri: alt model sau debifează **Tool-uri**.
 - **MCP: eroare** (în bara de jos) — vezi `unelte.json`; PDFCONTROL trebuie să fie în `pdfcontrol\` lângă aplicație.
+- **Toate apelurile HTTPS cad cu `NoSuchAlgorithmException` / "Java nu poate initializa SSL/HTTPS"** - o variabila de mediu Java mostenita (de ex. `JAVA_TOOL_OPTIONS=-Djavax.net.ssl.trustStoreType=Windows-ROOT`, vizibila ca "Picked up JAVA_TOOL_OPTIONS") strica SSL in runtime-ul inclus. Porneste aplicatia cu `Porneste LocalChat.bat` (nu cu `java -jar` direct): launcherul goleste `JAVA_TOOL_OPTIONS`, `_JAVA_OPTIONS` si `JDK_JAVA_OPTIONS` doar pentru acest proces. Daca pornesti manual, ruleaza intai `set JAVA_TOOL_OPTIONS=` in cmd. Ca sa elimini variabila definitiv: Setari Windows > Variabile de mediu (utilizator), sterge-o si redeschide Explorer / reconecteaza-te.
 
 ## Recompilare
 

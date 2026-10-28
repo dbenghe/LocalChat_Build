@@ -1,6 +1,6 @@
 # LocalChat — raport de dezvoltare si probleme cunoscute
 
-Actualizat: 28 octombrie 2026. Livrare: 1.28.3.
+Actualizat: 28 octombrie 2026. Livrare: 1.28.4.
 
 Acest raport sintetizeaza dezvoltarea aplicatiei si diagnosticele confirmate. Cronologia completa a modificarilor functionale ramane in CHANGELOG.md; sursele si commiturile sunt in repository-ul personal LocalChat_Build. Datele proiectelor, conversatiile, cheile, cataloagele private si jurnalele nu fac parte din publicarea Git.
 
@@ -17,6 +17,7 @@ Scop al seriei: mai putini tokeni si mai putina latenta pe modelul local, contex
 - 1.28.1 - skill local `productie-projecten` (11 fisiere, NU in git, instalat prin robocopy in C:\LocalChat\skills), corectie `Skills.parse` pentru descrieri YAML pe mai multe randuri (SkillProgressTest 50), in prompt doar nume si descriere (274 caractere).
 - 1.28.2 - performanta si igiena: citiri read-only independente in paralel (`ToolBatch`, max 4, ordine pastrata, mutatiile inchid lotul; 31 verificari), cache de skill-uri (scanare ~11,7 ms -> ~0,74 ms din cache; 66 verificari), imagini trimise ca base64 numai in ultimul mesaj (corp cerere 4 ture/4 imagini 411775 -> 103576 octeti, ~-75%; 18 verificari), stabilizari de teste (AgentIntegrationTest asteapta lantul asincron, timeout Tesseract cu reincercare 60 s, teste native cu pozitionare fixa si diagnostic pointer/focus, ComposerSplitTest limitat la zona de lucru a ecranului).
 - 1.28.3 - LocalChat.java: verificat ca este deja UTF-8 valid (conversie inutila); prima extragere mecanica: `AppPaths` (appDir, resolveDownloads, isWindows), 237342 -> 235479 octeti.
+- 1.28.4 - Launcherul curata JAVA_TOOL_OPTIONS/_JAVA_OPTIONS/JDK_JAVA_OPTIONS (setlocal), mesaj clar pentru esec SSLContext implicit, test `LauncherEnvTest` (45 verificari), depanare in README; constatarea retelei de lucru in sectiunea de mai jos.
 
 ### Rezultate de verificare (build.bat complet, 1.28.2)
 ChatNavigationTest 416, ComposerShortcutsTest 229 (native=true), ChatPresentationTest 58, ComposerSplitTest 77, ContextUsagePopupTest 220 (native=true), ToolBatchTest 31, SkillsCacheTest 66, ImageResendTest 18, AgentIntegrationTest 11; build fara niciun FAIL, instalat in C:\LocalChat. 1.28.3 are rezultatele proprii in sectiunea de livrare/CHANGELOG.
@@ -29,6 +30,15 @@ ChatNavigationTest 416, ComposerShortcutsTest 229 (native=true), ChatPresentatio
 5. Propuneri PDFCONTROL amanate (cu aprobarea lui Dumitru): rezumat read-only al listei de import `mbs_importlijst`, OCR de articole ca job explicit, `kennisbank.json` doar ca numaratori, `mbs_productie` in afara conectorului pana exista politica pentru joburi conduse de Codex.
 6. Optional: criptarea cheilor API cu Windows DPAPI (acum raman in fisierul local de setari, in afara git); nu este implementata.
 7. Amanat din planul de performanta: lista de unelte a conectorului a crescut cu ~2,0k caractere (justificat, in praguri TokenBudgetTest); reducerea ei este o optimizare ulterioara.
+
+## Launcher si optiunile Java din mediu (1.28.4)
+- Problema: pe PC-ul de lucru (MBS-7774), variabila de utilizator `JAVA_TOOL_OPTIONS=-Djavax.net.ssl.trustStoreType=Windows-ROOT` a facut ca TOT HTTPS-ul din LocalChat sa cada cu `NoSuchAlgorithmException` (SunJSSE DefaultSSLContext). Cauza: runtime-ul jlink livrat (module `java.base,java.desktop,jdk.crypto.ec`) nu contine `jdk.crypto.mscapi`, deci tipul de trust store `Windows-ROOT` nu exista. Explorer pastra variabila chiar si dupa `reg delete`; ocolirea manuala era `set JAVA_TOOL_OPTIONS=` in cmd si apoi `Porneste LocalChat.bat`.
+- Remediere: `packaging/Porneste LocalChat.bat` are `setlocal` si goleste `JAVA_TOOL_OPTIONS`, `_JAVA_OPTIONS`, `JDK_JAVA_OPTIONS` inainte de pornire (si pentru runtime-ul inclus, si pentru Java din sistem; efect doar in procesul launcherului, mediul utilizatorului ramane neatins). Este singurul punct de pornire: nu exista exe wrapper, relansare din aplicatie sau updater; scurtatura de pe desktop deschide acelasi .bat; procesele copil (MCP, comenzi) mostenesc mediul curatat. Daca aplicatia este pornita direct cu `java -jar`, launcherul este ocolit.
+- Mesaj clar: `describe()` recunoaste esecul SSLContext implicit (`SslDiagnostics.isContextFailure`) si afiseaza un text care numeste cele trei variabile si launcherul, in loc de exceptia bruta.
+- Test: `LauncherEnvTest` ruleaza launcherul real pe un runtime jlink construit ca in Build.ps1, cu variabilele setate la `-Djavax.net.ssl.trustStoreType=Windows-ROOT`. Controalele (runtime direct si launcherul 1.28.3) cad cu NoSuchAlgorithmException; launcherul nou trece, cu variabilele nesetate in procesul pornit, si pentru fiecare variabila luata separat.
+- Test intermitent corectat: `SkillsCacheTest` (zip lasat in acelasi tick de timp al directorului cu scanarea anterioara) esua aleatoriu; pauza de 80 ms in test, `Skills.java` neschimbat. Daca se doreste robustete si in produs: stampila directorului ar putea include numarul de intrari.
+- Constatare retea de lucru: FortiGate face inspectie SSL pe `api.xorvapi.dpdns.org` (certificatul prezentat nu este cel real), in timp ce gonkarouter si openai trec cu certificate reale. Runtime-ul livrat nu are `jdk.crypto.mscapi`, deci trust store-ul `Windows-ROOT` (care ar include CA-ul firewall-ului) nu este disponibil. In lucru separat: un proxy pe workers.dev pentru acel furnizor. Optiuni ramase daca proxy-ul nu ajunge: adaugarea modulului `jdk.crypto.mscapi` la jlink (apoi trustStoreType=Windows-ROOT ar functiona intentionat) sau importul CA-ului firewall-ului intr-un trust store propriu.
+
 
 ## Intretinere LocalChat.java (1.28.3)
 - LocalChat.java: verificat in 1.28.3 — este deja UTF-8 valid (fara BOM, fara octeti invalizi, 10 caractere non-ASCII legitime: … — · × » → „ ” ✓ si un U+FEFF in text); nota anterioara despre octeti non-UTF-8 era gresita, deci nu exista conversie de facut. Plan de taiere: extragere mecanica, o singura bucata pe versiune, cu build.bat complet dupa fiecare. Facut in 1.28.3: `AppPaths` (appDir, resolveDownloads, isWindows). Candidate urmatoare fara reflexie din teste si fara stare: `describeCall`/`preview`/`describe` (folosesc `t(...)`, atentie la cheile I18n), `pickFontFamily`, `streamingHint`, clasa `Turn`. Metodele/campurile accesate prin reflexie din teste (UiTest/FeatureTest `call(app,"nume",...)`, `requestHistory`) raman in LocalChat.

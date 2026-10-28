@@ -2517,6 +2517,9 @@ public final class LocalChat extends JFrame {
     }
 
     private static String describe(Throwable e) {
+        if (SslDiagnostics.isContextFailure(e)) {
+            return t("Java nu poate initializa SSL/HTTPS (variabile de mediu Java). Verifica JAVA_TOOL_OPTIONS, _JAVA_OPTIONS si JDK_JAVA_OPTIONS (de ex. trustStoreType=Windows-ROOT) si porneste aplicatia cu Porneste LocalChat.bat, care le goleste. Detalii: {0}", SslDiagnostics.detail(e));
+        }
         if (e instanceof UnknownHostException) {
             return t("Server necunoscut: {0} (verifica URL-ul si conexiunea la internet)", e.getMessage());
         }

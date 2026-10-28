@@ -179,6 +179,8 @@ if ($LASTEXITCODE) { throw 'Direct PDFCONTROL UI/MCP tests failed; distribution 
 if ($LASTEXITCODE) { throw 'Model to PDFCONTROL workflow tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/tool-batch-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ToolBatchTest
 if ($LASTEXITCODE) { throw 'Parallel read-only tool batch tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/launcher-env-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.LauncherEnvTest
+if ($LASTEXITCODE) { throw 'Launcher environment (JAVA_TOOL_OPTIONS) tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/skills-cache-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.SkillsCacheTest
 if ($LASTEXITCODE) { throw 'Skills cache tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/image-resend-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ImageResendTest
