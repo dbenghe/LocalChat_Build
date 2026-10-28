@@ -10,6 +10,10 @@ import java.util.function.Supplier;
 /** Explicit, bounded child tasks using the selected provider/model and independent histories. */
 final class AgentGroup {
     static final int MAX_TASKS=3, PARALLELISM=2, CHILD_STEPS=16;
+    private int configuredParallelism;
+    /** 0 = automatic: one child at a time on custom servers (a local model queues requests and a silent prefill hits the ~100 s proxy limit), two elsewhere (1.28.7). */
+    AgentGroup parallelism(int value){configuredParallelism=Math.max(0,Math.min(MAX_TASKS,value));return this;}
+    static int parallelism(Provider provider,int configured){return configured>0?Math.min(configured,MAX_TASKS):provider==Provider.CUSTOM?1:PARALLELISM;}
     private final Supplier<Tools> factory;
     private final Path archiveDir;
     private final int contextLimit,outputLimit,threshold;
@@ -32,7 +36,7 @@ final class AgentGroup {
     }
     static ChatClient.ToolSpec spec(){
         var task=Json.obj("type","object","properties",Json.obj("title",Json.obj("type","string","maxLength",100),"task",Json.obj("type","string","maxLength",12000)),"required",List.of("title","task"),"additionalProperties",false);
-        return new ChatClient.ToolSpec("run_agents","Run 1-3 scoped independent tasks with the current provider and model; at most two execute concurrently. Each child receives only its own task and the current system instructions, fresh tools under the same permissions, a 16-step cap and cancellable provider requests without a shared wall-clock deadline. No recursive delegation. The application may schedule independent evidence checks automatically. Additional delegated actions still need the current task scope and permissions. Return actual outcomes and private local archives; verify each result before claiming completion.",Json.obj("type","object","properties",Json.obj("tasks",Json.obj("type","array","minItems",1,"maxItems",MAX_TASKS,"items",task)),"required",List.of("tasks"),"additionalProperties",false));
+        return new ChatClient.ToolSpec("run_agents","Run 1-3 scoped independent tasks with the current provider and model; at most two at a time (one at a time on custom servers). Each child receives only its own task and the current system instructions, fresh tools under the same permissions, a 16-step cap and cancellable provider requests without a shared wall-clock deadline. No recursive delegation. The application may schedule independent evidence checks automatically. Additional delegated actions still need the current task scope and permissions. Return actual outcomes and private local archives; verify each result before claiming completion.",Json.obj("type","object","properties",Json.obj("tasks",Json.obj("type","array","minItems",1,"maxItems",MAX_TASKS,"items",task)),"required",List.of("tasks"),"additionalProperties",false));
     }
     String pendingEvidence(){Pending view=pending;List<Object> tasks=new ArrayList<>();for(State state:view.states)tasks.add(state.result!=null?state.result:state.interrupted(cancelled?"cancelled":"pending"));return Json.write(Json.obj("group_id",view.group,"model",view.model,"tasks",tasks,"status",cancelled?"cancelled":"pending","completion_pending",true,"agent_archive_directory",archiveDir.toString()));}
     void cancel(){cancelled=true;for(Agent child:children)child.cancel();ExecutorService running=executor;if(running!=null)running.shutdownNow();}
@@ -56,7 +60,8 @@ final class AgentGroup {
         if(groupsStarted>=2)return Tools.Result.error(Json.write(Json.obj("status","failed","error","agent_group_limit","maximum_groups",2,"maximum_tasks_total",6)));
         groupsStarted++;
         String group=UUID.randomUUID().toString().replace("-","");
-        ExecutorService pool=Executors.newFixedThreadPool(PARALLELISM,r->{Thread t=new Thread(r,"localchat-child-agent");t.setDaemon(true);return t;});executor=pool;
+        final int parallelism=parallelism(provider,configuredParallelism);
+        ExecutorService pool=Executors.newFixedThreadPool(parallelism,r->{Thread t=new Thread(r,"localchat-child-agent");t.setDaemon(true);return t;});executor=pool;
         List<Future<Map<String,Object>>> futures=new ArrayList<>();List<State> states=new ArrayList<>();List<Map<String,Object>> results=new ArrayList<>();
 
         try{
@@ -82,7 +87,7 @@ final class AgentGroup {
         boolean allDone=results.stream().allMatch(r->"done".equals(r.get("status")));
         boolean someDone=results.stream().anyMatch(r->Set.of("done","partial").contains(r.get("status")));
         String status=cancelled?"cancelled":allDone?"done":someDone?"partial":"failed";
-        Tools.Result result=new Tools.Result(Json.write(Json.obj("status",status,"group_id",group,"model",model,"parallelism",PARALLELISM,"tasks",results)),!allDone);completed.put(signature,result);return result;
+        Tools.Result result=new Tools.Result(Json.write(Json.obj("status",status,"group_id",group,"model",model,"parallelism",parallelism,"tasks",results)),!allDone);completed.put(signature,result);return result;
     }
     private Map<String,Object> notStarted(Task task,String state,String error){return Json.obj("title",task.title,"task",clip(task.text,1000),"status",state,"answer","","completed_tools",List.of(),"error",error);}
     private Map<String,Object> execute(String group,int index,State state,Provider provider,String url,String key,String model,String label,String system,Agent.Ui parentUi){
@@ -105,7 +110,7 @@ final class AgentGroup {
                 public void compactRequest(String s,List<ChatClient.Message> messages,int fragment,int total){parentUi.agentUpdate(group+"-"+(index+1),task.title,"compacting");parentUi.agentRequest(task.title);}
                 public void retry(boolean compaction,int next,int total,int status){parentUi.retry(compaction,next,total,status);}
             };
-            child.run(provider,url,key,model,childLabel,system+"\nYou are a delegated child agent. Work only on your assigned task. No further delegation is available. Perform control jobs, copies or other mutations only when your assigned task explicitly requires them; an analysis-only task does not request a recontrol or copying. Keep completed work and limitations explicit. Do not claim actions without tool evidence.\n",List.of(ChatClient.Message.user(task.text)),false,ui);
+            child.run(provider,url,key,model,childLabel,system+"\nYou are a delegated child agent. Work only on your assigned task. No further delegation is available. Perform control jobs, copies or other mutations only when your assigned task explicitly requires them; an analysis-only task does not request a recontrol or copying. Keep completed work and limitations explicit. Do not claim actions without tool evidence.\n",List.of(ChatClient.Message.user(task.text)),true,ui); // Streamed: tokens/reasoning deltas keep a ~100 s proxy from timing out a long child generation (1.28.7).
         }catch(Exception e){error=e.getClass().getSimpleName();errorDetail=clip(Objects.toString(e.getMessage(),""),500);if(!key.isEmpty())errorDetail=errorDetail.replace(key,"[redacted]");if(e instanceof ChatClient.HttpFailure h)error+=" HTTP "+h.status;stopped=cancelled||Thread.currentThread().isInterrupted();}
         finally{if(child!=null){messages=child.collect(partial.toString(),childLabel);active.remove(child);}}
         String answer="";for(int i=messages.size()-1;i>=0;i--){var m=messages.get(i);if(m.role.equals("assistant")&&m.toolCalls.isEmpty()){answer=ReasoningDisplay.answer(m.content).strip();break;}}

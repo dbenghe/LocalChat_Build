@@ -100,8 +100,15 @@ public final class ReasoningTruncationTest {
         String ok=ev(delta(Json.obj("content","fine")))+ev(finish("stop"))+DONE;
         try(var server=new FeatureTest.Server(gateway,gateway,gateway)){boolean failed=false;try{InferenceRetry.chat(new ChatClient(),Provider.CUSTOM,server.url(),"","m","",List.of(ChatClient.Message.user("x")),List.of(),true,new Seen(),hooks());}catch(ChatClient.HttpFailure e){failed=e.status==502;}
             check(failed&&server.requests.size()==3,"502 is retried at most 3 attempts in total");}
-        try(var server=new FeatureTest.Server(timeout)){boolean failed=false;try{InferenceRetry.chat(new ChatClient(),Provider.CUSTOM,server.url(),"","m","",List.of(ChatClient.Message.user("x")),List.of(),true,new Seen(),hooks());}catch(ChatClient.HttpFailure e){failed=e.status==524;}
-            check(failed&&server.requests.size()==1,"524 is not retried (the stream already failed upstream)");}
+        // 1.28.7: a proxy timeout (524/522/523) comes before any reply or tool, so it is retried with a short backoff (tests shorten it).
+        long backoff=InferenceRetry.proxyBackoffMillis;InferenceRetry.proxyBackoffMillis=10;
+        try{
+            try(var server=new FeatureTest.Server(timeout,timeout,timeout)){boolean failed=false;String message="";try{InferenceRetry.chat(new ChatClient(),Provider.CUSTOM,server.url(),"","m","",List.of(ChatClient.Message.user("x")),List.of(),true,new Seen(),hooks());}catch(ChatClient.HttpFailure e){failed=e.status==524;message=e.getMessage();}
+                check(failed&&server.requests.size()==3,"524 is retried at most 3 attempts in total, then fails");
+                check(message.equals("HTTP 524 (proxy timeout ~100 s)"),"524 shows one readable line instead of the proxy page");}
+            try(var server=new FeatureTest.Server(timeout,new FeatureTest.Response(522,"text/html","<html>cloudflare</html>"),FeatureTest.sse(ok))){check(InferenceRetry.chat(new ChatClient(),Provider.CUSTOM,server.url(),"","m","",List.of(ChatClient.Message.user("x")),List.of(),true,new Seen(),hooks()).text.equals("fine")&&server.requests.size()==3,"524 then 522 then success");}
+            try(var server=new FeatureTest.Server(timeout,FeatureTest.sse(ok))){check(InferenceRetry.chat(new ChatClient(),Provider.CUSTOM,server.url(),"","m","",List.of(ChatClient.Message.user("x")),List.of(),true,new Seen(),hooks()).text.equals("fine")&&server.requests.size()==2,"524 then success");}
+        }finally{InferenceRetry.proxyBackoffMillis=backoff;}
         try(var server=new FeatureTest.Server(new FeatureTest.Response(503,"text/plain","busy"),FeatureTest.sse(ok))){check(InferenceRetry.chat(new ChatClient(),Provider.CUSTOM,server.url(),"","m","",List.of(ChatClient.Message.user("x")),List.of(),true,new Seen(),hooks()).text.equals("fine")&&server.requests.size()==2,"503 then success");}
     }
 
@@ -121,7 +128,7 @@ public final class ReasoningTruncationTest {
 
     public static void main(String[] args)throws Exception{
         Path home=Files.createTempDirectory(Files.createDirectories(Path.of(System.getProperty("localchat.home"))),"run-");System.out.println("QA home: "+home);
-        try{reasoningStream(home);truncation(home);fallback();retry();budgets();System.out.println("PASS: "+checks+" reasoning/truncation checks; reasoning stream, adaptive reserve, verified thinking parameter with 400 fallback, localized truncation, retry limited to 502/503/504");}
+        try{reasoningStream(home);truncation(home);fallback();retry();budgets();System.out.println("PASS: "+checks+" reasoning/truncation checks; reasoning stream, adaptive reserve, verified thinking parameter with 400 fallback, localized truncation, retry limited to 502/503/504/522/523/524");}
         finally{FeatureTest.edt(()->{for(var w:java.awt.Window.getWindows())w.dispose();});}
         System.exit(0);
     }

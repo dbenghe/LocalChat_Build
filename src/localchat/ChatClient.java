@@ -576,7 +576,19 @@ final class ChatClient {
         }
         if (msg == null) msg = body.isEmpty() ? conn.getResponseMessage() : body;
         if (msg != null && msg.length() > 600) msg = msg.substring(0, 600) + "â€¦";
+        String proxy = proxyTimeoutMessage(code);
+        if (proxy != null) throw new HttpFailure(code, proxy);
         throw new HttpFailure(code,"HTTP " + code + ": " + msg);
+    }
+
+    /** Cloudflare-style proxy timeouts carry an HTML error page; show one readable line instead (1.28.7). */
+    static String proxyTimeoutMessage(int code) {
+        return switch (code) {
+            case 524 -> "HTTP 524 (proxy timeout ~100 s)";
+            case 522 -> "HTTP 522 (proxy: connection to the server timed out)";
+            case 523 -> "HTTP 523 (proxy: server unreachable)";
+            default -> null;
+        };
     }
 
     private static String errorMessage(Object resp) {

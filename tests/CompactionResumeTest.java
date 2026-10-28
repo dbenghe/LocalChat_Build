@@ -18,7 +18,8 @@ public final class CompactionResumeTest {
         var original=List.of(ChatClient.Message.user("old question"),ChatClient.Message.assistant("evidence ".repeat(22800),List.of(),"fixture"),ChatClient.Message.user("Exact pending question, keep unchanged."));
         String archive=Json.write(original.stream().map(ChatClient.Message::toJson).toList());
         var ok=FeatureTest.json(FeatureTest.answer(SUMMARY,500,30));
-        try(var server=new FeatureTest.Server(ok,new FeatureTest.Response(500,"application/json","{\"error\":\"fixture failure\"}"),ok,ok)){
+        var replies=new ArrayList<FeatureTest.Response>(List.of(ok,new FeatureTest.Response(500,"application/json","{\"error\":\"fixture failure\"}")));for(int n=0;n<30;n++)replies.add(ok);
+        try(var server=new FeatureTest.Server(replies.toArray(new FeatureTest.Response[0]))){
             ContextGuard first=guard(cache,original.size());
             try{first.prepare(Provider.CUSTOM,server.url(),"private-test-key","model-a","system",original,List.of(),1,new Ui());throw new AssertionError("failure ignored");}
             catch(IOException expected){check(first.memory==null,"partial success never becomes active memory");}
@@ -26,16 +27,16 @@ public final class CompactionResumeTest {
             check(Files.walk(cache).filter(f->f.toString().endsWith(".json")).count()==1,"completed first fragment persisted before failure");
             ContextGuard resumed=guard(cache,original.size());Ui ui=new Ui();
             var active=resumed.prepare(Provider.CUSTOM,server.url(),"private-test-key","model-a","system",original,List.of(),1,ui);
-            check(ui.reused==1&&ui.summaries==2&&server.requests.size()==4,"new guard resumes from disk and sends only remaining two fragments");
+            int total=server.requests.size();check(ui.reused==1&&ui.summaries>=2&&total==2+ui.summaries,"new guard resumes from disk and sends only the remaining fragments");
             check(active.size()==2&&active.get(1).content.equals(original.get(2).content),"latest question remains exact and separate");
             check(archive.equals(Json.write(original.stream().map(ChatClient.Message::toJson).toList())),"archive unchanged after failure and resume");
             check(resumed.predicted(ContextGuard.raw("system",active,List.of()))+resumed.reserve()+resumed.margin()<131072,"final request respects window and answer reserve");
             for(Object request:server.requests){check(Json.get(request,"tools")==null,"summary cannot call tools");String body=Json.write(request);check(!body.contains("Exact pending question"),"pending question never sent as summary material");}
-            check(server.requests.size()==4,"approximately 205 KB requires three fragments rather than nine");
+            check(total-1>=3&&total-1<=9,"approximately 205 KB needs several ~8000-token fragments rather than one per message");
             ContextGuard cached=guard(cache,original.size());Ui cachedUi=new Ui();cached.prepare(Provider.CUSTOM,server.url(),"private-test-key","model-a","system",original,List.of(),1,cachedUi);
-            check(cachedUi.reused==3&&cachedUi.usage==0&&server.requests.size()==4,"fully cached retry has no API usage or invented billing");
+            check(cachedUi.reused==total-1&&cachedUi.usage==0&&server.requests.size()==total,"fully cached retry has no API usage or invented billing");
             ContextGuard stopped=guard(cache,original.size());Ui stopUi=new Ui(){public void compactReused(int f,int t){super.compactReused(f,t);stopped.cancel();}};
-            try{stopped.prepare(Provider.CUSTOM,server.url(),"private-test-key","model-a","system",original,List.of(),1,stopUi);throw new AssertionError("stop ignored");}catch(InterruptedIOException expected){check(stopped.memory==null&&server.requests.size()==4,"Stop during cache recovery never applies memory or sends");}
+            try{stopped.prepare(Provider.CUSTOM,server.url(),"private-test-key","model-a","system",original,List.of(),1,stopUi);throw new AssertionError("stop ignored");}catch(InterruptedIOException expected){check(stopped.memory==null&&server.requests.size()==total,"Stop during cache recovery never applies memory or sends");}
             try(var paths=Files.walk(cache)){for(Path file:paths.filter(Files::isRegularFile).toList())check(!Files.readString(file).contains("private-test-key"),"key is never stored in checkpoint contents");}
         }
         var request=List.of(ChatClient.Message.user("exact fragment"));

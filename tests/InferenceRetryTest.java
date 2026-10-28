@@ -33,6 +33,22 @@ public final class InferenceRetryTest {
         try(var server=new FeatureTest.Server(FeatureTest.sse(partial))){Hooks h=new Hooks();StringBuilder visible=new StringBuilder();try{request(server,h,true,visible::append);throw new AssertionError("broken stream accepted");}catch(IOException expected){check(server.requests.size()==1&&h.retries==0&&visible.toString().equals("partial reply"),"an interrupted partial stream is never silently replayed");}}
     }
     static String memory="Project 507123. Completed folder creation recorded. No files copied yet. Pending: verify PDF report. C:/project/RAPPORT.pdf.";
+    /** 1.28.7: 522/523/524 are proxy timeouts before any reply; retried at most three attempts, exact same body, readable message. */
+    static void proxyTimeouts()throws Exception{
+        long backoff=InferenceRetry.proxyBackoffMillis;InferenceRetry.proxyBackoffMillis=10;
+        try{
+            FeatureTest.Response page=new FeatureTest.Response(524,"text/html","<html><body>Error code 524 cloudflare A timeout occurred</body></html>");
+            try(var server=new FeatureTest.Server(page,new FeatureTest.Response(523,"text/html","<html>523</html>"),FeatureTest.json(FeatureTest.answer("Recovered",15,4)))){
+                Hooks h=new Hooks();check(request(server,h,true,s->{}).text.equals("Recovered"),"524 then 523 recover with the same inference");
+                check(h.attempts==3&&h.retries==2,"proxy timeouts are announced to the UI as retries");
+                check(Json.write(server.requests.get(0)).equals(Json.write(server.requests.get(2))),"proxy timeout retries preserve the exact body");
+            }
+            try(var server=new FeatureTest.Server(page,page,page)){
+                Hooks h=new Hooks();try{request(server,h,true,s->{});throw new AssertionError("endless 524 retry accepted");}catch(ChatClient.HttpFailure expected){check(expected.status==524&&server.requests.size()==3&&h.retries==2,"persistent 524 stops after three attempts");check(expected.getMessage().equals("HTTP 524 (proxy timeout ~100 s)")&&!expected.getMessage().contains("<html"),"raw proxy HTML never reaches the message");}
+            }
+            try(var server=new FeatureTest.Server(page)){Hooks h=new Hooks();h.cancelOnRetry=true;try{request(server,h,true,s->{});throw new AssertionError("cancel ignored");}catch(InterruptedIOException expected){check(server.requests.size()==1,"Stop during a 524 backoff prevents another request");}}
+        }finally{InferenceRetry.proxyBackoffMillis=backoff;}
+    }
     static void summaries()throws Exception{
         try(var server=new FeatureTest.Server(error(502),FeatureTest.json(FeatureTest.answer(memory,60,20)))){
             Hooks h=new Hooks();String result=MemoryReducer.reduce(new ChatClient(),Provider.CUSTOM,server.url(),"","fixture","Summarize historical data",List.of(ChatClient.Message.user("evidence")),256,8192,1.25,h);
@@ -77,7 +93,7 @@ public final class InferenceRetryTest {
     }
     public static void main(String[] args)throws Exception{
         Path home=Files.createDirectories(Path.of(System.getProperty("localchat.home")));
-        try{transport();summaries();tools(home);manualUi(home.resolve("success"),false);manualUi(home.resolve("failure"),true);System.out.println("PASS: "+checks+" inference recovery checks; synthetic HTTP, compaction, cancellation, usage and one real write");}
+        try{transport();proxyTimeouts();summaries();tools(home);manualUi(home.resolve("success"),false);manualUi(home.resolve("failure"),true);System.out.println("PASS: "+checks+" inference recovery checks; synthetic HTTP, compaction, cancellation, usage and one real write");}
         finally{FeatureTest.edt(()->{for(var w:java.awt.Window.getWindows())w.dispose();});}System.exit(0);
     }
 }

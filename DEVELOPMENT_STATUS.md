@@ -1,10 +1,10 @@
 # LocalChat — raport de dezvoltare si probleme cunoscute
 
-Actualizat: 28 octombrie 2026. Livrare: 1.28.6.
+Actualizat: 28 octombrie 2026. Livrare: 1.28.7.
 
 Acest raport sintetizeaza dezvoltarea aplicatiei si diagnosticele confirmate. Cronologia completa a modificarilor functionale ramane in CHANGELOG.md; sursele si commiturile sunt in repository-ul personal LocalChat_Build. Datele proiectelor, conversatiile, cheile, cataloagele private si jurnalele nu fac parte din publicarea Git.
 
-## Sinteza seriei de imbunatatiri 1.27.0-1.28.6 si lucrari ramase
+## Sinteza seriei de imbunatatiri 1.27.0-1.28.7 si lucrari ramase
 
 Scop al seriei: mai putini tokeni si mai putina latenta pe modelul local, context sub control, unelte PDFCONTROL de citire fara rerulare, igiena de cod si teste stabile. Toate valorile sunt masurate in repo (harness sintetic, caractere ~ tokeni, sau serverul real unde este precizat); nu inlocuiesc contorul furnizorului. Fara chei sau date de productie in aceasta sectiune.
 
@@ -20,11 +20,13 @@ Scop al seriei: mai putini tokeni si mai putina latenta pe modelul local, contex
 - 1.28.4 - Launcherul curata JAVA_TOOL_OPTIONS/_JAVA_OPTIONS/JDK_JAVA_OPTIONS (setlocal), mesaj clar pentru esec SSLContext implicit, test `LauncherEnvTest` (45 verificari), depanare in README; constatarea retelei de lucru in sectiunea de mai jos.
 - 1.28.5 - sanity pe model real (qwen3.6-35b-a3b in LM Studio, prin tunel): stream, gandire OFF, utilizare tokeni si bucla de unelte reusite, niciun bug; nota generica `read_skill` pentru `productie-projecten` (`SkillNotes`, fara a modifica skill-ul local); a doua extragere din LocalChat.java (`ToolTranscript`: describeCall, preview). Teste noi: SkillNotesTest 30, ToolTranscriptTest 11.
 - 1.28.6 - copia locala a skill-ului `productie-projecten` curatata (mecanica veche -> `pdfcontrol_*`, fara mentiuni istorice Codex/LM Studio, sectiune despre relatia cu `pdfcontrol-octop`, date de catalog/productie in `data_lokaal/` privat); `SkillNotes` cu nota compacta (~500 in loc de ~1500 caractere) pentru copia adaptata, nota completa pentru orice alta copie. SkillNotesTest 45.
+- 1.28.7 - HTTP 524 la `run_agents` si compactare pe LM Studio in spatele Cloudflare (~100 s fara octeti): gandirea implicit OFF pe custom (alegerea explicita Automata/Oprita castiga; profilele vechi cu `auto` fara marcaj devin OFF o data), copiii `run_agents` in streaming cu paralelism 1 pe custom (`agents.parallelism`), compactare cu gandire oprita si fragmente de ~8000 tokeni, 522/523/524 reincercate de maximum doua ori inainte de orice raspuns, mesaj `HTTP 524 (proxy timeout ~100 s)` si sfat exact. Teste: AgentGroupTest 62, ThinkingDefaultTest, CompactionThinkingTest, ReasoningTruncationTest, InferenceRetryTest, ErrorHintTest.
 
 ### Rezultate de verificare (build.bat complet, 1.28.2)
 ChatNavigationTest 416, ComposerShortcutsTest 229 (native=true), ChatPresentationTest 58, ComposerSplitTest 77, ContextUsagePopupTest 220 (native=true), ToolBatchTest 31, SkillsCacheTest 66, ImageResendTest 18, AgentIntegrationTest 11; build fara niciun FAIL, instalat in C:\LocalChat. 1.28.3 are rezultatele proprii in sectiunea de livrare/CHANGELOG.
 
 ### Lucrari ramase, in ordinea prioritatii
+0. Deschis (1.28.7, neaprobat): un proxy keep-alive pe Mac, intre Cloudflare si LM Studio, care trimite octeti cat timp serverul tace (incarcare/prefill), ca sa nu mai expire cele ~100 s pe cereri lungi fara tokeni. 1.28.7 reduce faza tacuta (gandire OFF, fragmente mici, copii in streaming) dar nu o elimina; un prefill foarte mare tot poate depasi 100 s.
 1. Facut partial in 1.28.5 (sectiunea "Sanity cu model real"): cererea stream, controlul gandirii, raportarea tokenilor si bucla de unelte au rulat pe un model real. Inca NEverificat pe model real: timpul castigat de citirile paralele (ambele apeluri read-only au venit in aceeasi cerere, deci lotul ToolBatch cu 2 apeluri a rulat pe un model real, cu evenimente in ordinea originala; castigul nu a fost masurat), reducerea imaginilor vechi (compromis cunoscut: modelul nu mai vede imaginile vechi fara reatasare) si cache-ul de skill-uri in sesiune lunga.
 2. Neconcordante `productie-projecten` fata de uneltele `pdfcontrol_*`: rezolvate in 1.28.6, cu aprobarea lui Dumitru, in copia locala (mecanica veche -> `pdfcontrol_*`, istoricul Codex/LM Studio scos, relatia cu `pdfcontrol-octop` scrisa, datele in `data_lokaal/`). Raman de decis de Dumitru, pastrate ambele (nu s-a ales): (a) "Nu instala/actualiza/modifica PDFCONTROL fara instructiune separata" (SKILL_MBS_PDFCONTROL) vs "corecteaza direct codul aplicatiei" (references/pdfcontrol.md, 7 oct 2026); motorul este acum in `pdfcontrol/` din repo, pe care agentul de chat nu il editeaza prin unelte; (b) sincronizarea automata a listelor corectate in Importlijst pe retea (procedura) vs "Nu transfera automat pe server" (`pdfcontrol-octop`); (c) rutina ChatGPT per proiect ramane descrisa ca integrare, dar in LocalChat este restant (acoperit de `SkillNotes`); (d) nu exista unealta pentru vechiul `plan_wapening` (dry-run) si raportul HTML/PNG a fost inlocuit de `Vergelijking_OUD_NIEUW.pdf`.
 3. Restul planului de taiere LocalChat.java (acum ~234 KB; facut: `AppPaths` 1.28.3, `ToolTranscript` 1.28.5): o extragere mecanica pe versiune, cu build.bat complet dupa fiecare. Candidate fara stare si fara reflexie din teste: clasa `Turn`, `pickFontFamily`, `streamingHint`, apoi `describe` (foloseste `t(...)`, atentie la cheile I18n; `LauncherEnvTest` o apeleaza prin reflexie, deci ramane). Metodele/campurile accesate prin reflexie din teste (UiTest/FeatureTest `call(app,"nume",...)`, `requestHistory`) raman pana la adaptarea testelor.
@@ -126,7 +128,7 @@ Control verificat pe serverul real (qwen3.6-35b-a3b): numai reasoning_effort="no
 
 Rezerva adaptiva pentru gandire (~1,25 x observat, plafon 8192, sub limita API/context) se adauga numai la max_tokens; la finish_reason=length fara raspuns vizibil mesajul explica ca gandirea a consumat limita; nicio unealta dintr-un raspuns trunchiat nu ruleaza; reincercari numai 502/503/504, maximum 3; sfat dedicat la HTTP 524.
 
-Teste: ReasoningTruncationTest in Build.ps1 (62 verificari). Amanat: controlul de gandire pentru clientii de compactare/MemoryReducer si mod "buget" (niciun parametru de buget verificat). Testul de tastatura reala nu poate rula pe sesiune blocata (build cu -SkipNativeQA).
+Teste: ReasoningTruncationTest in Build.ps1 (62 verificari). Amanat: mod "buget" (controlul de gandire pentru compactare/MemoryReducer a venit in 1.28.7) (niciun parametru de buget verificat). Testul de tastatura reala nu poate rula pe sesiune blocata (build cu -SkipNativeQA).
 ## Ce este implementat pana acum
 
 | Domeniu | Functionalitate disponibila |

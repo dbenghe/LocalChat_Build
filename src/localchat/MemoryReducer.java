@@ -15,6 +15,9 @@ final class MemoryReducer {
     }
     static String reduce(ChatClient client,Provider provider,String url,String key,String model,String system,List<ChatClient.Message> request,int target,int window,double scale,Attempt hooks)throws IOException{
         client.requireCompleteReply();
+        // Compaction never needs reasoning: a thinking model would stay silent for minutes and trip a ~100 s proxy (HTTP 524).
+        // Custom servers only; an unsupported parameter falls back through ThinkingControl. No output cap: a server that ignores it would be truncated.
+        client.thinking(ThinkingControl.Mode.OFF);
         client.outputLimit(0); // Let the endpoint/model choose generation capacity; target limits final memory, not reasoning.
         for(int attempt=0;attempt<3;attempt++){
             if(hooks.cancelled())throw new InterruptedIOException("Cancelled");
