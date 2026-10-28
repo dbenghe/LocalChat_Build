@@ -1,8 +1,16 @@
 # LocalChat — raport de dezvoltare si probleme cunoscute
 
-Actualizat: 28 octombrie 2026. Livrare: 1.27.3.
+Actualizat: 28 octombrie 2026. Livrare: 1.28.0.
 
 Acest raport sintetizeaza dezvoltarea aplicatiei si diagnosticele confirmate. Cronologia completa a modificarilor functionale ramane in CHANGELOG.md; sursele si commiturile sunt in repository-ul personal LocalChat_Build. Datele proiectelor, conversatiile, cheile, cataloagele private si jurnalele nu fac parte din publicarea Git.
+
+## Unelte PDFCONTROL de citire (1.28.0)
+
+Patru unelte noi, numai citire, calculate din iesirea reala a jobului (`job.json`, `resultaten.json`, `stille_fouten.json`): job_summary, job_findings (paginat, filtru AND, max_chars), list_projects (paginat, fabrica numai daca e confirmata) si catalogue_status (catalog + reguli FAST + cautare articol cu `Catalogus.zoek` original). Statusul pentru model nu mai contine PID-uri, trasee sau cai de pachet; diagnosticul ramane in pdfcontrol/runtime/octop_status_diagnostic.json si in `--self-test`. Erorile tacute ale motorului apar ca silent_checks fara a schimba starea jobului.
+
+Evaluarea modulelor neexpuse: expuse (catalog articole, fabrica confirmata, status desene, erori tacute). Propuneri pentru o versiune viitoare, cu aprobarea lui Dumitru: (1) rezumat read-only al listei de import (`mbs_importlijst`) pe un fisier ales explicit, fara a o copia in rezultat; (2) OCR de articole (`mbs_ocr_artikelen`) numai ca job pornit explicit, deoarece este costisitor si scrie cache; (3) `kennisbank.json` numai ca numaratori, nu continut, fiind date invatate private; (4) `mbs_productie` ramane in afara conectorului pana exista o politica pentru joburile conduse de Codex. Skill-ul `productie-projecten` este in Downloads si in .lmstudio\skills (11 fisiere), nu in repository si nu in C:\LocalChat\skills.
+
+Limite: lista de unelte a conectorului este ~8,8k caractere (+~2,0k); catalogue_status nu confirma si nu deduce fabrica; cautarea de articol nu aproba echivalenta fizica; silent_checks nu modifica starea.
 
 ## Corectie 1.26.6: extragere Tekla/ABWN
 

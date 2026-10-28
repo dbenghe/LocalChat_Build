@@ -46,8 +46,7 @@ Rapoartele verificate se livreaza automat in Controle/PDFCONTROL/Rapoarte/<opera
 fiecare rulare pastreaza separat rezultatele si MANIFEST.json cu sursele si hashurile. Partial are sufix PARTIAL.
 Citeste source_files si source_count: rezultatul trebuie sa corespunda EXACT selectiei utilizatorului.
 Un raport pentru alte desene nu satisface cererea. Nu anunta livrarea fara delivery_verified=true.
-La doua erori de validare, reciteste inventarul/schema si explica blocajul; nu inventa executii,
-nu rula module Python cu parametri ghiciti si nu substitui un raport mai vechi.
+La doua erori de validare explica blocajul; nu inventa executii si nu substitui un raport mai vechi.
 
 La control/flux complet poti transmite factory=soest/alphen/veenoord/lelystad numai dupa confirmarea fabricii lotului. Selectia nu modifica setarile altor proiecte. Citeste catalogue si limitations: lipsa catalogului este partial, nu control integral al catalogului. Fabrica poate fi aleasa si in panoul direct.
 
@@ -58,7 +57,7 @@ Controlul si regenerarea livreaza raportul complet: toate desenele selectate, in
 
 Pentru datele JSON foloseste EXACT campul `results` returnat de `pdfcontrol_job_status`. La control, fisierul intern este in `<run_folder>/engine/checked/resultaten.json`, nu in `<run_folder>/checked/resultaten.json`. La comparare calea are alta structura: nu o reconstrui. Un path ghicit inexistent nu inseamna ca raportul PDF confirmat lipseste si nu necesita rerularea unui job terminat. Pentru numaratori citeste `summary`: `verwerkt`/`totaal` reprezinta fisierele sursa, iar `bladen` reprezinta plansele; nu confunda o brosura cu o singura plansa.
 
-LocalChat 1.15.1 poate recupera typo-ul exact `checked/resultaten.json` fara `engine` numai pe baza `job.json` done/partial al aceluiasi job, cu rezultate existente in workspace si verificarea accesului. Raspunsul citirii contine date reale si o nota cu ambele cai. Aceasta recuperare nu inlocuieste regula de a folosi campul `results`, nu garanteaza citirea altor cai gresite si nu modifica sau reruleaza controlul.
+LocalChat poate recupera doar typo-ul `checked/resultaten.json` (fara `engine`), din `job.json` done/partial al aceluiasi job; nu inlocuieste campul `results` si nu reruleaza controlul.
 
 
 ## Compararea locala import/catalog/desen — 1.24.0
@@ -66,4 +65,11 @@ Pentru compararea listelor XLSX/CSV cu catalogul fabricii si cu articolele din t
 Calculul este local, fara API, nu modifica surse sau liste si nu copiaza pe server. Rezultatul are numaratori si exemple limitate plus `report_json`/`report_html`; citeste numai detaliile necesare, nu cataloage intregi in chat. Nu repeta auditul neschimbat, care se reutilizeaza dupa hash. Unitati/cote/formule ambigue raman verificari necesare; numele recunoscut nu aproba varianta fizica. Tabelele scanate/nerecunoscute necesita PDFCONTROL OCR/verificare. Nu pretinde ca s-au corectat XLSX sau masurat cote geometrice automat. Acces direct fara model: Unelte > Compara local listele de import.
 
 
-Din 1.24.1, actualizarea permanenta a listei unei fabrici este disponibila direct prin Unelte > Cataloage fabrici: XLSX, comparatie, confirmarea fabricii si Importa si activeaza. Include primul import Lelystad. Catalogul runtime din pdfcontrol/data_lokaal este autoritar, iar buildurile il pastreaza; nu copia automat snapshoturi mai vechi din dezvoltare peste catalogul utilizatorului. Sursa XLSX si versiunea precedenta se arhiveaza local in catalogue_sources/FABRICA. Foloseste ultima versiune activata; selectia unui catalog in comparatia temporara nu il activeaza permanent. Codurile absente necesita confirmarea listei complete, iar schimbarile dupa previzualizare necesita o comparatie noua.
+Actualizarea permanenta a listei unei fabrici: Unelte > Cataloage fabrici (XLSX, comparatie, confirmarea fabricii, Importa si activeaza; include Lelystad). Catalogul runtime din pdfcontrol/data_lokaal este autoritar; nu copia snapshoturi mai vechi peste el. Sursa XLSX si versiunea precedenta se arhiveaza in catalogue_sources/FABRICA. Un catalog ales in comparatia temporara nu devine activ. Codurile absente necesita confirmarea listei complete; schimbarile dupa previzualizare cer o comparatie noua.
+
+## Rezultate mari fara citiri inutile - 1.28.0
+Dupa un job done/partial foloseste uneltele de citire, nu resultaten.json sau PDF-urile, pentru numaratori si constatari:
+- `pdfcontrol_job_summary(project, job_id)`: stare, delivery_verified, cai livrare/raport, numaratori (desene, constatari, per status desen si severitate, coduri frecvente) si silent_checks. Pentru un job in curs foloseste pdfcontrol_job_status.
+- `pdfcontrol_job_findings(project, job_id, offset, filter, max_chars)`: pagini limitate din rezultatele reale; continua cu next_offset; filter = cuvinte (cod, severitate, fisier, articol). Fara rezultate nu inventa constatari.
+- `pdfcontrol_list_projects(offset)` pentru descoperire (fabrica apare numai daca e confirmata in proiect); `pdfcontrol_catalogue_status(factory, project?, article?)` inainte de FAST/import: catalog, reguli FAST, cautare articol. Nu confirma si nu deduce fabrica; cautarea nu aproba echivalenta fizica.
+- silent_checks>0 sunt erori interne ale motorului: raporteaza-le. Aceste unelte sunt numai citire; pdfcontrol_status nu mai arata PID-uri sau trasee.

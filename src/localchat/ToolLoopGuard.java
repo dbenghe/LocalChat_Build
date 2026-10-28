@@ -5,7 +5,7 @@ final class ToolLoopGuard {
  private static final Set<String> READS=Set.of("pdfcontrol_compare_import","read_skill","list_dir","find_files","read_file","search_text","run_agents",ComposerAssist.TOOL);
  private final Map<String,Integer> counts=new HashMap<>();private final Map<String,Tools.Result> skills=new HashMap<>();
  private final Set<String> evidence=new HashSet<>();
- private boolean read(String name){return READS.contains(name)||name.endsWith("pdfcontrol_project_files")||name.endsWith("pdfcontrol_read_document")||name.endsWith("pdfcontrol_list_projects");}
+ private boolean read(String name){return READS.contains(name)||name.endsWith("pdfcontrol_project_files")||name.endsWith("pdfcontrol_read_document")||name.endsWith("pdfcontrol_list_projects")||name.endsWith("pdfcontrol_job_summary")||name.endsWith("pdfcontrol_job_findings")||name.endsWith("pdfcontrol_catalogue_status");}
  private String signature(ChatClient.ToolCall c){return c.name+"|"+Json.write(new TreeMap<>(c.args));}
  Tools.Result before(ChatClient.ToolCall call){
   if(!read(call.name))return null;

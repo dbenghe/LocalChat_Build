@@ -71,7 +71,8 @@ public final class RuleCoverageTest {
   check(prompt[0].length()<5600,"static MBS system prompt stays compact: "+prompt[0].length());
   check(normal.indexOf("independent analysis agents")==normal.lastIndexOf("independent analysis agents"),"delegation rules appear once");
   check(normal.indexOf("localchat_interaction")==normal.lastIndexOf("localchat_interaction"),"interaction rules appear once");
-  check(skill.length()<9000,"skill stays compact: "+skill.length());
+  // 1.28.0: +~1.3k for the summary/findings/catalogue section, offset by ~0.7k trimmed elsewhere; net +0.6k.
+check(skill.length()<9500,"skill stays compact: "+skill.length());
   // read-only sentence only in read-only mode
   check(!normal.contains("read-only mode is active"),"write mode has no read-only note");
   String[] ro={null};FeatureTest.edt(()->{try{permission.setSelectedIndex(2);ro[0]=prompt(app[0],home);}catch(Exception e){throw new RuntimeException(e);}});

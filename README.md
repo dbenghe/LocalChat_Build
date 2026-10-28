@@ -862,6 +862,13 @@ Grupurile de agenti nu mai au o limita comuna de trei minute. Stop si protectiil
 - Compactarea automata este pornita implicit pentru chaturile noi; chaturile existente si valoarea salvata explicit in setari se pastreaza. Cu compactarea oprita, la ~80% din limita apare un avertisment (/autocompact on sau /compact).
 - Pe o bucla sintetica de 40 de rezultate, cererea scade de la ~297k la ~29k tokeni estimati (~-90%).
 
+## Unelte PDFCONTROL de citire (1.28.0)
+
+- `pdfcontrol_job_summary(project, job_id)`: stare, delivery_verified, cai raport/livrare si numaratori (desene, constatari, per status si severitate, coduri frecvente, silent_checks) dintr-un job real. `pdfcontrol_job_findings(project, job_id, offset, filter, max_chars)`: constatari paginate (next_offset), filtrate pe cuvinte. `pdfcontrol_list_projects(offset)`: proiectele, 50 pe pagina. `pdfcontrol_catalogue_status(factory, project?, article?)`: catalogul activ, regulile FAST si cautarea unui articol; fabrica ramane cea confirmata, niciodata dedusa.
+- Toate sunt numai citire: merg in modul read-only si in agentii de analiza, nu pornesc joburi si nu inlocuiesc rapoartele PDF.
+- `pdfcontrol_status` nu mai arata modelului PID-uri sau trasee; diagnosticul complet ramane local (pdfcontrol/runtime/octop_status_diagnostic.json si `octop_mcp.py --self-test`).
+- Skill-ul `productie-projecten` nu este inclus in repository sau build; copiile cunoscute sunt in `C:\Users\Local User\Downloads\productie-projecten` si `C:\Users\Local User\.lmstudio\skills\productie-projecten`. Pune-l in `skills\` daca vrei sa-l folosesti in chat.
+
 ## Gandire si trunchiere (1.27.3)
 
 - Bara de stare arata "Modelul gandeste: ~N tokeni de ratiocinare" cat timp modelul gandeste in streaming; gandirea nu apare ca raspuns, nu se salveaza si nu se retrimite. Streamingul ramane implicit, deci conexiunea nu ramane tacuta ~100 s (HTTP 524).

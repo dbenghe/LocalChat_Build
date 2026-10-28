@@ -1,4 +1,5 @@
 """MCP stdio: acces limitat la proiecte si verificari PDFCONTROL izolate."""
+from collections import Counter
 import contextlib
 import traceback
 from datetime import datetime, timezone
@@ -376,12 +377,282 @@ def process_alive(pid):
     except ProcessLookupError:return False
     except PermissionError:return True
 
+# ---- 1.28.0: compact read-only tools over the job's real engine outputs -------------------------------------------
+BRIDGE_VERSION='2.2.0'
+FACTORIES=('soest','alphen','veenoord','lelystad')
+JOB_ID={'type':'string','pattern':'^[a-f0-9]{32}$'}
+OFFSET={'type':'integer','minimum':0}
+TOOLS.extend([
+    tool('pdfcontrol_job_summary','Rezumat compact al unui job: stare, contori, livrare verificata, rapoarte. Prefera-l citirii resultaten.json.',
+         {'project':SCHEMA_PROJECT,'job_id':JOB_ID},['project','job_id']),
+    tool('pdfcontrol_job_findings','Constatari reale ale unui job, paginate (offset, filter, max_chars). Dupa job_summary.',
+         {'project':SCHEMA_PROJECT,'job_id':JOB_ID,'offset':OFFSET,'filter':{'type':'string','maxLength':80},
+          'max_chars':{'type':'integer','minimum':500,'maximum':12000}},['project','job_id']),
+    tool('pdfcontrol_list_projects','Proiectele din radacina (cele noi primele), paginat.',{'offset':OFFSET},[]),
+    tool('pdfcontrol_catalogue_status','Catalog confirmat si reguli FAST ale unei fabrici (doar citire); optional project, article.',
+         {'factory':{'type':'string','enum':list(FACTORIES)},'project':SCHEMA_PROJECT,'article':{'type':'string','maxLength':120}},['factory'])])
+NEW_READ_TOOLS={'pdfcontrol_job_summary','pdfcontrol_job_findings','pdfcontrol_list_projects','pdfcontrol_catalogue_status'}
+FINDINGS_DEFAULT_CHARS=6000
+
+def check_arguments(name,args):
+    definition=next(t for t in TOOLS if t['name']==name)
+    if not isinstance(args,dict) or set(args)-set(definition['inputSchema']['properties']) or any(k not in args for k in definition['inputSchema']['required']):
+        raise ValueError('Argumente neacceptate sau obligatorii lipsa.')
+
+def page_offset(args):
+    offset=args.get('offset',0)
+    if type(offset) is not int or offset<0:raise ValueError('Offset invalid.')
+    return offset
+
+def engine_module(name):
+    """Load an ORIGINAL engine module read-only from the package (None when unavailable)."""
+    file=APP/(name+'.py')
+    if not file.is_file():return None
+    if name in sys.modules:return sys.modules[name]
+    added=str(APP) not in sys.path
+    if added:sys.path.insert(0,str(APP))
+    try:
+        with contextlib.redirect_stdout(sys.stderr):return importlib.import_module(name)
+    except Exception:return None
+    finally:
+        if added and str(APP) in sys.path:sys.path.remove(str(APP))
+
+def clip(value,limit):
+    text=str(value if value is not None else '')
+    return text if len(text)<=limit else text[:limit-1]+'\u2026'
+
+def live_record(path):
+    record=read_record(path)
+    pid=path.parent/'worker.pid'
+    if record.get('status') in {'pending','running'} and pid.is_file():
+        try:alive=process_alive(int(pid.read_text(encoding='ascii')))
+        except (ValueError,OSError):alive=True
+        if not alive:record.update(status='failed',error='Procesul motorului s-a oprit neasteptat; rezultatele nu sunt confirmate.')
+    return record
+
+def job_results(project,record,folder):
+    """The job's own engine output (resultaten.json / vergelijking.json), confined to the project; None when absent."""
+    for candidate in (record.get('results'),str(folder/'engine/checked/resultaten.json')):
+        if not candidate:continue
+        try:target=Path(candidate).resolve()
+        except (OSError,ValueError):continue
+        if target.is_file() and target.is_relative_to(project) and target.stat().st_size<=60*1024*1024:
+            try:return target,json.loads(target.read_text(encoding='utf-8-sig'))
+            except (OSError,ValueError):return None,None
+    return None,None
+
+def silent_checks(folder):
+    file=folder/'stille_fouten.json'
+    try:data=json.loads(file.read_text(encoding='utf-8-sig')) if file.is_file() and file.stat().st_size<=5*1024*1024 else {}
+    except (OSError,ValueError):return []
+    return [x for x in data.get('items',[]) if isinstance(x,dict)] if isinstance(data,dict) else []
+
+def flatten_findings(data,silent):
+    """Findings exactly as the engine wrote them (bevindingen, non-OK article rows, drawing status), plus silent check failures."""
+    items=[]
+    drawings=data.get('tekeningen') if isinstance(data,dict) else None
+    for drawing in drawings if isinstance(drawings,list) else []:
+        if not isinstance(drawing,dict):continue
+        name=clip(drawing.get('bestand',''),120)
+        state=drawing.get('tekeningstatus')
+        if isinstance(state,dict) and state.get('ok') is False:
+            items.append({'file':name,'code':'TEKENINGSTATUS','sev':'FOUT','art':'','text':clip(state.get('tekst',''),240)})
+        for finding in drawing.get('bevindingen') or []:
+            if isinstance(finding,dict):
+                items.append({'file':name,'code':clip(finding.get('code',''),60),'sev':clip(finding.get('ernst',''),20),
+                              'art':clip(finding.get('artikel',''),80),'text':clip(finding.get('tekst',''),300)})
+        for row in drawing.get('artikelen') or []:
+            if isinstance(row,dict) and str(row.get('status','OK')).upper() not in {'OK',''}:
+                items.append({'file':name,'code':'ARTIKEL_'+clip(row.get('status',''),24).upper(),'sev':'','art':clip(row.get('omschrijving',''),80),
+                              'text':clip(row.get('note',''),240)})
+    for fault in silent:
+        items.append({'file':clip(fault.get('blad',''),120),'code':'SILENT_'+clip(fault.get('waar',''),40),'sev':'SILENT','art':'',
+                      'text':clip('%s: %s'%(fault.get('soort',''),fault.get('boodschap','')),240)})
+    return items
+
+def project_factory(number):
+    """Factory explicitly confirmed in project-state.json (same rule as the engine's catalogus_voor_project; never inferred)."""
+    state=PROJECTS/number/'Controle/PDFCONTROL/project-state.json'
+    try:
+        data=json.loads(state.read_text(encoding='utf-8-sig')) if state.is_file() and state.stat().st_size<=1024*1024 else None
+    except (OSError,ValueError):return None
+    if not isinstance(data,dict) or str(data.get('project',''))!=number:return None
+    if 'destinations' in data:
+        choices=data['destinations']
+        if not isinstance(choices,list) or len(choices)!=1 or not isinstance(choices[0],dict):return None
+        value=choices[0].get('factory','')
+    else:value=data.get('factory','')
+    value=str(value).casefold().strip()
+    value=value[4:] if value.startswith('mbs ') else value
+    return value if value in FACTORIES else None
+
+def job_summary(args):
+    project=project_path(args['project']);path=job_file(project,args['job_id']);record=live_record(path);status=record.get('status')
+    done=status in {'done','partial'}
+    value={'job_id':args['job_id'],'project':args['project'],'operation':record.get('operation'),'status':status,
+           'delivery_verified':bool(record.get('delivery_verified')),'manual_review_required':True,'transfer_approved':False}
+    if isinstance(record.get('progress'),dict):value['phase']=record['progress'].get('phase')
+    if record.get('error'):value['error']=clip(record['error'],300)
+    value['source_count']=record.get('source_count',len(record.get('sources_sha256',{})))
+    if record.get('factory'):value['factory']=record['factory']
+    if isinstance(record.get('catalogue'),dict):value['catalogue']={k:record['catalogue'].get(k) for k in ('available','factory')}
+    if record.get('limitation_codes'):value['limitation_codes']=record['limitation_codes']
+    if record.get('limitations'):value['limitations']=[clip(x,200) for x in record['limitations'][:3]]
+    for key in ('summary','pair_summary'):
+        if isinstance(record.get(key),dict):value[key]=record[key]
+    if done:
+        for key in ('report','differences_report','delivery_folder','delivery_manifest'):
+            if record.get(key):value[key]=record[key]
+        outputs=[a.get('path') if isinstance(a,dict) else a for a in record.get('artifacts',[])]
+        value['artifact_total']=len(outputs);value['artifacts']=outputs[:5]
+        if len(outputs)>5:value['more_artifacts']='pdfcontrol_job_status cu artifact_offset'
+    target,data=job_results(project,record,path.parent)
+    silent=silent_checks(path.parent)
+    if silent:value['silent_checks']=len(silent)
+    if isinstance(data,dict) and isinstance(data.get('tekeningen'),list):
+        items=flatten_findings(data,silent);drawings=[d for d in data['tekeningen'] if isinstance(d,dict)]
+        counters={'drawings':len(drawings),'findings':len(items),
+                  'by_drawing_status':dict(sorted(Counter(str(d.get('status','')) for d in drawings).items())),
+                  'by_severity':dict(sorted(Counter(i['sev'] or '-' for i in items).items())),
+                  'top_codes':dict(Counter(i['code'] for i in items).most_common(8))}
+        module=engine_module('mbs_tekeningstatus')
+        if module is not None:
+            try:
+                groups,deviations=module.samenvatting(drawings)
+                counters['drawing_status']={'checked':sum(g['totaal'] for g in groups.values()),'not_final':sum(g['niet_definitief'] for g in groups.values()),
+                                            'not_final_files':[d[2] for d in deviations[:5]]}
+            except Exception:pass
+        value['counters']=counters;value['findings_total']=len(items)
+        if items:value['next']='pdfcontrol_job_findings (filter pentru cod/fisier/articol)'
+    elif isinstance(data,dict):
+        sheets=data.get('bladen')
+        value['counters']={'compare_sheets':len(sheets) if isinstance(sheets,list) else None,'compare_status':data.get('status')}
+        value['note']='Compararea nu are lista de constatari: foloseste PDF-urile din report/differences_report.'
+    elif done:value['note']='Nu exista resultaten.json pentru acest job; nu declar constatari.'
+    return value
+
+def job_findings(args):
+    project=project_path(args['project']);path=job_file(project,args['job_id']);record=live_record(path);status=record.get('status')
+    offset=page_offset(args);budget=args.get('max_chars',FINDINGS_DEFAULT_CHARS)
+    if type(budget) is not int or not 500<=budget<=12000:raise ValueError('max_chars trebuie intre 500 si 12000.')
+    needle=args.get('filter','')
+    if not isinstance(needle,str) or len(needle)>80:raise ValueError('filter invalid.')
+    value={'job_id':args['job_id'],'status':status,'offset':offset}
+    if status in {'pending','running'}:
+        value.update(total=0,items=[],next_offset=None,note='Jobul nu s-a terminat; foloseste pdfcontrol_job_status.');return value
+    target,data=job_results(project,record,path.parent);silent=silent_checks(path.parent)
+    if not isinstance(data,dict) or not isinstance(data.get('tekeningen'),list):
+        value.update(total=len(silent),items=[],next_offset=None,
+                     note='Jobul nu are resultaten.json cu desene; nu exista constatari de listat. Rapoartele PDF raman sursa.' if not silent else 'Doar controale oprite silentios.')
+        if not silent:return value
+        data={}
+    items=flatten_findings(data,silent);words=needle.casefold().split()
+    matched=[i for i in items if all(w in ' '.join(i.values()).casefold() for w in words)]
+    page=[];size=0;limit=max(budget-400,100)
+    for item in matched[offset:]:
+        cost=len(json.dumps(item,ensure_ascii=False))+1
+        if page and size+cost>limit:break
+        page.append(item);size+=cost
+    end=offset+len(page)
+    value.update(total=len(items),matched=len(matched),returned=len(page),items=page,next_offset=end if end<len(matched) else None)
+    if silent:value['silent_checks']=len(silent)
+    if page and value['next_offset'] is not None:value['note']='Urmatoarea pagina: offset=next_offset (acelasi filter).'
+    return value
+
+def list_projects(args):
+    offset=page_offset(args)
+    names=sorted((p.name for p in PROJECTS.iterdir() if re.fullmatch(r'[0-9]{6}',p.name) and p.is_dir() and not p.is_symlink()),reverse=True) if PROJECTS.is_dir() else []
+    items=[]
+    for name in names[offset:offset+50]:
+        jobs=PROJECTS/name/'Controle/Octop-PDFCONTROL'
+        count=sum(1 for c in jobs.iterdir() if re.fullmatch('[a-f0-9]{32}',c.name)) if jobs.is_dir() and not jobs.is_symlink() else 0
+        items.append({'project':name,'jobs':count,'factory':project_factory(name)})
+    end=offset+len(items)
+    return {'total':len(names),'offset':offset,'items':items,'next_offset':end if end<len(names) else None,
+            'note':'factory = confirmata in project-state.json (null = neconfirmata; nu o deduce).'}
+
+def fast_rules_status(factory):
+    file=PACKAGE.parent/'fast-import-rules.json'
+    try:data=json.loads(file.read_text(encoding='utf-8-sig')) if file.is_file() and file.stat().st_size<=1024*1024 else None
+    except (OSError,ValueError):return {'available':False,'error':'fast-import-rules.json ilizibil'}
+    if not isinstance(data,dict):return {'available':False}
+    rules=[r for r in data.get('rules',[]) if isinstance(r,dict) and r.get('factory')==factory]
+    articles=[str(r.get('article','')) for r in rules]
+    supported=all(r.get('calculation')=='pir_area_as_fast_length' and r.get('units_per_metre')==1000 and r.get('rounding')=='half_down' for r in rules)
+    unique=len(articles)==len(set(articles))
+    return {'available':True,'rules':len(rules),'articles':articles[:20],'supported':supported,'unambiguous':unique,'ready':bool(rules) and supported and unique}
+
+def catalogue_status(args):
+    factory=args['factory']
+    if factory not in FACTORIES:raise ValueError('Fabrica invalida.')
+    value={'factory':factory,'catalogue':{'available':False},'fast_rules':fast_rules_status(factory),
+           'note':'Doar citire. Fabrica se confirma per proiect (project-state.json); acest tool nu o confirma si nu o deduce.'}
+    folder=APP/'data_lokaal';snapshot=folder/('catalogus_'+factory+'.json');module=engine_module('mbs_artikelcatalogus');catalogue=None
+    if snapshot.is_file():
+        try:
+            data=json.loads(snapshot.read_text(encoding='utf-8-sig'))
+            if data.get('factory')!=factory:raise ValueError('snapshot de alta fabrica')
+            records=data['records'];catalogue=module.Catalogus(data) if module is not None else None
+            info={'available':True,'records':len(records),'import_records':sum(1 for r in records if r.get('category')=='import'),
+                  'excluded_rows':len(data.get('excluded_rows',[])),'source_sha256':clip(data.get('source_sha256',''),16)}
+            if catalogue is not None:info.update(import_codes=len(catalogue.by_code),conflict_codes=len(catalogue.conflicts))
+            registry=folder/'catalogues_registry.json'
+            try:stamp=data.get('verified_at') or json.loads(registry.read_text(encoding='utf-8-sig')).get(factory,{}).get('verified_at')
+            except (OSError,ValueError,AttributeError):stamp=data.get('verified_at')
+            info['verified_at']=stamp
+            source=Path(str(data.get('source','')))
+            info['source_matches']=(sha(source)==data.get('source_sha256')) if data.get('source') and source.is_file() else None
+            if info['source_matches'] is False:info['warning']='Sursa XLSX s-a schimbat; reconstruieste snapshotul inainte de folosire.'
+            value['catalogue']=info
+        except (OSError,ValueError,KeyError,TypeError,AttributeError) as error:
+            value['catalogue']={'available':False,'error':clip(error,160)}
+    if 'project' in args:
+        project_path(args['project']);confirmed=project_factory(args['project'])
+        value['project']={'project':args['project'],'confirmed_factory':confirmed,'matches':confirmed==factory if confirmed else None}
+    article=args.get('article')
+    if article is not None:
+        if not isinstance(article,str) or not article.strip() or len(article)>120:raise ValueError('article invalid.')
+        if catalogue is None:value['lookup']={'status':'catalog_indisponibil','note':'Nu valida denumirea fara catalog.'}
+        else:
+            found=catalogue.zoek(article,factory)
+            brief=lambda r:{'code':r['code'],'description':clip(r['description'],100),'unit':r['fields'].get('eenheid') or r['fields'].get('verkoopeenheid')}
+            value['lookup']={'status':found['status'],'normalisation_allowed':found['normalisatie_toegestaan'],'base_name':clip(found.get('basisnaam',''),100),
+                             'matches':[brief(r) for r in found['matches'][:5]],'candidates':[brief(r) for r in found['candidates'][:5]],
+                             'physical_equivalence_verified':False}
+    return value
+
+def model_status(full):
+    """What the model sees: no PIDs, trace/adapter/package/python/executable paths. Diagnostics stay local."""
+    ocr=full.get('ocr') if isinstance(full.get('ocr'),dict) else {}
+    required=ocr.get('required_languages',['eng','nld']);present=set(ocr.get('languages',[]))
+    shown={'available':bool(ocr.get('available')),'required_languages':required,'missing_languages':[l for l in required if l not in present]}
+    if ocr.get('error'):shown['error']=clip(str(ocr['error']).replace(str(PACKAGE),'<package>').replace(str(Path.home()),'~'),160)
+    return {'ready':bool(ocr.get('available')) and PROJECTS.is_dir(),'bridge_version':full['bridge_version'],'checked_at_utc':full['checked_at_utc'],
+            'projects_root':full['projects_root'],'projects_root_exists':full['projects_root_exists'],'ocr':shown,
+            'workflows':full['workflows'],'reports':full['reports'],'note':full['note']}
+
+def local_diagnostics():
+    """Full status for local troubleshooting (--self-test and runtime/octop_status_diagnostic.json); never sent to the model."""
+    full=_read_tool('pdfcontrol_status',{})
+    full.update(bridge_version=BRIDGE_VERSION,workflows=list(OPERATIONS),reports='PDF with marked drawings',engine_manifest=str(APP/'localchat_engine_manifest.json'))
+    return full
+
+_wrapped_run_tool=None
 def run_tool(name,args):
+    if name=='pdfcontrol_live_status':name='pdfcontrol_status'
+    if name in NEW_READ_TOOLS:
+        check_arguments(name,args)
+        return {'pdfcontrol_job_summary':job_summary,'pdfcontrol_job_findings':job_findings,'pdfcontrol_list_projects':list_projects,
+                'pdfcontrol_catalogue_status':catalogue_status}[name](args)
+    if name=='pdfcontrol_status':
+        check_arguments(name,args)
+        full=local_diagnostics()
+        try:
+            target=PACKAGE/'runtime/octop_status_diagnostic.json';target.parent.mkdir(parents=True,exist_ok=True);atomic(target,full)
+        except OSError:pass
+        return model_status(full)
     if name not in OPERATIONS and name not in {'pdfcontrol_job_status','pdfcontrol_cancel_job'}:
-        value=_read_tool(name,args)
-        if name in {'pdfcontrol_status','pdfcontrol_live_status'}:
-            value.update(bridge_version='2.1.0',workflows=list(OPERATIONS),reports='PDF with marked drawings',engine_manifest=str(APP/'localchat_engine_manifest.json'))
-        return value
+        return _read_tool(name,args)
     definition=next(t for t in TOOLS if t['name']==name)
     if not isinstance(args,dict) or set(args)-set(definition['inputSchema']['properties']) or any(k not in args for k in definition['inputSchema']['required']):
         raise ValueError('Argumente neacceptate sau obligatorii lipsa.')
@@ -545,6 +816,14 @@ def worker(number,identifier):
                 selected=[p.name for p in inp.glob('*.pdf') if re.search(r'_[VW]\.pdf$',p.name,re.I)]
                 if not selected:raise ValueError('Nu au fost identificate planse V/W; nu declar controlul complet.')
             summary=checker.process_folder(str(inp),interactief=False,stop_check=cancel,voortgang=lambda *a:progress('check',item=str(a)),bestanden=selected)
+            try:
+                import mbs_stille_fouten as quiet_checks
+                quiet=quiet_checks.alles()
+                if quiet:
+                    atomic(run/'stille_fouten.json',{'count':len(quiet),'items':quiet[:2000]});record['silent_checks']=len(quiet)
+                    record.setdefault('limitation_codes',[]).append('silent_checks')
+                    record.setdefault('limitations',[]).append('%d controale s-au oprit silentios (motorul a continuat); acolo nu s-a controlat. Vezi pdfcontrol_job_findings cu filter SILENT.'%len(quiet))
+            except Exception:traceback.print_exc()
             progress('report');results=engine/'checked/resultaten.json'
             if not results.is_file():raise ValueError('Motorul nu a produs resultaten.json.')
             import mbs_rapport
@@ -597,7 +876,7 @@ def response(message):
     if method=='initialize':
         offered=params.get('protocolVersion')
         result['result']={'protocolVersion':offered if offered in {'2024-11-05','2025-03-26','2025-06-18','2025-11-25'} else '2025-03-26',
-                          'serverInfo':{'name':'pdfcontrol-octop','version':'2.1.0'},'capabilities':{'tools':{'listChanged':False}}}
+                          'serverInfo':{'name':'pdfcontrol-octop','version':BRIDGE_VERSION},'capabilities':{'tools':{'listChanged':False}}}
     elif method=='ping':result['result']={}
     elif method=='tools/list':result['result']={'tools':TOOLS}
     elif method=='tools/call':
@@ -614,7 +893,7 @@ def response(message):
 def main():
     trace_event('process_started')
     if sys.argv[1:]==['--self-test']:
-        print(json.dumps(run_tool('pdfcontrol_status',{}),ensure_ascii=False,indent=2));return
+        print(json.dumps(local_diagnostics(),ensure_ascii=False,indent=2));return
     if len(sys.argv)==4 and sys.argv[1]=='--worker':return worker(sys.argv[2],sys.argv[3])
     sys.stdin.reconfigure(encoding='utf-8');sys.stdout.reconfigure(encoding='utf-8')
     for line in sys.stdin:
