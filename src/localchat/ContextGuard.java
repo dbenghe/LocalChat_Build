@@ -12,7 +12,10 @@ final class ContextGuard {
     java.nio.file.Path checkpointDirectory;
     boolean projectMode=true;
     String signature="";
-    static String signature(String system,String requestContext,List<ChatClient.ToolSpec> tools){return signature(requestContext==null||requestContext.isBlank()?system:system+"\n"+requestContext,tools);}
+    /** Number of old tool results reduced in this turn's request view (ToolResultReducer); part of every anchor signature, so a change invalidates the anchors (1.27.2). */
+    int reduction;
+    static String signature(String system,String requestContext,List<ChatClient.ToolSpec> tools){return signature(system,requestContext,tools,0);}
+    static String signature(String system,String requestContext,List<ChatClient.ToolSpec> tools,int reduction){String base=requestContext==null||requestContext.isBlank()?system:system+"\n"+requestContext;return signature(reduction>0?base+"\nreduced:"+reduction:base,tools);}
     static String signature(String system,List<ChatClient.ToolSpec> tools){try{return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest((system+"\n"+Json.write(tools.stream().map(t->Json.obj("name",t.name,"description",t.description,"schema",t.schema)).toList())).getBytes(java.nio.charset.StandardCharsets.UTF_8)));}catch(java.security.NoSuchAlgorithmException e){throw new IllegalStateException(e);}}
     double scale;long requestRaw,requestEstimate,anchorInput=-1;int requestSourceCount,anchorSourceCount;Memory memory,requestMemory,anchorMemory;
     void seed(long input,int sourceCount){anchorInput=input;anchorSourceCount=sourceCount;anchorMemory=null;}
@@ -47,7 +50,7 @@ final class ContextGuard {
     List<ChatClient.Message> prepare(Provider provider,String url,String key,String model,String system,
             List<ChatClient.Message> original,List<ChatClient.ToolSpec> tools,int step,Agent.Ui ui)throws IOException{
         if(cancelled)throw new InterruptedIOException("Cancelled");
-        signature=signature(system,requestContext,tools);
+        signature=signature(system,requestContext,tools,reduction);
         List<ChatClient.Message> active=requestView(original);
         long estimate=estimate(system,original,active,tools);
         if(maximum>0 && automatic && (estimate+reserve()+margin()>maximum || (step>0 && ContextMemory.messages(active)>256 && estimate*100L>=(long)maximum*threshold))){
@@ -89,7 +92,7 @@ final class ContextGuard {
             long raw=raw(instructions,request,List.of());
             if(predicted(raw)+summaryLimit+margin()>=maximum)throw new IOException(I18n.text("Compactarea a esuat: {0}","fragment exceeds safe input budget"));
             int fragment=++fragments;
-            summary=MemoryReducer.cached(checkpointDirectory==null?null:checkpointDirectory.resolve(signature(system,tools)),summarizer,provider,url,key,model,instructions,request,
+            summary=MemoryReducer.cached(checkpointDirectory==null?null:checkpointDirectory.resolve(signature(reduction>0?system+"\nreduced:"+reduction:system,tools)),summarizer,provider,url,key,model,instructions,request,
                 summaryLimit,maximum,scale,new MemoryReducer.Attempt(){
                     public void before(String s,List<ChatClient.Message> r)throws IOException{ui.compactRequest(s,r,fragment,chunks.size());}
                     public void reused(){ui.compactReused(fragment,chunks.size());}

@@ -679,5 +679,7 @@
   "Folderul ales este pentru proiectul {0}, iar conversatia este pentru {1}. Alege folderul proiectului curent.": "Seçilen klasör {0} projesine, bu sohbet ise {1} projesine ait. Geçerli projenin klasörünü seçin.",
   "Rezultate unelte": "Araç sonuçları",
   "Gandire: {0}": "Düşünme: {0}",
-  "Trimite toate uneltele (fara selectie dupa relevanta)": "Tüm araçları gönder (alaka seçimi yok)"
+  "Trimite toate uneltele (fara selectie dupa relevanta)": "Tüm araçları gönder (alaka seçimi yok)",
+  "Reduce rezultatele vechi ale uneltelor in cerere (arhiva ramane intreaga)": "Eski araç sonuçlarını istekte küçült (arşiv eksiksiz kalır)",
+  "Contextul estimat este la ~{0}% din limita. Activeaza compactarea automata (/autocompact on) sau foloseste /compact inainte sa se umple.": "Tahmini bağlam sınırın ~{0}% seviyesinde. Dolmadan önce otomatik sıkıştırmayı (/autocompact on) açın veya /compact kullanın."
 }

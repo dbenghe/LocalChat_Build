@@ -44,8 +44,12 @@ import java.util.regex.PatternSyntaxException;
 /** The tools offered to the model: files and folders, commands, skills and saved rules, plus MCP server tools. */
 final class Tools {
     static final String INVALID_ARGS = "_invalid_json";
-    private static final int MAX_OUTPUT = 60_000;
-    private static final int MAX_LISTED = 400;
+    /** 1.27.2: default cap of one tool result (~4k tokens); longer results are paged with offset/continuation hints. */
+    static final int MAX_OUTPUT = 16_000;
+    /** MCP/PDFCONTROL records are already paged by the bridge (read_document 12000 characters, 100 files, 20 artifacts). */
+    static final int MCP_OUTPUT = 24_000;
+    static final int MAX_LISTED = 150;
+    static final int MAX_HITS = 100;
     private static final Set<String> SKIP_DIRS = Set.of(".git", "node_modules", "__pycache__", ".venv",
             "$recycle.bin", "system volume information");
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -151,19 +155,22 @@ final class Tools {
 
     private List<ChatClient.ToolSpec> allSpecs() {
         List<ChatClient.ToolSpec> out = new ArrayList<>();
-        out.add(spec("list_dir", "List a folder: subfolders and files with size and modified time.", List.of(),
+        out.add(spec("list_dir", "List a folder: subfolders and files with size and modified time. Long folders continue with offset.", List.of(),
                 "path", "string", "Folder (default: working folder).",
-                "sort", "string", "'name' (default) or 'modified'."));
+                "sort", "string", "'name' (default) or 'modified'.",
+                "offset", "integer", "First entry (default 1)."));
         out.add(spec("find_files", "Find files by glob in a folder and subfolders, e.g. '*.pdf', 'PROJECT_INFO.md'. A pattern without '/' matches names at any depth.", List.of("pattern"),
                 "pattern", "string", "Glob pattern.",
                 "path", "string", "Folder (default: working folder).",
-                "sort", "string", "'path' (default) or 'modified'."));
+                "sort", "string", "'path' (default) or 'modified'.",
+                "offset", "integer", "First match (default 1)."));
         out.add(spec("search_text", "Search text in files recursively; returns path:line: text. Binary files (PDF, Office) are skipped; use read_file.", List.of("query"),
                 "query", "string", "Text or regular expression.",
                 "path", "string", "Folder or file (default: working folder).",
                 "file_pattern", "string", "Glob for file names, e.g. '*.md'.",
                 "regex", "boolean", "Query is a regular expression.",
-                "case_sensitive", "boolean", "Default false."));
+                "case_sensitive", "boolean", "Default false.",
+                "offset", "integer", "First hit (default 1)."));
         out.add(spec("read_file", "Read a file as numbered text: text files, .msg (sender, recipients, date, text, attachment list), PDF text layer (no OCR), .docx, .xlsx. Continue long files with offset.", List.of("path"),
                 "path", "string", "File to read.",
                 "offset", "integer", "First line (PDF: first page). Default 1.",
@@ -281,10 +288,10 @@ final class Tools {
             if (ref != null) return callMcp(ref, a);
             return switch (call.name) {
                 case ToolRelevance.ENABLE -> enableTools(a);
-                case "list_dir" -> Result.ok(listDir(readable(str(a, "path", ".")), str(a, "sort", "name")));
-                case "find_files" -> Result.ok(findFiles(required(a, "pattern"), readable(str(a, "path", ".")), str(a, "sort", "path")));
+                case "list_dir" -> Result.ok(listDir(readable(str(a, "path", ".")), str(a, "sort", "name"), integer(a, "offset", 1)));
+                case "find_files" -> Result.ok(findFiles(required(a, "pattern"), readable(str(a, "path", ".")), str(a, "sort", "path"), integer(a, "offset", 1)));
                 case "search_text" -> Result.ok(searchText(required(a, "query"), readable(str(a, "path", ".")),
-                        str(a, "file_pattern", "*"), bool(a, "regex"), bool(a, "case_sensitive")));
+                        str(a, "file_pattern", "*"), bool(a, "regex"), bool(a, "case_sensitive"), integer(a, "offset", 1)));
                 case "read_file" -> Result.ok(readRequestedFile(readable(required(a, "path")), integer(a, "offset", 1), a.get("limit") == null ? null : integer(a, "limit", 400)));
                 case "extract_attachments" -> Result.ok(extractAttachments(readable(required(a, "path")), str(a, "destination", null), bool(a, "include_inline")));
                 case "write_file" -> Result.ok(writeFile(writable(required(a, "path")), requiredText(a, "content"), false));
@@ -386,7 +393,7 @@ final class Tools {
 
     // ---- folders and search ----
 
-    private String listDir(Path dir, String sort) throws IOException, ToolError {
+    private String listDir(Path dir, String sort, int offset) throws IOException, ToolError {
         if (!Files.isDirectory(dir)) throw new ToolError(Files.exists(dir) ? "Nu e folder: " + dir + " (foloseste read_file)." : "Nu exista: " + dir);
         List<Path> entries = new ArrayList<>();
         try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)) {
@@ -399,18 +406,20 @@ final class Tools {
         entries.sort("modified".equals(sort) ? Comparator.comparing((Path p) -> modified(attrs.get(p))).reversed() : byName);
         StringBuilder b = new StringBuilder("Folder: " + dir + "\n");
         if (entries.isEmpty()) b.append("(gol)\n");
-        for (int i = 0; i < entries.size() && i < MAX_LISTED; i++) {
+        int from = Math.max(0, offset - 1), to = Math.min(entries.size(), from + MAX_LISTED);
+        if (from > 0) b.append(". de la intrarea ").append(from + 1).append(" din ").append(entries.size()).append(".\n");
+        for (int i = from; i < to; i++) {
             Path p = entries.get(i);
             BasicFileAttributes at = attrs.get(p);
             boolean isDir = at != null && at.isDirectory();
             b.append(String.format("%s  %-5s %9s  %s%s%n", at == null ? "????-??-?? ??:??" : time(at), isDir ? "DIR" : "",
                     isDir || at == null ? "" : size(at.size()), p.getFileName(), isDir ? "\\" : ""));
         }
-        if (entries.size() > MAX_LISTED) b.append("… inca ").append(entries.size() - MAX_LISTED).append(" intrari neafisate.\n");
+        if (to < entries.size()) b.append("… inca ").append(entries.size() - to).append(" intrari; continua cu offset=").append(to + 1).append(".\n");
         return b.toString();
     }
 
-    private String findFiles(String pattern, Path root, String sort) throws IOException, ToolError {
+    private String findFiles(String pattern, Path root, String sort, int offset) throws IOException, ToolError {
         if (!Files.isDirectory(root)) throw new ToolError("Nu e folder: " + root);
         String glob = pattern.trim().replace('\\', '/');
         boolean byName = !glob.contains("/");
@@ -436,15 +445,17 @@ final class Tools {
         if ("modified".equals(sort)) found.sort(Comparator.comparing((Path p) -> modified(attrs.get(p))).reversed());
         else found.sort(Comparator.comparing(p -> p.toString().toLowerCase(Locale.ROOT)));
         StringBuilder b = new StringBuilder(found.size() + " fisiere gasite pentru '" + pattern + "' in " + root + "\n");
-        for (int i = 0; i < found.size() && i < MAX_LISTED; i++) {
+        int from = Math.max(0, offset - 1), to = Math.min(found.size(), from + MAX_LISTED);
+        if (from > 0) b.append(". de la potrivirea ").append(from + 1).append(".\n");
+        for (int i = from; i < to; i++) {
             Path p = found.get(i);
             b.append(String.format("%s  %9s  %s%n", time(attrs.get(p)), size(attrs.get(p).size()), root.relativize(p)));
         }
-        if (found.size() > MAX_LISTED) b.append("… inca ").append(found.size() - MAX_LISTED).append("; restrange cautarea.\n");
+        if (to < found.size()) b.append("… inca ").append(found.size() - to).append("; continua cu offset=").append(to + 1).append(" sau restrange cautarea.\n");
         return b.toString();
     }
 
-    private String searchText(String query, Path root, String filePattern, boolean regex, boolean caseSensitive) throws IOException, ToolError {
+    private String searchText(String query, Path root, String filePattern, boolean regex, boolean caseSensitive, int offset) throws IOException, ToolError {
         Pattern p;
         try {
             int flags = caseSensitive ? 0 : Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE;
@@ -454,6 +465,7 @@ final class Tools {
         }
         PathMatcher names = FileSystems.getDefault().getPathMatcher("glob:" + (filePattern.isBlank() ? "*" : filePattern.trim()));
         List<String> hits = new ArrayList<>();
+        final int skip = Math.max(0, offset - 1);
         int[] files = {0};
         Path base = Files.isDirectory(root) ? root : root.getParent();
         Visitor visitor = (file, at) -> {
@@ -465,7 +477,7 @@ final class Tools {
             for (int i = 0; i < lines.length; i++) {
                 if (p.matcher(lines[i]).find()) {
                     hits.add(base.relativize(file) + ":" + (i + 1) + ": " + clip(lines[i].trim(), 300));
-                    if (hits.size() >= 300) return false;
+                    if (hits.size() > skip + MAX_HITS) return false;
                 }
             }
             return true;
@@ -473,9 +485,10 @@ final class Tools {
         if (Files.isRegularFile(root)) visitor.visit(root, Files.readAttributes(root, BasicFileAttributes.class));
         else if (Files.isDirectory(root)) walk(root, visitor);
         else throw new ToolError("Nu exista: " + root);
-        StringBuilder b = new StringBuilder(hits.size() + " randuri gasite in " + files[0] + " fisiere text (" + root + ")\n");
-        for (String h : hits) b.append(h).append('\n');
-        if (hits.size() >= 300) b.append("… oprit la 300 de rezultate; restrange cautarea.\n");
+        int last = Math.min(hits.size(), skip + MAX_HITS);
+        StringBuilder b = new StringBuilder(Math.max(0, last - skip) + " randuri afisate" + (skip > 0 ? " (de la " + (skip + 1) + ")" : "") + " in " + files[0] + " fisiere text (" + root + ")\n");
+        for (int i = skip; i < last; i++) b.append(hits.get(i)).append('\n');
+        if (hits.size() > last) b.append("… mai sunt rezultate; continua cu offset=").append(last + 1).append(" sau restrange cautarea.\n");
         return cap(b.toString());
     }
 
@@ -579,6 +592,18 @@ final class Tools {
         return b.toString();
     }
 
+    /** Whole pages only: a long PDF read ends at a page boundary with the offset of the next page. */
+    static String pdfPage(String text, int firstPage) {
+        if (text.length() <= MAX_OUTPUT) return text;
+        int firstMarker = text.indexOf("\n--- pagina ");
+        int cut = text.lastIndexOf("\n--- pagina ", MAX_OUTPUT);
+        if (firstMarker < 0 || cut <= firstMarker) return cap(text);
+        int numberStart = cut + "\n--- pagina ".length(), numberEnd = numberStart;
+        while (numberEnd < text.length() && Character.isDigit(text.charAt(numberEnd))) numberEnd++;
+        String next = text.substring(numberStart, numberEnd);
+        return text.substring(0, cut) + "\n… limita de text atinsa; continua cu offset=" + next + " (pagina urmatoare)\n";
+    }
+
     private String readPdf(Path p, int offset, int limit) throws IOException, ToolError {
         String python = ctx.pdfPython();
         if (python == null || python.isBlank() || !Files.isRegularFile(Paths.get(python))) {
@@ -589,7 +614,7 @@ final class Tools {
         Output out = exec(List.of(python, "-I", "-c", PDF_SCRIPT, p.toString(), String.valueOf(first), String.valueOf(last)),
                 ctx.workDir(), Map.of(), 180);
         if (!out.finished() || out.exitCode() != 0) throw new ToolError("Nu pot citi PDF-ul: " + clip(out.text(), 1500));
-        return "PDF: " + p + "\n" + cap(out.text());
+        return "PDF: " + p + "\n" + pdfPage(out.text(), first);
     }
 
     private String extractAttachments(Path msg, String destination, boolean includeInline) throws IOException, ToolError {
@@ -787,7 +812,7 @@ final class Tools {
             Output result=exec(List.of(python,"-I",script.toString(),"--request",temp.toString(),"--output",reports.toString()),ctx.workDir(),ctx.commandEnv(),420);
             ensureActive();
             if(!result.finished())return Result.error(I18n.text("Controlul local a depasit limita de timp. Sursele au ramas nemodificate."));
-            return new Result(cap(result.text()),result.exitCode()!=0);
+            return new Result(cap(result.text(),MCP_OUTPUT),result.exitCode()!=0);
         }finally{Files.deleteIfExists(temp);}
     }
 
@@ -915,11 +940,11 @@ final class Tools {
                         if(update.isError)return update;record=Json.parse(update.text);
                     }
                     boolean failed=Set.of("failed","cancelled").contains(java.util.Objects.toString(Json.str(record,"status"),""));
-                    return new Result(cap(Json.write(record)),failed);
+                    return new Result(cap(Json.write(record),MCP_OUTPUT),failed);
                 }finally{activePdfJobs.remove(job);if(cancelled)cancelPdfJob(job);}
             }
         }
-        return new Result(cap(r.text), r.isError);
+        return new Result(cap(r.text,MCP_OUTPUT), r.isError);
     }
 
     // ---- helpers ----
@@ -1022,10 +1047,13 @@ final class Tools {
     }
 
     /** Keeps the start and the end of long output; the model rarely needs the middle. */
-    private static String cap(String s) {
-        if (s.length() <= MAX_OUTPUT) return s;
-        int head = MAX_OUTPUT * 2 / 3;
-        int tail = MAX_OUTPUT - head;
-        return s.substring(0, head) + "\n\n… [" + (s.length() - MAX_OUTPUT) + " caractere omise] …\n\n" + s.substring(s.length() - tail);
+    private static String cap(String s) {return cap(s, MAX_OUTPUT);}
+
+    /** Head and tail with an explicit omitted-characters marker and a hint to page instead of re-running the same call. */
+    static String cap(String s, int limit) {
+        if (s.length() <= limit) return s;
+        int head = limit * 2 / 3;
+        int tail = limit - head;
+        return s.substring(0, head) + "\n\n… [" + (s.length() - limit) + " caractere omise; restrange cererea sau continua cu offset/limit] …\n\n" + s.substring(s.length() - tail);
     }
 }

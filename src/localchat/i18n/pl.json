@@ -679,5 +679,7 @@
   "Folderul ales este pentru proiectul {0}, iar conversatia este pentru {1}. Alege folderul proiectului curent.": "Wybrany folder dotyczy projektu {0}, a rozmowa projektu {1}. Wybierz folder bieżącego projektu.",
   "Rezultate unelte": "Wyniki narzędzi",
   "Gandire: {0}": "Rozumowanie: {0}",
-  "Trimite toate uneltele (fara selectie dupa relevanta)": "Wysylaj wszystkie narzedzia (bez wyboru wedlug istotnosci)"
+  "Trimite toate uneltele (fara selectie dupa relevanta)": "Wysylaj wszystkie narzedzia (bez wyboru wedlug istotnosci)",
+  "Reduce rezultatele vechi ale uneltelor in cerere (arhiva ramane intreaga)": "Skracaj stare wyniki narzedzi w zapytaniu (archiwum pozostaje pelne)",
+  "Contextul estimat este la ~{0}% din limita. Activeaza compactarea automata (/autocompact on) sau foloseste /compact inainte sa se umple.": "Szacowany kontekst wynosi ~{0}% limitu. Wlacz automatyczne kompaktowanie (/autocompact on) lub uzyj /compact, zanim sie zapelni."
 }

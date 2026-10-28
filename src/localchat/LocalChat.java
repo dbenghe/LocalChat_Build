@@ -660,6 +660,7 @@ public final class LocalChat extends JFrame {
         tools.add(item("Hotfolder proiecte",null,e->configureHotfolder()));javax.swing.JCheckBoxMenuItem monthly=new javax.swing.JCheckBoxMenuItem(t("Notificare lunara cataloage"),Boolean.parseBoolean(config.getProperty("catalogueReminder.enabled","false")));monthly.addActionListener(e->{config.setProperty("catalogueReminder.enabled",Boolean.toString(monthly.isSelected()));saveConfig();checkMonthlyCatalogues();});tools.add(monthly);
         javax.swing.JCheckBoxMenuItem autoAgents=ui(new javax.swing.JCheckBoxMenuItem(),"Agenti automati pentru verificari independente");autoAgents.setSelected(Boolean.parseBoolean(config.getProperty("agents.automatic","true")));autoAgents.addActionListener(e->{config.setProperty("agents.automatic",Boolean.toString(autoAgents.isSelected()));saveConfig();});tools.add(autoAgents);
         javax.swing.JCheckBoxMenuItem allTools=ui(new javax.swing.JCheckBoxMenuItem(),"Trimite toate uneltele (fara selectie dupa relevanta)");allTools.setSelected(toolsAll());allTools.addActionListener(e->{config.setProperty("tools.all",Boolean.toString(allTools.isSelected()));saveConfig();refreshDashboard();});tools.add(allTools);
+        javax.swing.JCheckBoxMenuItem reduceOldResults=ui(new javax.swing.JCheckBoxMenuItem(),"Reduce rezultatele vechi ale uneltelor in cerere (arhiva ramane intreaga)");reduceOldResults.setSelected(reduceOld());reduceOldResults.addActionListener(e->{config.setProperty("context.reduceOld",Boolean.toString(reduceOldResults.isSelected()));saveConfig();refreshDashboard();});tools.add(reduceOldResults);
         tools.add(item("Memorii locale",null,e->showMemories()));
         tools.add(item("Reguli salvate (reguli.md)", null, e -> openInEditor(rulesFile, "# Reguli salvate\n\n")));
         tools.add(item("Folderul de skill-uri", null, e -> openFolder(skillsDir)));
@@ -922,7 +923,7 @@ public final class LocalChat extends JFrame {
         toolsBox.setSelected(Boolean.parseBoolean(config.getProperty("default.tools",Boolean.toString(toolsBox.isSelected()))));
         permissionBox.setSelectedIndex(preference(config,"default.permission",permissionBox.getSelectedIndex(),0,2));permissionBox.setEnabled(toolsBox.isSelected());
         responseProfile.setSelectedIndex(preference(config,"default.responseProfile",preference(config,"response.profile",3,0,3),0,3));
-        sessionState.autoCompact=Boolean.parseBoolean(config.getProperty("default.autoCompact","false"));sessionState.autoThreshold=preference(config,"default.autoThreshold",70,30,95);
+        sessionState.autoCompact=Boolean.parseBoolean(config.getProperty("default.autoCompact","true"));sessionState.autoThreshold=preference(config,"default.autoThreshold",70,30,95);
         String mode=toolsBox.isSelected()?"mbs":"normal";
         systemField.setText(defaultSystemPrompt(mode));
         sessionState.mbsSystemPrompt=defaultSystemPrompt("mbs");
@@ -1128,6 +1129,10 @@ public final class LocalChat extends JFrame {
     }
 
     private boolean toolsAll(){return Boolean.parseBoolean(config.getProperty("tools.all","false"));}
+    /** 1.27.2: old tool results are reduced in the request view only (never in the archive); on by default. */
+    private boolean reduceOld(){return Boolean.parseBoolean(config.getProperty("context.reduceOld","true"));}
+    private ToolResultReducer.Reduced requestHistory(List<ChatClient.Message> view){return reduceOld()?ToolResultReducer.apply(view):new ToolResultReducer.Reduced(view,0);}
+    private boolean overflowWarned;
 
     private List<ChatClient.ToolSpec> dashboardTools() {
         if(!toolsBox.isSelected())return Collections.emptyList();
@@ -1184,7 +1189,7 @@ public final class LocalChat extends JFrame {
             String system=toolsBox.isSelected()?agentPrompt(dir,installedSkills,pathMap()):plainPrompt();
             String volatileContext=volatileControl();
             sys=ContextMemory.estimate(system);tools=ContextMemory.tools(dashboardTools());
-            List<ChatClient.Message> dashboardView=sessionState.memory.view(history);
+            List<ChatClient.Message> dashboardView=requestHistory(sessionState.memory.view(history)).messages();
             results=ContextMemory.toolResults(dashboardView);messages=ContextMemory.messages(dashboardView)-results+(volatileContext.isBlank()?0:ContextMemory.estimate(volatileContext)+12);
             String pending=composerMessage();if(!pending.isBlank() && !input.getText().startsWith("/"))messages+=ContextMemory.estimate(pending)+ImageInput.estimate(sessionState.draftAttachments)+8;
         }
@@ -1548,9 +1553,14 @@ public final class LocalChat extends JFrame {
         String estimateSystem=useTools?agentPrompt(estimateDir,installedSkills,pathMap()):plainPrompt();
         String estimateVolatile=useTools?volatileControl():"";
         long estimated=ContextMemory.estimate(estimateSystem)+(estimateVolatile.isBlank()?0:ContextMemory.estimate(estimateVolatile)+12)+ContextMemory.tools(dashboardTools())
-                +ContextMemory.messages(sessionState.memory.view(history))+ContextMemory.estimate(text)+ImageInput.estimate(pendingAttachments)+8;
+                +ContextMemory.messages(requestHistory(sessionState.memory.view(history)).messages())+ContextMemory.estimate(text)+ImageInput.estimate(pendingAttachments)+8;
         double estimateScale=contextScale();
         long protectedEstimate=(long)Math.ceil(estimated*estimateScale);
+        if(maximum>0&&!sessionState.autoCompact){
+            int percent=(int)Math.min(999,protectedEstimate*100L/maximum);
+            if(percent>=80&&protectedEstimate<maximum){if(!overflowWarned){overflowWarned=true;notice(t("Contextul estimat este la ~{0}% din limita. Activeaza compactarea automata (/autocompact on) sau foloseste /compact inainte sa se umple.",percent));}}
+            else if(percent<70)overflowWarned=false;
+        }
         int plannedReply=responseBudget();
         if(allowAutoCompact && sessionState.autoCompact && maximum>0 && (protectedEstimate*100L>=(long)maximum*sessionState.autoThreshold || protectedEstimate+Math.min(plannedReply,Math.max(64,maximum/3))+Math.max(128,maximum/33)>=maximum)
                 && sessionState.memory.boundary(history)>sessionState.memory.through) {
@@ -1585,11 +1595,12 @@ public final class LocalChat extends JFrame {
         }
         turn.agent.outputLimit(ResponseBudget.available(budget,maximum,protectedEstimate));
         history.add(turn.question);
-        final List<ChatClient.Message> base = sessionState.memory.view(history);
+        final ToolResultReducer.Reduced reducedHistory=requestHistory(sessionState.memory.view(history));
+        final List<ChatClient.Message> base = reducedHistory.messages();
         turn.rawBaseCount=history.size();turn.viewBaseCount=base.size();
-        turn.guard=new ContextGuard(maximum,budget,sessionState.autoCompact,sessionState.autoThreshold,contextScale());ensureSession();turn.guard.checkpointDirectory=CompactionCheckpoint.directory(appDir,conversationFile,contextProfile()+"/auto/"+sessionState.contextMode);turn.guard.requestContext=volatileContext;turn.guard.projectMode=useTools;turn.agent.guard(turn.guard);
+        turn.guard=new ContextGuard(maximum,budget,sessionState.autoCompact,sessionState.autoThreshold,contextScale());ensureSession();turn.guard.checkpointDirectory=CompactionCheckpoint.directory(appDir,conversationFile,contextProfile()+"/auto/"+sessionState.contextMode);turn.guard.requestContext=volatileContext;turn.guard.reduction=reducedHistory.count();turn.guard.projectMode=useTools;turn.agent.guard(turn.guard);
         final String guardProfile=contextProfile();
-        if(sessionState.contextAnchorInput>=0 && sessionState.contextAnchorProfile.equals(guardProfile) && sessionState.contextAnchorSignature.equals(ContextGuard.signature(system,volatileContext,turn.agent.specs())) && sessionState.contextAnchorThrough==sessionState.memory.through){
+        if(sessionState.contextAnchorInput>=0 && sessionState.contextAnchorProfile.equals(guardProfile) && sessionState.contextAnchorSignature.equals(ContextGuard.signature(system,volatileContext,turn.agent.specs(),reducedHistory.count())) && sessionState.contextAnchorThrough==sessionState.memory.through){
             int prefix=sessionState.memory.summary.isBlank()?0:1+(sessionState.memory.question.isEmpty()?0:1);
             int anchorIndex=prefix+sessionState.contextAnchorCount-sessionState.memory.through;
             if(anchorIndex>=0 && anchorIndex<=base.size())turn.guard.seed(sessionState.contextAnchorInput,anchorIndex);

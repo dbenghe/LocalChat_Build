@@ -204,7 +204,7 @@ public final class FeatureTest {
                 Constructor<LocalChat> c=LocalChat.class.getDeclaredConstructor();c.setAccessible(true);app[0]=c.newInstance();
                 ((JComboBox<Provider>)field(app[0],"providerBox")).setSelectedItem(Provider.CUSTOM);
                 ((JTextField)field(app[0],"urlField")).setText(server.url());((JComboBox<?>)field(app[0],"modelBox")).setSelectedItem("bounded-model");
-                ((JCheckBox)field(app[0],"toolsBox")).setSelected(false);command(app[0],"/new bounded");command(app[0],"/context 4096");
+                ((JCheckBox)field(app[0],"toolsBox")).setSelected(false);command(app[0],"/new bounded");command(app[0],"/context 4096");{WorkspacePanel manual=field(app[0],"workspace");if(manual.autoCompact.isSelected())manual.autoCompact.doClick();}
                 List<ChatClient.Message> history=field(app[0],"history");
                 for(int i=0;i<4;i++){history.add(ChatClient.Message.user("source "+i+" "+"detail ".repeat(1200)));history.add(ChatClient.Message.assistant("decision",List.of(),"fixture"));}
                 ((JTextArea)field(app[0],"input")).setText("next");call(app[0],"send",new Class<?>[]{});
@@ -249,8 +249,8 @@ public final class FeatureTest {
                 List<ChatClient.Message> history=field(app[0],"history");
                 for(int i=0;i<6;i++){history.add(ChatClient.Message.user("source "+i+" "+"detail ".repeat(350)));history.add(ChatClient.Message.assistant("decision",List.of(),"fixture"));}
                 command(app[0],"/context "+(mode==3?0:8192));WorkspacePanel panel=field(app[0],"workspace");
-                check(!panel.autoCompact.isSelected(),"auto compaction is off by default");
-                if(mode!=4)panel.autoCompact.doClick();panel.autoThreshold.setValue(30);
+                check(panel.autoCompact.isSelected(),"auto compaction is on by default for new chats (1.27.2)");
+                if(mode==4)panel.autoCompact.doClick();panel.autoThreshold.setValue(30);
                 file[0]=field(app[0],"conversationFile");
                 check(!panel.autoThreshold.isEnabled() || mode!=3,"unknown context does not activate threshold");
                 ((JTextArea)field(app[0],"input")).setText("pending message");call(app[0],"send",new Class<?>[]{});
@@ -278,7 +278,7 @@ public final class FeatureTest {
                 } else check(server.requests.size()==1 && state.memory.through==0 && history.size()==14,"disabled or unknown-limit auto mode sends normally without compacting");
                 var saved=Conversations.load(file[0]);check(saved.state().autoCompact==(mode!=4) && saved.state().autoThreshold==30,"auto preferences persisted per chat");
                 command(app[0],"/new Different chat");
-                check(!((Conversations.State)field(app[0],"sessionState")).autoCompact,"new chat has independent auto preference; mode="+mode+" status="+((JLabel)field(app[0],"status")).getText());
+                check(((Conversations.State)field(app[0],"sessionState")).autoCompact,"new chat starts from the on-by-default setting, independent of the previous chat; mode="+mode+" status="+((JLabel)field(app[0],"status")).getText());
                 command(app[0],"/switch "+Conversations.shortId(file[0]));
                 WorkspacePanel panel=field(app[0],"workspace");check(panel.autoCompact.isSelected()==(mode!=4) && panel.autoThreshold.getValue().equals(30),"auto controls restored on chat switch; mode="+mode+" selected="+panel.autoCompact.isSelected()+" threshold="+panel.autoThreshold.getValue()+" status="+((JLabel)field(app[0],"status")).getText());
                 if(mode==0){
@@ -421,11 +421,11 @@ public final class FeatureTest {
                 server.delay=0;((JComboBox<String>)field(app[0],"modelBox")).setSelectedItem("auto-model");call(app[0],"refreshDashboard",new Class<?>[]{});
                 ((JComboBox<String>)field(app[0],"responseProfile")).setSelectedIndex(2);((JCheckBox)field(app[0],"streamBox")).setSelected(false);((JCheckBox)field(app[0],"toolsBox")).setSelected(false);call(app[0],"prepareModeContext",new Class<?>[]{});
                 ((JComboBox<String>)field(app[0],"permissionBox")).setSelectedIndex(2);((JTextField)field(app[0],"systemField")).setText("saved full defaults");
-                WorkspacePanel panel=field(app[0],"workspace");panel.autoCompact.doClick();panel.autoThreshold.setValue(55);
+                WorkspacePanel panel=field(app[0],"workspace");if(panel.autoCompact.isSelected())panel.autoCompact.doClick();panel.autoThreshold.setValue(55);
                 call(app[0],"saveDefaults",new Class<?>[]{});command(app[0],"/new Short title");
                 check(((JComboBox<?>)field(app[0],"responseProfile")).getSelectedIndex()==2,"new chat restores saved response profile");
                 check(!((JCheckBox)field(app[0],"streamBox")).isSelected() && !((JCheckBox)field(app[0],"toolsBox")).isSelected(),"new chat restores stream and tool mode");
-                check(panel.autoCompact.isSelected() && panel.autoThreshold.getValue().equals(55),"new chat restores explicit auto-compaction defaults");
+                check(!panel.autoCompact.isSelected() && panel.autoThreshold.getValue().equals(55),"new chat keeps an explicitly saved off default (1.27.2: only the unset default is on)");
                 var row=panel.list.getSelectedValue();var label=(JLabel)panel.list.getCellRenderer().getListCellRendererComponent(panel.list,row,0,false,false);
                 check(label.getText().equals("Short title") && !label.getText().contains(Conversations.shortId(row.file())),"sidebar shows title without internal identifier");
                 call(app[0],"setBusy",new Class<?>[]{boolean.class},true);app[0].addNotify();app[0].validate();BusyIndicator spinner=field(app[0],"busyIndicator");angle[0]=spinner.angle;
@@ -439,7 +439,7 @@ public final class FeatureTest {
                 check(((JComboBox<?>)field(restored,"responseProfile")).getSelectedIndex()==2 && ((JComboBox<?>)field(restored,"permissionBox")).getSelectedIndex()==2,"restart restores saved profile and approval style");
                 check(!((JCheckBox)field(restored,"streamBox")).isSelected() && !((JCheckBox)field(restored,"toolsBox")).isSelected(),"restart restores saved stream and tool selections");
                 check(((JTextField)field(restored,"systemField")).getText().equals("saved full defaults") && ((JTextField)field(restored,"workDirField")).getText().equals(home.toString()),"restart restores saved system prompt and working folder");
-                WorkspacePanel panel=field(restored,"workspace");check(panel.autoCompact.isSelected() && panel.autoThreshold.getValue().equals(55),"restart restores saved auto-compaction controls");
+                WorkspacePanel panel=field(restored,"workspace");check(!panel.autoCompact.isSelected() && panel.autoThreshold.getValue().equals(55),"restart restores saved auto-compaction controls");
                 restored.dispose();
             });
         }

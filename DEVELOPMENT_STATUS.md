@@ -1,6 +1,6 @@
 # LocalChat — raport de dezvoltare si probleme cunoscute
 
-Actualizat: 28 octombrie 2026. Livrare: 1.27.1.
+Actualizat: 28 octombrie 2026. Livrare: 1.27.2.
 
 Acest raport sintetizeaza dezvoltarea aplicatiei si diagnosticele confirmate. Cronologia completa a modificarilor functionale ramane in CHANGELOG.md; sursele si commiturile sunt in repository-ul personal LocalChat_Build. Datele proiectelor, conversatiile, cheile, cataloagele private si jurnalele nu fac parte din publicarea Git.
 
@@ -38,6 +38,15 @@ Masurat pe cererea de proba (primul tur, MBS, doar citire): 28348 -> 10891 carac
 
 Regulile PDFCONTROL sunt acum in skill-ul pdfcontrol si in descrierile esentiale ale uneltelor; RuleCoverageTest verifica faptul ca regulile cerute de AGENTS.md exista in prompt sau in skill. Uneltele care modifica fisiere si run_command apar dupa relevanta (selectie fara stare, doar crestere in conversatie); modul doar citire si agentii copil nu pot debloca. Optiunea tools.all trimite lista completa. Aliasul pdfcontrol_live_status este ascuns, dar apelurile arhivate functioneaza. Risc ramas: un cuvant-cheie lipsa ascunde temporar o unealta de scriere; modelul poate cere localchat_enable_tools, iar utilizatorul poate activa trimiterea tuturor uneltelor.
 
+## Context sub control (1.27.2)
+
+Masurat pe o bucla sintetica de unelte (rezultate de 4k-70k caractere; tokeni estimati ~): cu 40 de rezultate cererea scade de la ~297427 la ~28635 tokeni (~-90%); cu 20, de la ~148743 la ~23727; cu 10, de la ~74401 la ~21285. Numai reducerea rezultatelor vechi: ~60748; numai plafonul de 16000: ~128797 (40 de rezultate). Estimarile ~ nu inlocuiesc contorul furnizorului.
+
+Rezultatele vechi ale uneltelor (peste ultimele 6) sunt reduse deterministic numai in cerere, la inceputul turului; arhiva, exportul si ecranul raman intregi, intrebarea exacta nu se atinge, iar stub-ul pastreaza unealta, argumentele, caile, identificatorii, status, delivery_verified, job_id, erorile si indicii de continuare. Reducerea intra in semnatura ancorelor si a punctelor de control (invalideaza ancora). Setarea context.reduceOld (meniul Unelte) o opreste.
+
+Plafonul per rezultat este 16000 de caractere (MCP 24000) cu paginare: offset pentru list_dir, find_files, search_text si read_file, pagini PDF taiate la limita paginii. Compactarea automata este pornita implicit numai in chaturile noi; alegerile explicite raman, iar la ~80% din limita cu compactarea oprita apare un avertisment.
+
+Teste: ContextReductionTest in Build.ps1; FeatureTest si ContextGuardTest adaptate. Amanat: reducerea in mijlocul turului curent si reducerea prefixului /compact manual.
 ## Ce este implementat pana acum
 
 | Domeniu | Functionalitate disponibila |

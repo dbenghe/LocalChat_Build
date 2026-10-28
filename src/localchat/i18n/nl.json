@@ -679,5 +679,7 @@
   "Folderul ales este pentru proiectul {0}, iar conversatia este pentru {1}. Alege folderul proiectului curent.": "De gekozen map is voor project {0}, maar dit gesprek is voor {1}. Kies de map van het huidige project.",
   "Rezultate unelte": "Toolresultaten",
   "Gandire: {0}": "Redeneren: {0}",
-  "Trimite toate uneltele (fara selectie dupa relevanta)": "Alle tools naar het model sturen (zonder selectie op relevantie)"
+  "Trimite toate uneltele (fara selectie dupa relevanta)": "Alle tools naar het model sturen (zonder selectie op relevantie)",
+  "Reduce rezultatele vechi ale uneltelor in cerere (arhiva ramane intreaga)": "Oude toolresultaten in het verzoek verkleinen (het archief blijft volledig)",
+  "Contextul estimat este la ~{0}% din limita. Activeaza compactarea automata (/autocompact on) sau foloseste /compact inainte sa se umple.": "De geschatte context zit op ~{0}% van de limiet. Zet automatisch samenvatten aan (/autocompact on) of gebruik /compact voordat hij vol raakt."
 }

@@ -854,3 +854,10 @@ Grupurile de agenti nu mai au o limita comuna de trei minute. Stop si protectiil
 - Uneltele care scriu sau ruleaza comenzi (write_file, edit_file, copy_path, move_path, run_command, save_rule etc.) sunt trimise modelului numai cand cererea le cere (cuvinte-cheie in cele sase limbi sau apeluri anterioare); modelul poate cere localchat_enable_tools. Permisiunile raman aceleasi, iar modul doar citire nu poate fi deblocat.
 - Optiunea de meniu Unelte > Trimite toate uneltele (fara selectie dupa relevanta) trimite lista completa, ca in versiunile anterioare. Se salveaza in setari ca tools.all.
 - pdfcontrol_live_status nu mai apare in lista modelului; apelurile salvate in conversatii vechi functioneaza in continuare.
+
+## Context sub control (1.27.2)
+
+- Rezultatele vechi ale uneltelor sunt reduse in cerere (nu in arhiva, export sau ecran): ultimele 6 raman intregi, iar cele vechi pastreaza unealta, argumentele, caile, identificatorii, status, delivery_verified, job_id si erorile, cu indicatia de a reapela unealta (offset/limit). Meniul Unelte > "Reduce rezultatele vechi ale uneltelor in cerere" (context.reduceOld, implicit pornit).
+- Plafonul per rezultat este 16000 de caractere (MCP 24000), cu paginare: list_dir, find_files, search_text si read_file continua cu offset=N; citirea PDF se opreste la limita paginii.
+- Compactarea automata este pornita implicit pentru chaturile noi; chaturile existente si valoarea salvata explicit in setari se pastreaza. Cu compactarea oprita, la ~80% din limita apare un avertisment (/autocompact on sau /compact).
+- Pe o bucla sintetica de 40 de rezultate, cererea scade de la ~297k la ~29k tokeni estimati (~-90%).

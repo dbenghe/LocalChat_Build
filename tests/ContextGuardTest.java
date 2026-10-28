@@ -67,11 +67,11 @@ public final class ContextGuardTest {
         Path local=Files.createDirectories(home.resolve(stop?"stop":"resume")),report=local.resolve("large-report.txt");String evidence="PDF evidence 507123 dimensions and checked quantities\n".repeat(900);Files.writeString(report,evidence);
         try(Server server=new Server(report)){
             if(stop)server.delay=500;LocalChat[] app={null};String question="Create visible PDF reports for project 507123 using the checked drawings.";
-            FeatureTest.edt(()->{app[0]=AttachmentTest.window(local,server.url());WorkspacePanel workspace=FeatureTest.field(app[0],"workspace");workspace.limit.setValue(12000);workspace.autoCompact.doClick();((JTextArea)FeatureTest.field(app[0],"input")).setText(question);FeatureTest.call(app[0],"send",new Class<?>[]{});});
+            FeatureTest.edt(()->{app[0]=AttachmentTest.window(local,server.url());WorkspacePanel workspace=FeatureTest.field(app[0],"workspace");workspace.limit.setValue(12000);if(!workspace.autoCompact.isSelected())workspace.autoCompact.doClick();((JTextArea)FeatureTest.field(app[0],"input")).setText(question);FeatureTest.call(app[0],"send",new Class<?>[]{});});
             if(stop){for(int n=0;n<300&&server.summaries.get()==0;n++)Thread.sleep(10);check(server.summaries.get()>0,"tool loop reaches automatic compaction");FeatureTest.edt(()->FeatureTest.command(app[0],"/stop"));Thread.sleep(600);}
             FeatureTest.idle(app[0]);FeatureTest.edt(()->{
                 List<ChatClient.Message> archive=FeatureTest.field(app[0],"history");Conversations.State state=FeatureTest.field(app[0],"sessionState");
-                check(archive.stream().anyMatch(m->m.role.equals("tool")&&m.content.length()>30000),"full tool evidence remains in original chat archive");
+                check(archive.stream().anyMatch(m->m.role.equals("tool")&&m.content.length()>12000&&m.content.length()<=Tools.MAX_OUTPUT+400),"full tool evidence (up to the 1.27.2 per-result cap) remains in original chat archive");
                 check(Files.readString(report).equals(evidence),"context management never re-executes writes or alters source file");
                 if(stop){check(server.normal.get()==1&&state.memory.through==0,"Stop during summary prevents applying incomplete memory or resuming");}
                 else{
