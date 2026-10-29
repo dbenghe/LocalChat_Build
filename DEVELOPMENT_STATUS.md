@@ -1,10 +1,10 @@
 # LocalChat — raport de dezvoltare si probleme cunoscute
 
-Actualizat: 29 octombrie 2026. Livrare: 1.28.13.
+Actualizat: 29 octombrie 2026. Livrare: 1.28.14.
 
 Acest raport sintetizeaza dezvoltarea aplicatiei si diagnosticele confirmate. Cronologia completa a modificarilor functionale ramane in CHANGELOG.md; sursele si commiturile sunt in repository-ul personal LocalChat_Build. Datele proiectelor, conversatiile, cheile, cataloagele private si jurnalele nu fac parte din publicarea Git.
 
-## Sinteza seriei de imbunatatiri 1.27.0-1.28.13 si lucrari ramase
+## Sinteza seriei de imbunatatiri 1.27.0-1.28.14 si lucrari ramase
 
 Scop al seriei: mai putini tokeni si mai putina latenta pe modelul local, context sub control, unelte PDFCONTROL de citire fara rerulare, igiena de cod si teste stabile. Toate valorile sunt masurate in repo (harness sintetic, caractere ~ tokeni, sau serverul real unde este precizat); nu inlocuiesc contorul furnizorului. Fara chei sau date de productie in aceasta sectiune.
 
@@ -26,6 +26,7 @@ Scop al seriei: mai putini tokeni si mai putina latenta pe modelul local, contex
 - 1.28.10 - compactare robusta la taiere: `max_tokens` explicit plafonat (min(metadate, 16384, fereastra - intrare - marja)), cel mult 2 reincercari (limita explicita, apoi fragmente injumatatite fara gandire, cu checkpoint pe jumatati), fallback la HTTP 400, mesaj de esec cu tokenii de gandire si motivul oprit, motivul compactarii in bara de stare (6 limbi). `CompactionTruncationTest` 148 verificari. Doar build fara testele native; neverificat pe GonkaRouter/MiniMax real.
 - 1.28.11 - scratch pe conversatie (`%TEMP%\LocalChat\<conv>`), paza dura `FileGuard` pentru fisiere ajutatoare in folderul proiectului si pe server (si in "Permite tot", "Da mereu" nu ocoleste), card obligatoriu pentru orice scriere/modificare/copiere/stergere pe server (inclusiv comenzi PowerShell si scripturi scanate), lista de extensii permise pe server, reguli dure care supravietuiesc compactarii, `read_skill` din nou complet dupa compactare, `list_stray_files`/`cleanup_stray_files`, hotfolder fara `Output`. Teste: `Release11211Test`.
 - 1.28.12 - predare automata catre o conversatie noua legata (`Handoff.build`, fara model) cand contextul este prea mare sau compactarea esueaza dupa reincercari; arhivare conversatie veche, legaturi in ambele sensuri, retrimiterea cererii in curs, buton/`/continue`, paza anti-bucla (`handoffFresh`).
+- 1.28.14 - dialogul PDFCONTROL standalone (fara conversatie/folder de lucru): lista de proiecte din Downloads\PRODUCTIE, PDF-uri automate (`PdfAutoFill.rows`), toate actiunile cap-coada (inclusiv perechi V/W la nivel de proiect, Compara OUD/NIEUW, Flux complet, Regenereaza raportul, Compara cu serverul), erori clare, rezultate in `Controle/Octop-PDFCONTROL`; `Release11214Test` (816 verificari). Neverificat live: GUI cu date reale, QA nativ nerulat.
 - 1.28.13 - unealta `pdfcontrol_fix_missing_pairs` (plase pereche lipsa: numarul plasei se citeste de pe desen, se cauta in folderul proiectului/desene finale si se copiaza sub numele perechii, fara suprascriere; conventia vine din motorul `mbs_webapp`: `<proiect>_<marca>_V.pdf` -> `<proiect>_<marca>_W.pdf`), prioritate in prompt si hint la `run_command`; copierea pe server si fisierele noi se fac fara card (decizia lui Dumitru), dar suprascrierea/modificarea pe loc, mutarea si stergerea pe server cer inca confirmare, iar blocurile `FileGuard` pentru scripturi/.md/_tmp* raman. Teste: `Release11213Test` (82), `test_fix_missing_pairs.py` (7). Apoi: `pdfcontrol_compare_server_revisions` (doar citire, server vs descarcat dupa numar desen si revizie), rutarea prompt-ului pentru `pdfcontrol_start_check`/`pdfcontrol_start_compare` si completarea automata a proiectului/PDF-urilor (`PdfAutoFill`). Dialogul PDFCONTROL standalone este mutat in 1.28.14.
 
 ### Rezultate de verificare (build.bat complet, 1.28.2)

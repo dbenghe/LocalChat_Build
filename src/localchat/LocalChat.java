@@ -234,6 +234,8 @@ public final class LocalChat extends JFrame {
     private boolean busy;
     private Turn current;
     private Path conversationFile;
+    private boolean pdfControlLogged;
+    List<String> pdfControlNotices; // tests: collects the messages instead of opening a window
     private Conversations.State sessionState=new Conversations.State();
     private WorkspacePanel workspace;
     private final javax.swing.DefaultComboBoxModel<Path> reportModel=new javax.swing.DefaultComboBoxModel<>();
@@ -984,14 +986,27 @@ public final class LocalChat extends JFrame {
         new ImportAuditDialog(this,folder,audit).setVisible(true);
     }
 
+    /** 1.28.14: opens from the PDFCONTROL button, the Tools menu or /pdfcontrol; needs no conversation and no working folder. */
     private void showPdfControl() {
-        if(parallelBlocked(input.getText(),currentWorkDir()))return;
-        if(busy){setStatus("Opreste generarea inainte de aceasta comanda.",true);return;}
-        if(permissionBox.getSelectedIndex()==2){setStatus("Mod doar citire: modificarile si comenzile sunt blocate.",true);return;}
+        PdfControlDialog dialog=createPdfControl();
+        if(dialog!=null)dialog.setVisible(true);
+    }
+    /** Null (after a message the user sees) when the dialog cannot open now. */
+    PdfControlDialog createPdfControl() {
+        if(parallelBlocked(input.getText(),currentWorkDir())){pdfControlNotice(t("Acest proiect lucreaza deja in alt chat. Revino la acel chat sau asteapta terminarea."));return null;}
+        if(busy){pdfControlNotice(t("Opreste generarea inainte de aceasta comanda."));return null;}
         McpServer server=mcp.servers().stream().filter(s->s.tools().stream().anyMatch(tool->tool.name.equals("pdfcontrol_start_workflow"))).findFirst().orElse(null);
-        if(server==null){setStatus("PDFCONTROL complet nu este conectat. Reporneste serverele MCP.",true);return;}
-        new PdfControlDialog(this,server,currentWorkDir(),operation->{
-            ensureSession();history.add(ChatClient.Message.user(t("Operatie PDFCONTROL: {0}",operation)));header("PDFCONTROL",botHeader);append(operation,body);saveConversation();setBusy(true);
+        if(server==null){
+            String detail=mcp.status();
+            pdfControlNotice(mcpSummary==null?t("Tool-urile PDFCONTROL pornesc inca. Incearca din nou peste cateva secunde."):t("PDFCONTROL complet nu este conectat. Reporneste serverele MCP.")+(detail.isBlank()?"":"\n"+t("Stare MCP: {0}",detail)));
+            return null;
+        }
+        List<String> hints=new ArrayList<>();
+        for(int i=Math.max(0,history.size()-12);i<history.size();i++){String content=history.get(i).content;if(content!=null)hints.add(content.length()>4000?content.substring(0,4000):content);}
+        return new PdfControlDialog(this,server,currentWorkDir(),hints,appDir,this::pdfControlTools,()->permissionBox.getSelectedIndex()==2,operation->{
+            pdfControlLogged=conversationFile!=null;
+            if(pdfControlLogged){history.add(ChatClient.Message.user(t("Operatie PDFCONTROL: {0}",operation)));header("PDFCONTROL",botHeader);append(operation,body);saveConversation();}
+            setBusy(true);
         },record->{
             String state=Json.str(record,"status");StringBuilder result=new StringBuilder(PdfControlDialog.localizedStatus(state));
             String id=Json.str(record,"job_id");if(id!=null)result.append("\n").append(id);
@@ -999,8 +1014,16 @@ public final class LocalChat extends JFrame {
             String limitation=PdfControlDialog.limitations(record);if(!limitation.isBlank())result.append("\n").append(limitation);
             StringBuilder saved=new StringBuilder(result);Object outputs=Json.get(record,"artifacts");
             if(outputs instanceof List)for(Object output:(List<?>)outputs){String path=Json.str(output,"path");if(path!=null)saved.append("\n").append(path);}
-            addReports(Json.write(record));history.add(ChatClient.Message.assistant(saved.toString(),Collections.emptyList(),"PDFCONTROL"));append("\n"+result,Set.of("failed","cancelled").contains(state)?errorStyle:body);saveConversation();
-        },folder->{workDirField.setText(folder.toString());saveConfig();},()->{setBusy(false);refreshDashboard();}).setVisible(true);
+            addReports(Json.write(record));
+            if(pdfControlLogged){history.add(ChatClient.Message.assistant(saved.toString(),Collections.emptyList(),"PDFCONTROL"));append("\n"+result,Set.of("failed","cancelled").contains(state)?errorStyle:body);saveConversation();}
+        },folder->{if(conversationFile!=null){workDirField.setText(folder.toString());saveConfig();}},()->{setBusy(false);refreshDashboard();});
+    }
+    /** The dialog's own tools: the confirmation shown in the dialog is the approval, so the permission card is answered yes. */
+    private Tools pdfControlTools(Path folder) {
+        return new Tools(new Tools.Context(folder,skillsDir,rulesFile,configFile,commandEnv(),pdfPython(),new Mcp(),pathMap(),true,EnumSet.noneOf(Tools.Access.class),(title,details)->Tools.Decision.YES),List.of());
+    }
+    private void pdfControlNotice(String text) {
+        if(pdfControlNotices!=null)pdfControlNotices.add(text);else JOptionPane.showMessageDialog(this,text,"PDFCONTROL",JOptionPane.WARNING_MESSAGE);
     }
 
     private void saveProviderDialog() {

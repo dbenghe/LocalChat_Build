@@ -102,6 +102,20 @@ final class PdfAutoFill {
         return oldFiles.isEmpty() || newFiles.isEmpty() ? null : List.of(oldFiles, newFiles);
     }
 
+    /** All pdfcontrol_project_files rows of a project (paged by the engine, 100 per page). */
+    static List<Object> rows(String project, java.util.function.BiFunction<String, Map<String, Object>, Object> call) {
+        List<Object> rows = new ArrayList<>();
+        Object offset = 0;
+        for (int page = 0; page < 400; page++) {
+            Object result = call.apply("pdfcontrol_project_files", Json.obj("project", project, "offset", offset));
+            Object part = Json.get(result, "files");
+            if (part instanceof List) rows.addAll((List<?>) part);
+            offset = Json.get(result, "next_offset");
+            if (!(offset instanceof Number)) break;
+        }
+        return rows;
+    }
+
     /** Fills a missing project (from the working folder) and missing files (all original drawings). Throws a clear message when it cannot. */
     static Map<String, Object> fill(String tool, Map<String, Object> args, Path workDir, java.util.function.BiFunction<String, Map<String, Object>, Object> call) throws Exception {
         boolean compare = tool.equals("pdfcontrol_start_compare");
@@ -116,15 +130,7 @@ final class PdfAutoFill {
         String project = String.valueOf(out.get("project"));
         boolean missing = compare ? isEmpty(out.get("old_files")) || isEmpty(out.get("new_files")) : isEmpty(out.get("files"));
         if (!missing) return out;
-        List<Object> rows = new ArrayList<>();
-        Object offset = 0;
-        for (int page = 0; page < 400; page++) {
-            Object result = call.apply("pdfcontrol_project_files", Json.obj("project", project, "offset", offset));
-            Object part = Json.get(result, "files");
-            if (part instanceof List) rows.addAll((List<?>) part);
-            offset = Json.get(result, "next_offset");
-            if (!(offset instanceof Number)) break;
-        }
+        List<Object> rows = rows(project, call);
         if (compare) {
             List<List<String>> sides = compareDefaults(rows);
             if (sides == null || sides.get(0).size() > MAX_FILES || sides.get(1).size() > MAX_FILES)

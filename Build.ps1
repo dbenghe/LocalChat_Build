@@ -63,6 +63,8 @@ if ($LASTEXITCODE) { throw 'Vision attachment tests failed' }
 if ($LASTEXITCODE) { throw 'FAST tool/UI integration tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/pairs-home" "-Daudit.python=$taskPdfPython" "-Daudit.package=$PSScriptRoot/pdfcontrol" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.Release11213Test
 if ($LASTEXITCODE) { throw 'Failed: Release11213Test' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/standalone-home" "-Daudit.python=$taskPdfPython" "-Daudit.package=$PSScriptRoot/pdfcontrol" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.Release11214Test
+if ($LASTEXITCODE) { throw 'Failed: Release11214Test' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/import-audit-home" "-Daudit.python=$taskPdfPython" "-Daudit.package=$PSScriptRoot/pdfcontrol" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ImportAuditTest
 if ($LASTEXITCODE) { throw 'Offline audit permissions/integration tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/compaction-budget-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.CompactionBudgetTest
