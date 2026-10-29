@@ -62,7 +62,7 @@ final class Tools {
             + "[print('--- pagina %d ---\\n%s'%(i+1,d[i].get_text())) for i in range(a-1,b)]";
     static final List<String> BUILTIN = List.of("list_dir", "find_files", "search_text", "read_file",
             "extract_attachments", "write_file", "append_file", "edit_file", "make_dir", "copy_path", "move_path", "download_url", "run_command", "list_stray_files", "cleanup_stray_files",
-            "open_in_explorer", "read_skill", "save_rule", "pdfcontrol_compare_import", "pdfcontrol_prepare_fast_import", ToolRelevance.ENABLE);
+            "open_in_explorer", "read_skill", "save_rule", "pdfcontrol_compare_import", "pdfcontrol_prepare_fast_import", "pdfcontrol_fix_missing_pairs", "pdfcontrol_compare_server_revisions", ToolRelevance.ENABLE);
 
     enum Access { READ, WRITE, RUN }
 
@@ -125,7 +125,7 @@ final class Tools {
     Tools memories(LocalMemories store,String project,String user,String chat){memories=store;memoryProject=project;memoryUser=user;memoryChat=chat;return this;}
     private boolean readOnly,analysisOnly,analysisReports;
     Tools analysisOnly(){analysisReports=!readOnly;readOnly=true;analysisOnly=true;return this;}
-    private boolean analysisTool(String name){McpRef ref=mcpTools.get(name);return ref!=null?ref.tool().readOnly:Set.of("list_dir","find_files","search_text","read_file","read_skill").contains(name)||(analysisReports&&name.equals("pdfcontrol_compare_import"));}
+    private boolean analysisTool(String name){McpRef ref=mcpTools.get(name);return ref!=null?ref.tool().readOnly:Set.of("list_dir","find_files","search_text","read_file","read_skill","pdfcontrol_compare_server_revisions").contains(name)||(analysisReports&&name.equals("pdfcontrol_compare_import"));}
     Tools readOnly(boolean value){readOnly=value;return this;}
     private FileGuard guard=FileGuard.disabled();
     /** 1.28.11: scratch folder, helper-file guard and server-write guard of this turn. Without it (tests, helpers) Tools behave as before. */
@@ -216,7 +216,7 @@ final class Tools {
                 "open_in_browser", "boolean", "Do not download; open the address in the default browser (asks the user)."));
         String env = ctx.commandEnv().isEmpty() ? "" : " Environment variables: "
                 + String.join(", ", ctx.commandEnv().keySet()) + " (use as %NAME%).";
-        out.add(spec("run_command", "Run a Windows command line (cmd.exe .cmd script: write %% for %) and return output and exit code. For programs and scripts, not for reading files. Multiline Python: write_file a .py into the scratch folder (system prompt), run it by absolute path; cwd may stay the project. Never leave scripts or temp files in a project or on a server; never retry a failed inline program unchanged." + env,
+        out.add(spec("run_command", "Run a Windows command line (cmd.exe .cmd script: write %% for %) and return output and exit code. For programs and scripts, not for reading files. Multiline Python: write_file a .py into the scratch folder (system prompt), run it by absolute path; cwd may stay the project. Never leave scripts or temp files in a project or on a server; never retry a failed inline program unchanged. Missing W pairs: pdfcontrol_fix_missing_pairs." + env,
                 List.of("command"),
                 "command", "string", "Command line.",
                 "cwd", "string", "Folder (default: working folder).",
@@ -247,9 +247,26 @@ final class Tools {
                 "Create a new local FAST XLSX from saved factory/article conversion rules (PIR area quantities in FAST Lengte, 1000 per metre): recomputes from original dimensions, keeps Aantal/descriptions, writes an audit; no server copy, no API. Missing rules or ambiguous dimensions fail; never guess. Output: a new file in the working folder.",List.of("project","factory","input","output"),
                 "project","string","Confirmed six-digit project.","factory","string","soest, alphen, veenoord or lelystad (confirmed).",
                 "input","string","Source XLSX.","output","string","New XLSX path, not the input."));
+        out.add(new ChatClient.ToolSpec("pdfcontrol_fix_missing_pairs",
+                "Missing W pair (plasa pereche) of V drawings: reads the mesh number on the drawing, finds that W in the project (final/separate drawings), copies it as a NEW file under the pair name. Never overwrites; ambiguous cases are only reported. Use FIRST, no scripts. apply=false: list only.",
+                Json.obj("type","object","properties",Json.obj(
+                    "project",Json.obj("type","string","pattern","^[0-9]{6}$"),
+                    "project_root",Json.obj("type","string","description","Project folder."),
+                    "folders",Json.obj("type","array","items",Json.obj("type","string"),"maxItems",50,"description","Default: all V folders."),
+                    "source_folders",Json.obj("type","array","items",Json.obj("type","string"),"maxItems",20,"description","Default: whole project."),
+                    "apply",Json.obj("type","boolean","description","false: dry run.")),
+                    "required",List.of("project","project_root"),"additionalProperties",false)));
+        out.add(new ChatClient.ToolSpec("pdfcontrol_compare_server_revisions",
+                "Read-only: compares drawings of the server project folder (J:) with the downloaded project folder per drawing number and revision (PDF revision field, else _rev name suffix): newer locally / same / older / only local / only server. Use instead of PowerShell. Writes nothing; copy afterwards only as new files.",
+                Json.obj("type","object","properties",Json.obj(
+                    "project",Json.obj("type","string","pattern","^[0-9]{6}$"),
+                    "server_folder",Json.obj("type","string","description","Project folder on the server (find it by listing)."),
+                    "local_folder",Json.obj("type","string","description","Default: Downloads\\PRODUCTIE\\<project>.")),
+                    "required",List.of("project","server_folder"),"additionalProperties",false)));
         for (Map.Entry<String, McpRef> e : mcpTools.entrySet()) {
             McpServer.Tool t = e.getValue().tool();
             Map<String, Object> schema = t.schema.containsKey("type") ? t.schema : Json.obj("type", "object", "properties", Json.obj());
+            if (PdfAutoFill.defaults(e.getKey())) schema = PdfAutoFill.optional(schema); // 1.28.13: project and files are filled in when omitted
             String server = e.getValue().server().name;
             // The server prefix is redundant when the tool name already starts with the server name (pdfcontrol_*).
             boolean named = e.getKey().toLowerCase(Locale.ROOT).startsWith(server.toLowerCase(Locale.ROOT));
@@ -326,6 +343,8 @@ final class Tools {
                 case "open_in_explorer" -> Result.ok(openInExplorer(path(required(a, "path"))));
                 case "pdfcontrol_compare_import" -> compareImport(a);
                 case "pdfcontrol_prepare_fast_import" -> prepareFastImport(a);
+                case "pdfcontrol_fix_missing_pairs" -> fixMissingPairs(a);
+                case "pdfcontrol_compare_server_revisions" -> compareServerRevisions(a);
                 case "read_skill" -> Result.ok(Skills.read(skills, required(a, "name"), ctx.paths()::text));
                 case "save_rule" -> Result.ok(saveRule(required(a, "rule"),str(a,"scope","global"),str(a,"project",memoryProject)));
                 default -> Result.error("Tool necunoscut: " + call.name);
@@ -438,9 +457,17 @@ final class Tools {
         return serverCard(files, null);
     }
 
+    /** 1.28.13: only files that already exist can be overwritten, modified in place or deleted; new files and new copies need no card. */
+    static List<Path> existingFiles(Collection<Path> files) {
+        List<Path> out = new ArrayList<>();
+        for (Path f : files) if (Files.isRegularFile(f)) out.add(f);
+        return out;
+    }
+
     private boolean serverCard(Collection<Path> files, String command) throws ToolError {
         ensureActive();
         if (readOnly) throw new ToolError(I18n.text("Mod doar citire: modificarile si comenzile sunt blocate."));
+        if (files.isEmpty()) return true; // 1.28.13: nothing that already exists is touched, so there is nothing to confirm
         synchronized (ASK) {
             Decision d = ctx.permission() == null ? Decision.NO : ctx.permission().ask(FileGuard.COPY_TITLE, FileGuard.serverDetails(files) + (command == null ? "" : "\n\n" + I18n.text("Comanda atinge o cale de server (analiza aproximativa, deci confirmarea listeaza tot ce atinge calea):\n{0}", clip(command, 600))));
             ensureActive();
@@ -451,7 +478,7 @@ final class Tools {
 
     /** A server write asks with its file list instead of the generic card; scratch files need no card (read-only mode still blocks them). */
     private void permit(Path p, Access access, String title, String details) throws ToolError {
-        if (guard.server(p) && serverCard(List.of(p))) return;
+        if (guard.server(p) && serverCard(existingFiles(List.of(p)))) return;
         plainPermit(p, access, title, details);
     }
 
@@ -855,8 +882,15 @@ final class Tools {
             if (!dropped.isEmpty()) notes.get().add(I18n.text("Omise {0} fisiere ajutatoare sau nepermise din copiere: {1}", dropped.size(), FileGuard.list(dropped).replace('\n', ' ')));
             landing = kept;
         } else if (guard.project(target) || guard.server(target)) refuseHelper(target, false);
-        if (!(guard.server(target) && serverCard(landing)))
+        // 1.28.13: copying (or moving) a new file onto a server asks nothing; only overwriting an existing server file or moving a file off the server does.
+        List<Path> serverTouch = new ArrayList<>();
+        if (guard.server(target) && overwrite) serverTouch.addAll(existingFiles(landing));
+        if (move && guard.server(source) && Files.exists(source)) serverTouch.add(source);
+        if (guard.server(target)) serverCard(serverTouch);
+        else {
             plainPermit(target, Access.WRITE, move ? "Mutare" : "Copiere", source + "\n→ " + target + (overwrite ? "\n(inlocuieste ce exista)" : ""));
+            serverCard(serverTouch);
+        }
         checkCopyCancelled();
         if (Files.isDirectory(source)) {
             // Validate the entire source/target tree before the first mutation, including nested settings.
@@ -941,6 +975,76 @@ final class Tools {
         }finally{Files.deleteIfExists(temp);}
     }
 
+    /** 1.28.13: V drawings without their W pair; the mesh named on the drawing is copied from the final/separate drawings as a new file. Pair convention: see integration/fix_missing_pairs.py. */
+    private Result fixMissingPairs(Map<String,Object> args)throws IOException,ToolError{
+        if(!Set.of("project","project_root","folders","source_folders","apply").containsAll(args.keySet()))throw new ToolError("Unknown pair arguments");
+        String project=required(args,"project");
+        if(!project.matches("[0-9]{6}"))throw new ToolError("An explicit six-digit project is required");
+        Path root=readable(required(args,"project_root"));
+        if(!Files.isDirectory(root))throw new ToolError("Project folder not found: "+root);
+        Path home=ctx.secretFile().toAbsolutePath().getParent(),script=home.resolve("pdfcontrol/fix_missing_pairs.py");String python=ctx.pdfPython();
+        if(python==null||!Files.isRegularFile(Path.of(python))||!Files.isRegularFile(script))throw new ToolError("Local PDFCONTROL pair runtime is unavailable");
+        boolean apply=!Boolean.FALSE.equals(args.get("apply"))&&!"false".equalsIgnoreCase(String.valueOf(args.get("apply")))&&!readOnly;
+        Map<String,Object> request=new LinkedHashMap<>();request.put("project",project);request.put("project_root",root.toRealPath().toString());
+        for(String key:List.of("folders","source_folders")){
+            Object raw=args.getOrDefault(key,List.of());
+            if(!(raw instanceof List<?> values)||values.size()>(key.equals("folders")?50:20))throw new ToolError("Invalid folder list: "+key);
+            List<String> folders=new ArrayList<>();
+            for(Object value:values){if(!(value instanceof String))throw new ToolError("Folder must be text");Path folder=readable((String)value);
+                if(!Files.isDirectory(folder))throw new ToolError("Folder not found: "+folder);folders.add(folder.toRealPath().toString());}
+            if(!folders.isEmpty())request.put(key,folders);
+        }
+        request.put("apply",apply);
+        Path reports=home.resolve("analyses/pairs");
+        allow(apply?Access.WRITE:Access.READ,I18n.text("Completeaza plasele pereche lipsa"),I18n.text("Proiect {0}: plasele pereche lipsa se cauta dupa numarul de pe plan si se copiaza ca fisiere noi cu numele perechii; nimic nu se suprascrie, nu se sterge.",project)+"\n"+root+(apply?"":"\n("+I18n.text("doar lista, fara copiere")+")"));
+        ensureActive();Path temp=Files.createTempFile("localchat-pairs-",".json");
+        try{
+            Files.writeString(temp,Json.write(request),StandardCharsets.UTF_8);
+            Output result=exec(List.of(python,"-I",script.toString(),"--request",temp.toString(),"--output",reports.toString()),ctx.workDir(),ctx.commandEnv(),600);
+            ensureActive();
+            if(!result.finished())return Result.error(I18n.text("Controlul local a depasit limita de timp. Sursele au ramas nemodificate."));
+            return new Result(cap(result.text(),MCP_OUTPUT),result.exitCode()!=0);
+        }finally{Files.deleteIfExists(temp);}
+    }
+
+    /** 1.28.13: read-only comparison of the server project folder with the downloaded one, per drawing number and revision. Convention: see integration/compare_server_revisions.py. */
+    private Result compareServerRevisions(Map<String,Object> args)throws IOException,ToolError{
+        if(!Set.of("project","local_folder","server_folder").containsAll(args.keySet()))throw new ToolError("Unknown revision arguments");
+        String project=required(args,"project");
+        if(!project.matches("[0-9]{6}"))throw new ToolError("An explicit six-digit project is required");
+        String localText=str(args,"local_folder",null);
+        Path local=readable(localText!=null&&!localText.isBlank()?localText:Path.of(System.getProperty("user.home"),"Downloads","PRODUCTIE",project).toString()),server=readable(required(args,"server_folder"));
+        for(Path folder:List.of(local,server))if(!Files.isDirectory(folder))throw new ToolError("Folder not found: "+folder);
+        Path home=ctx.secretFile().toAbsolutePath().getParent(),script=home.resolve("pdfcontrol/compare_server_revisions.py");String python=ctx.pdfPython();
+        if(python==null||!Files.isRegularFile(Path.of(python))||!Files.isRegularFile(script))throw new ToolError("Local PDFCONTROL revision runtime is unavailable");
+        Map<String,Object> request=new LinkedHashMap<>();request.put("project",project);request.put("local_folder",local.toRealPath().toString());request.put("server_folder",server.toRealPath().toString());
+        allow(Access.READ,I18n.text("Compara revizii server cu local"),I18n.text("Proiect {0}: doar citire; planurile de pe server se compara cu cele din folderul local dupa numarul planului si revizie. Nimic nu se scrie langa planuri.",project)+"\n"+local+"\n"+server);
+        ensureActive();Path temp=Files.createTempFile("localchat-revisions-",".json");
+        try{
+            Files.writeString(temp,Json.write(request),StandardCharsets.UTF_8);
+            Output result=exec(List.of(python,"-I",script.toString(),"--request",temp.toString(),"--output",home.resolve("analyses/revisions").toString()),ctx.workDir(),ctx.commandEnv(),600);
+            ensureActive();
+            if(!result.finished())return Result.error(I18n.text("Comparatia a depasit limita de timp. Nimic nu a fost modificat."));
+            return new Result(cap(result.text(),MCP_OUTPUT),result.exitCode()!=0);
+        }finally{Files.deleteIfExists(temp);}
+    }
+
+    /** 1.28.13: run_command that OCRs or text-extracts PDFs by hand for a drawing control is pointed to pdfcontrol_start_check. */
+    static boolean checkHunt(String command){
+        if(command==null)return false;String c=command.toLowerCase(Locale.ROOT);
+        return c.contains(".pdf")&&c.matches("(?s).*(pytesseract|tesseract|\\bocr\\b|pdftotext|pdftoppm|get_text|pymupdf|\\bfitz\\b|pdfplumber|pypdf).*");
+    }
+    /** 1.28.13: hand-made server-versus-download revision checks are pointed to pdfcontrol_compare_server_revisions. */
+    static boolean serverRevisionHunt(String command){
+        if(command==null)return false;String c=command.toLowerCase(Locale.ROOT).replace('/','\\');
+        return c.matches("(?s).*([a-z]:\\\\|\\\\\\\\[a-z0-9]).*")&&c.contains("downloads")&&c.matches("(?s).*(compare-object|get-filehash|lastwritetime|robocopy|\\bfc\\b|\\bcomp\\b|_rev|revisie).*");
+    }
+
+    /** 1.28.13: run_command that hunts or copies _V/_W drawings by hand is pointed to the dedicated tool. */
+    static boolean pairHunt(String command){
+        if(command==null)return false;String c=command.toLowerCase(Locale.ROOT);
+        return c.matches("(?s).*_[vw](\\.pdf|\\*).*")&&c.matches("(?s).*(copy|xcopy|robocopy|copy-item|\\bcp\\b|shutil|get-childitem|\\bdir\\b|\\bfind\\b|glob|os\\.walk|move|rename).*");
+    }
     private Result prepareFastImport(Map<String,Object> args)throws IOException,ToolError{
         if(!Set.of("project","factory","input","output").containsAll(args.keySet()))throw new ToolError("Unknown FAST arguments");
         String project=required(args,"project"),factory=required(args,"factory");
@@ -1007,6 +1111,9 @@ final class Tools {
         guardCommand(command, cwd);
         sensitive(SensitiveGuard.scan(command, cwd), command + "\n\n" + I18n.text("In folderul: {0}", String.valueOf(cwd)));
         allow(Access.RUN, "Rulare comanda", command + "\n\nIn folderul: " + cwd);
+        if(checkHunt(command))notes.get().add(I18n.text("Control plansa: foloseste pdfcontrol_start_check, apoi pdfcontrol_job_summary si pdfcontrol_job_findings (proiectul si PDF-urile se completeaza automat) in loc de OCR sau scripturi PowerShell/Python."));
+        if(serverRevisionHunt(command))notes.get().add(I18n.text("Revizii server: foloseste pdfcontrol_compare_server_revisions (doar citire, dupa numarul planului si revizie) in loc de scripturi PowerShell/Python."));
+        if(pairHunt(command))notes.get().add(I18n.text("Plase pereche lipsa: foloseste pdfcontrol_fix_missing_pairs (citeste numarul de pe plan, cauta in desenele finale si copiaza cu numele perechii, fara suprascriere) in loc de scripturi PowerShell/Python."));
         List<Path> strayBefore = guard.project(cwd) ? strayNames(cwd) : List.of();
         Path script = Files.createTempFile("localchat-", ".cmd");
         // 1.28.9: clearly read-only commands (dir, type, git status, ...) cannot produce files, so they are not scoped at all; other commands only fingerprint their declared write targets.
@@ -1047,7 +1154,7 @@ final class Tools {
             if (op.kind() == FileGuard.Kind.WRITE || op.kind() == FileGuard.Kind.DIR) {
                 boolean dir = op.kind() == FileGuard.Kind.DIR;
                 refuseHelper(dest, dir);
-                if (!dir && guard.server(dest)) server.add(dest);
+                if (!dir && guard.server(dest) && Files.isRegularFile(dest)) server.add(dest);
                 continue;
             }
             boolean toServer = guard.server(dest);
@@ -1055,14 +1162,17 @@ final class Tools {
             if (toServer && op.mirror()) throw new ToolError(I18n.text("Sincronizarea cu stergere (/MIR, /PURGE) pe server este interzisa: {0}. Foloseste copy_path pentru fisierele de productie.", dest));
             List<FileGuard.Item> items = FileGuard.sources(op, cwd);
             if (items == null) {
-                if (toServer) throw new ToolError(I18n.text("Copierea pe server dintr-o sursa care nu poate fi listata ({0}) nu e permisa din run_command. Foloseste copy_path, ca utilizatorul sa vada lista exacta.", op.source()));
+                if (toServer) throw new ToolError(I18n.text("Copierea pe server dintr-o sursa care nu poate fi listata ({0}) nu e permisa din run_command. Foloseste copy_path, care verifica fiecare fisier.", op.source()));
                 if (!Files.isDirectory(dest)) refuseHelper(dest, false);
                 continue;
             }
             List<Path> planned = FileGuard.planned(op, items, cwd);
             if (planned == null) continue;
             for (Path target : planned) refuseHelper(target, false);
-            if (toServer) server.addAll(planned);
+            if (toServer) {
+                server.addAll(existingFiles(planned)); // 1.28.13: new copies need no card, overwrites do
+                if (op.kind() == FileGuard.Kind.MOVE) for (FileGuard.Item item : items) if (guard.server(item.file()) && Files.exists(item.file())) server.add(item.file());
+            }
         }
         List<Path> fuzzy = guard.networkWrites(command, cwd);
         if (!server.isEmpty() || !fuzzy.isEmpty()) {
@@ -1191,6 +1301,18 @@ final class Tools {
     }
 
     private Result callMcp(McpRef ref, Map<String, Object> args) throws IOException, ToolError {
+        if (PdfAutoFill.defaults(ref.tool().name)) {
+            Map<String, Object> filled;
+            try {
+                filled = PdfAutoFill.fill(ref.tool().name, args, ctx.workDir(), (tool, a) -> {
+                    try {Result p = ref.server().call(tool, a, 60_000); if (p.isError) throw new IllegalStateException(p.text); return Json.parse(p.text);}
+                    catch (IOException error) {throw new IllegalStateException(error.getMessage(), error);}
+                });
+            } catch (IllegalArgumentException error) {throw new ToolError(error.getMessage());}
+            catch (Exception error) {throw new ToolError("PDFCONTROL auto-fill failed: " + error.getMessage());}
+            if (!filled.equals(args)) notes.get().add(I18n.text("PDFCONTROL: proiectul si lista de PDF-uri au fost completate automat (folderul de lucru, toate planurile originale; OUD/NIEUW la comparare)."));
+            args = filled;
+        }
         if (!ref.tool().readOnly) {
             allow(Access.RUN, "Tool " + ref.server().name + ": " + ref.tool().name, clip(Json.write(args), 1500));
         }

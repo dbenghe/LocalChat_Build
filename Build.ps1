@@ -28,6 +28,10 @@ if ($LASTEXITCODE) { throw 'Owned engine build isolation tests failed' }
 if ($LASTEXITCODE) { throw "FAST conversion tests failed" }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_import_audit.py"
 if ($LASTEXITCODE) { throw 'Local import/catalogue/drawing audit tests failed' }
+& $taskPdfPython -I "$PSScriptRoot/integration/test_fix_missing_pairs.py"
+if ($LASTEXITCODE) { throw 'Missing pair (plasa pereche) tool tests failed' }
+& $taskPdfPython -I "$PSScriptRoot/integration/test_compare_server_revisions.py"
+if ($LASTEXITCODE) { throw 'Server revision comparison tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_catalogue_manager.py"
 if ($LASTEXITCODE) { throw 'Catalogue import/rollback/upgrade preservation tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_catalogue_update.py"
@@ -57,6 +61,8 @@ if ($LASTEXITCODE) { throw 'Runtime stability/output provenance tests failed' }
 if ($LASTEXITCODE) { throw 'Vision attachment tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/fast-import-home" "-Daudit.python=$taskPdfPython" "-Daudit.package=$PSScriptRoot/pdfcontrol" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.FastImportTest
 if ($LASTEXITCODE) { throw 'FAST tool/UI integration tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/pairs-home" "-Daudit.python=$taskPdfPython" "-Daudit.package=$PSScriptRoot/pdfcontrol" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.Release11213Test
+if ($LASTEXITCODE) { throw 'Failed: Release11213Test' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/import-audit-home" "-Daudit.python=$taskPdfPython" "-Daudit.package=$PSScriptRoot/pdfcontrol" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ImportAuditTest
 if ($LASTEXITCODE) { throw 'Offline audit permissions/integration tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/compaction-budget-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.CompactionBudgetTest

@@ -18,7 +18,7 @@ final class ToolRelevance {
     static final String COMMAND = "command";
     static final List<String> GROUPS = List.of(FILES, COMMAND);
     private static final List<String> FILE_TOOLS = List.of("write_file", "append_file", "edit_file", "make_dir", "copy_path", "move_path",
-            "extract_attachments", "save_rule", "pdfcontrol_prepare_fast_import", "download_url", "list_stray_files", "cleanup_stray_files");
+            "extract_attachments", "save_rule", "pdfcontrol_prepare_fast_import", "pdfcontrol_fix_missing_pairs", "pdfcontrol_compare_server_revisions", "download_url", "list_stray_files", "cleanup_stray_files");
     private static final List<String> COMMAND_TOOLS = List.of("run_command");
     /** Word-start stems (ASCII, lower case) in Romanian, Dutch, English, Spanish, Polish and Turkish. */
     private static final List<String> FILE_STEMS = List.of(
@@ -29,7 +29,11 @@ final class ToolRelevance {
             "zapisz", "zapis", "utworz", "stworz", "zmien", "zmodyf", "edytuj", "kopiuj", "skopiuj", "przenies", "dodaj", "zastap", "eksport", "zapamietaj", "zalacznik", "pobierz", "pobran", "sciagn",
             "yaz", "kaydet", "olustur", "degistir", "duzenle", "kopyala", "tasi", "ekle", "hatirla", "ek dosya", "indirin", "indirme", "indirir",
             // 1.28.11: cleaning stray helper files
-            "curat", "sterg", "stray", "clean", "opruim", "verwijder", "limpi", "elimin", "wyczy", "usun", "temiz");
+            "curat", "sterg", "stray", "clean", "opruim", "verwijder", "limpi", "elimin", "wyczy", "usun", "temiz",
+            // 1.28.13: missing V/W pairs (plasa pereche, wapening, malla, siatka, hasir)
+            "pereche", "plasa", "plase", "paar", "pair", "mesh", "pareja", "malla", "siatk", "hasir", "cift",
+            // 1.28.13: server versus downloaded revisions
+            "revizi", "revisi", "revision", "server", "servidor", "serwer", "sunucu", "rewizj", "revizy");
     private static final List<String> COMMAND_STEMS = List.of(
             "comand", "command", "script", "python", "powershell", "terminal", "instal", "cmd", "pip", "git", "bat", "ps1", "py",
             "opdracht", "uitvoer", "comando", "ejecut", "polecen", "uruchom", "komut", "betik", "calistir", "run_command");

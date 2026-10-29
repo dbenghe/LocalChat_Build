@@ -72,7 +72,7 @@ public final class RuleCoverageTest {
   // no triple duplication: PDFCONTROL operating rules live in the skill, the prompt only keeps the essentials
   check(!skill.contains("wait_seconds=10")&&!skill.contains("Apeleaza pdfcontrol_job_status"),"skill no longer tells the model to poll");
   check(!normal.contains("poll"),"prompt does not tell the model to poll");
-  check(prompt[0].length()<5600,"static MBS system prompt stays compact: "+prompt[0].length()); // 1.28.9: 4494 -> 4740 chars (+246, ~+62 tokens) for the expert/ask-only-if-material answer rule
+  check(prompt[0].length()<6450,"static MBS system prompt stays compact: "+prompt[0].length()); // 1.28.13: 5900 -> 6450 (~+480 chars) for check/compare/server-revision routing; before: 5600 -> 5900 (~+350 chars, ~+90 tokens) for the pdfcontrol_fix_missing_pairs-first rule and the new server rule // 1.28.9: 4494 -> 4740 chars (+246, ~+62 tokens) for the expert/ask-only-if-material answer rule
   check(normal.indexOf("independent analysis agents")==normal.lastIndexOf("independent analysis agents"),"delegation rules appear once");
   check(normal.indexOf("localchat_interaction")==normal.lastIndexOf("localchat_interaction"),"interaction rules appear once");
   // 1.28.0: +~1.3k for the summary/findings/catalogue section, offset by ~0.7k trimmed elsewhere; net +0.6k.
@@ -94,7 +94,7 @@ check(skill.length()<9500,"skill stays compact: "+skill.length());
    config.setProperty("tools.all","false");sizes[3]=((List<?>)FeatureTest.call(app[0],"dashboardTools",new Class<?>[]{})).size();
   }catch(Exception e){throw new RuntimeException(e);}});
   check(sizes[0]<sizes[1],"default estimate hides tools that the explicit option sends: "+sizes[0]+" < "+sizes[1]);
-  check(sizes[3]<=sizes[2]&&sizes[3]<sizes[0],"read-only selective set is the smallest: "+sizes[3]);
+  /* 1.28.13: the read-only pdfcontrol_compare_server_revisions is visible in read-only mode but locked in the default selective set, so read-only is no longer strictly smaller: 9 = 9 */ check(sizes[3]<=sizes[2]&&sizes[3]<=sizes[0]&&sizes[3]<sizes[1],"read-only selective set is the smallest: "+sizes[3]+" (default "+sizes[0]+", all "+sizes[1]+", read-only all "+sizes[2]+")");
   FeatureTest.edt(()->app[0].dispose());
   System.out.println("PASS: "+checks+" rule coverage checks ("+RULES.size()+" rules, prompt "+prompt[0].length()+" chars, skill "+skill.length()+" chars)");System.exit(0);
  }

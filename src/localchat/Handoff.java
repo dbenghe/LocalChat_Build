@@ -62,7 +62,7 @@ final class Handoff {
         if(in.previousScratch()!=null&&!in.previousScratch().isBlank())b.append("- Scratch folder of the previous conversation (reference only): ").append(in.previousScratch()).append('\n');
         b.append("\n## Hard rules (still in force)\n");
         b.append("- Scripts, probes and temporary files only in the scratch folder above; never in a project folder or on a server share. Deliverables only in Output or Controle of the project.\n");
-        b.append("- Server writes only after the user confirms the exact file list, only production file types; a refused write is final, do not work around it.\n");
+        b.append("- New server files and copies need no question, only production file types; overwriting, editing, moving or deleting existing server files needs the user's confirmation; a refused write is final, do not work around it.\n");
         b.append("- Do not repeat operations listed as done; check the real state with a tool before redoing anything. \"Continue\" is not a restart.\n");
         b.append("- read_skill is available again in this conversation: load the skills the task needs, in full, once.\n\n");
         List<String> pending=pending(history,state,flight);

@@ -143,7 +143,7 @@ public final class Release11211Test {
         check(!stray.isError, "ordinary command still runs");
     }
 
-    /** Server (network) writes: new, overwrite, edit, copy, shell, scripts. Always a card, never remembered. */
+    /** Server (network) writes: new files and copies go without a card (1.28.13); overwrite, edit, append, move, delete and scripts always ask, never remembered. */
     static void serverTools(Path home) throws Exception {
         Path scratch = home.resolve("scratch3"), server = Files.createDirectories(home.resolve("server/Projecten/1")), local = Files.createDirectories(home.resolve("local"));
         char drive = server.getRoot().toString().charAt(0);
@@ -153,13 +153,14 @@ public final class Release11211Test {
             asked.clear();
             Tools t = tools(local, g, true, remembered);
             Path f = server.resolve("data.csv");
+            Files.deleteIfExists(f);
             Tools.Result r = run(t, "write_file", "path", f.toString(), "content", "a;b\n1;2\n");
-            check(!r.isError && Files.exists(f) && serverCards() == 1, "new server file asks once in allow-all: " + remembered);
-            check(!run(t, "write_file", "path", f.toString(), "content", "a;b\n3;4\n").isError && serverCards() == 2, "overwrite asks again, answer " + remembered + " is not remembered");
+            check(!r.isError && Files.exists(f) && serverCards() == 0, "1.28.13: new server file needs no card in allow-all: " + remembered);
+            check(!run(t, "write_file", "path", f.toString(), "content", "a;b\n3;4\n").isError && serverCards() == 1, "overwrite asks, answer " + remembered + " is not remembered");
             check(asked.get(0).contains(f.toString()) && asked.get(0).contains("csv x1"), "card lists the file and extension");
-            check(!run(t, "edit_file", "path", f.toString(), "old_text", "3;4", "new_text", "5;6").isError && serverCards() == 3 && Files.readString(f).contains("5;6"), "edit asks");
-            check(!run(t, "append_file", "path", f.toString(), "content", "7;8\n").isError && serverCards() == 4, "append asks");
-            check(asked.stream().noneMatch(a -> a.startsWith("Suprascriere") || a.startsWith("Modificare")), "no generic card for server writes");
+            check(!run(t, "edit_file", "path", f.toString(), "old_text", "3;4", "new_text", "5;6").isError && serverCards() == 2 && Files.readString(f).contains("5;6"), "edit asks");
+            check(!run(t, "append_file", "path", f.toString(), "content", "7;8\n").isError && serverCards() == 3, "append asks");
+            check(asked.stream().noneMatch(a -> a.startsWith("Suprascriere") || a.startsWith("Modificare") && !a.startsWith(FileGuard.COPY_TITLE)), "no generic card for server writes");
         }
         asked.clear();
         Tools no = tools(local, g, true, Tools.Decision.NO);
@@ -184,9 +185,7 @@ public final class Release11211Test {
         put(src.resolve("sub/_tmp.csv"), "4");
         asked.clear();
         Tools.Result copy = run(yes, "copy_path", "source", src.toString(), "destination", server.resolve("batch").toString());
-        check(!copy.isError && serverCards() == 1, "folder copy asks once: " + copy.text);
-        String card = asked.get(0);
-        check(card.contains("a.csv") && card.contains("b.pdf") && card.contains("d.xlsx") && card.contains("csv x1") && !card.contains("c.py") && !card.contains("README.md") && !card.contains("_tmp.csv"), "card lists only production files: " + card);
+        check(!copy.isError && serverCards() == 0 && asked.isEmpty(), "folder copy of new production files: no card, " + copy.text);
         check(Files.exists(server.resolve("batch/a.csv")) && Files.exists(server.resolve("batch/sub/d.xlsx")), "production files copied");
         check(!Files.exists(server.resolve("batch/c.py")) && !Files.exists(server.resolve("batch/README.md")) && !Files.exists(server.resolve("batch/sub/_tmp.csv")), "helper files stay out of the server");
         check(copy.text.contains("c.py") || copy.text.contains("README.md"), "result tells what was skipped: " + copy.text);
@@ -211,12 +210,11 @@ public final class Release11211Test {
                 "powershell -Command \"$t=[IO.File]::ReadAllText('" + data + "'); $t -replace 'a','b' | Set-Content -Path '" + data + "'\"",
                 "powershell -Command \"Add-Content '" + data + "' 'x'\"",
                 "powershell -Command \"'x' | Out-File '" + data + "'\"",
-                "powershell -Command \"Copy-Item '" + sp + "' '" + sp + "\\Complete Lijst' -Recurse\"",
                 "powershell -Command \"Move-Item '" + data + "' '" + sp + "\\moved.csv'\"",
                 "powershell -Command \"Remove-Item '" + data + "'\"",
                 "powershell -Command \"[System.IO.File]::WriteAllLines(\\\"" + data + "\\\", @('x'))\"",
-                "del \"" + data + "\"", "erase \"" + data + "\"", "copy \"" + data + "\" \"" + sp + "\\copy.csv\"", "move \"" + data + "\" \"" + sp + "\\m2.csv\"",
-                "xcopy \"" + sp + "\" \"" + sp + "\\x2\\\" /s /y", "robocopy \"" + sp + "\" \"" + sp + "\\r2\"", "echo x > \"" + data + "\"", "echo x >> \"" + data + "\"",
+                "del \"" + data + "\"", "erase \"" + data + "\"", "move \"" + data + "\" \"" + sp + "\\m2.csv\"",
+                "copy \"" + local.resolve("batch/a.csv") + "\" \"" + data + "\"", "echo x > \"" + data + "\"", "echo x >> \"" + data + "\"",
                 "type nul > \"" + sp.replace('\\', '/') + "/slash.csv\"", "ren \"" + data + "\" renamed.csv",
                 "python -c \"open(r'" + data + "','w').write('x')\"", "python -c \"import shutil; shutil.copy('a', r'" + data + "')\"",
                 "python -c \"open('" + data.replace("\\", "\\\\") + "','w')\""};
@@ -225,8 +223,19 @@ public final class Release11211Test {
             asked.clear();
             Tools t = tools(local, g, true, Tools.Decision.NO);
             Tools.Result r = run(t, "run_command", "command", command, "cwd", cwd.toString());
-            check(r.isError && serverCards() == 1 && Files.readString(f).equals(keep), "card + refusal, nothing ran: " + command);
+            check(r.isError && serverCards() == 1 && Files.readString(f).equals(keep) && Files.exists(f), "card + refusal, nothing ran (changes/deletes existing data or a script): " + command);
         }
+        // 1.28.13: plain copies of new files to the server run WITHOUT a card (no existing file is touched)
+        asked.clear();
+        Path fresh = put(local.resolve("fresh/new1.csv"), "n1");
+        check(!run(yes, "run_command", "command", "copy \"" + fresh + "\" \"" + sp + "\\copy.csv\"", "cwd", cwd.toString()).isError && Files.exists(server.resolve("copy.csv")) && serverCards() == 0, "shell copy of a new file: no card");
+        check(!run(yes, "run_command", "command", "powershell -Command \"Copy-Item '" + fresh + "' '" + sp + "\\copy2.csv'\"", "cwd", cwd.toString()).isError && Files.exists(server.resolve("copy2.csv")) && serverCards() == 0, "Copy-Item of a new file: no card");
+        run(yes, "run_command", "command", "xcopy \"" + fresh + "\" \"" + sp + "\\x2\\\" /y", "cwd", cwd.toString());
+        run(yes, "run_command", "command", "robocopy \"" + local.resolve("fresh") + "\" \"" + sp + "\\r2\"", "cwd", cwd.toString());
+        check(Files.exists(server.resolve("x2/new1.csv")) && Files.exists(server.resolve("r2/new1.csv")) && serverCards() == 0, "xcopy/robocopy to new targets: no card");
+        // ... but a copy that would replace an existing server file asks, and nothing is replaced when refused
+        asked.clear();
+        check(run(no, "run_command", "command", "copy /y \"" + fresh + "\" \"" + sp + "\\copy.csv\"", "cwd", cwd.toString()).isError && serverCards() == 1 && Files.readString(server.resolve("copy.csv")).equals("n1"), "shell copy over an existing server file asks");
         // 'Da mereu' (ALWAYS) answered for a real write: the next write asks again
         asked.clear();
         Tools always = tools(local, g, true, Tools.Decision.ALWAYS);
@@ -255,8 +264,10 @@ public final class Release11211Test {
         check(run(no, "run_command", "command", "echo x > rel.csv", "cwd", inServer.toString()).isError && serverCards() == 1 && !Files.exists(inServer.resolve("rel.csv")), "relative write with the server as cwd asks");
         // folder listing in the card
         asked.clear();
-        run(no, "run_command", "command", "powershell -Command \"Copy-Item '" + server.resolve("batch") + "' '" + server.resolve("Complete Lijst") + "' -Recurse\"", "cwd", cwd.toString());
-        check(asked.size() == 1 && asked.get(0).contains("a.csv") && asked.get(0).contains("d.xlsx"), "a folder target is expanded to its files in the card: " + asked);
+        run(yes, "run_command", "command", "powershell -Command \"Copy-Item '" + server.resolve("batch") + "' '" + server.resolve("Complete Lijst") + "' -Recurse\"", "cwd", cwd.toString());
+        check(asked.isEmpty() && Files.exists(server.resolve("Complete Lijst/a.csv")), "a folder copy to a new target asks nothing: " + asked);
+        run(no, "run_command", "command", "powershell -Command \"Copy-Item '" + server.resolve("batch") + "' '" + server.resolve("Complete Lijst") + "' -Recurse -Force\"", "cwd", cwd.toString());
+        check(asked.size() == 1 && asked.get(0).contains("a.csv") && asked.get(0).contains("d.xlsx"), "a folder copy that would replace existing files lists them in the card: " + asked);
         // read-only mode: no card, blocked
         Tools ro = tools(local, g, true, Tools.Decision.YES).readOnly(true);
         asked.clear();
@@ -273,7 +284,7 @@ public final class Release11211Test {
         check(FileGuard.parse("dir C:\\x 2>&1 | findstr a > nul").isEmpty(), "reads and nul redirects produce no operation");
         check(FileGuard.parse("robocopy a b /MIR").stream().anyMatch(FileGuard.Op::mirror), "robocopy /MIR flagged");
         FileGuard g = FileGuard.of(home.resolve("s"), List.of(), () -> Set.of('J'));
-        check(!g.networkWrites("Copy-Item J:\\Projecten\\x\\Import J:\\Projecten\\x\\Complete\\", home).isEmpty(), "J: Copy-Item found");
+        check(!g.networkWrites("Remove-Item J:\\Projecten\\x\\Import -Recurse", home).isEmpty(), "J: Remove-Item found");
         check(g.networkWrites("Get-Content J:\\Projecten\\x\\a.csv | Select -First 3", home).isEmpty(), "J: read is not a write");
         check(!g.networkWrites("python -c \"open('J:\\\\Projecten\\\\a.csv','w')\"", home).isEmpty(), "escaped backslashes in python text");
         check(!g.networkWrites("echo x > \\\\srv\\share\\a.csv", home).isEmpty() && !g.networkWrites("echo x > //srv/share/a.csv", home).isEmpty(), "UNC with both slash styles");
@@ -366,10 +377,10 @@ public final class Release11211Test {
                         throw new RuntimeException(e);
                     }
                 });
-                check(text[0].contains("Hard rules") && text[0].contains("scratch folder") && text[0].contains("Output or Controle") && text[0].contains("only after the user confirms the exact file list"), "hard rules in the prompt, language " + lang);
+                check(text[0].contains("Hard rules") && text[0].contains("scratch folder") && text[0].contains("Output or Controle") && text[0].contains("without a question"), "hard rules in the prompt, language " + lang);
                 check(text[0].contains(FeatureTest.<Object>call(app[0], "scratchDir", new Class<?>[]{}).toString()), "prompt names the scratch folder, " + lang);
                 check(text[0].contains("after a compaction or a cut history call read_skill again"), "read_skill wording, " + lang);
-                for (String key : List.of("Scriere pe server: confirmare necesara", "Curatare fisiere ajutatoare: confirmare necesara", "Comanda atinge o cale de server (analiza aproximativa, deci confirmarea listeaza tot ce atinge calea):\n{0}"))
+                for (String key : List.of("Modificare pe server: confirmare necesara", "Curatare fisiere ajutatoare: confirmare necesara", "Comanda atinge o cale de server (analiza aproximativa, deci confirmarea listeaza tot ce atinge calea):\n{0}"))
                     check(I18n.contains(key), "catalog has " + key + " for " + lang);
             }
         } finally {
@@ -377,7 +388,7 @@ public final class Release11211Test {
         }
         for (String code : List.of("nl", "es", "pl", "en", "tr"))
             check(I18n.keys(code).size() == I18n.keys("ro").size(), "catalog " + code + " has as many keys as ro");
-        for (String s : I18n.keys("ro")) if (s.startsWith("Scriere pe server") || s.startsWith("Curatare") || s.startsWith("Fisier ajutator") || s.startsWith("Pe server nu se scrie") || s.startsWith("Comanda atinge")) check(s.chars().allMatch(c -> c < 0x100), "new ro text without diacritics: " + s);
+        for (String s : I18n.keys("ro")) if (s.startsWith("Scriere pe server") || s.startsWith("Modificare pe server") || s.startsWith("Completeaza plasele") || s.startsWith("Plase pereche") || s.startsWith("Curatare") || s.startsWith("Fisier ajutator") || s.startsWith("Pe server nu se scrie") || s.startsWith("Comanda atinge")) check(s.chars().allMatch(c -> c < 0x100), "new ro text without diacritics: " + s);
     }
 
     static void hotfolder(Path home) throws Exception {

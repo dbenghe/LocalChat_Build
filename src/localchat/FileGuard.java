@@ -10,11 +10,11 @@ import java.util.regex.*;
 /**
  * 1.28.11: hard guard against helper files in project folders and on servers.
  * Scripts, probes and temp files belong in the per-conversation scratch folder; deliverables go to Output or Controle;
- * the server only receives production files after the user confirmed the exact list. Neither "Permite tot" nor a
- * remembered "Da mereu" bypasses it. Pure path/name logic, so it is tested without a UI.
+ * the server receives new production files (1.28.13: without a question); changing or deleting what already exists there asks every time.
+ * Neither "Permite tot" nor a remembered "Da mereu" bypasses that. Pure path/name logic, so it is tested without a UI.
  */
 final class FileGuard {
-    static final String COPY_TITLE = "Scriere pe server: confirmare necesara";
+    static final String COPY_TITLE = "Modificare pe server: confirmare necesara";
     static final String CLEAN_TITLE = "Curatare fisiere ajutatoare: confirmare necesara";
     static final List<String> SERVER_EXTENSIONS = List.of("pdf", "xlsx", "xls", "csv", "dwg", "dxf", "ifc", "docx", "zip");
     private static final Set<String> HELPER_EXTENSIONS = Set.of("py", "pyw", "ps1", "psm1", "bat", "cmd", "vbs", "wsf", "js", "md", "sh");
@@ -240,14 +240,16 @@ final class FileGuard {
     }
 
     static String serverDetails(Collection<Path> files) {
-        return I18n.text("Scriere pe server: {0} fisier(e).\n{1}\nExtensii: {2}\nConfirmarea apare de fiecare data, inclusiv in modul Permite tot, si nu se retine. Pe server merg numai: {3}.",
+        return I18n.text("Modificare pe server: {0} fisier(e) existente vor fi suprascrise, modificate sau sterse.\n{1}\nExtensii: {2}\nFisierele noi si copiile noi pe server merg fara confirmare; confirmarea apare de fiecare data pentru ce exista deja, inclusiv in modul Permite tot, si nu se retine. Pe server merg numai: {3}.",
                 files.size(), list(files), extensions(files), String.join(", ", SERVER_EXTENSIONS));
     }
 
     // ---- 1.28.11: any shell or script text that writes where a server path appears ----
 
-    private static final String VERBS = "copy-item|move-item|remove-item|rename-item|new-item|set-item|clear-content|set-content|add-content|out-file|export-csv|export-clixml|tee-object"
-            + "|robocopy|xcopy|copy|move|del|erase|rmdir|rd|ren|rename|mkdir|md|cp|cpi|mv|mi|rm|ri|rni|ni|sc|ac|tee|attrib|icacls|takeown";
+    // 1.28.13: plain copies and mkdir are not here any more: a copy to the server needs no card unless it overwrites an existing file (that is decided from the parsed
+    // destination in Tools.guardCommand). What remains is what can overwrite, modify in place, rename or delete.
+    private static final String VERBS = "move-item|remove-item|rename-item|new-item|set-item|clear-content|set-content|add-content|out-file|export-csv|export-clixml|tee-object"
+            + "|move|del|erase|rmdir|rd|ren|rename|mv|mi|rm|ri|rni|ni|sc|ac|tee|attrib|icacls|takeown";
     private static final Pattern NET_WRITE = Pattern.compile("(?i)writeall(?:text|lines|bytes)|appendall(?:text|lines)"
             + "|\\.(?:write|writelines|write_text|write_bytes|to_csv|to_excel|save\\w*|unlink|touch|rename|mkdir|rmdir|truncate)\\s*\\("
             + "|\\bshutil\\.|\\bos\\.(?:remove|rename|replace|unlink|rmdir|removedirs|makedirs|mkdir|system|popen)\\b|\\bsubprocess\\b"

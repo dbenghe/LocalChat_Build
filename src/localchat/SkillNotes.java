@@ -20,7 +20,7 @@ final class SkillNotes {
         + "- Use the built-in pdfcontrol_* tools: pdfcontrol_status (readiness), pdfcontrol_list_projects, pdfcontrol_project_files and pdfcontrol_read_document (inventory, reading); "
         + "pdfcontrol_start_check (OCR check), pdfcontrol_start_extract (Extract PDF), pdfcontrol_start_pairs (V/W pairs), pdfcontrol_start_compare (OUD/NIEUW), pdfcontrol_start_workflow (complete flow), "
         + "then pdfcontrol_job_status, pdfcontrol_job_summary, pdfcontrol_job_findings, pdfcontrol_cancel_job; pdfcontrol_rapporten and pdfcontrol_regenerate_report for reports; "
-        + "pdfcontrol_catalogue_status for the factory catalogue; pdfcontrol_compare_import and pdfcontrol_prepare_fast_import for import work. "
+        + "pdfcontrol_catalogue_status for the factory catalogue; pdfcontrol_compare_import and pdfcontrol_prepare_fast_import for import work; pdfcontrol_compare_server_revisions (read-only: server project folder versus the downloaded one, newer/same/older revision per drawing); pdfcontrol_fix_missing_pairs when a V drawing has no W pair (reads the mesh number on the drawing and copies that W from the final/separate drawings under the pair name). "
         + "Pass relative paths exactly as pdfcontrol_project_files lists them.\n";
 
     /** Always useful: what the skill text cannot know about this installation. */
