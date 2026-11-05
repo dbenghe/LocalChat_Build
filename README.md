@@ -902,3 +902,6 @@ LocalChat lanseaza propriul `codex app-server --stdio` (identitate localchat), c
 Sursa protocolului: https://learn.chatgpt.com/docs/app-server . `dynamicTools` este experimental, verificat cu codex-cli 0.160.1. Restrictiile abonamentului si ale workspace-ului Codex raman aplicabile. Selectarea/incarcarea modelelor nu genereaza inferente. Testele manuale din catalog consuma utilizarea contului; nu includ documente sau chatul curent.
 
 Pentru furnizorul Codex, profilurile de iesire si controlul gandirii din rutele HTTP nu sunt inca mapate pe parametri nativi; se aplica setarile Codex. Nu se promite o limita exacta de iesire din selectorul HTTP.
+
+### Context si selectie Codex (1.30.1)
+Modelele de chat Codex sunt selectabile in MBS si Normal, inclusiv din catalogul salvat de 1.30.0. Coloana de context documentat foloseste catalogul local nativ Codex (models_cache.json), cu model exact si data de actualizare verificata; fisierul nu este copiat in distributie. Contextul declarat si fereastra efectiva sunt valori distincte: fereastra efectiva apare numai dupa notificarea nativa de utilizare dintr-o tura reala. Incarcarea/verificarea metadatelor nu genereaza inferenta. Metadatele lipsa, corupte sau mai vechi de 7 zile raman necunoscute. Nu se deduce contextul din numele modelului si nu se copiaza credentiale Codex.

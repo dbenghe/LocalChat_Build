@@ -10,7 +10,7 @@ final class ModelSuitability {
         if(Boolean.FALSE.equals(ModelCatalog.capability(row,"chat","supports_chat")))return "nonchat";
         for(String key:List.of("task","pipeline_tag","type")){String value=Objects.toString(Json.str(row,key),"").toLowerCase(Locale.ROOT);if(Set.of("embedding","embeddings","feature-extraction","text-to-speech","automatic-speech-recognition","speech-to-text","audio","moderation","rerank","reranking").contains(value))return value;}return "";
     }
-    static boolean specialized(ModelCatalog.Entry e){return !e.purpose().isBlank()||(!Boolean.TRUE.equals(e.chat())&&specialized(e.id()));}
+    static boolean specialized(ModelCatalog.Entry e){return (!e.purpose().isBlank()&&!e.purpose().equals("chat"))||(!Boolean.TRUE.equals(e.chat())&&specialized(e.id()));}
     static boolean specialized(String id){
         String name=id.toLowerCase(Locale.ROOT);
         // Recognized task-specific families, not a guess at tools/vision/context from a model name.

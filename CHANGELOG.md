@@ -1,3 +1,9 @@
+## 1.30.1
+- Corecteaza categoria chat interpretata gresit ca model specializat: modelele Codex pot fi selectate in MBS si Normal, inclusiv din catalogul 1.30.0 deja salvat.
+- Pastreaza provenienta metadatelor Codex la restaurarea catalogului; elimina sursa HTTP fictiva din afisare.
+- Citeste contextul declarat din catalogul nativ Codex (models_cache.json, model exact, maximum 7 zile); nu il confunda cu fereastra observata. thread/tokenUsage/updated actualizeaza separat contextul efectiv, cu expirare si identitate de catalog.
+- Teste pentru selectia reala, butoane active, catalog salvat, toate cele sase limbi si separarea contextului declarat/observat. Fara inferenta la incarcarea modelelor.
+
 ## 1.30.0
 - Furnizor nou Codex (cont ChatGPT), prin app-server local oficial si sesiunea Codex existenta; separat de SIWC/API key.
 - Catalog nativ fara probe automate, streaming, unelte dinamice LocalChat, rezultate corelate, Stop si izolare per tura/chat.

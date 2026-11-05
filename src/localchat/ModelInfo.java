@@ -47,7 +47,7 @@ final class ModelInfo {
     static void resetNativeMissing(){NATIVE_MISSING.clear();}
     static Info fetch(String base,String key,String selected)throws IOException{return fetch(base,key,selected,Provider.CUSTOM);}
     static Info fetch(String base,String key,String selected,Provider protocol)throws IOException {
-        if(protocol==Provider.CODEX){CodexConnection.models();return new Info(0,0,0,0,CodexConnection.SOURCE);}
+        if(protocol==Provider.CODEX)return CodexConnection.info(selected);
         ProviderHeaders.validateKey(base,key);URI uri=URI.create(base);String path=Objects.toString(uri.getPath(),"").replaceFirst("/v1/?$","").replaceFirst("/$","");
         String prefix=uri.getScheme()+"://"+uri.getRawAuthority()+path;String catalog=base.replaceFirst("/+$","")+"/models";
         boolean lan=local(base);String nativeUrl=prefix+"/api/v1/models";
