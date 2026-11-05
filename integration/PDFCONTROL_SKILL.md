@@ -73,3 +73,6 @@ Dupa un job done/partial foloseste uneltele de citire, nu resultaten.json sau PD
 - `pdfcontrol_job_findings(project, job_id, offset, filter, max_chars)`: pagini limitate din rezultatele reale; continua cu next_offset; filter = cuvinte (cod, severitate, fisier, articol). Fara rezultate nu inventa constatari.
 - `pdfcontrol_list_projects(offset)` pentru descoperire (fabrica apare numai daca e confirmata in proiect); `pdfcontrol_catalogue_status(factory, project?, article?)` inainte de FAST/import: catalog, reguli FAST, cautare articol. Nu confirma si nu deduce fabrica; cautarea nu aproba echivalenta fizica.
 - silent_checks>0 sunt erori interne ale motorului: raporteaza-le. Aceste unelte sunt numai citire; pdfcontrol_status nu mai arata PID-uri sau trasee.
+
+
+Import: pdfcontrol_drawing_import; detalii in references/localchat-import-din-desene.md.

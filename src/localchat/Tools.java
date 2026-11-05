@@ -62,7 +62,7 @@ final class Tools {
             + "[print('--- pagina %d ---\\n%s'%(i+1,d[i].get_text())) for i in range(a-1,b)]";
     static final List<String> BUILTIN = List.of("list_dir", "find_files", "search_text", "read_file",
             "extract_attachments", "write_file", "append_file", "edit_file", "make_dir", "copy_path", "move_path", "download_url", "run_command", "list_stray_files", "cleanup_stray_files",
-            "open_in_explorer", "read_skill", "save_rule", "pdfcontrol_compare_import", "pdfcontrol_prepare_fast_import", "pdfcontrol_fix_missing_pairs", "pdfcontrol_compare_server_revisions", ToolRelevance.ENABLE);
+            "open_in_explorer", "read_skill", "save_rule", "pdfcontrol_compare_import", "pdfcontrol_drawing_import", "pdfcontrol_prepare_fast_import", "pdfcontrol_fix_missing_pairs", "pdfcontrol_compare_server_revisions", ToolRelevance.ENABLE);
 
     enum Access { READ, WRITE, RUN }
 
@@ -245,6 +245,20 @@ final class Tools {
                     "drawings",Json.obj("type","array","items",Json.obj("type","string"),"maxItems",50),
                     "catalogue",Json.obj("type","string","description","Explicit XLSX/JSON catalogue; optional.")),
                     "required",List.of("project","factory","imports"),"additionalProperties",false)));
+        out.add(new ChatClient.ToolSpec("pdfcontrol_drawing_import",
+                "Local drawing tables/OCR -> confirmed factory catalogue -> new CONCEPT XLSX. Extract first without template/output; then optionally build using a single-sheet XLSX template (same columns, old data replaced in NEW file). Labelled dimensions or source-reviewed rows; local component volume arithmetic. Unresolved geometry/units stay blank with evidence. Never invent values, copy to server or approve ISAH.",
+                Json.obj("type","object","properties",Json.obj(
+                    "project",Json.obj("type","string","pattern","^[0-9]{6}$"),
+                    "factory",Json.obj("type","string","enum",List.of("soest","alphen","veenoord","lelystad")),
+                    "drawings",Json.obj("type","array","items",Json.obj("type","string"),"minItems",1,"maxItems",30),
+                    "catalogue",Json.obj("type","string"),"template",Json.obj("type","string"),"output",Json.obj("type","string"),
+                    "reviewed_rows",Json.obj("type","array","maxItems",500,"description","Bulk values read from actual drawings/project decisions: {merk,pos?(accessory),fields:{Aantal/Lengte/Breedte/Hoogte/Dikte/Inhoud/Hoofdregel/Mengsel/Fase/Netto m2/Bruto m2/Netto m3/Bruto m3/Gewicht(kg)/Instortvoorziening/Instortvoorziening Merk:string},evidence:source/page/detail}. Dimensions mm, volume m3. Never guess.","items",Json.obj("type","object")),
+                    "column_map",Json.obj("type","object","description","Explicit printed Inhoud destination from known project convention: {Inhoud:Netto m3} or {Inhoud:Bruto m3}. Never copy it blindly to both."),
+                    "geometry",Json.obj("type","array","maxItems",100,"description","Volume per element from reviewed decomposition: {merk,evidence,column?:Inhoud/Netto m3/Bruto m3/Netto m2/Bruto m2,components:[{shape,dimensions_mm:[strings],count?:integer,subtract?:boolean}]}. Volumes: box/triangular_prism L,B,H; cylinder diameter,length. Areas: rectangle/triangle L,B; circle diameter. Shapes/dimensions must come from source; local arithmetic does not prove geometry.","items",Json.obj("type","object")),
+                    "hoofdregel",Json.obj("type","string","description","Confirmed project code, never inferred."),
+                    "ocr",Json.obj("type","boolean","description","Local OCR fallback, default true."),
+                    "mark_bindings",Json.obj("type","array","maxItems",100,"description","Only after reviewing a page with ambiguous OCR mark; retained as review evidence.","items",Json.obj("type","object","properties",Json.obj("path",Json.obj("type","string"),"page",Json.obj("type","integer"),"merk",Json.obj("type","string"),"evidence",Json.obj("type","string")),"required",List.of("path","page","merk","evidence"),"additionalProperties",false))),
+                    "required",List.of("project","factory","drawings"),"additionalProperties",false)));
         out.add(spec("pdfcontrol_prepare_fast_import",
                 "Create a new local FAST XLSX from saved factory/article conversion rules (PIR area quantities in FAST Lengte, 1000 per metre): recomputes from original dimensions, keeps Aantal/descriptions, writes an audit; no server copy, no API. Missing rules or ambiguous dimensions fail; never guess. Output: a new file in the working folder.",List.of("project","factory","input","output"),
                 "project","string","Confirmed six-digit project.","factory","string","soest, alphen, veenoord or lelystad (confirmed).",
@@ -344,6 +358,7 @@ final class Tools {
                 case "cleanup_stray_files" -> Result.ok(cleanupStrays(path(str(a, "path", ".")), str(a, "pattern", null)));
                 case "open_in_explorer" -> Result.ok(openInExplorer(path(required(a, "path"))));
                 case "pdfcontrol_compare_import" -> compareImport(a);
+                case "pdfcontrol_drawing_import" -> drawingImport(a);
                 case "pdfcontrol_prepare_fast_import" -> prepareFastImport(a);
                 case "pdfcontrol_fix_missing_pairs" -> fixMissingPairs(a);
                 case "pdfcontrol_compare_server_revisions" -> compareServerRevisions(a);
@@ -943,6 +958,31 @@ final class Tools {
     }
 
     // ---- commands ----
+
+    private Result drawingImport(Map<String,Object> args)throws IOException,ToolError{
+        if(!Set.of("project","factory","drawings","catalogue","template","output","hoofdregel","ocr","mark_bindings","reviewed_rows","geometry","column_map").containsAll(args.keySet()))throw new ToolError("Unknown drawing import arguments");
+        String project=required(args,"project"),factory=required(args,"factory");
+        if(!project.matches("[0-9]{6}")||!Set.of("soest","alphen","veenoord","lelystad").contains(factory))throw new ToolError("Explicit project/factory required");
+        Path home=ctx.secretFile().toAbsolutePath().getParent(),packageDir=home.resolve("pdfcontrol");String python=ctx.pdfPython();
+        if(python==null||!Files.isRegularFile(Path.of(python))||!Files.isRegularFile(packageDir.resolve("drawing_import.py")))throw new ToolError("Local drawing import runtime unavailable");
+        Map<String,Object> request=new LinkedHashMap<>(args);Object raw=args.get("drawings");
+        if(!(raw instanceof List<?> values)||values.isEmpty()||values.size()>30)throw new ToolError("Select 1-30 PDF drawings");
+        List<String> selected=new ArrayList<>();for(Object value:values){if(!(value instanceof String text))throw new ToolError("Drawing path must be text");Path file=readable(text);if(!Files.isRegularFile(file)||!file.toString().toLowerCase(Locale.ROOT).endsWith(".pdf"))throw new ToolError("PDF drawing required");selected.add(file.toRealPath().toString());}request.put("drawings",selected);
+        Path catalogue=readable(str(args,"catalogue",packageDir.resolve("data_lokaal/catalogus_"+factory+".json").toString()));request.put("catalogue",catalogue.toRealPath().toString());
+        if(args.get("mark_bindings") instanceof List<?> bindings){List<Object> mapped=new ArrayList<>();for(Object rawBinding:bindings){if(!(rawBinding instanceof Map<?,?> binding)||!(binding.get("path") instanceof String text))throw new ToolError("Invalid mark binding");Map<String,Object> copy=new LinkedHashMap<>();for(var entry:binding.entrySet())copy.put(String.valueOf(entry.getKey()),entry.getValue());copy.put("path",readable(text).toRealPath().toString());mapped.add(copy);}request.put("mark_bindings",mapped);}
+        Path output=null;
+        if(args.containsKey("output")||args.containsKey("template")){
+            Path template=readable(required(args,"template"));output=writable(required(args,"output"));
+            Path root=ctx.workDir().toRealPath(),ancestor=output.getParent();while(ancestor!=null&&!Files.exists(ancestor))ancestor=ancestor.getParent();
+            if(ancestor==null||!ancestor.toRealPath().startsWith(root)||!output.startsWith(ctx.workDir())||guard.server(output))throw new ToolError("Drawing import output must be local inside the working folder");
+            refuseHelper(output,false);
+            if(!Files.isRegularFile(template)||!template.toString().toLowerCase(Locale.ROOT).endsWith(".xlsx")||!output.toString().toLowerCase(Locale.ROOT).endsWith(".xlsx"))throw new ToolError("Select a template and a new distinct XLSX output");
+            request.put("template",template.toRealPath().toString());request.put("output",output.toString());
+        }
+        allow(Access.WRITE,I18n.text("Extrage articolele din desene"),Json.write(request));ensureActive();
+        Path temp=Files.createTempFile("localchat-drawing-import-",".json");
+        try{Files.writeString(temp,Json.write(request),StandardCharsets.UTF_8);Output result=exec(List.of(python,"-I",packageDir.resolve("drawing_import.py").toString(),"--request",temp.toString(),"--reports",home.resolve("analyses/drawing-imports").toString()),ctx.workDir(),ctx.commandEnv(),600);ensureActive();if(result.finished()&&result.exitCode()==0&&output!=null&&Files.isRegularFile(output))GeneratedFiles.mark(outputRegistry(),List.of(output));return new Result(cap(result.text(),MCP_OUTPUT),!result.finished()||result.exitCode()!=0);}finally{Files.deleteIfExists(temp);}
+    }
 
     private Result compareImport(Map<String,Object> args) throws IOException, ToolError {
         if(!Set.of("project","factory","imports","drawings","catalogue").containsAll(args.keySet()))throw new ToolError("Unknown audit arguments");

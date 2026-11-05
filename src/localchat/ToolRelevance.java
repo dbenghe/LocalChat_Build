@@ -18,7 +18,7 @@ final class ToolRelevance {
     static final String COMMAND = "command";
     static final List<String> GROUPS = List.of(FILES, COMMAND);
     private static final List<String> FILE_TOOLS = List.of("write_file", "append_file", "edit_file", "make_dir", "copy_path", "move_path",
-            "extract_attachments", "save_rule", "pdfcontrol_prepare_fast_import", "pdfcontrol_fix_missing_pairs", "pdfcontrol_compare_server_revisions", "download_url", "list_stray_files", "cleanup_stray_files");
+            "extract_attachments", "save_rule", "pdfcontrol_drawing_import", "pdfcontrol_prepare_fast_import", "pdfcontrol_fix_missing_pairs", "pdfcontrol_compare_server_revisions", "download_url", "list_stray_files", "cleanup_stray_files");
     private static final List<String> COMMAND_TOOLS = List.of("run_command");
     /** Word-start stems (ASCII, lower case) in Romanian, Dutch, English, Spanish, Polish and Turkish. */
     private static final List<String> FILE_STEMS = List.of(

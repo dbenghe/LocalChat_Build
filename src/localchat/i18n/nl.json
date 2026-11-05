@@ -844,5 +844,6 @@
   "Codex nu a raspuns in timpul alocat. Istoricul este pastrat.": "Codex reageerde niet op tijd. Geschiedenis is bewaard.",
   "Conexiunea Codex s-a inchis. Istoricul este pastrat.": "Codex-verbinding gesloten. Geschiedenis is bewaard.",
   "Codex nu este conectat cu ChatGPT. Conecteaza-te in Codex; nu se foloseste automat o cheie API.": "Codex is niet aangemeld met ChatGPT. Meld je aan in Codex; er wordt geen API-sleutel als alternatief gebruikt.",
-  "Codex a returnat alta ruta sau alt model. Cererea a fost oprita.": "Codex gaf een andere route of ander model terug. Aanvraag gestopt."
+  "Codex a returnat alta ruta sau alt model. Cererea a fost oprita.": "Codex gaf een andere route of ander model terug. Aanvraag gestopt.",
+  "Extrage articolele din desene": "Artikelen uit tekeningen halen"
 }

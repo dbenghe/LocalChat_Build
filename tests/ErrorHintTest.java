@@ -34,6 +34,9 @@ public final class ErrorHintTest {
             if (!text.contains(menu) || !text.contains(thinking)) throw new AssertionError("524 hint does not name the menu path (" + menu + " > " + thinking + "): " + code);
             if (code.equals("ro") && !text.equals(I18n.romanianAscii(text))) throw new AssertionError("Romanian 524 hint has diacritics");
         }
+        if(LocalChat.toolSupportHint("codex tool result missing; no operation repeated"))throw new AssertionError("Codex transport mistaken for model capability");
+        if(LocalChat.toolSupportHint("tool permission denied")||LocalChat.toolSupportHint("tool timed out"))throw new AssertionError("tool execution error mistaken for capability");
+        if(!LocalChat.toolSupportHint("http 400: tool_calls are not supported")||!LocalChat.toolSupportHint("http 400: model does not support tools"))throw new AssertionError("explicit unsupported tools lost hint");
         I18n.setLanguage("ro");
         if (!I18n.keys("en").equals(I18n.keys("ro"))) throw new AssertionError("catalog keys diverged");
         System.out.println("PASS: HTTP 429 capacity hint stays separate from SSE streaming");

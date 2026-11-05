@@ -59,6 +59,16 @@ class AuditTests(unittest.TestCase):
         with self.assertRaises(ValueError):self.run_audit(project='123')
         with self.assertRaises(ValueError):self.run_audit(unrecognized=True)
         self.imp.write_text('wrong;headers\n1;2\n');_,r=self.run_audit();self.assertIn('import_header_not_found',self.codes(r))
+    def test_real_fixed_schema_without_eenheid_uses_factory_metadata(self):
+        with self.imp.open('w',encoding='utf-8-sig',newline='') as f:csv.writer(f,delimiter=';').writerows([['Merk','Instortvoorziening','Aantal','Lengte','Tekenbureau','Status tekening'],['TR01','Fixture anchor M20','2','','14337','20']])
+        _,report=self.run_audit();self.assertNotIn('unit_mismatch',self.codes(report));self.assertEqual(report['records'][0]['catalogue']['effective_unit'],'st');self.assertEqual(report['records'][0]['catalogue']['unit_source'],'factory_catalogue')
+        cat=audit.catalog(self.cat,'veenoord',reader)
+        evidence=[{'path':'123456_TR01_V.pdf','page':1,'merk':'TR01','description':'Fixture anchor M20','quantity':'3 st','pos':'H1'}]
+        _,issues=audit.compare_drawings(report['records'],evidence,cat);self.assertIn('quantity_mismatch',{i['code'] for i in issues})
+    def test_pdf_encoding_repair_keeps_original_and_catalogue_match(self):
+        self.data['records'].append({'code':'MBS3','description':'Gain \u00d842','category':'import','fields':{'eenheid':'st'}});self.cat.write_text(json.dumps(self.data))
+        self.csv([['TR01','Gain \u00c3\u00b842','2','st','','14337','20']]);_,report=self.run_audit()
+        self.assertNotIn('article_unresolved',self.codes(report));self.assertEqual(report['records'][0]['description'],'Gain \u00c3\u00b842');self.assertEqual(report['records'][0]['catalogue']['codes'],['MBS3'])
     def test_catalogue_xlsx(self):
         p=self.root/'catalogue.xlsx';xlsx(p,[['Artikel','Omschrijving','Eenheid'],['MBS1','Fixture anchor M20','st']]);_,r=self.run_audit(catalogue=str(p));self.assertNotIn('article_unresolved',self.codes(r))
     def test_page_binding_no_wrong_project_or_multiple_marks(self):

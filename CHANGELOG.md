@@ -1,3 +1,10 @@
+## 1.31.0
+- Corecteaza rezultatele uneltelor Codex pierdute la compactarea contextului: rezultatul executat se preda exact, o singura data, fara repetarea operatiei.
+- Elimina sfatul de dezactivare a uneltelor pentru erori Codex care nu sunt incompatibilitati ale modelului.
+- pdfcontrol_drawing_import: tabele PDF/OCR local, corelare V/W, catalog separat pe fabrica, copie XLSX dupa schema unui sablon, verificare prin recitire si provenienta pe pagina/pozitie.
+- Reutilizare prin hash, campuri neclare ramase explicit nerezolvate, surse intacte, fara server/ISAH sau calcule geometrice inventate.
+- Documentatie reutilizabila pentru skilluri despre extragere, unitati, FAST, dimensiuni si volume; ruta comuna pentru modelele MBS.
+
 ## 1.30.2
 - Codex primeste permisiunea reala a agentului LocalChat; sesiunea principala cu unelte de modificare nu mai este declarata readonly.
 - Sandbox nativ workspace-write numai in scratch; proiectele se modifica prin Tools/FileGuard/aprobarile LocalChat. Normal si copiii de analiza raman readonly.

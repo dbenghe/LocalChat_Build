@@ -392,7 +392,11 @@ public final class Release11214Test {
         try {
             chat = newWindow(app);
             LocalChat window = chat;
+            // Test mode disables automatic startup. Wait for the explicit loader
+            // to finish its EDT callback before capturing the blank-folder baseline.
             edt(() -> { var m = LocalChat.class.getDeclaredMethod("reloadTools"); m.setAccessible(true); m.invoke(window); });
+            check(until(() -> fieldValue(window, "mcpSummary") != null, 120), "tool startup EDT callback completed");
+            edt(() -> ((JTextField) fieldValue(window, "workDirField")).setText(""));
             PdfControlDialog[] dialog = {null};
             boolean opened = until(() -> { dialog[0] = window.createPdfControl(); return dialog[0] != null; }, 120);
             check(opened, "the dialog opens in the app once the tools are up, with no conversation: summary=" + fieldValue(window, "mcpSummary") + " err=" + fieldValue(window, "toolsConfigError") + " notices=" + window.pdfControlNotices.stream().distinct().collect(Collectors.toList()));
@@ -411,7 +415,10 @@ public final class Release11214Test {
             boolean finished = until(() -> { sawBusy[0] |= (Boolean) fieldValue(window, "busy"); return !dialog[0].running && !ui.confirms.isEmpty() && dialog[0].open.isEnabled(); }, 240);
             check(finished, "check from the app dialog finished: " + ui.errors + dialog[0].status.getText());
             check(sawBusy[0] && !(Boolean) fieldValue(window, "busy") && ((JButton) fieldValue(window, "pdfControlButton")).isEnabled(), "the chat is blocked during the run and free afterwards: " + sawBusy[0]);
-            check(ui.errors.isEmpty() && workDir.getText().equals(workDirBefore) && FeatureTest.field(window, "conversationFile") == null && ((List<?>) FeatureTest.field(window, "history")).isEmpty(), "no conversation, working folder or history was created by the dialog: " + ui.errors);
+            check(ui.errors.isEmpty(), "standalone operation has no UI errors: " + ui.errors);
+            check(workDir.getText().equals(workDirBefore), "dialog preserved working folder: before=" + workDirBefore + " after=" + workDir.getText());
+            check(FeatureTest.field(window, "conversationFile") == null, "dialog created no conversation");
+            check(((List<?>) FeatureTest.field(window, "history")).isEmpty(), "dialog created no chat history");
             ui.server = server.toString();
             edt(() -> { dialog[0].operation.setSelectedIndex(PdfControlDialog.SERVER); dialog[0].chooseServer.doClick(); dialog[0].project.setSelectedItem("123456"); dialog[0].start.doClick(); });
             check(until(() -> !dialog[0].running && dialog[0].details.getText().contains("ONLY ON SERVER"), 120), "the server compare works from the app dialog too: " + ui.errors + dialog[0].details.getText());
@@ -420,6 +427,7 @@ public final class Release11214Test {
             none = newWindow(bare);
             LocalChat empty = none;
             edt(() -> { var m = LocalChat.class.getDeclaredMethod("reloadTools"); m.setAccessible(true); m.invoke(empty); });
+            check(until(() -> fieldValue(empty, "mcpSummary") != null, 60), "bare tool startup completed");
             String expected = I18n.text("PDFCONTROL complet nu este conectat. Reporneste serverele MCP.");
             check(until(() -> { empty.createPdfControl(); return empty.pdfControlNotices.stream().anyMatch(n -> n.startsWith(expected)); }, 60), "no PDFCONTROL server: the user gets a message: " + empty.pdfControlNotices);
         } finally {

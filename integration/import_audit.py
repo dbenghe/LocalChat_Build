@@ -3,7 +3,7 @@ import argparse, collections, csv, hashlib, html, io, json, re, sys, time
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
-VERSION = 1
+VERSION = 2
 FACTORIES = {'soest', 'veenoord', 'alphen', 'lelystad'}
 MAX_BYTES = 100 * 1024 * 1024
 
@@ -91,9 +91,17 @@ def catalog(path, factory, reader):
     return result
 
 
+def repair_encoding(value):
+    if not any(c in value for c in ('\u00c3','\u00c2')):return value
+    try:
+        repaired=value.encode('latin1').decode('utf-8')
+        return repaired if '\ufffd' not in repaired else value
+    except (UnicodeError,ValueError):return value
+
+
 def canonical(description, catalogue):
     # Reuse the owned engine's conservative longest complete base-name recognition.
-    result = catalogue.zoek(description, catalogue.data['factory'])
+    result = catalogue.zoek(repair_encoding(description), catalogue.data['factory'])
     matches = result.get('matches', [])
     codes = sorted({r['code'] for r in matches})
     return result, codes
@@ -117,7 +125,12 @@ def audit_rows(records, catalogue):
         # Contradictory aliases/units under the selected code stay unresolved.
         units = {unit(r['fields'].get('eenheid') or r['fields'].get('verkoopeenheid')) for r in matches}
         units.discard('')
-        actual = unit(record['fields'].get('eenheid'))
+        # The real fixed ISAH schema has no Eenheid column. In that format the
+        # selected factory catalogue supplies the unit; do not invent a missing-column error.
+        explicit_unit = 'eenheid' in record['fields']
+        actual = unit(record['fields'].get('eenheid')) if explicit_unit else next(iter(units)) if len(units)==1 else ''
+        record['catalogue']['effective_unit']=actual
+        record['catalogue']['unit_source']='import_column' if explicit_unit else 'factory_catalogue'
         if len(units) != 1:
             issues.append(dict(location, code='catalogue_unit_unconfirmed', units=sorted(units)))
         elif not actual or actual not in units:
@@ -207,7 +220,7 @@ def compare_drawings(records, evidence, catalogue):
             else:
                 row = matched[0]
                 quantity = re.fullmatch(r'\s*(\d+(?:[.,]\d+)?)\s*(st|stk|stuks|pcs|m|mm|cm)?\s*', row['quantity'], re.I)
-                actual_unit = unit(record['fields'].get('eenheid'))
+                actual_unit = unit(record['fields'].get('eenheid')) if 'eenheid' in record['fields'] else record['catalogue'].get('effective_unit','')
                 if quantity and unit(quantity.group(2)) == actual_unit == 'st':
                     a, b = number(record['fields'].get('aantal')), number(quantity.group(1))
                     if a is not None and b is not None and a != b:

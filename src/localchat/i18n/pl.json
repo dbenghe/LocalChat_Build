@@ -844,5 +844,6 @@
   "Codex nu a raspuns in timpul alocat. Istoricul este pastrat.": "Codex nie odpowiedzial w terminie. Historia zachowana.",
   "Conexiunea Codex s-a inchis. Istoricul este pastrat.": "Polaczenie Codex zamkniete. Historia zachowana.",
   "Codex nu este conectat cu ChatGPT. Conecteaza-te in Codex; nu se foloseste automat o cheie API.": "Codex nie jest zalogowany przez ChatGPT. Zaloguj sie w Codex; klucz API nie zostanie uzyty automatycznie.",
-  "Codex a returnat alta ruta sau alt model. Cererea a fost oprita.": "Codex zwrocil inna trase lub model. Zadanie zatrzymane."
+  "Codex a returnat alta ruta sau alt model. Cererea a fost oprita.": "Codex zwrocil inna trase lub model. Zadanie zatrzymane.",
+  "Extrage articolele din desene": "Wyodrebnij artykuly z rysunkow"
 }

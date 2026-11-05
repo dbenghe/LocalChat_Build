@@ -2001,6 +2001,7 @@ public final class LocalChat extends JFrame {
     }
 
     static boolean streamingHint(String message){return java.util.regex.Pattern.compile("(?<![a-z])stream").matcher(message).find();}
+    static boolean toolSupportHint(String message){return message!=null&&!message.startsWith("codex")&&java.util.regex.Pattern.compile("(?:tools?|tool_calls|tool_use).{0,80}(?:not supported|unsupported|does not support)|(?:unsupported|does not support).{0,80}(?:tools?|tool_calls|tool_use)").matcher(message).find();}
     /** HTTP 524 = the proxy gave up after ~100 s without response bytes (silent prefill, queue or model load). Says where thinking is switched off (1.28.7). */
     static final String PROXY_TIMEOUT_HINT="Sfat: proxy-ul a inchis conexiunea dupa ~100 s fara date (HTTP 524): serverul nu a trimis nimic (incarcare model, coada sau un context mare in compactare/sub-agenti). Opreste gandirea: butonul cu slidere (Setari rapide) > Gandire > Oprita, apoi incearca din nou; daca se repeta, foloseste un context sau un profil de raspuns mai mic.";
     /** 1.28.9: HTTP 429/503 = the provider is saturated; the hint never talks about context or compaction thresholds as the cause. */
@@ -2023,7 +2024,7 @@ public final class LocalChat extends JFrame {
         } else if (streamBox.isSelected() && streamingHint(lower)) {
             append("\n" + t("Sfat: debifeaza „Streaming” si incearca din nou."), errorStyle);
         }
-        if (toolsBox.isSelected() && lower.contains("tool")) {
+        if (toolsBox.isSelected() && toolSupportHint(lower)) {
             append("\n" + t("Sfat: daca modelul nu suporta tool-uri, debifeaza „Tool-uri” sau alege alt model."), errorStyle);
         }
     }

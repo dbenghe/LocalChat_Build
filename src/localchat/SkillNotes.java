@@ -26,6 +26,7 @@ final class SkillNotes {
     /** Always useful: what the skill text cannot know about this installation. */
     private static final String COMMON = "- Publishing to ChatGPT projects/conversations is NOT integrated in LocalChat. Mark that step pending_cloud_transfer: keep the local project notes and Pentru_ChatGPT_<number>.txt up to date, "
         + "report the step as pending and never claim it was published.\n"
+        + "- Drawing -> import: use pdfcontrol_drawing_import (local tables/OCR, factory catalogue, template XLSX); read references/localchat-import-din-desene.md when available. It returns evidence and unresolved fields, never guessed geometry.\n"
         + "- Copy, network (UNC) and archive steps run through run_command and the file tools under the normal access control and approvals; never assume server access.\n";
 
     /** Marker of a skill text that already refers to the pdfcontrol-octop skill, so its toolchain text is up to date. */

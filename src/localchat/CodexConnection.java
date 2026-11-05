@@ -27,6 +27,7 @@ final class CodexConnection implements AutoCloseable {
     private String threadId;
     private Object pendingRequest;
     private String pendingCall;
+    private ChatClient.Message pendingResult;
     private final Map<String,Object> disabledMcp=new LinkedHashMap<>();
     private final Set<String> offered=new HashSet<>(), delivered=new HashSet<>(), emittedItems=new HashSet<>();
     private TokenUsage total=TokenUsage.UNKNOWN, reported=TokenUsage.UNKNOWN;
@@ -87,6 +88,12 @@ final class CodexConnection implements AutoCloseable {
         if(live!=null){input.add(Json.obj("type","text","text",live.content,"text_elements",List.of()));if(!live.requestControl.isBlank())input.add(Json.obj("type","text","text",live.requestControl,"text_elements",List.of()));for(var image:live.images)input.add(Json.obj("type","image","url","data:"+image.mime()+";base64,"+image.data()));}
         return input;
     }
+    /** Preserve a completed host result before compaction can remove its pair from the request.
+     * No RPC or operation is executed here; only the outstanding call may be answered. */
+    void retainToolResult(List<ChatClient.Message> history){
+        if(pendingCall==null||pendingResult!=null)return;
+        for(int i=history.size()-1;i>=0;i--){var message=history.get(i);if(message.role.equals("tool")&&pendingCall.equals(message.toolCallId)){pendingResult=message;return;}}
+    }
     ChatClient.Reply chat(String model,String system,List<ChatClient.Message> history,List<ChatClient.ToolSpec> tools,ChatClient.Listener listener,Consumer<TokenUsage> usage,IntSupplier timeout)throws IOException{
         return chat(model,system,history,tools,listener,usage,timeout,NativeAccess.READ_ONLY);
     }
@@ -102,9 +109,9 @@ final class CodexConnection implements AutoCloseable {
             threadId=Json.str(started,"thread","id");if(threadId==null||!model.equals(Json.str(started,"model"))||!"openai".equals(Json.str(started,"modelProvider")))throw new IOException(I18n.text("Codex a returnat alta ruta sau alt model. Cererea a fost oprita."));
             rpc("turn/start",Json.obj("threadId",threadId,"input",input(history)),30_000);
         }else if(pendingRequest!=null){
-            ChatClient.Message result=null;for(int i=history.size()-1;i>=0;i--){var message=history.get(i);if(message.role.equals("tool")&&pendingCall.equals(message.toolCallId)){result=message;break;}}
+            retainToolResult(history);ChatClient.Message result=pendingResult;
             if(result==null)throw new IOException("Codex tool result missing; no operation repeated");
-            send(Json.obj("id",pendingRequest,"result",Json.obj("contentItems",List.of(Json.obj("type","inputText","text",result.content)),"success",!result.isError)));pendingRequest=null;pendingCall=null;
+            send(Json.obj("id",pendingRequest,"result",Json.obj("contentItems",List.of(Json.obj("type","inputText","text",result.content)),"success",!result.isError)));pendingRequest=null;pendingCall=null;pendingResult=null;
         }else throw new IOException("Codex turn state mismatch");
         int denied=0;StringBuilder text=new StringBuilder();long deadline=callDeadline;
         while(true){Object event=next(deadline);String method=Json.str(event,"method");Object params=Json.get(event,"params");

@@ -159,6 +159,7 @@ final class ChatClient {
     private String codexSignature="";
     private CodexConnection.NativeAccess nativeAccess=CodexConnection.NativeAccess.READ_ONLY;
     void nativeAccess(CodexConnection.NativeAccess access){nativeAccess=java.util.Objects.requireNonNull(access);}
+    void retainToolResult(List<Message> history){CodexConnection connection=codex;if(connection!=null)connection.retainToolResult(history);}
     void closeNative(){CodexConnection connection=codex;codex=null;if(connection!=null)connection.close();}
     private final ChatGptResponses chatGptResponses=new ChatGptResponses();
     private long deadlineNanos;
