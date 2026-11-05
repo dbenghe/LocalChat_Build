@@ -7,6 +7,7 @@ import java.util.function.Consumer;
 /** Responses transport for ChatGPT-plan OAuth. No private backend endpoints. */
 final class ChatGptResponses {
     final Map<String,List<Object>> reasoningByCall=new HashMap<>();
+    final Map<String,Object> originalCalls=new HashMap<>();
     Map<String,Object> body(String model,String system,List<ChatClient.Message> history,List<ChatClient.ToolSpec> tools,int maximum){
         List<Object> input=new ArrayList<>();ChatClient.Message live=ChatClient.imageTurn(history);Set<String> currentCalls=new HashSet<>();Set<Object> included=new HashSet<>();
         for(var m:history){
@@ -18,7 +19,7 @@ final class ChatGptResponses {
                 for(var call:m.toolCalls){
                     if(reasoningByCall.containsKey(call.id)){
                         for(Object r:reasoningByCall.get(call.id))if(included.add(r))input.add(r);
-                        input.add(Json.obj("type","function_call","call_id",call.id,"name",call.name,"arguments",Json.write(call.args)));currentCalls.add(call.id);
+                        input.add(originalCalls.get(call.id));currentCalls.add(call.id);
                     }else input.add(Json.obj("role","assistant","content","[Historical tool request] "+call.name+" "+Json.write(call.args)));
                 }
             }else{
@@ -30,7 +31,7 @@ final class ChatGptResponses {
         }
         List<Object> specs=new ArrayList<>();for(var t:tools)specs.add(Json.obj("type","function","name",t.name,"description",t.description,"parameters",t.schema,"strict",false));
         Map<String,Object> b=Json.obj("model",model,"instructions",system,"input",input,"stream",true,"store",false,"include",List.of("reasoning.encrypted_content"));
-        if(!specs.isEmpty())b.put("tools",specs);if(maximum>0)b.put("max_output_tokens",maximum);return b;
+        if(!specs.isEmpty())b.put("tools",List.of(Json.obj("type","namespace","name","localchat","description","LocalChat tools executed locally with application permissions.","tools",specs)));return b;
     }
     ChatClient.Reply read(BufferedReader reader,ChatClient.Listener listener,Consumer<TokenUsage> usage,java.util.function.BooleanSupplier cancelled)throws IOException {
         StringBuilder visible=new StringBuilder();List<ChatClient.ToolCall> calls=new ArrayList<>();List<Object> reasoning=new ArrayList<>();Object terminal=null;boolean completed=false;String line;StringBuilder data=new StringBuilder();
@@ -48,7 +49,7 @@ final class ChatGptResponses {
         if(!completed)throw new IOException(I18n.text("Fluxul ChatGPT s-a inchis fara raspuns complet."));
         Object output=Json.get(terminal,"output");StringBuilder full=new StringBuilder();if(output instanceof List<?> list){
             for(Object item:list)if("reasoning".equals(Json.str(item,"type"))&&!reasoning.contains(item))reasoning.add(item);
-            for(Object item:list){String kind=Json.str(item,"type");if("function_call".equals(kind)){String id=Json.str(item,"call_id"),name=Json.str(item,"name");Object args;try{args=Json.parse(Objects.toString(Json.str(item,"arguments"),"{}"));}catch(RuntimeException bad){throw new IOException("Invalid tool arguments",bad);}if(!(args instanceof Map<?,?>)||id==null||name==null)throw new IOException("Invalid tool call");@SuppressWarnings("unchecked")var map=(Map<String,Object>)args;calls.add(new ChatClient.ToolCall(id,name,map));reasoningByCall.put(id,List.copyOf(reasoning));}
+            for(Object item:list){String kind=Json.str(item,"type");if("function_call".equals(kind)){String id=Json.str(item,"call_id"),name=Json.str(item,"name");Object args;try{args=Json.parse(Objects.toString(Json.str(item,"arguments"),"{}"));}catch(RuntimeException bad){throw new IOException("Invalid tool arguments",bad);}if(!(args instanceof Map<?,?>)||id==null||name==null)throw new IOException("Invalid tool call");@SuppressWarnings("unchecked")var map=(Map<String,Object>)args;String namespace=Objects.toString(Json.str(item,"namespace"),"");if(!namespace.isEmpty()&&!namespace.equals("localchat"))throw new IOException("Unknown tool namespace");calls.add(new ChatClient.ToolCall(id,name,map));reasoningByCall.put(id,List.copyOf(reasoning));originalCalls.put(id,item);}
                 if("message".equals(kind)&&Json.get(item,"content") instanceof List<?> content)for(Object part:content)if("output_text".equals(Json.str(part,"type")))full.append(Objects.toString(Json.str(part,"text"),""));
             }
         }

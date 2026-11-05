@@ -1,3 +1,9 @@
+# 1.29.1 - 2026-11-05
+- Corectie a transportului ChatGPT plan: omiterea max_output_tokens (nesuportat pe aceasta ruta) si gruparea uneltelor locale in namespace-ul localchat. Apelurile originale, inclusiv namespace-ul, sunt pastrate in continuarea request-local; un namespace necunoscut este refuzat.
+- Testul ChatGptAccountTest verifica aceste cerinte explicite si continuarea uneltelor.
+- Sursa: https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations si https://developers.openai.com/api/docs/guides/function-calling .
+- Refuzul de autentificare raportat de utilizator (3p_delegated_access_policy_denied) este separat; eligibilitatea/spatiul contului raman neconfirmate. Corectia de transport nu elimina o restrictie OpenAI.
+
 # 1.29.0 - 2026-11-05
 - Furnizor separat ChatGPT (cont): autentificare oficiala Sign in with ChatGPT pentru planuri/cereri eligibile, fara importul acreditarilor din Codex, VS Code sau browser.
 - Butoane Continua cu ChatGPT si Deconecteaza ChatGPT; conturile sunt profiluri distincte cu identificatori opaci in setari, nu tokeni. OAuth cu PKCE S256, state si nonce independente, callback loopback, validare RSA/JWKS, issuer/audienta/expirare/identitate, scope explicit; refresh serializat inclusiv intre procese, revocare cu raportarea esecului.
