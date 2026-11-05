@@ -845,5 +845,7 @@
   "Conexiunea Codex s-a inchis. Istoricul este pastrat.": "Codex connection closed. History is preserved.",
   "Codex nu este conectat cu ChatGPT. Conecteaza-te in Codex; nu se foloseste automat o cheie API.": "Codex is not signed in with ChatGPT. Sign in within Codex; no automatic API-key fallback is used.",
   "Codex a returnat alta ruta sau alt model. Cererea a fost oprita.": "Codex returned another route or model. The request was stopped.",
-  "Extrage articolele din desene": "Extract drawing articles"
+  "Extrage articolele din desene": "Extract drawing articles",
+  "Citeste pagina PDF": "Read PDF page",
+  "Trimite paginile PDF cerute catre modelul selectat": "Send requested PDF pages to the selected model"
 }

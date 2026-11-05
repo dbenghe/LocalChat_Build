@@ -26,6 +26,8 @@ final class SkillNotes {
     /** Always useful: what the skill text cannot know about this installation. */
     private static final String COMMON = "- Publishing to ChatGPT projects/conversations is NOT integrated in LocalChat. Mark that step pending_cloud_transfer: keep the local project notes and Pentru_ChatGPT_<number>.txt up to date, "
         + "report the step as pending and never claim it was published.\n"
+        + "- For operational project requests, execute all authorized stages to verified deliverables, not only an explanation or plan. Resume from recorded completed work. Read references/localchat-workflow.md for the tool mapping and evidence checklist.\n"
+        + "- Visual PDF reading: pdfcontrol_read_page renders a page/crop locally with text/OCR. Images reach only the selected model when consent and confirmed visual support permit; otherwise do not claim visual inspection. Printed dimensions are evidence; pixel measurements are not.\n"
         + "- Drawing -> import: use pdfcontrol_drawing_import (local tables/OCR, factory catalogue, template XLSX); read references/localchat-import-din-desene.md when available. It returns evidence and unresolved fields, never guessed geometry.\n"
         + "- Copy, network (UNC) and archive steps run through run_command and the file tools under the normal access control and approvals; never assume server access.\n";
 

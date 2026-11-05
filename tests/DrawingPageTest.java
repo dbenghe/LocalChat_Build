@@ -1,0 +1,26 @@
+package localchat;
+import java.nio.file.*;import java.util.*;import java.lang.reflect.*;import javax.imageio.ImageIO;import java.awt.image.BufferedImage;
+public final class DrawingPageTest {
+ static int checks;static void check(boolean value,String why){checks++;if(!value)throw new AssertionError(why);}
+ static Object body(String method,List<ChatClient.Message> history)throws Exception{Method m=ChatClient.class.getDeclaredMethod(method,String.class,String.class,List.class,List.class,boolean.class);m.setAccessible(true);return m.invoke(null,"fixture","system",history,List.of(),false);}
+ public static void main(String[] args)throws Exception{
+  Path root=Files.createTempDirectory(Files.createDirectories(Path.of(System.getProperty("localchat.home"))),"page-");Path image=root.resolve("synthetic.png");ImageIO.write(new BufferedImage(10,10,BufferedImage.TYPE_INT_RGB),"png",image.toFile());
+  var refs=ImageInput.snapshot(List.of(image.toString()),root.resolve("snapshot"),root.resolve("settings.properties"));
+  var user=ChatClient.Message.user("read table");var call=new ChatClient.ToolCall("page","pdfcontrol_read_page",Json.obj("path","fixture.pdf"));var other=new ChatClient.ToolCall("other","read_file",Json.obj());
+  List<ChatClient.Message> history=new ArrayList<>(List.of(user,ChatClient.Message.assistant("",List.of(call,other),"test"),ChatClient.Message.toolResult("page","page evidence",false).withImages(refs),ChatClient.Message.toolResult("other","other result",false)));
+  check(ChatClient.toolImages(history).size()==1,"current tool image selected");check(ChatClient.Message.fromJson(history.get(2).toJson()).images.equals(refs),"archive restores immutable tool refs");check(!Json.write(history.get(2).toJson()).contains("base64"),"archive has no image bytes");
+  Object open=body("openAiBody",history);String json=Json.write(open);check(json.contains("data:image/png;base64,"),"OpenAI wire contains image");check(json.indexOf("other result")<json.indexOf("image_url"),"image comes after all sibling results");
+  Object anthropic=body("anthropicBody",history);String ant=Json.write(anthropic);check(ant.contains("media_type"),"Anthropic image wire");check(ant.indexOf("other result")<ant.indexOf("media_type"),"Anthropic sibling result precedes image");
+  String response=Json.write(new ChatGptResponses().body("fixture","system",history,List.of(),0));check(response.contains("input_image"),"Responses image wire");check(response.indexOf("other result")<response.indexOf("input_image"),"Responses batch ordering");
+  var kept=ContextGuard.visualPairs(history,0);check(kept.size()==3,"complete visual call batch retained");check(kept.get(0).toolCalls.size()==2,"sibling calls retained");
+  ContextGuard guard=new ContextGuard(30000,1000,true,70,1.25);guard.memory=new ContextGuard.Memory("summary",history.size(),user.content,List.of());Field visual=ContextGuard.class.getDeclaredField("visual");visual.setAccessible(true);visual.set(guard,kept);check(ChatClient.toolImages(guard.view(history)).equals(refs),"image available in compacted view");check(guard.view(history).get(1).content.equals(user.content),"question unchanged");
+  history.add(ChatClient.Message.user("next question"));check(ChatClient.toolImages(history).isEmpty(),"next question does not resend old pages");check(!Json.write(body("openAiBody",history)).contains("data:image"),"no old image bytes on next request");
+  // Read-only host rendering on a real synthetic PDF, no provider or production source.
+  Path engine=Files.createDirectories(root.resolve("pdfcontrol"));try(var files=Files.list(Path.of(System.getProperty("audit.package")))){for(Path file:files.filter(f->f.toString().endsWith(".py")).toList())Files.copy(file,engine.resolve(file.getFileName()));}
+  Path pdf=root.resolve("synthetic.pdf");var process=new ProcessBuilder(System.getProperty("audit.python"),"-I","-c","import pymupdf,sys;d=pymupdf.open();p=d.new_page();p.insert_text((30,50),'Synthetic drawing table with printed dimension 1000 mm and article information for fixture only.');d.save(sys.argv[1])",pdf.toString()).redirectErrorStream(true).start();String output=new String(process.getInputStream().readAllBytes());check(process.waitFor()==0,"fixture PDF: "+output);byte[] before=Files.readAllBytes(pdf);
+  Tools tools=ImportAuditTest.tools(root,true,(a,b)->Tools.Decision.YES).readOnly(true);var result=tools.execute(new ChatClient.ToolCall("page","pdfcontrol_read_page",Json.obj("path",pdf.toString())));check(!result.isError,"actual renderer host: "+result.text);check(result.images.size()==1,"host image ref returned");check(Arrays.equals(before,Files.readAllBytes(pdf)),"PDF source remains unchanged");check(Boolean.TRUE.equals(Json.get(Json.parse(result.text),"source_unchanged")),"worker confirms source hash");
+  var bad=tools.execute(new ChatClient.ToolCall("bad","pdfcontrol_read_page",Json.obj("path",pdf.toString(),"page",0)));check(bad.isError,"invalid page rejected");
+  for(String lang:I18n.CODES)check(I18n.keys(lang).contains("Citeste pagina PDF")&&I18n.keys(lang).contains("Trimite paginile PDF cerute catre modelul selectat"),"page actions translated "+lang);
+  System.out.println("DrawingPageTest: "+checks+" checks passed; local renderer and wire fixtures, no external model");System.exit(0);
+ }
+}

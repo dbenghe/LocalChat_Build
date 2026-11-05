@@ -28,6 +28,8 @@ if ($LASTEXITCODE) { throw 'Native Codex app-server contract tests failed' }
 if ($LASTEXITCODE) { throw 'Owned engine build isolation tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_fast_import.py"
 if ($LASTEXITCODE) { throw "FAST conversion tests failed" }
+& $taskPdfPython -I "$PSScriptRoot/integration/test_drawing_page.py"
+if ($LASTEXITCODE) { throw 'PDF page rendering tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_drawing_import.py"
 if ($LASTEXITCODE) { throw 'Drawing table/catalogue/XLSX tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_import_audit.py"
@@ -69,6 +71,8 @@ if ($LASTEXITCODE) { throw 'FAST tool/UI integration tests failed' }
 if ($LASTEXITCODE) { throw 'Failed: Release11213Test' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/standalone-home" "-Daudit.python=$taskPdfPython" "-Daudit.package=$PSScriptRoot/pdfcontrol" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.Release11214Test
 if ($LASTEXITCODE) { throw 'Failed: Release11214Test' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/drawing-page-home" "-Daudit.python=$taskPdfPython" "-Daudit.package=$PSScriptRoot/pdfcontrol" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.DrawingPageTest
+if ($LASTEXITCODE) { throw 'PDF page host/transport tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/drawing-import-home" "-Daudit.python=$taskPdfPython" "-Daudit.package=$PSScriptRoot/pdfcontrol" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.DrawingImportTest
 if ($LASTEXITCODE) { throw 'Drawing import host/permissions tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/import-audit-home" "-Daudit.python=$taskPdfPython" "-Daudit.package=$PSScriptRoot/pdfcontrol" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.ImportAuditTest
@@ -234,6 +238,7 @@ foreach ($taskSkillName in @('pdfcontrol-octop','productie-projecten')) {
     $taskDrawingReference = Join-Path $DistributionPath "skills/$taskSkillName/references"
     New-Item -ItemType Directory -Path $taskDrawingReference -Force | Out-Null
     Copy-Item -LiteralPath "$PSScriptRoot/integration/DRAWING_IMPORT.md" -Destination (Join-Path $taskDrawingReference 'localchat-import-din-desene.md') -Force
+    Copy-Item -LiteralPath "$PSScriptRoot/integration/LOCALCHAT_WORKFLOW.md" -Destination (Join-Path $taskDrawingReference 'localchat-workflow.md') -Force
 }
 if (!(Test-Path -LiteralPath (Join-Path $DistributionPath 'unelte.json'))) {
     Copy-Item -LiteralPath "$PSScriptRoot/packaging/unelte.json" -Destination $DistributionPath

@@ -1,3 +1,10 @@
+## 1.32.0
+- Citire vizuala PDF cu pdfcontrol_read_page: pagina/crop, text/OCR local si sursa pastrata; imagini numai cu acord explicit si model vizual confirmat.
+- Transport pentru rezultatele vizuale in Codex, Chat Completions, Anthropic si Responses; referinte locale in arhiva, fara imagini vechi retrimise la intrebari noi.
+- Perechile apel/rezultat vizual curente se pastreaza prin compactare; estimarea contextului include imaginile returnate de unelte.
+- Flux operational comun pentru proiecte, reluare, desen/cataloage/import XLSX, livrare si documentare; referinte private reconciliate la instalare cu backup si verificarea hashurilor.
+- Clarifica diferenta dintre inspectia vizuala si controalele PDFCONTROL; publicarea in proiecte ChatGPT ramane indisponibila in LocalChat.
+
 ## 1.31.0
 - Corecteaza rezultatele uneltelor Codex pierdute la compactarea contextului: rezultatul executat se preda exact, o singura data, fara repetarea operatiei.
 - Elimina sfatul de dezactivare a uneltelor pentru erori Codex care nu sunt incompatibilitati ale modelului.

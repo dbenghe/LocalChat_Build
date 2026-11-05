@@ -34,7 +34,7 @@ public final class SkillNotesTest {
         String other = Skills.read(skills, "other-skill", s -> s);
         check(!other.contains(SkillNotes.MARKER) && !other.contains("pending_cloud_transfer"), "other skills get no note");
         check(SkillNotes.forSkill("other-skill").isEmpty() && SkillNotes.forSkill(null).isEmpty(), "no note for other names or null");
-        check(SkillNotes.forSkill("productie-projecten").length() < 2600, "the note stays token-cheap: " + SkillNotes.forSkill("productie-projecten").length() + " chars");
+        check(SkillNotes.forSkill("productie-projecten").length() < 3600, "the note stays token-cheap: " + SkillNotes.forSkill("productie-projecten").length() + " chars");
         check(Files.readString(legacy).equals(before), "the skill file itself is never rewritten");
         check(Skills.resourceIndex(note).indexOf(SkillNotes.MARKER) < 0, "the resource index kept for repeated loads carries no note");
 
@@ -52,7 +52,7 @@ public final class SkillNotesTest {
         for (String gone : List.of("START_WEBAPP.bat", "127.0.0.1:8756", "mbs_webapp.py", "pdfcontrol_start_extract", "pdfcontrol_compare_import", "start_wapening"))
             check(!compact.contains(gone), "the compact note drops the redundant toolchain text: " + gone);
         int compactLength = compact.length() - compact.indexOf(SkillNotes.MARKER);
-        check(compactLength < note.length() - note.indexOf(SkillNotes.MARKER) - 600 && compactLength < 1100, "the compact note is much cheaper: " + compactLength + " chars");
+        check(compactLength < note.length() - note.indexOf(SkillNotes.MARKER) - 600 && compactLength < 1900, "the compact note is much cheaper: " + compactLength + " chars");
         check(SkillNotes.forSkill("productie-projecten", "no pointer here").equals(SkillNotes.forSkill("productie-projecten")), "a text without the pointer keeps the full note");
         check(SkillNotes.forSkill("productie-projecten", null).equals(SkillNotes.forSkill("productie-projecten")), "no text keeps the full note");
         check(SkillNotes.forSkill("other-skill", "pdfcontrol-octop").isEmpty(), "other skills still get no note");

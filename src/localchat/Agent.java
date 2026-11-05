@@ -77,6 +77,8 @@ final class Agent {
         client.nativeAccess(tools==null?CodexConnection.NativeAccess.READ_ONLY:tools.nativeAccess());
     }
 
+    private boolean toolVision;
+    Agent vision(boolean enabled){toolVision=enabled;return this;}
     void outputLimit(int tokens) {client.outputLimit(tokens);}
     Agent thinking(ThinkingControl.Mode mode) {client.thinking(mode);return this;}
 
@@ -190,7 +192,7 @@ final class Agent {
                 if(pdfStart&&!result.isError)startedPdfJobs.put(signature,result);
                 if(pdfStart&&result.isError)failedPdfCalls.merge(signature,1,Integer::sum);
                 synchronized (added) {
-                    added.add(ChatClient.Message.toolResult(call.id, result.text, result.isError));
+                    added.add(ChatClient.Message.toolResult(call.id, result.text+(!toolVision&&!result.images.isEmpty()?"\nThe rendered image was NOT sent to this model because export consent or confirmed visual support is absent. Use the returned text/OCR; do not claim a visual inspection.":""), result.isError).withImages(toolVision?result.images:List.of()));
                 }
                 publishContext(base, ui);
                 ui.toolFinished(call, result);

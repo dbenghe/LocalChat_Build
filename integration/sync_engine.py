@@ -32,6 +32,7 @@ def main():
     shutil.copy2(integration/'catalogue_update.py',package/'catalogue_update.py')
     shutil.copy2(integration/'import_audit.py',package/'import_audit.py')
     shutil.copy2(integration/'drawing_import.py',package/'drawing_import.py')
+    shutil.copy2(integration/'drawing_page.py',package/'drawing_page.py')
     shutil.copy2(integration/'fast_import.py',package/'fast_import.py')
     shutil.copy2(integration/'fix_missing_pairs.py',package/'fix_missing_pairs.py')
     shutil.copy2(integration/'compare_server_revisions.py',package/'compare_server_revisions.py')
@@ -39,6 +40,7 @@ def main():
     registered=json.loads(manifest.read_text(encoding='utf-8'));
     if (package/'mbs_webapp.py').is_file():registered['sha256']['mbs_webapp.py']=hashlib.sha256((package/'mbs_webapp.py').read_bytes()).hexdigest()
     registered['sha256']['mbs_localchat_layout.py']=hashlib.sha256((package/'mbs_localchat_layout.py').read_bytes()).hexdigest();registered['sha256']['catalogue_update.py']=hashlib.sha256((package/'catalogue_update.py').read_bytes()).hexdigest()
+    registered['sha256']['drawing_page.py']=hashlib.sha256((package/'drawing_page.py').read_bytes()).hexdigest()
     registered['sha256']['drawing_import.py']=hashlib.sha256((package/'drawing_import.py').read_bytes()).hexdigest()
     registered['sha256']['import_audit.py']=hashlib.sha256((package/'import_audit.py').read_bytes()).hexdigest()
     registered['sha256']['fast_import.py']=hashlib.sha256((package/'fast_import.py').read_bytes()).hexdigest()

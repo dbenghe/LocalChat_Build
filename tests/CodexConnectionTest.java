@@ -46,6 +46,13 @@ public final class CodexConnectionTest {
    c.retainToolResult(List.of(ChatClient.Message.toolResult("different-call","RESULT_ONE",false)));
    try{c.chat("test-model","system",List.of(ChatClient.Message.user("summary only")),tools,v->{},u->{},()->5000);throw new AssertionError("fabricated missing result");}catch(IOException expected){check(expected.getMessage().contains("result missing"),"missing result fails without operation replay");}
   }
+  Path image=Files.createTempFile("codex-page-", ".png");javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(2,2,java.awt.image.BufferedImage.TYPE_INT_RGB),"png",image.toFile());
+  var refs=ImageInput.snapshot(List.of(image.toString()),image.getParent().resolve("codex-page-snapshots"),image.resolveSibling("settings.properties"));
+  try(var c=peer("toolimages")){
+   var history=new ArrayList<>(List.of(ChatClient.Message.user("read requested page")));var first=c.chat("test-model","system",history,tools,v->{},u->{},()->5000);
+   history.add(ChatClient.Message.toolResult(first.calls.get(0).id,"RESULT_ONE",false).withImages(refs));c.retainToolResult(history);
+   var answer=c.chat("test-model","system",List.of(ChatClient.Message.user("compacted question")),tools,v->{},u->{},()->5000);check(answer.text.equals("AFTER"),"native page image survives compaction with exact result");
+  }
   compactedAgent();
   ui();
   java.util.concurrent.atomic.AtomicInteger created=new java.util.concurrent.atomic.AtomicInteger();
@@ -96,7 +103,7 @@ public final class CodexConnectionTest {
  static void fixture(String mode,String[] args)throws Exception{
   String command=String.join(" ",args);if(!command.contains("agents.enabled=false")||!command.contains("shell_tool=false")||!command.contains("hooks=false")||!command.contains("features.code_mode_host=true")||command.contains("code_mode_host=false"))throw new AssertionError("unsafe process");
   try(var reader=new BufferedReader(new InputStreamReader(System.in,StandardCharsets.UTF_8))){String line;while((line=reader.readLine())!=null){Object req=Json.parse(line),id=Json.get(req,"id"),params=Json.get(req,"params");String method=Json.str(req,"method");
-   if(method==null){if(Objects.equals(id,900L)){if(Json.get(req,"error")!=null)continue;if(mode.equals("agentcompacted")){if(!Boolean.TRUE.equals(Json.get(req,"result","success"))||!Json.str(req,"result","contentItems",0,"text").contains("proof.txt"))throw new AssertionError("host write result lost");delta("AFTER");done("completed");continue;}if(!"RESULT_ONE".equals(Json.str(req,"result","contentItems",0,"text")))throw new AssertionError("wrong result");if(mode.equals("duplicate")){call(902,"call1","localchat");continue;}if(mode.equals("queued"))continue;usage(40,8);delta("AFTER");done("completed");}if(Objects.equals(id,901L)){if(!Boolean.FALSE.equals(Json.get(req,"result","success")))throw new AssertionError("error flag lost");usage(40,8);delta("AFTER");done("completed");}continue;}
+   if(method==null){if(Objects.equals(id,900L)){if(Json.get(req,"error")!=null)continue;if(mode.equals("agentcompacted")){if(!Boolean.TRUE.equals(Json.get(req,"result","success"))||!Json.str(req,"result","contentItems",0,"text").contains("proof.txt"))throw new AssertionError("host write result lost");delta("AFTER");done("completed");continue;}if(!"RESULT_ONE".equals(Json.str(req,"result","contentItems",0,"text")))throw new AssertionError("wrong result");if(mode.equals("toolimages")&&(!"inputImage".equals(Json.str(req,"result","contentItems",1,"type"))||!Json.str(req,"result","contentItems",1,"imageUrl").startsWith("data:image/png;base64,")))throw new AssertionError("tool page image lost");if(mode.equals("duplicate")){call(902,"call1","localchat");continue;}if(mode.equals("queued"))continue;usage(40,8);delta("AFTER");done("completed");}if(Objects.equals(id,901L)){if(!Boolean.FALSE.equals(Json.get(req,"result","success")))throw new AssertionError("error flag lost");usage(40,8);delta("AFTER");done("completed");}continue;}
    switch(method){
     case "initialize"->{if(!mode.equals("waitinit"))result(id,Json.obj("userAgent","fixture"));}case "initialized"->{}
     case "config/read"->result(id,Json.obj("config",Json.obj("mcp_servers",Json.obj("external",Json.obj("enabled",true)))));

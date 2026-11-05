@@ -50,7 +50,7 @@ La doua erori de validare explica blocajul; nu inventa executii si nu substitui 
 
 La control/flux complet poti transmite factory=soest/alphen/veenoord/lelystad numai dupa confirmarea fabricii lotului. Selectia nu modifica setarile altor proiecte. Citeste catalogue si limitations: lipsa catalogului este partial, nu control integral al catalogului. Fabrica poate fi aleasa si in panoul direct.
 
-LocalChat urmareste automat joburile pornite din chat pana la rezultatul final; daca primesti deja done/partial cu delivery_verified=true, nu reporni lucrarea. Pentru un job pending/running sau reluare foloseste acelasi job_id. Stop solicita anularea lucrarii active; confirma starea terminala la reluare. Apelurile identice reusite se reutilizeaza in acelasi tur, iar trei erori identice opresc bucla.
+Joburile se urmaresc automat; nu reporni un done/partial cu delivery_verified=true. La reluare pastreaza job_id. Stop cere anularea: verifica starea terminala. Apelurile identice reusite se reutilizeaza; trei erori identice opresc bucla.
 Motorul propriu este cel din LocalChat/pdfcontrol, distribuit din LocalChat_Build/pdfcontrol. Nu folosi instalarea C:/PDFCONTROL pentru a ocoli conectorul.
 
 Controlul si regenerarea livreaza raportul complet: toate desenele selectate, inclusiv cele fara neconformitati, controalele executate si anexele disponibile. Nu inventa probleme pentru a umple raportul. VORM DEFINITIEF este un status DEFINITIEF; valoarea originala ramane vizibila. NIET DEFINITIEF, CONCEPT si TER CONTROLE raman nefinale. Lipsa catalogului fabricii ramane o limitare explicita, chiar daca statusurile desenelor sunt finale.
@@ -76,3 +76,5 @@ Dupa un job done/partial foloseste uneltele de citire, nu resultaten.json sau PD
 
 
 Import: pdfcontrol_drawing_import; detalii in references/localchat-import-din-desene.md.
+
+Citire: pdfcontrol_read_page (pagina/crop/text/OCR); imagini numai cu acord si vision confirmat, altfel text/OCR. Executare si dovezi: references/localchat-workflow.md.

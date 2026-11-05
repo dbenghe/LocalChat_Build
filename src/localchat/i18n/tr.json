@@ -845,5 +845,7 @@
   "Conexiunea Codex s-a inchis. Istoricul este pastrat.": "Codex baglantisi kapandi. Gecmis korundu.",
   "Codex nu este conectat cu ChatGPT. Conecteaza-te in Codex; nu se foloseste automat o cheie API.": "Codex ChatGPT ile bagli degil. Codex icinde giris yapin; API anahtarina otomatik gecilmez.",
   "Codex a returnat alta ruta sau alt model. Cererea a fost oprita.": "Codex farkli bir rota veya model dondurdu. Istek durduruldu.",
-  "Extrage articolele din desene": "Cizimlerden urunleri cikar"
+  "Extrage articolele din desene": "Cizimlerden urunleri cikar",
+  "Citeste pagina PDF": "PDF sayfasini oku",
+  "Trimite paginile PDF cerute catre modelul selectat": "Istenen PDF sayfalarini secili modele gonder"
 }

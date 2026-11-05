@@ -253,7 +253,7 @@ public final class Release11213Test {
             }
         });
         String prompt = text[0];
-        check(prompt.contains("pdfcontrol_start_check, then pdfcontrol_job_summary and pdfcontrol_job_findings") && prompt.contains("Never OCR, PowerShell or Python"), "prompt: drawing control goes to pdfcontrol_start_check + job_summary/job_findings, never OCR/PowerShell/Python");
+        check(prompt.contains("pdfcontrol_start_check, then pdfcontrol_job_summary and pdfcontrol_job_findings") && prompt.contains("Never recreate these control/comparison operations with ad-hoc OCR, PowerShell or Python") && prompt.contains("pdfcontrol_read_page"), "prompt: drawing control goes to pdfcontrol_start_check + job_summary/job_findings, never OCR/PowerShell/Python");
         check(prompt.contains("pdfcontrol_start_compare (OUD/NIEUW)") && prompt.contains("project and files may be omitted"), "prompt: old versus new goes to pdfcontrol_start_compare; project and files may be omitted");
         check(prompt.contains("pdfcontrol_compare_server_revisions (read-only)") && prompt.contains("only as a new file"), "prompt: server versus download revisions use the read-only tool, copy only as a new file");
         check(!ToolRelevance.unlocked(List.of(), "verifica ce este pe server J: fata de folderul descarcat, daca este mai noua revizia").isEmpty(), "Romanian server revision request unlocks the tools");
