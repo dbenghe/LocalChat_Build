@@ -105,7 +105,7 @@ final class SensitiveGuard {
     }
     private static void textHits(String text,Map<String,Hit> out){
         netdrive(text,out);
-        if(CRED.matcher(text).find()){
+        if(CRED.matcher(text).find()||text.toLowerCase(java.util.Locale.ROOT).contains(".localchat-chatgpt")){
             Set<String> targets=new LinkedHashSet<>();
             Matcher k=CMDKEY.matcher(text);while(k.find())targets.add("cmdkey:"+norm(k.group(1)));
             Matcher r=RUNAS.matcher(text);while(r.find())targets.add("runas:"+norm(r.group(1)));

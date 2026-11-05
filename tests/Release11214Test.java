@@ -434,14 +434,44 @@ public final class Release11214Test {
     static void translations() throws Exception {
         String raw;
         try (var in = Release11214Test.class.getResourceAsStream("/localchat/i18n/ro.json")) { raw = new String(in.readAllBytes(), StandardCharsets.UTF_8); }
-        List<String> lines = raw.lines().filter(l -> l.startsWith("  \"")).collect(Collectors.toList());
-        List<String> keys = new ArrayList<>();
-        for (String line : lines.subList(lines.size() - NEW_KEYS, lines.size())) {
-            String body = line.strip();
-            if (body.endsWith(",")) body = body.substring(0, body.length() - 1);
-            keys.add(((Map<?, ?>) Json.parse("{" + body + "}")).keySet().iterator().next().toString());
-        }
-        check(keys.size() == NEW_KEYS && keys.contains("Porneste") && keys.contains("Stare MCP: {0}"), "the 1.28.14 keys are the last entries: " + keys);
+        List<String> keys = List.of(
+            "PDFCONTROL: proiectul si lista de PDF-uri au fost completate automat (folderul de lucru, toate planurile originale; OUD/NIEUW la comparare).",
+            "Porneste",
+            "Alege PDF-uri manual...",
+            "Automat",
+            "Folder proiect pe server",
+            "Nu exista un raport de deschis. Porneste mai intai o operatie.",
+            "Nu am gasit proiecte (foldere cu sase cifre) in {0}.",
+            "Nu pot citi fisierele proiectului: {0}",
+            "Proiectul {0} nu are PDF-uri originale in afara de OLD, Controle si Output. Pune desenele in proiect sau alege-le manual.",
+            "Proiectul {0} are {1} PDF-uri; limita este {2} pe lucrare. Alege manual un subset.",
+            "Pornesti {0} pentru proiectul {1} ({2} PDF-uri)? Rezultatele se salveaza in Controle\\Octop-PDFCONTROL; desenele originale nu se modifica.",
+            "Plasele pereche lipsa (W) se copiaza ca fisiere noi langa desenul V; nimic nu se suprascrie sau sterge.",
+            "Proiectul {0} nu are foldere OUD si NIEUW cu PDF-uri. Alege manual versiunile OUD si NIEUW.",
+            "Proiectul {0} nu are lucrari de control terminate cu rezultate. Ruleaza mai intai Verifica desenele sau Flux complet.",
+            "Alege folderul proiectului de pe server.",
+            "Folderul de pe server nu exista: {0}",
+            "PDF-uri: {0} alese manual.",
+            "PDF-uri: OUD {0} / NIEUW {1} alese manual.",
+            "PDF-uri: automat din proiect (desenele originale; OUD/NIEUW la comparare).",
+            "PDF-uri: nu exista foldere OUD si NIEUW (alege manual).",
+            "PDF-uri: OUD {0} / NIEUW {1} (automat).",
+            "PDF-uri: nu exista desene originale (alege manual).",
+            "PDF-uri: {0} desene originale (automat).",
+            "PDFCONTROL nu a raspuns inca; asteapta o clipa si incearca din nou.",
+            "Alege un proiect din lista (folder cu sase cifre in {0}).",
+            "Folderul proiectului {0} nu exista in {1}.",
+            "Mod doar citire: PDFCONTROL scrie rezultate in proiect. Schimba permisiunile sau foloseste comparatia cu serverul.",
+            "Citesc fisierele proiectului...",
+            "Pas local: {0}",
+            "Pasul a esuat: {0}",
+            "Lucrarea de control pentru raport (cea mai noua prima)",
+            "Desene: {0}, constatari: {1}",
+            "Raport: {0}",
+            "Tool-urile PDFCONTROL pornesc inca. Incearca din nou peste cateva secunde.",
+            "Stare MCP: {0}"
+        );
+        check(keys.size() == NEW_KEYS && keys.contains("Porneste") && keys.contains("Stare MCP: {0}"), "the explicit 1.28.14 translation keys remain covered");
         for (String key : keys) check(key.chars().allMatch(c -> c < 128), "Romanian text without diacritics: " + key);
         java.util.regex.Pattern holes = java.util.regex.Pattern.compile("\\{([0-9])\\}");
         String saved = I18n.language();

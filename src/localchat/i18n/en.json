@@ -820,5 +820,20 @@
   "Desene: {0}, constatari: {1}": "Drawings: {0}, findings: {1}",
   "Raport: {0}": "Report: {0}",
   "Tool-urile PDFCONTROL pornesc inca. Incearca din nou peste cateva secunde.": "The PDFCONTROL tools are still starting. Try again in a few seconds.",
-  "Stare MCP: {0}": "MCP status: {0}"
+  "Stare MCP: {0}": "MCP status: {0}",
+  "ChatGPT (cont)": "ChatGPT (account)",
+  "Continua cu ChatGPT": "Continue with ChatGPT",
+  "Deconecteaza ChatGPT": "Disconnect ChatGPT",
+  "Conecteaza contul ChatGPT mai intai.": "Connect your ChatGPT account first.",
+  "Conectarea ChatGPT a esuat (HTTP {0}).": "ChatGPT sign-in failed (HTTP {0}).",
+  "Conectarea ChatGPT a fost anulata.": "ChatGPT sign-in was cancelled.",
+  "Conectarea ChatGPT a expirat. Incearca din nou.": "ChatGPT sign-in expired. Try again.",
+  "Contul nu a autorizat utilizarea planului ChatGPT.": "The account has not authorized ChatGPT plan usage.",
+  "Conecteaza-te in browser si autorizeaza LocalChat.": "Sign in through your browser and authorize LocalChat.",
+  "Cont ChatGPT conectat. Accesul la modele se confirma printr-o cerere reusita.": "ChatGPT connected. A successful request confirms model access.",
+  "Conectarea ChatGPT a esuat: {0}": "ChatGPT connection failed: {0}",
+  "Cont ChatGPT deconectat.": "ChatGPT disconnected.",
+  "Deconectat local; revocarea nu este confirmata. Verifica setarile ChatGPT.": "Disconnected locally; revocation was not confirmed. Check ChatGPT settings.",
+  "Cererea ChatGPT a esuat: {0}": "ChatGPT request failed: {0}",
+  "Fluxul ChatGPT s-a inchis fara raspuns complet.": "ChatGPT stream closed without a complete response."
 }

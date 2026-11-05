@@ -1,3 +1,7 @@
+## 1.29.0 — integrare cont ChatGPT
+Build.ps1 -SkipDeploy -SkipNativeQA a trecut. Au trecut 57 verificari ChatGPT (fixture-uri locale), 816 verificari PDFCONTROL independent si scenariile complete PDFCONTROL. Proba pe runtime-ul portabil: 416 verificari (57 ChatGPT + 148 compactare + 27 fabrica + 184 SensitiveGuard).
+Implementare noua Sign in with ChatGPT + Responses; surse si limite in CHANGELOG.md. Testele locale verifica contractul, nu disponibilitatea contului. Autentificarea si inferenta reala nu sunt confirmate pana cand utilizatorul autorizeaza LocalChat in browser. QA nativ mouse/tastatura nerulat. Validarea JWT accepta RS256 si refuza explicit alti algoritmi; o schimbare a algoritmului furnizorului necesita adaptare verificata. Detectarea accesului prin comenzi la credentiale ramane euristica. Niciun token nu se pune in setari sau conversatii.
+
 # LocalChat — raport de dezvoltare si probleme cunoscute
 
 Actualizat: 29 octombrie 2026. Livrare: 1.28.14.

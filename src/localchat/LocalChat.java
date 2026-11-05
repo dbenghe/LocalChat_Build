@@ -147,6 +147,8 @@ public final class LocalChat extends JFrame {
     private final JButton favoriteModelButton = new JButton();
     private final JButton loadModelsButton = ui(new JButton(), "Incarca modele");
     private final JPasswordField keyField = new JPasswordField(26);
+    private final JButton chatGptLogin=ui(new JButton(), "Continua cu ChatGPT");
+    private final JButton chatGptLogout=ui(new JButton(), "Deconecteaza ChatGPT");
     private final JCheckBox showKey = ui(new JCheckBox("", false), "Arata");
     private final JTextField urlField = new JTextField(26);
     private final JTextField systemField = new JTextField();
@@ -612,7 +614,8 @@ public final class LocalChat extends JFrame {
 
         JPanel keyPanel = new JPanel(new BorderLayout(4, 0));
         keyPanel.add(keyField);
-        keyPanel.add(showKey, BorderLayout.EAST);
+        JPanel accountActions=new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT,3,0));accountActions.add(showKey);accountActions.add(chatGptLogin);accountActions.add(chatGptLogout);keyPanel.add(accountActions,BorderLayout.EAST);
+        chatGptLogin.addActionListener(e->connectChatGpt());chatGptLogout.addActionListener(e->disconnectChatGpt());
         JPanel workPanel = new JPanel(new BorderLayout(4, 0));
         workPanel.add(workDirField);
         workPanel.add(chooseDirButton, BorderLayout.EAST);
@@ -2457,6 +2460,14 @@ public final class LocalChat extends JFrame {
         if(java.util.Objects.equals(selected,shownSelection)&&url.equals(currentUrl())){modelFilterKey="";filterModelOptions();saveConfig();}
     }
 
+    private void connectChatGpt(){
+        if(busy)return;Object selected=shownSelection;String account=currentKey(Provider.CHATGPT);chatGptLogin.setEnabled(false);setStatus("Conecteaza-te in browser si autorizeaza LocalChat.",false);
+        Thread worker=new Thread(()->{try{String id=ChatGptAccount.login(uri->{try{java.awt.Desktop.getDesktop().browse(uri);}catch(Exception error){throw new IllegalStateException("Browser unavailable",error);}},account);String label=ChatGptAccount.label(id);SwingUtilities.invokeLater(()->{Properties updated=new Properties();updated.putAll(config);var saved=SavedProviders.save(updated,"ChatGPT · "+label,Provider.CHATGPT,ChatGptAccount.API,id,"");updated.setProperty(saved.prefix()+".probeOnLoad","false");try{commitProviderSettings(updated);providerBox.addItem(saved);if(java.util.Objects.equals(selected,shownSelection)){selectSavedProvider(saved);loadModels();}setStatus("Cont ChatGPT conectat. Accesul la modele se confirma printr-o cerere reusita.",false);}catch(RuntimeException error){setStatus("Conectarea ChatGPT a esuat: {0}",true,describe(error));}});}catch(Exception error){SwingUtilities.invokeLater(()->setStatus("Conectarea ChatGPT a esuat: {0}",true,describe(error)));}finally{SwingUtilities.invokeLater(()->chatGptLogin.setEnabled(true));}},"chatgpt-login");worker.setDaemon(true);worker.start();
+    }
+    private void disconnectChatGpt(){
+        if(busy)return;String id=currentKey(Provider.CHATGPT);chatGptLogout.setEnabled(false);Thread worker=new Thread(()->{try{boolean revoked=ChatGptAccount.logout(id);SwingUtilities.invokeLater(()->setStatus(revoked?"Cont ChatGPT deconectat.":"Deconectat local; revocarea nu este confirmata. Verifica setarile ChatGPT.",false));}catch(Exception error){SwingUtilities.invokeLater(()->setStatus("Conectarea ChatGPT a esuat: {0}",true,describe(error)));}finally{SwingUtilities.invokeLater(()->chatGptLogout.setEnabled(true));}},"chatgpt-logout");worker.setDaemon(true);worker.start();
+    }
+
     private void loadModels() {
         if(unavailableProvider()){setStatus("Furnizorul acestei conversatii a fost sters. Alege un furnizor disponibil.",true);return;}
         if(shownSelection instanceof SavedProviders.Entry selected&&configBaseline.containsKey(selected.prefix()+".name")){
@@ -2623,6 +2634,7 @@ public final class LocalChat extends JFrame {
     }
 
     private String currentUrl() {
+        if(shownProvider==Provider.CHATGPT)return ChatGptAccount.API;
         return urlField.getText().trim().replaceAll("/+$", "");
     }
 
@@ -2655,6 +2667,7 @@ public final class LocalChat extends JFrame {
     private void showProvider(Object selection) {
         Provider p=SavedProviders.protocol(selection);String prefix=SavedProviders.prefix(selection);shownSelection=selection;shownProvider = p;
         keyField.setText(config.getProperty(prefix + ".key", ""));
+        boolean account=p==Provider.CHATGPT;chatGptLogin.setVisible(account);chatGptLogout.setVisible(account);keyField.setVisible(!account);showKey.setVisible(!account);urlField.setEditable(!account);
         keyField.setToolTipText(p.keyEnvVar == null
                 ? t("Optionala pentru API-uri locale (Ollama, LM Studio)")
                 : t("Lasa gol ca sa se foloseasca variabila de mediu {0}", p.keyEnvVar));

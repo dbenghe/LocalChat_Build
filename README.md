@@ -21,7 +21,7 @@ Dublu-click pe **`Porneste LocalChat.bat`** (în `C:\LocalChat`).
 | Claude (Anthropic) | cheie de la https://console.anthropic.com/settings/keys |
 | API custom (compatibil OpenAI) | URL-ul serverului + cheia, dacă e nevoie (Ollama `http://localhost:11434/v1`, LM Studio `http://localhost:1234/v1`, OpenRouter `https://openrouter.ai/api/v1`) |
 
-Abonamentele ChatGPT Plus / Claude Pro **nu** includ acces API; cheile API se plătesc separat, după consum.
+Cheile API au facturare separata. Furnizorul **ChatGPT (cont)** foloseste separat autentificarea oficiala si utilizarea planului ChatGPT pentru cereri eligibile, cu permisiunea contului. Disponibilitatea depinde de cont si se confirma la o cerere reusita.
 Cu tool-uri, un singur mesaj poate face multe cereri la model (fiecare pas = o cerere), deci costă mai mult.
 
 ## Folder de lucru și tool-uri
@@ -888,3 +888,8 @@ Grupurile de agenti nu mai au o limita comuna de trei minute. Stop si protectiil
 - Din 1.28.9: unealta `download_url` descarca fisiere de la link-uri directe (despacheteaza safelinks Outlook, limita de dimensiune, SHA-256, numai in folderul de lucru, cu aprobare); linkurile WeTransfer se deschid in browser (LocalChat nu apeleaza API-uri private). Apelurile de unelte scrise de model ca text nu se executa niciodata si raspunsul care le urmeaza este marcat NEVERIFICAT. Fisierele ajutatoare scrise de agent in folderul proiectului (nume cu `_`, `Bronnen_`, `temp_`/`tmp_`, fisiere `.tmp`/`.part`, scripturi) nu mai genereaza notificari de hotfolder, iar `run_command` nu mai face inventarul folderului. Prompt-ul agentului cere raspunsuri de expert: intai uneltele/fisierele, o singura intrebare precisa doar daca lipsesc detalii importante, apoi raspuns structurat cu exemple si recomandari.
 - Daca un server respinge parametrul (400/422), cererea se reia o singura data fara el si respingerea se tine minte pentru acel url si model.
 - Rezerva adaptiva (~1,25 x gandirea observata, plafon 8192) in max_tokens; mesaj clar cand gandirea a consumat toata limita; raspunsurile trunchiate nu ruleaza unelte; reincercari numai la 502/503/504 si, din 1.28.7, la 522/523/524 (proxy, inainte de orice raspuns; max 3 incercari, pauza ~4 s x incercare). Compactarea (automata si /compact) cere gandire oprita pe custom si lucreaza pe fragmente de ~8000 tokeni; eroarea 524 este afisata ca `HTTP 524 (proxy timeout ~100 s)` cu sfat exact.
+## Cont ChatGPT (1.29.0)
+Alege **ChatGPT (cont)** la Furnizor, apasa **Continua cu ChatGPT**, apoi autentifica-te si autorizeaza LocalChat in browser. Selecteaza un model din catalogul contului. Nu introduce parola sau tokeni in campul de cheie API. Conturile se salveaza separat ca furnizori; fiecare conversatie pastreaza profilul sau. Deconectarea incearca revocarea sesiunii si anunta daca revocarea nu a putut fi confirmata.
+Cereri eligibile din plan, limite si credite: verifica setarile de utilizare din ChatGPT. Nu este garantat accesul la toate modelele afisate pe site, nu sunt importate conversatiile ChatGPT si nu se foloseste automat o cheie API platita.
+Acreditarile private sunt in `~/.localchat-chatgpt`, in afara distributiei si a conversatiilor. Nu include folderul in exporturi sau in suport.
+Surse oficiale: https://developers.openai.com/siwc/token-sharing-open-source/sign-in si https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference .

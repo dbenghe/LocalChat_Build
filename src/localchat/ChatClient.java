@@ -151,6 +151,7 @@ final class ChatClient {
         final StringBuilder args = new StringBuilder();
     }
 
+    private final ChatGptResponses chatGptResponses=new ChatGptResponses();
     private long deadlineNanos;
     private int readTimeoutMillis=600_000;
     void budgetMillis(long millis){deadlineNanos=System.nanoTime()+java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(millis);readTimeoutMillis=120_000;}
@@ -204,6 +205,7 @@ final class ChatClient {
     private Reply chat(Provider p, String baseUrl, String apiKey, String model, String system, List<Message> history,
                List<ToolSpec> tools, boolean stream, Listener listener, boolean allowThinking) throws IOException {
         lastUsage = TokenUsage.UNKNOWN;
+        if(p==Provider.CHATGPT)return chatGpt(model,system,history,tools,apiKey,listener);
         boolean anthropic = p.format == Provider.Format.ANTHROPIC;
         Map<String, Object> body = anthropic
                 ? anthropicBody(model, system, history, tools, stream)
@@ -246,6 +248,11 @@ final class ChatClient {
             active = null;
             conn.disconnect();
         }
+    }
+
+    private Reply chatGpt(String model,String system,List<Message> history,List<ToolSpec> tools,String account,Listener listener)throws IOException {
+        HttpURLConnection conn=open(Provider.CHATGPT,ChatGptAccount.API+"/responses",account,"POST");conn.setReadTimeout(remainingMillis());active=conn;
+        try{conn.setDoOutput(true);byte[] bytes=Json.write(chatGptResponses.body(model,system,history,tools,outputLimit)).getBytes(StandardCharsets.UTF_8);try(OutputStream out=conn.getOutputStream()){out.write(bytes);}checkStatus(conn);try(BufferedReader reader=new BufferedReader(new InputStreamReader(timedInput(conn),StandardCharsets.UTF_8))){return chatGptResponses.read(reader,listener,u->lastUsage=u,()->cancelled);}}finally{active=null;conn.disconnect();}
     }
 
     /**
@@ -362,6 +369,7 @@ final class ChatClient {
     }
 
     static List<String> listModels(Provider p, String baseUrl, String apiKey) throws IOException {
+        if(p==Provider.CHATGPT)return ModelCatalog.fetch(p,baseUrl,apiKey).stream().map(ModelCatalog.Entry::id).toList();
         boolean anthropic = p.format == Provider.Format.ANTHROPIC;
         HttpURLConnection conn = open(p, baseUrl + "/models" + (anthropic ? "?limit=1000" : ""), apiKey, "GET");
         try {
@@ -605,6 +613,7 @@ final class ChatClient {
     private static HttpURLConnection open(Provider p, String url, String apiKey, String method) throws IOException {
         ProviderHeaders.validateKey(url,apiKey);HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
         c.setRequestMethod(method);
+        if(p==Provider.CHATGPT)c.setInstanceFollowRedirects(false);
         c.setConnectTimeout(30_000);
         c.setReadTimeout(600_000);
         c.setRequestProperty("Content-Type", "application/json");

@@ -51,3 +51,6 @@
 
 **/hotfolder-generated.json
 **/hotfolder-generated.json.lock
+
+# Private ChatGPT OAuth credentials
+**/.localchat-chatgpt/

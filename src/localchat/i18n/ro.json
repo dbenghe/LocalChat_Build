@@ -820,5 +820,20 @@
   "Desene: {0}, constatari: {1}": "Desene: {0}, constatari: {1}",
   "Raport: {0}": "Raport: {0}",
   "Tool-urile PDFCONTROL pornesc inca. Incearca din nou peste cateva secunde.": "Tool-urile PDFCONTROL pornesc inca. Incearca din nou peste cateva secunde.",
-  "Stare MCP: {0}": "Stare MCP: {0}"
+  "Stare MCP: {0}": "Stare MCP: {0}",
+  "ChatGPT (cont)": "ChatGPT (cont)",
+  "Continua cu ChatGPT": "Continua cu ChatGPT",
+  "Deconecteaza ChatGPT": "Deconecteaza ChatGPT",
+  "Conecteaza contul ChatGPT mai intai.": "Conecteaza contul ChatGPT mai intai.",
+  "Conectarea ChatGPT a esuat (HTTP {0}).": "Conectarea ChatGPT a esuat (HTTP {0}).",
+  "Conectarea ChatGPT a fost anulata.": "Conectarea ChatGPT a fost anulata.",
+  "Conectarea ChatGPT a expirat. Incearca din nou.": "Conectarea ChatGPT a expirat. Incearca din nou.",
+  "Contul nu a autorizat utilizarea planului ChatGPT.": "Contul nu a autorizat utilizarea planului ChatGPT.",
+  "Conecteaza-te in browser si autorizeaza LocalChat.": "Conecteaza-te in browser si autorizeaza LocalChat.",
+  "Cont ChatGPT conectat. Accesul la modele se confirma printr-o cerere reusita.": "Cont ChatGPT conectat. Accesul la modele se confirma printr-o cerere reusita.",
+  "Conectarea ChatGPT a esuat: {0}": "Conectarea ChatGPT a esuat: {0}",
+  "Cont ChatGPT deconectat.": "Cont ChatGPT deconectat.",
+  "Deconectat local; revocarea nu este confirmata. Verifica setarile ChatGPT.": "Deconectat local; revocarea nu este confirmata. Verifica setarile ChatGPT.",
+  "Cererea ChatGPT a esuat: {0}": "Cererea ChatGPT a esuat: {0}",
+  "Fluxul ChatGPT s-a inchis fara raspuns complet.": "Fluxul ChatGPT s-a inchis fara raspuns complet."
 }

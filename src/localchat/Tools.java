@@ -396,6 +396,7 @@ final class Tools {
 
     private Path guarded(String raw) throws ToolError {
         Path p = path(raw);
+        if(ChatGptAccount.protectedPath(p))throw new ToolError("Fisierul de setari al aplicatiei (cu cheile API) nu e accesibil prin tool-uri.");
         if (p.equals(ctx.secretFile()) || (Files.exists(p) && Files.exists(ctx.secretFile()) && sameFile(p,ctx.secretFile()))) throw new ToolError("Fisierul de setari al aplicatiei (cu cheile API) nu e accesibil prin tool-uri.");
         return p;
     }

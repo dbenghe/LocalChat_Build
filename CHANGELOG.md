@@ -1,3 +1,12 @@
+# 1.29.0 - 2026-11-05
+- Furnizor separat ChatGPT (cont): autentificare oficiala Sign in with ChatGPT pentru planuri/cereri eligibile, fara importul acreditarilor din Codex, VS Code sau browser.
+- Butoane Continua cu ChatGPT si Deconecteaza ChatGPT; conturile sunt profiluri distincte cu identificatori opaci in setari, nu tokeni. OAuth cu PKCE S256, state si nonce independente, callback loopback, validare RSA/JWKS, issuer/audienta/expirare/identitate, scope explicit; refresh serializat inclusiv intre procese, revocare cu raportarea esecului.
+- Acreditarile sunt in ~/.localchat-chatgpt, cu ACL pentru proprietar si scriere atomica. Uneltele de fisiere refuza accesul la aceasta locatie; comenzile care o mentioneaza trec prin SensitiveGuard. Detectia comenzilor ramane euristica.
+- Catalogul vine din contul autorizat; transportul foloseste numai https://api.openai.com/v1/models si /responses, store=false si stream=true. Accesul este confirmat numai prin inferenta reusita, nu prin prezenta in catalog. Nicio cheie API folosita implicit si nicio comutare automata la facturare API.
+- Uneltele LocalChat/PDFCONTROL raman executate de aplicatie cu permisiunile existente. Erorile de flux/limite nu executa apeluri partiale; metadatele de rationament criptate sunt pastrate numai in cererea curenta pentru continuarea uneltelor, nu in arhiva. Urmele vechi restaurate sunt transmise ca text istoric.
+- Teste: ChatGptAccountTest pe fixture-uri locale (identitate semnata, nonce/audienta/expirare, callback/PKCE/anulare, stream, usage, unelte, stocare, UI). Conectarea OAuth si inferenta pe cont real necesita autentificarea utilizatorului si raman NEconfirmate pana la proba.
+- Documentatie: https://developers.openai.com/siwc/token-sharing-open-source ; /sign-in ; /models-and-inference ; /profiles-and-sessions . Integrarea nu ofera acces la conversatiile sau proiectele ChatGPT.
+
 # 1.28.14 - 2026-10-29
 - Cerere aprobata de Dumitru (continuare a 1.28.13): dialogul PDFCONTROL functioneaza independent de conversatie, ca aplicatia sa fie utilizabila.
 - Cauza: dialogul manual lua proiectul din folderul de lucru al conversatiei (gol fara conversatie sau fara segment de 6 cifre) si cerea PDF-uri alese manual; fara conversatie butonul/comanda nu aveau ce folosi si esecul era tacut.
