@@ -905,3 +905,6 @@ Pentru furnizorul Codex, profilurile de iesire si controlul gandirii din rutele 
 
 ### Context si selectie Codex (1.30.1)
 Modelele de chat Codex sunt selectabile in MBS si Normal, inclusiv din catalogul salvat de 1.30.0. Coloana de context documentat foloseste catalogul local nativ Codex (models_cache.json), cu model exact si data de actualizare verificata; fisierul nu este copiat in distributie. Contextul declarat si fereastra efectiva sunt valori distincte: fereastra efectiva apare numai dupa notificarea nativa de utilizare dintr-o tura reala. Incarcarea/verificarea metadatelor nu genereaza inferenta. Metadatele lipsa, corupte sau mai vechi de 7 zile raman necunoscute. Nu se deduce contextul din numele modelului si nu se copiaza credentiale Codex.
+
+### Permisiuni Codex si API (1.30.2)
+MBS foloseste permisiunile selectate in LocalChat; ASK si AUTO permit solicitarea operatiilor, iar Tools/FileGuard decid executia si aprobarile. Codex primeste workspace-write numai pentru propriul scratch intern, nu acces nativ de scriere in proiect. Scrierea reala in proiect ramane in uneltele LocalChat. Normal si analiza raman readonly. Un acord scris in chat nu modifica selectorul Doar citire. Rutele API compatibile nu primesc un sandbox Codex; starea reala a hostului este transmisa separat fiecarui agent.

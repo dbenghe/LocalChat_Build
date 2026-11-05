@@ -157,6 +157,8 @@ final class ChatClient {
     ChatClient(NativeFactory factory){nativeFactory=factory;}
     private volatile CodexConnection codex;
     private String codexSignature="";
+    private CodexConnection.NativeAccess nativeAccess=CodexConnection.NativeAccess.READ_ONLY;
+    void nativeAccess(CodexConnection.NativeAccess access){nativeAccess=java.util.Objects.requireNonNull(access);}
     void closeNative(){CodexConnection connection=codex;codex=null;if(connection!=null)connection.close();}
     private final ChatGptResponses chatGptResponses=new ChatGptResponses();
     private long deadlineNanos;
@@ -215,7 +217,7 @@ final class ChatClient {
         lastUsage = TokenUsage.UNKNOWN;
         if(p==Provider.CODEX){
             if(cancelled)throw new java.io.InterruptedIOException("Cancelled");
-            try{String signature=ModelCatalog.hash(model+system+Json.write(CodexConnection.specs(tools)));if(!signature.equals(codexSignature)){closeNative();codexSignature=signature;}if(codex==null)codex=nativeFactory.create();if(cancelled){closeNative();throw new java.io.InterruptedIOException("Cancelled");}Reply reply=codex.chat(model,system,history,tools,listener,u->lastUsage=u,()->{try{return remainingMillis();}catch(java.net.SocketTimeoutException error){return 1;}});if(reply.calls.isEmpty())closeNative();return reply;}catch(IOException|RuntimeException error){closeNative();throw error;}
+            try{String signature=ModelCatalog.hash(model+system+nativeAccess+Json.write(CodexConnection.specs(tools)));if(!signature.equals(codexSignature)){closeNative();codexSignature=signature;}if(codex==null)codex=nativeFactory.create();if(cancelled){closeNative();throw new java.io.InterruptedIOException("Cancelled");}Reply reply=codex.chat(model,system,history,tools,listener,u->lastUsage=u,()->{try{return remainingMillis();}catch(java.net.SocketTimeoutException error){return 1;}},nativeAccess);if(reply.calls.isEmpty())closeNative();return reply;}catch(IOException|RuntimeException error){closeNative();throw error;}
         }
         if(p==Provider.CHATGPT)return chatGpt(model,system,history,tools,apiKey,listener);
         boolean anthropic = p.format == Provider.Format.ANTHROPIC;

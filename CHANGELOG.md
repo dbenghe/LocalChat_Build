@@ -1,3 +1,10 @@
+## 1.30.2
+- Codex primeste permisiunea reala a agentului LocalChat; sesiunea principala cu unelte de modificare nu mai este declarata readonly.
+- Sandbox nativ workspace-write numai in scratch; proiectele se modifica prin Tools/FileGuard/aprobarile LocalChat. Normal si copiii de analiza raman readonly.
+- Stare de permisiuni explicita si pe API directe, fara propagarea restrictiilor copiilor la agentul principal.
+- Teste pentru ASK/AUTO/readonly, agenti, izolarea radacinilor native si executia completa citire-salvare-verificare pe API compatibile.
+- Probe reale GPT-6.1 Sol si MiniMax GonkaRouter pe date sintetice. MiniMax a scris, dar proba Agent a modificat whitespace-ul; nu se declara verificarea identitatii exacte trecuta.
+
 ## 1.30.1
 - Corecteaza categoria chat interpretata gresit ca model specializat: modelele Codex pot fi selectate in MBS si Normal, inclusiv din catalogul 1.30.0 deja salvat.
 - Pastreaza provenienta metadatelor Codex la restaurarea catalogului; elimina sursa HTTP fictiva din afisare.

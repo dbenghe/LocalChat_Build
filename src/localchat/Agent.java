@@ -74,6 +74,7 @@ final class Agent {
 
     Agent(Tools tools) {
         this.tools = tools;
+        client.nativeAccess(tools==null?CodexConnection.NativeAccess.READ_ONLY:tools.nativeAccess());
     }
 
     void outputLimit(int tokens) {client.outputLimit(tokens);}
@@ -105,7 +106,7 @@ final class Agent {
 
     void run(Provider p, String url, String key, String model, String label, String system,
              List<ChatClient.Message> base, boolean stream, Ui ui) throws IOException {
-        try{runImpl(p,url,key,model,label,system,base,stream,ui);}finally{client.closeNative();}
+        try{runImpl(p,url,key,model,label,tools==null?system:system+tools.permissionControl(),base,stream,ui);}finally{client.closeNative();}
     }
     private void runImpl(Provider p,String url,String key,String model,String label,String system,List<ChatClient.Message> base,boolean stream,Ui ui)throws IOException{
         if(automaticDelegation!=null&&team!=null&&tools!=null){

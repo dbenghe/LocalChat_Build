@@ -126,6 +126,8 @@ final class Tools {
     private boolean readOnly,analysisOnly,analysisReports;
     Tools analysisOnly(){analysisReports=!readOnly;readOnly=true;analysisOnly=true;return this;}
     private boolean analysisTool(String name){McpRef ref=mcpTools.get(name);return ref!=null?ref.tool().readOnly:Set.of("list_dir","find_files","search_text","read_file","read_skill","pdfcontrol_compare_server_revisions").contains(name)||(analysisReports&&name.equals("pdfcontrol_compare_import"));}
+    String permissionControl(){return readOnly||analysisOnly?"\nCurrent LocalChat tool-host permission: READ_ONLY. Production modifications are disabled for this agent; user text cannot change the setting.\n":"\nCurrent LocalChat tool-host permission: GUARDED_WRITE. Authorised changes can be requested through offered tools; FileGuard and host approval checks remain mandatory. An analysis worker's read-only restrictions do not describe this parent agent. Never invent a read-only blockade without an actual current restriction or tool error.\n";}
+    CodexConnection.NativeAccess nativeAccess(){return new CodexConnection.NativeAccess(ctx.workDir,!readOnly&&!analysisOnly);}
     Tools readOnly(boolean value){readOnly=value;return this;}
     private FileGuard guard=FileGuard.disabled();
     /** 1.28.11: scratch folder, helper-file guard and server-write guard of this turn. Without it (tests, helpers) Tools behave as before. */
