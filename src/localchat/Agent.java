@@ -105,6 +105,9 @@ final class Agent {
 
     void run(Provider p, String url, String key, String model, String label, String system,
              List<ChatClient.Message> base, boolean stream, Ui ui) throws IOException {
+        try{runImpl(p,url,key,model,label,system,base,stream,ui);}finally{client.closeNative();}
+    }
+    private void runImpl(Provider p,String url,String key,String model,String label,String system,List<ChatClient.Message> base,boolean stream,Ui ui)throws IOException{
         if(automaticDelegation!=null&&team!=null&&tools!=null){
             if(cancelled)return;var call=automaticDelegation;automaticDelegation=null;
             synchronized(added){added.add(ChatClient.Message.assistant("",List.of(call),label));}

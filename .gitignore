@@ -54,3 +54,6 @@
 
 # Private ChatGPT OAuth credentials
 **/.localchat-chatgpt/
+
+# Private transient native Codex sessions
+**/codex-sessions/

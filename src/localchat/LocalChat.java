@@ -750,6 +750,7 @@ public final class LocalChat extends JFrame {
             themeBox.setSelectedIndex("dark".equals(theme) ? 1 : 0);
             translateControls(getContentPane());
             translateControls(getJMenuBar());
+            chatGptLogin.setText(t(shownProvider==Provider.CODEX?"Foloseste sesiunea Codex":"Continua cu ChatGPT"));
             attachButton.setToolTipText(t("Adauga fisiere sau foldere"));attachButton.getAccessibleContext().setAccessibleName(t("Adauga fisiere sau foldere"));refreshAttachments();
             sendButton.setText("");sendButton.setToolTipText(t(busy?"Adauga mesajul in coada":"Trimite"));sendButton.getAccessibleContext().setAccessibleName(sendButton.getToolTipText());
             stopButton.setText("");stopButton.setToolTipText(t("Stop"));stopButton.getAccessibleContext().setAccessibleName(t("Stop"));
@@ -1557,7 +1558,7 @@ public final class LocalChat extends JFrame {
         int cut=sessionState.memory.boundary(history);
         if(cut<=sessionState.memory.through || cut==0){setStatus("Nu exista suficient istoric pentru compactare. Se pastreaza ultimele doua schimburi.",false);return;}
         Provider provider=shownProvider;String model=currentModel(),url=currentUrl(),key=currentKey(provider);
-        if(model.isBlank() || url.isBlank() || (key.isBlank() && provider!=Provider.CUSTOM)){setStatus("Configureaza furnizorul, modelul si cheia inainte de compactare.",true);return;}
+        if(model.isBlank() || url.isBlank() || (key.isBlank() && provider!=Provider.CUSTOM && provider!=Provider.CODEX)){setStatus("Configureaza furnizorul, modelul si cheia inainte de compactare.",true);return;}
         List<ChatClient.Message> prefix=sessionState.memory.view(new ArrayList<>(history.subList(0,cut)));
         StringBuilder material=new StringBuilder();for(var m:prefix)material.append(Json.write(m.toJson())).append('\n');
         int limit=effectiveLimit();
@@ -1689,7 +1690,7 @@ public final class LocalChat extends JFrame {
             setStatus("Completeaza URL-ul de baza.", true);
             return;
         }
-        if (key.isEmpty() && p != Provider.CUSTOM) {
+        if (key.isEmpty() && p != Provider.CUSTOM && p != Provider.CODEX) {
             setStatus("Lipseste cheia API pentru {0}.", true, p.shortName);
             keyField.requestFocusInWindow();
             return;
@@ -2453,7 +2454,7 @@ public final class LocalChat extends JFrame {
     private void showModelCatalog(boolean auto){
         if(unavailableProvider()){setStatus("Furnizorul acestei conversatii a fost sters. Alege un furnizor disponibil.",true);return;}
         if(busy){setStatus("Opreste generarea inainte de aceasta comanda.",true);return;}String prefix=SavedProviders.prefix(shownSelection),url=currentUrl(),key=currentKey(shownProvider);Object selected=shownSelection;ModelCatalog.Cache cache=currentModelCache();
-        ModelCatalogDialog dialog=new ModelCatalogDialog(this,SavedProviders.label(selected,url),catalogEntries(),cache,shownProvider,url,key,config.getProperty(prefix+".probeOnLoad","true").equals("true"),entry->{if(java.util.Objects.equals(selected,shownSelection)&&url.equals(currentUrl())&&key.equals(currentKey(shownProvider))){modelBox.setSelectedItem(entry.id());saveConfig();refreshDashboard();}},enabled->{config.setProperty(prefix+".probeOnLoad",enabled.toString());saveConfig();},()->{modelFilterKey="";filterModelOptions();modelBox.repaint();});
+        ModelCatalogDialog dialog=new ModelCatalogDialog(this,SavedProviders.label(selected,url),catalogEntries(),cache,shownProvider,url,key,shownProvider!=Provider.CODEX&&config.getProperty(prefix+".probeOnLoad","true").equals("true"),entry->{if(java.util.Objects.equals(selected,shownSelection)&&url.equals(currentUrl())&&key.equals(currentKey(shownProvider))){modelBox.setSelectedItem(entry.id());saveConfig();refreshDashboard();}},enabled->{config.setProperty(prefix+".probeOnLoad",enabled.toString());saveConfig();},()->{modelFilterKey="";filterModelOptions();modelBox.repaint();});
         dialog.configureProfile(toolsBox.isSelected(),profileModelFilter(),enabled->{config.setProperty("models.profileFilter",enabled.toString());modelFilterKey="";filterModelOptions();saveConfig();});
         dialog.configureFavorites(id->ModelFavorites.contains(config,prefix,url,id),id->{ModelFavorites.toggle(config,prefix,url,id);saveConfig();reorderFavoriteModels();});
         if(auto)SwingUtilities.invokeLater(dialog::startUntested);dialog.setVisible(true);
@@ -2461,8 +2462,13 @@ public final class LocalChat extends JFrame {
     }
 
     private void connectChatGpt(){
+        if(shownProvider==Provider.CODEX){connectCodex();return;}
         if(busy)return;Object selected=shownSelection;String account=currentKey(Provider.CHATGPT);chatGptLogin.setEnabled(false);setStatus("Conecteaza-te in browser si autorizeaza LocalChat.",false);
         Thread worker=new Thread(()->{try{String id=ChatGptAccount.login(uri->{try{java.awt.Desktop.getDesktop().browse(uri);}catch(Exception error){throw new IllegalStateException("Browser unavailable",error);}},account);String label=ChatGptAccount.label(id);SwingUtilities.invokeLater(()->{Properties updated=new Properties();updated.putAll(config);var saved=SavedProviders.save(updated,"ChatGPT · "+label,Provider.CHATGPT,ChatGptAccount.API,id,"");updated.setProperty(saved.prefix()+".probeOnLoad","false");try{commitProviderSettings(updated);providerBox.addItem(saved);if(java.util.Objects.equals(selected,shownSelection)){selectSavedProvider(saved);loadModels();}setStatus("Cont ChatGPT conectat. Accesul la modele se confirma printr-o cerere reusita.",false);}catch(RuntimeException error){setStatus("Conectarea ChatGPT a esuat: {0}",true,describe(error));}});}catch(Exception error){SwingUtilities.invokeLater(()->setStatus("Conectarea ChatGPT a esuat: {0}",true,describe(error)));}finally{SwingUtilities.invokeLater(()->chatGptLogin.setEnabled(true));}},"chatgpt-login");worker.setDaemon(true);worker.start();
+    }
+    private void connectCodex(){
+        if(busy)return;Object selected=shownSelection;chatGptLogin.setEnabled(false);setStatus("Se verifica sesiunea Codex existenta, fara copierea cheilor.",false);
+        Thread worker=new Thread(()->{try{var rows=CodexConnection.models();SwingUtilities.invokeLater(()->{if(java.util.Objects.equals(selected,shownSelection)){loadModels();setStatus("Codex conectat. Autentificarea ramane gestionata de Codex.",false);}});}catch(Exception error){SwingUtilities.invokeLater(()->setStatus("Conectarea Codex a esuat: {0}",true,describe(error)));}finally{SwingUtilities.invokeLater(()->chatGptLogin.setEnabled(true));}},"codex-connect");worker.setDaemon(true);worker.start();
     }
     private void disconnectChatGpt(){
         if(busy)return;String id=currentKey(Provider.CHATGPT);chatGptLogout.setEnabled(false);Thread worker=new Thread(()->{try{boolean revoked=ChatGptAccount.logout(id);SwingUtilities.invokeLater(()->setStatus(revoked?"Cont ChatGPT deconectat.":"Deconectat local; revocarea nu este confirmata. Verifica setarile ChatGPT.",false));}catch(Exception error){SwingUtilities.invokeLater(()->setStatus("Conectarea ChatGPT a esuat: {0}",true,describe(error)));}finally{SwingUtilities.invokeLater(()->chatGptLogout.setEnabled(true));}},"chatgpt-logout");worker.setDaemon(true);worker.start();
@@ -2496,7 +2502,7 @@ public final class LocalChat extends JFrame {
                     modelBox.setSelectedItem(ids.contains(keep)?keep:ids.stream().filter(id->ModelSuitability.assess(catalog.stream().filter(e->e.id().equals(id)).findFirst().orElseThrow(),currentModelCache().get(id),url,toolsBox.isSelected()).suggested()).findFirst().orElse(ids.get(0)));
                     if(keptHistory()){refreshDashboard();setStatus("{0} modele disponibile — alege din lista. Conversatia curenta ramane ({1} din context); reincarcarea modelelor nu o goleste.", false, ids.size(), contextRing.getText());}else setStatus("{0} modele disponibile — alege din lista.", false, ids.size());
                     saveConfig();inspectModel();
-                    showModelCatalog(config.getProperty(prefix+".probeOnLoad","true").equals("true"));
+                    showModelCatalog(p!=Provider.CODEX&&config.getProperty(prefix+".probeOnLoad","true").equals("true"));
                 });
             } catch (Exception e) {
                 SwingUtilities.invokeLater(() -> {
@@ -2634,11 +2640,13 @@ public final class LocalChat extends JFrame {
     }
 
     private String currentUrl() {
+        if(shownProvider==Provider.CODEX)return CodexConnection.ROUTE;
         if(shownProvider==Provider.CHATGPT)return ChatGptAccount.API;
         return urlField.getText().trim().replaceAll("/+$", "");
     }
 
     private String currentKey(Provider p) {
+        if(p==Provider.CODEX)return "";
         String typed = new String(keyField.getPassword()).trim();
         if(!typed.isEmpty())return typed;
         try{return shownSelection instanceof SavedProviders.Entry || !java.util.Objects.equals(java.net.URI.create(currentUrl()).getHost(),java.net.URI.create(p.defaultUrl).getHost())?"":p.envKey();}catch(RuntimeException error){return "";}
@@ -2667,7 +2675,7 @@ public final class LocalChat extends JFrame {
     private void showProvider(Object selection) {
         Provider p=SavedProviders.protocol(selection);String prefix=SavedProviders.prefix(selection);shownSelection=selection;shownProvider = p;
         keyField.setText(config.getProperty(prefix + ".key", ""));
-        boolean account=p==Provider.CHATGPT;chatGptLogin.setVisible(account);chatGptLogout.setVisible(account);keyField.setVisible(!account);showKey.setVisible(!account);urlField.setEditable(!account);
+        boolean account=p==Provider.CHATGPT||p==Provider.CODEX;chatGptLogin.setVisible(account);chatGptLogin.setText(t(p==Provider.CODEX?"Foloseste sesiunea Codex":"Continua cu ChatGPT"));chatGptLogout.setVisible(p==Provider.CHATGPT);keyField.setVisible(!account);showKey.setVisible(!account);urlField.setEditable(!account);
         keyField.setToolTipText(p.keyEnvVar == null
                 ? t("Optionala pentru API-uri locale (Ollama, LM Studio)")
                 : t("Lasa gol ca sa se foloseasca variabila de mediu {0}", p.keyEnvVar));

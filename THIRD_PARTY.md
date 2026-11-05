@@ -11,3 +11,6 @@
 
 The original JAR is pinned in lib/ and verified before every build. No runtime download is required.
 The complete folder, including lib/, must stay beside LocalChat.jar when copying the portable app.
+
+## Optional installed Codex app-server (1.30.0)
+LocalChat can launch an independently installed official Codex executable over JSONL stdio. Codex binaries, authentication material and runtimes are not bundled in this repository or copied into the LocalChat distribution. Codex manages its own ChatGPT authentication and workspace policies. The app-server dynamic-tools protocol is experimental. Integration reference: https://learn.chatgpt.com/docs/app-server .

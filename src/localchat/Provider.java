@@ -7,6 +7,7 @@ enum Provider {
     ANTHROPIC("API Anthropic (Claude si compatibile)", "Claude", Format.ANTHROPIC, "https://api.anthropic.com/v1", "ANTHROPIC_API_KEY",
             "claude-sonnet-5-5", "claude-opus-5-5", "claude-haiku-5-5", "claude-fable-5-1"),
     CHATGPT("ChatGPT (cont)", "ChatGPT", Format.OPENAI, "https://api.openai.com/v1", null, ""),
+    CODEX("Codex (cont ChatGPT)", "Codex", Format.OPENAI, CodexConnection.ROUTE, null, ""),
     CUSTOM("API custom (compatibil OpenAI)", "Custom", Format.OPENAI, "http://localhost:11434/v1", null,
             "llama3.1");
 

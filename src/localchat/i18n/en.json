@@ -835,5 +835,14 @@
   "Cont ChatGPT deconectat.": "ChatGPT disconnected.",
   "Deconectat local; revocarea nu este confirmata. Verifica setarile ChatGPT.": "Disconnected locally; revocation was not confirmed. Check ChatGPT settings.",
   "Cererea ChatGPT a esuat: {0}": "ChatGPT request failed: {0}",
-  "Fluxul ChatGPT s-a inchis fara raspuns complet.": "ChatGPT stream closed without a complete response."
+  "Fluxul ChatGPT s-a inchis fara raspuns complet.": "ChatGPT stream closed without a complete response.",
+  "Foloseste sesiunea Codex": "Use Codex session",
+  "Se verifica sesiunea Codex existenta, fara copierea cheilor.": "Checking the existing Codex session without copying keys.",
+  "Codex conectat. Autentificarea ramane gestionata de Codex.": "Codex connected. Authentication remains managed by Codex.",
+  "Conectarea Codex a esuat: {0}": "Codex connection failed: {0}",
+  "Codex nu este disponibil. Instaleaza sau deschide Codex si autentifica-te cu ChatGPT.": "Codex is unavailable. Install or open Codex and sign in with ChatGPT.",
+  "Codex nu a raspuns in timpul alocat. Istoricul este pastrat.": "Codex did not respond in time. History is preserved.",
+  "Conexiunea Codex s-a inchis. Istoricul este pastrat.": "Codex connection closed. History is preserved.",
+  "Codex nu este conectat cu ChatGPT. Conecteaza-te in Codex; nu se foloseste automat o cheie API.": "Codex is not signed in with ChatGPT. Sign in within Codex; no automatic API-key fallback is used.",
+  "Codex a returnat alta ruta sau alt model. Cererea a fost oprita.": "Codex returned another route or model. The request was stopped."
 }

@@ -67,6 +67,7 @@ final class ModelCatalog {
     static List<Entry> parse(Object root,String base){Object rows=Json.get(root,"data");if(!(rows instanceof List))rows=Json.get(root,"models");List<Entry> entries=new ArrayList<>();Set<String> seen=new HashSet<>();if(rows instanceof List<?> list)for(Object row:list){String id=Json.str(row,"id");if(id==null)id=Json.str(row,"key");boolean instancesAdded=false;Object instances=Json.get(row,"loaded_instances");if(instances instanceof List<?> loaded)for(Object instance:loaded){String alias=Json.str(instance,"id");if(alias!=null&&!alias.isBlank()){instancesAdded=true;if(seen.add(alias)&&row instanceof Map<?,?> fields){Map<String,Object> routed=new LinkedHashMap<>();fields.forEach((k,v)->routed.put(k.toString(),v));routed.put("id",alias);entries.add(entry(routed,base));}}}
             if(!instancesAdded&&id!=null&&!id.isBlank()&&seen.add(id))entries.add(entry(row,base));}return entries;}
     static List<Entry> fetch(Provider protocol,String base,String key)throws IOException{
+        if(protocol==Provider.CODEX)return CodexConnection.models();
         if(protocol==Provider.CHATGPT){HttpURLConnection c=open(protocol,ChatGptAccount.API+"/models",key,"GET",15000);try{if(c.getResponseCode()!=200)throw ProviderHeaders.metadataError(c,c.getResponseCode());Object catalog=Json.parse(read(c.getInputStream(),4*1024*1024,System.nanoTime()+TimeUnit.SECONDS.toNanos(20)));List<Entry> rows=new ArrayList<>();if(Json.get(catalog,"models") instanceof List<?> list)for(Object row:list)if("list".equals(Json.str(row,"visibility"))&&!Objects.toString(Json.str(row,"slug"),"").isBlank())rows.add(entry(Json.obj("id",Json.str(row,"slug")),ChatGptAccount.API));return rows;}finally{c.disconnect();}}
         ProviderHeaders.validateKey(base,key);base=base.replaceFirst("/+$","");
         if(ModelInfo.local(base)){try{URI uri=URI.create(base);String path=Objects.toString(uri.getPath(),"").replaceFirst("/v1/?$","").replaceFirst("/$","");String address=uri.getScheme()+"://"+uri.getRawAuthority()+path+"/api/v1/models";HttpURLConnection nativeApi=open(protocol,address,key,"GET",10000);try{if(nativeApi.getResponseCode()==200){var rows=parse(Json.parse(read(nativeApi.getInputStream(),4*1024*1024,System.nanoTime()+TimeUnit.SECONDS.toNanos(15))),base);if(!rows.isEmpty())return rows;}}finally{nativeApi.disconnect();}}catch(IOException|RuntimeException ignored){}}
@@ -86,10 +87,16 @@ final class ModelCatalog {
         int rank(){return !fresh()?2:state.equals("responded")?0:state.equals("reachable")?1:state.equals("unavailable")?4:3;}
     }
     static final class Cancellation {
-        final AtomicBoolean cancelled=new AtomicBoolean();final Set<HttpURLConnection> active=ConcurrentHashMap.newKeySet();
-        void cancel(){cancelled.set(true);for(var c:active){Thread thread=new Thread(c::disconnect,"model-probe-cancel");thread.setDaemon(true);thread.start();}}
+        final Set<ChatClient> nativeClients=ConcurrentHashMap.newKeySet();final AtomicBoolean cancelled=new AtomicBoolean();final Set<HttpURLConnection> active=ConcurrentHashMap.newKeySet();
+        void cancel(){cancelled.set(true);for(var client:nativeClients)client.cancel();for(var c:active){Thread thread=new Thread(c::disconnect,"model-probe-cancel");thread.setDaemon(true);thread.start();}}
     }
     static Probe probe(Provider protocol,String base,String key,String model,boolean tool,Cancellation cancel){
+        if(protocol==Provider.CODEX){long started=System.nanoTime();ChatClient client=new ChatClient();cancel.nativeClients.add(client);try{
+            if(cancel.cancelled.get())return new Probe("cancelled",0,0,System.currentTimeMillis(),TokenUsage.UNKNOWN,null);
+            client.budgetMillis(30_000);List<ChatClient.ToolSpec> specs=tool?List.of(new ChatClient.ToolSpec("localchat_probe","Harmless probe. No action is executed.",Json.obj("type","object","properties",Json.obj("value",Json.obj("type","string")),"required",List.of("value")))):List.of();
+            var reply=client.chat(protocol,base,"",model,"This is a synthetic LocalChat capability probe. Do not access files or external services.",List.of(ChatClient.Message.user(tool?"Call localchat_probe with value OK.":"Reply exactly OK.")),specs,true,delta->{});
+            boolean verified=reply.calls.stream().anyMatch(call->call.name.equals("localchat_probe"));return new Probe(!reply.text.isBlank()||verified?"responded":"reachable",0,TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-started),System.currentTimeMillis(),client.usage(),tool?verified:null,model);
+        }catch(Exception error){return new Probe(cancel.cancelled.get()?"cancelled":"transport",0,TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-started),System.currentTimeMillis(),client.usage(),null);}finally{cancel.nativeClients.remove(client);client.closeNative();}}
         long start=System.nanoTime();int status=0;TokenUsage usage=TokenUsage.UNKNOWN;Boolean verified=null;String state="transport",served="";HttpURLConnection c=null;
         try {
             if(cancel.cancelled.get())return new Probe("cancelled",0,0,System.currentTimeMillis(),usage,null);

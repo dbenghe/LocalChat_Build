@@ -835,5 +835,14 @@
   "Cont ChatGPT deconectat.": "ChatGPT oturumu kapatildi.",
   "Deconectat local; revocarea nu este confirmata. Verifica setarile ChatGPT.": "Yerel oturum kapatildi; iptal dogrulanamadi. ChatGPT ayarlarini kontrol edin.",
   "Cererea ChatGPT a esuat: {0}": "ChatGPT istegi basarisiz: {0}",
-  "Fluxul ChatGPT s-a inchis fara raspuns complet.": "ChatGPT akisi tam yanit olmadan kapandi."
+  "Fluxul ChatGPT s-a inchis fara raspuns complet.": "ChatGPT akisi tam yanit olmadan kapandi.",
+  "Foloseste sesiunea Codex": "Codex oturumunu kullan",
+  "Se verifica sesiunea Codex existenta, fara copierea cheilor.": "Anahtarlar kopyalanmadan mevcut Codex oturumu denetleniyor.",
+  "Codex conectat. Autentificarea ramane gestionata de Codex.": "Codex baglandi. Kimlik dogrulamayi Codex yonetir.",
+  "Conectarea Codex a esuat: {0}": "Codex baglantisi basarisiz: {0}",
+  "Codex nu este disponibil. Instaleaza sau deschide Codex si autentifica-te cu ChatGPT.": "Codex kullanilamiyor. Codex kurun veya acin ve ChatGPT ile giris yapin.",
+  "Codex nu a raspuns in timpul alocat. Istoricul este pastrat.": "Codex zamaninda yanit vermedi. Gecmis korundu.",
+  "Conexiunea Codex s-a inchis. Istoricul este pastrat.": "Codex baglantisi kapandi. Gecmis korundu.",
+  "Codex nu este conectat cu ChatGPT. Conecteaza-te in Codex; nu se foloseste automat o cheie API.": "Codex ChatGPT ile bagli degil. Codex icinde giris yapin; API anahtarina otomatik gecilmez.",
+  "Codex a returnat alta ruta sau alt model. Cererea a fost oprita.": "Codex farkli bir rota veya model dondurdu. Istek durduruldu."
 }

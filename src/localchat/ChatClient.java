@@ -151,6 +151,13 @@ final class ChatClient {
         final StringBuilder args = new StringBuilder();
     }
 
+    interface NativeFactory {CodexConnection create()throws IOException;}
+    private final NativeFactory nativeFactory;
+    ChatClient(){this(CodexConnection::new);}
+    ChatClient(NativeFactory factory){nativeFactory=factory;}
+    private volatile CodexConnection codex;
+    private String codexSignature="";
+    void closeNative(){CodexConnection connection=codex;codex=null;if(connection!=null)connection.close();}
     private final ChatGptResponses chatGptResponses=new ChatGptResponses();
     private long deadlineNanos;
     private int readTimeoutMillis=600_000;
@@ -187,6 +194,7 @@ final class ChatClient {
 
     void cancel() {
         cancelled = true;
+        closeNative();
         final HttpURLConnection c = active;
         if (c != null) {
             // disconnect() waits for the reader's current read() to return, so never block the caller (the UI thread).
@@ -205,6 +213,10 @@ final class ChatClient {
     private Reply chat(Provider p, String baseUrl, String apiKey, String model, String system, List<Message> history,
                List<ToolSpec> tools, boolean stream, Listener listener, boolean allowThinking) throws IOException {
         lastUsage = TokenUsage.UNKNOWN;
+        if(p==Provider.CODEX){
+            if(cancelled)throw new java.io.InterruptedIOException("Cancelled");
+            try{String signature=ModelCatalog.hash(model+system+Json.write(CodexConnection.specs(tools)));if(!signature.equals(codexSignature)){closeNative();codexSignature=signature;}if(codex==null)codex=nativeFactory.create();if(cancelled){closeNative();throw new java.io.InterruptedIOException("Cancelled");}Reply reply=codex.chat(model,system,history,tools,listener,u->lastUsage=u,()->{try{return remainingMillis();}catch(java.net.SocketTimeoutException error){return 1;}});if(reply.calls.isEmpty())closeNative();return reply;}catch(IOException|RuntimeException error){closeNative();throw error;}
+        }
         if(p==Provider.CHATGPT)return chatGpt(model,system,history,tools,apiKey,listener);
         boolean anthropic = p.format == Provider.Format.ANTHROPIC;
         Map<String, Object> body = anthropic
@@ -369,6 +381,7 @@ final class ChatClient {
     }
 
     static List<String> listModels(Provider p, String baseUrl, String apiKey) throws IOException {
+        if(p==Provider.CODEX)return CodexConnection.models().stream().map(ModelCatalog.Entry::id).toList();
         if(p==Provider.CHATGPT)return ModelCatalog.fetch(p,baseUrl,apiKey).stream().map(ModelCatalog.Entry::id).toList();
         boolean anthropic = p.format == Provider.Format.ANTHROPIC;
         HttpURLConnection conn = open(p, baseUrl + "/models" + (anthropic ? "?limit=1000" : ""), apiKey, "GET");

@@ -893,3 +893,12 @@ Alege **ChatGPT (cont)** la Furnizor, apasa **Continua cu ChatGPT**, apoi autent
 Cereri eligibile din plan, limite si credite: verifica setarile de utilizare din ChatGPT. Nu este garantat accesul la toate modelele afisate pe site, nu sunt importate conversatiile ChatGPT si nu se foloseste automat o cheie API platita.
 Acreditarile private sunt in `~/.localchat-chatgpt`, in afara distributiei si a conversatiilor. Nu include folderul in exporturi sau in suport.
 Surse oficiale: https://developers.openai.com/siwc/token-sharing-open-source/sign-in si https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference .
+
+### Cont ChatGPT prin Codex local (1.30.0)
+Selecteaza **Codex (cont ChatGPT)** la Furnizor, apoi **Foloseste sesiunea Codex**. Codex trebuie instalat si conectat cu ChatGPT pe acelasi calculator. Acest buton verifica sesiunea existenta si incarca modelele; nu deschide SIWC in browser si nu foloseste o cheie API de rezerva. Selecteaza apoi modelul returnat de catalog. Daca nu esti conectat, autentifica-te in aplicatia Codex sau extensia/CLI oficiala si reincearca.
+
+LocalChat lanseaza propriul `codex app-server --stdio` (identitate localchat), cu thread efemer per tura. Istoricul ramane la LocalChat; tokenurile raman gestionate de Codex. Uneltele MBS sunt executate local prin aprobarile LocalChat. Normal nu injecteaza unelte/reguli MBS, dar Codex isi poate aplica instructiunile globale si politicile workspace-ului. Stop opreste numai procesul propriu, nu deconecteaza extensia VS Code. Furnizorul vechi ChatGPT (cont) este SIWC si ramane separat; eroarea de acces delegat nu este declarata rezolvata de aceasta implementare.
+
+Sursa protocolului: https://learn.chatgpt.com/docs/app-server . `dynamicTools` este experimental, verificat cu codex-cli 0.160.1. Restrictiile abonamentului si ale workspace-ului Codex raman aplicabile. Selectarea/incarcarea modelelor nu genereaza inferente. Testele manuale din catalog consuma utilizarea contului; nu includ documente sau chatul curent.
+
+Pentru furnizorul Codex, profilurile de iesire si controlul gandirii din rutele HTTP nu sunt inca mapate pe parametri nativi; se aplica setarile Codex. Nu se promite o limita exacta de iesire din selectorul HTTP.

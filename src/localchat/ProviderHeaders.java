@@ -6,6 +6,7 @@ final class ProviderHeaders {
   if("api.x.ai".equalsIgnoreCase(java.net.URI.create(base).getHost())&&(key.startsWith("crsr_")||key.startsWith("grok_")))throw new java.io.IOException(I18n.text("Aceasta este o cheie Grok/Cursor Agents. API-ul api.x.ai necesita o cheie de inferenta xAI."));
  }
  static void authenticate(HttpURLConnection c,Provider protocol,String key)throws java.io.IOException{
+  if(protocol==Provider.CODEX)throw new java.io.IOException("Codex uses app-server, never HTTP/API keys");
   if(protocol==Provider.CHATGPT){ChatGptAccount.checkEndpoint(c.getURL().toString());c.setRequestProperty("Authorization","Bearer "+ChatGptAccount.token(key));return;}
   boolean anthropic=protocol.format==Provider.Format.ANTHROPIC&&!"api.x.ai".equalsIgnoreCase(c.getURL().getHost());
   if(!key.isBlank())c.setRequestProperty(anthropic?"x-api-key":"Authorization",anthropic?key:"Bearer "+key);

@@ -1,3 +1,10 @@
+## 1.30.0
+- Furnizor nou Codex (cont ChatGPT), prin app-server local oficial si sesiunea Codex existenta; separat de SIWC/API key.
+- Catalog nativ fara probe automate, streaming, unelte dinamice LocalChat, rezultate corelate, Stop si izolare per tura/chat.
+- Refuz API-key fallback, model/ruta diferita, apeluri native si alte threaduri; fara copiere de tokenuri sau modificarea setarilor Codex.
+- Traduceri in sase limbi si teste JSONL pentru erori, coada, anulare, usage si Normal fara unelte MBS.
+- Protocol dynamicTools experimental. Regulile globale Codex pot ramane active. Mouse/tastatura fizice netestate.
+
 # 1.29.1 - 2026-11-05
 - Corectie a transportului ChatGPT plan: omiterea max_output_tokens (nesuportat pe aceasta ruta) si gruparea uneltelor locale in namespace-ul localchat. Apelurile originale, inclusiv namespace-ul, sunt pastrate in continuarea request-local; un namespace necunoscut este refuzat.
 - Testul ChatGptAccountTest verifica aceste cerinte explicite si continuarea uneltelor.

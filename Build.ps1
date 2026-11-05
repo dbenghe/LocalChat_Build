@@ -22,6 +22,8 @@ finally { $taskSha256.Dispose(); $taskHashStream.Dispose() }
 if ($taskLibraryHash -ne '917AFF3963C88D797D0FD9B9CCBD70F7681C101DF9D11C59E2BC7A3A6C0FABF4') { throw 'FlatLaf checksum mismatch' }
 $taskPdfPython = Join-Path $PSScriptRoot 'pdfcontrol/runtime/python/python.exe'
 if (!(Test-Path -LiteralPath $taskPdfPython)) { throw 'PDFCONTROL runtime missing. Restore the local engine/runtime in pdfcontrol.' }
+& $taskPdfPython -I "$PSScriptRoot/integration/test_codex_appserver.py"
+if ($LASTEXITCODE) { throw 'Native Codex app-server contract tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_sync_engine.py"
 if ($LASTEXITCODE) { throw 'Owned engine build isolation tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_fast_import.py"
@@ -71,7 +73,7 @@ if ($LASTEXITCODE) { throw 'Offline audit permissions/integration tests failed' 
 if ($LASTEXITCODE) { throw 'Compaction time budget tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/compaction-resume-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.CompactionResumeTest
 if ($LASTEXITCODE) { throw 'Compaction checkpoint recovery tests failed' }
-foreach($taskNewTest in @('ChatGptAccountTest','AutomaticDelegationTest','InlineApprovalTest','InlineScrollTest','StablePrefixTest','ToolRelevanceTest','RuleCoverageTest','ContextReductionTest','ReasoningTruncationTest','CompactionThinkingTest','ThinkingDefaultTest','ThinkingDetectTest','Release1289Test','Release11211Test','Release11212Test','SensitiveGuardTest','CompactionTruncationTest')){
+foreach($taskNewTest in @('CodexConnectionTest','ChatGptAccountTest','AutomaticDelegationTest','InlineApprovalTest','InlineScrollTest','StablePrefixTest','ToolRelevanceTest','RuleCoverageTest','ContextReductionTest','ReasoningTruncationTest','CompactionThinkingTest','ThinkingDefaultTest','ThinkingDetectTest','Release1289Test','Release11211Test','Release11212Test','SensitiveGuardTest','CompactionTruncationTest')){
     & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/$taskNewTest-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" "localchat.$taskNewTest"
     if ($LASTEXITCODE) { throw "Failed: $taskNewTest" }
 }
