@@ -847,5 +847,10 @@
   "Codex a returnat alta ruta sau alt model. Cererea a fost oprita.": "Codex devolvio otra ruta o modelo. Solicitud detenida.",
   "Extrage articolele din desene": "Extraer articulos de los planos",
   "Citeste pagina PDF": "Leer pagina PDF",
-  "Trimite paginile PDF cerute catre modelul selectat": "Enviar las paginas PDF solicitadas al modelo seleccionado"
+  "Trimite paginile PDF cerute catre modelul selectat": "Enviar las paginas PDF solicitadas al modelo seleccionado",
+  "Confirma regula de memorat": "Confirma la regla para recordar",
+  "Formuleaza regula concreta de retinut, nu doar cererea de memorare.": "Formula la regla concreta, no solo la peticion de recordarla.",
+  "Memorare refuzata. Regula nu a fost salvata.": "Memorizacion rechazada. La regla no se ha guardado.",
+  "Domeniu: {0}\n\nRegula propusa:\n{1}\n\nSe salveaza numai aceasta regula, dupa confirmarea ta.": "Ambito: {0}\n\nRegla propuesta:\n{1}\n\nSolo se guardara esta regla tras tu confirmacion.",
+  "Proiect {0}": "Proyecto {0}"
 }

@@ -847,5 +847,10 @@
   "Codex a returnat alta ruta sau alt model. Cererea a fost oprita.": "Codex gaf een andere route of ander model terug. Aanvraag gestopt.",
   "Extrage articolele din desene": "Artikelen uit tekeningen halen",
   "Citeste pagina PDF": "PDF-pagina lezen",
-  "Trimite paginile PDF cerute catre modelul selectat": "Gevraagde PDF-paginas naar het geselecteerde model sturen"
+  "Trimite paginile PDF cerute catre modelul selectat": "Gevraagde PDF-paginas naar het geselecteerde model sturen",
+  "Confirma regula de memorat": "Bevestig de geheugenregel",
+  "Formuleaza regula concreta de retinut, nu doar cererea de memorare.": "Formuleer de concrete regel, niet alleen het verzoek om te onthouden.",
+  "Memorare refuzata. Regula nu a fost salvata.": "Opslaan geweigerd. De regel is niet opgeslagen.",
+  "Domeniu: {0}\n\nRegula propusa:\n{1}\n\nSe salveaza numai aceasta regula, dupa confirmarea ta.": "Bereik: {0}\n\nVoorgestelde regel:\n{1}\n\nAlleen deze regel wordt na jouw bevestiging opgeslagen.",
+  "Proiect {0}": "Project {0}"
 }

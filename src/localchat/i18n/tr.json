@@ -847,5 +847,10 @@
   "Codex a returnat alta ruta sau alt model. Cererea a fost oprita.": "Codex farkli bir rota veya model dondurdu. Istek durduruldu.",
   "Extrage articolele din desene": "Cizimlerden urunleri cikar",
   "Citeste pagina PDF": "PDF sayfasini oku",
-  "Trimite paginile PDF cerute catre modelul selectat": "Istenen PDF sayfalarini secili modele gonder"
+  "Trimite paginile PDF cerute catre modelul selectat": "Istenen PDF sayfalarini secili modele gonder",
+  "Confirma regula de memorat": "Hatirlanacak kurali onayla",
+  "Formuleaza regula concreta de retinut, nu doar cererea de memorare.": "Yalnizca hatirlama istegini degil, somut kurali belirtin.",
+  "Memorare refuzata. Regula nu a fost salvata.": "Kayit reddedildi. Kural kaydedilmedi.",
+  "Domeniu: {0}\n\nRegula propusa:\n{1}\n\nSe salveaza numai aceasta regula, dupa confirmarea ta.": "Kapsam: {0}\n\nOnerilen kural:\n{1}\n\nOnayinizdan sonra yalnizca bu kural kaydedilir.",
+  "Proiect {0}": "Proje {0}"
 }

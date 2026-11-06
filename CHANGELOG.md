@@ -1,3 +1,8 @@
+## 1.32.1
+- Intelege cereri naturale precum invata si retine / salveaza asta in memorie, fara salvarea comenzii goale.
+- Propunerile invatate din fisiere afiseaza regula exacta si domeniul intr-un card Permite/Refuza; aprobarea automata nu sare confirmarea individuala.
+- Pastreaza salvarea directa a declaratiilor exacte, reutilizarea regulilor deja confirmate si protectiile pentru Stop, refuz, readonly, secrete si izolarea proiectelor.
+
 ## 1.32.0
 - Citire vizuala PDF cu pdfcontrol_read_page: pagina/crop, text/OCR local si sursa pastrata; imagini numai cu acord explicit si model vizual confirmat.
 - Transport pentru rezultatele vizuale in Codex, Chat Completions, Anthropic si Responses; referinte locale in arhiva, fara imagini vechi retrimise la intrebari noi.

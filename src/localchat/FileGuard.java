@@ -66,7 +66,7 @@ final class FileGuard {
     /** Scratch folder of one conversation: %TEMP%\LocalChat\<id>. Created only when something is written there. */
     /** Cards that are confirmations only: no "always allow" choice, shown every time. */
     static boolean confirmOnly(String title) {
-        return COPY_TITLE.equals(title) || CLEAN_TITLE.equals(title);
+        return COPY_TITLE.equals(title) || CLEAN_TITLE.equals(title) || LocalMemories.REVIEW_TITLE.equals(title);
     }
 
     static Path scratchFor(String conversationId) {

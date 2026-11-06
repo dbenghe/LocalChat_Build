@@ -181,6 +181,8 @@ if ($LASTEXITCODE) { throw 'Live context popup tests failed' }
 if ($LASTEXITCODE) { throw 'Composer resize tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/international-chat-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.InternationalChatTest
 if ($LASTEXITCODE) { throw 'International chat tests failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/memory-learning-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.MemoryLearningTest
+if ($LASTEXITCODE) { throw 'Natural memory request and per-rule confirmation tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/local-memories-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.LocalMemoriesTest
 if ($LASTEXITCODE) { throw 'Local memory tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/normal-mode-test-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.NormalModeTest

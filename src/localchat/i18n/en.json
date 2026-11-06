@@ -847,5 +847,10 @@
   "Codex a returnat alta ruta sau alt model. Cererea a fost oprita.": "Codex returned another route or model. The request was stopped.",
   "Extrage articolele din desene": "Extract drawing articles",
   "Citeste pagina PDF": "Read PDF page",
-  "Trimite paginile PDF cerute catre modelul selectat": "Send requested PDF pages to the selected model"
+  "Trimite paginile PDF cerute catre modelul selectat": "Send requested PDF pages to the selected model",
+  "Confirma regula de memorat": "Confirm the rule to remember",
+  "Formuleaza regula concreta de retinut, nu doar cererea de memorare.": "State the concrete rule, not just the request to remember.",
+  "Memorare refuzata. Regula nu a fost salvata.": "Memory declined. The rule was not saved.",
+  "Domeniu: {0}\n\nRegula propusa:\n{1}\n\nSe salveaza numai aceasta regula, dupa confirmarea ta.": "Scope: {0}\n\nProposed rule:\n{1}\n\nOnly this rule will be saved after your confirmation.",
+  "Proiect {0}": "Project {0}"
 }
