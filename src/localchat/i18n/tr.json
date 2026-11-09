@@ -852,5 +852,14 @@
   "Formuleaza regula concreta de retinut, nu doar cererea de memorare.": "Yalnizca hatirlama istegini degil, somut kurali belirtin.",
   "Memorare refuzata. Regula nu a fost salvata.": "Kayit reddedildi. Kural kaydedilmedi.",
   "Domeniu: {0}\n\nRegula propusa:\n{1}\n\nSe salveaza numai aceasta regula, dupa confirmarea ta.": "Kapsam: {0}\n\nOnerilen kural:\n{1}\n\nOnayinizdan sonra yalnizca bu kural kaydedilir.",
-  "Proiect {0}": "Proje {0}"
+  "Proiect {0}": "Proje {0}",
+  "Dezvoltare automata LocalChat": "Otomatik LocalChat gelistirme",
+  "Activeaza dezvoltarea automata in copie Git": "Git kopyasinda otomatik gelistirmeyi etkinlestir",
+  "Folderul surselor LocalChat": "LocalChat kaynak klasoru",
+  "Testele ruleaza cod local; publicarea foloseste o ramura separata.": "Testler yerel kod calistirir; yayinlama ayri bir dal kullanir.",
+  "Dezvoltarea automata nu este activa pentru acest agent.": "Bu ajan icin otomatik gelistirme etkin degil.",
+  "Selecteaza un repository local pentru dezvoltare.": "Yerel bir gelistirme deposu secin.",
+  "Serviciul local de dezvoltare nu este disponibil.": "Yerel gelistirme hizmeti kullanilamiyor.",
+  "Dezvoltare LocalChat: {0}": "LocalChat gelistirme: {0}",
+  "Nu pot configura dezvoltarea: {0}": "Gelistirme yapilandirilamiyor: {0}"
 }

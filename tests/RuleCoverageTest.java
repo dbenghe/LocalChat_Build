@@ -72,7 +72,8 @@ public final class RuleCoverageTest {
   // no triple duplication: PDFCONTROL operating rules live in the skill, the prompt only keeps the essentials
   check(!skill.contains("wait_seconds=10")&&!skill.contains("Apeleaza pdfcontrol_job_status"),"skill no longer tells the model to poll");
   check(!normal.contains("poll"),"prompt does not tell the model to poll");
-  check(prompt[0].length()<6450,"static MBS system prompt stays compact: "+prompt[0].length()); // 1.28.13: 5900 -> 6450 (~+480 chars) for check/compare/server-revision routing; before: 5600 -> 5900 (~+350 chars, ~+90 tokens) for the pdfcontrol_fix_missing_pairs-first rule and the new server rule // 1.28.9: 4494 -> 4740 chars (+246, ~+62 tokens) for the expert/ask-only-if-material answer rule
+  String staticPrompt=prompt[0].replace(home.toString(),"C:/qa").replace(home.toString().replace('\\','/'),"C:/qa");
+  check(staticPrompt.length()<6450,"static MBS system prompt stays compact (fixture paths normalized): "+staticPrompt.length()); // 1.28.13: 5900 -> 6450 (~+480 chars) for check/compare/server-revision routing; before: 5600 -> 5900 (~+350 chars, ~+90 tokens) for the pdfcontrol_fix_missing_pairs-first rule and the new server rule // 1.28.9: 4494 -> 4740 chars (+246, ~+62 tokens) for the expert/ask-only-if-material answer rule
   check(normal.indexOf("independent analysis agents")==normal.lastIndexOf("independent analysis agents"),"delegation rules appear once");
   check(normal.indexOf("localchat_interaction")==normal.lastIndexOf("localchat_interaction"),"interaction rules appear once");
   // 1.28.0: +~1.3k for the summary/findings/catalogue section, offset by ~0.7k trimmed elsewhere; net +0.6k.

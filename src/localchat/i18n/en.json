@@ -852,5 +852,14 @@
   "Formuleaza regula concreta de retinut, nu doar cererea de memorare.": "State the concrete rule, not just the request to remember.",
   "Memorare refuzata. Regula nu a fost salvata.": "Memory declined. The rule was not saved.",
   "Domeniu: {0}\n\nRegula propusa:\n{1}\n\nSe salveaza numai aceasta regula, dupa confirmarea ta.": "Scope: {0}\n\nProposed rule:\n{1}\n\nOnly this rule will be saved after your confirmation.",
-  "Proiect {0}": "Project {0}"
+  "Proiect {0}": "Project {0}",
+  "Dezvoltare automata LocalChat": "Automatic LocalChat development",
+  "Activeaza dezvoltarea automata in copie Git": "Enable automatic development in a Git copy",
+  "Folderul surselor LocalChat": "LocalChat source folder",
+  "Testele ruleaza cod local; publicarea foloseste o ramura separata.": "Tests execute local code; publication uses a separate branch.",
+  "Dezvoltarea automata nu este activa pentru acest agent.": "Automatic development is not active for this agent.",
+  "Selecteaza un repository local pentru dezvoltare.": "Select a local development repository.",
+  "Serviciul local de dezvoltare nu este disponibil.": "The local development service is unavailable.",
+  "Dezvoltare LocalChat: {0}": "LocalChat development: {0}",
+  "Nu pot configura dezvoltarea: {0}": "Cannot configure development: {0}"
 }

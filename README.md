@@ -918,3 +918,10 @@ Rezultatele native Codex sunt retinute separat inainte de compactarea contextulu
 
 ### Invatarea regulilor din documente
 In MBS, poti cere invata din acest fisier si memoreaza. Modelul citeste sursa si formuleaza o regula concreta; aplicatia o afiseaza impreuna cu domeniul General/Proiect intr-un card de confirmare. Numai Permite salveaza regula propusa; Permite tot nu aproba propuneri viitoare. Refuza sau Stop pastreaza memoria existenta. Nu se memoreaza intreaga comanda de invatare si nu se transforma automat continutul documentelor in instructiuni. Regulile exacte declarate direct raman disponibile, iar Normal nu foloseste memoria persistenta. Memoriile se inspecteaza/editeaza din Unelte > Memorii locale.
+
+## Rationament si dezvoltare automata (1.33.0)
+In MBS, modelul poate completa procedurile prin rationament general, citire vizuala si cititoare/calculatoare locale adaptate. Un extractor incomplet nu justifica oprirea la un XLSX gol. Rezultatul completeness al importului arata valorile obligatorii lipsa, separat de aprobarea tehnica.
+
+Unelte > Dezvoltare automata LocalChat activeaza localchat_develop si selecteaza folderul surselor Git. Sursa trebuie sa fie curata si sa aiba origin-ul personal configurat. Modelul poate incepe o copie Git separata, inspecta si modifica surse (inclusiv editarea unui fragment exact, fara retrimiterea fisierului mare), adauga regresii, actualiza versiunea si documentatia, apoi cere validate si publish. Gazda executa buildul si testele, reciteste versiunea JAR si permite publicarea doar pentru rezultatul exact verificat, pe o ramura proprie. status ofera jurnalul erorilor; un push esuat poate fi reluat pe acelasi commit.
+
+Functia este implicit oprita. Testele executa cod local cu drepturile utilizatorului, nu intr-un sandbox de sistem. Normal, modul doar citire si agentii de analiza nu primesc aceasta unealta. Setarile, cataloagele si proiectele raman in afara surselor editabile. Instalarea buildului pregatit se face separat, cu backup si aplicatia inchisa; nu este o inlocuire automata a programului care ruleaza. Calitatea rezultatului depinde si de modelul ales.

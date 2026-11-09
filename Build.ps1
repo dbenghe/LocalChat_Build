@@ -30,6 +30,10 @@ if ($LASTEXITCODE) { throw 'Owned engine build isolation tests failed' }
 if ($LASTEXITCODE) { throw "FAST conversion tests failed" }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_drawing_page.py"
 if ($LASTEXITCODE) { throw 'PDF page rendering tests failed' }
+& $taskPdfPython -I "$PSScriptRoot/integration/test_self_development.py"
+if ($LASTEXITCODE) { throw 'Isolated development/version/test/publication gate tests failed' }
+& $taskPdfPython -I "$PSScriptRoot/integration/test_import_completion.py"
+if ($LASTEXITCODE) { throw 'Source-reviewed omitted article/complete import tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_drawing_import.py"
 if ($LASTEXITCODE) { throw 'Drawing table/catalogue/XLSX tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_import_audit.py"
@@ -61,6 +65,8 @@ Copy-Item -LiteralPath "$PSScriptRoot/VERSION" -Destination $taskClasses
 $taskTests = (Get-ChildItem -LiteralPath "$PSScriptRoot/tests" -Filter '*.java').FullName
 & "$taskJdk/bin/javac.exe" -encoding UTF-8 --release 17 -cp "$taskClasses;$taskLibrary" -d "$taskBuild/tests" $taskTests
 if ($LASTEXITCODE) { throw 'Test compilation failed' }
+& "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/selfdev-home" "-Dselfdev.python=$taskPdfPython" "-Dselfdev.script=$PSScriptRoot/integration/self_development.py" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.SelfDevelopmentTest
+if ($LASTEXITCODE) { throw 'Development host and reasoning policy tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/stability-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.RuntimeStabilityTest
 if ($LASTEXITCODE) { throw 'Runtime stability/output provenance tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/vision-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.VisionInputTest
@@ -211,6 +217,13 @@ if ($LASTEXITCODE) { throw 'Tool transcript text tests failed' }
 if ($LASTEXITCODE) { throw 'Image resend tests failed' }
 & "$taskJdk/bin/java.exe" "-Dpdfcontrol.package=$PSScriptRoot/pdfcontrol" "-Dpdfcontrol.projects=$taskBuild/pdfcontrol-tests/PROJECTS" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/token-budget-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.TokenBudgetTest
 if ($LASTEXITCODE) { throw 'Token budget (MBS overhead / Normal) tests failed' }
+$taskRegisteredTests = [regex]::Matches((Get-Content -LiteralPath "$PSScriptRoot/Build.ps1" -Raw), '\b([A-Z][A-Za-z0-9_]*Test)\b') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique
+foreach ($taskExtraTest in Get-ChildItem -LiteralPath "$PSScriptRoot/tests" -Filter '*Test.java') {
+    if ($taskRegisteredTests -contains $taskExtraTest.BaseName) { continue }
+    if ((Get-Content -LiteralPath $taskExtraTest.FullName -Raw) -notmatch 'static\s+void\s+main\s*\(') { continue }
+    & "$taskJdk/bin/java.exe" @taskNativeQaOptions '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/discovered/$($taskExtraTest.BaseName)" "-Daudit.python=$taskPdfPython" "-Daudit.package=$PSScriptRoot/pdfcontrol" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" "localchat.$($taskExtraTest.BaseName)"
+    if ($LASTEXITCODE) { throw "New regression test failed: $($taskExtraTest.BaseName)" }
+}
 $taskJar = Join-Path $taskBuild 'LocalChat.jar'
 $taskManifest = Join-Path $taskBuild 'MANIFEST.MF'
 @"
@@ -230,6 +243,8 @@ Copy-Item -LiteralPath $taskLibrary -Destination "$DistributionPath/lib" -Force
 Copy-Item -LiteralPath "$PSScriptRoot/THIRD_PARTY.md" -Destination $DistributionPath -Force
 # Never copy settings, conversations, rules or overwrite user-edited MCP configuration.
 Copy-Item -LiteralPath $taskJar -Destination (Join-Path $DistributionPath 'LocalChat.jar') -Force
+New-Item -ItemType Directory -Path "$DistributionPath/self-development" -Force | Out-Null
+Copy-Item -LiteralPath "$PSScriptRoot/integration/self_development.py" -Destination "$DistributionPath/self-development/service.py" -Force
 Copy-Item -LiteralPath "$PSScriptRoot/packaging/Porneste LocalChat.bat" -Destination $DistributionPath -Force
 Copy-Item -LiteralPath "$PSScriptRoot/README.md" -Destination (Join-Path $DistributionPath 'CITESTE.md') -Force
 Copy-Item -LiteralPath "$PSScriptRoot/VERSION","$PSScriptRoot/CHANGELOG.md" -Destination $DistributionPath -Force

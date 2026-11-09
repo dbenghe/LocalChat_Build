@@ -1,3 +1,9 @@
+## 1.33.0
+- Rationamentul general completeaza procedurile MBS cand lipseste o functie sau extractorul nu recunoaste layoutul; regulile tehnice si permisiunile raman aplicabile.
+- Import: adaugare justificata a articolelor omise, descrierea elementului principal si verificare explicita a campurilor obligatorii, fara falsa aprobare ISAH.
+- Dezvoltare automata optionala prin localchat_develop: copie Git separata, teste, versiune/documentatie, build si commit/push pe ramura proprie. Instalarea ramane separata de aplicatia activa.
+- Regresii pentru izolarea chatului, fisiere protejate, QA esuat, schimbari dupa teste si reluarea unui push esuat.
+
 ## 1.32.1
 - Intelege cereri naturale precum invata si retine / salveaza asta in memorie, fara salvarea comenzii goale.
 - Propunerile invatate din fisiere afiseaza regula exacta si domeniul intr-un card Permite/Refuza; aprobarea automata nu sare confirmarea individuala.

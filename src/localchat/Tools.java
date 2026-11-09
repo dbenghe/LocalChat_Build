@@ -62,7 +62,7 @@ final class Tools {
             + "[print('--- pagina %d ---\\n%s'%(i+1,d[i].get_text())) for i in range(a-1,b)]";
     static final List<String> BUILTIN = List.of("list_dir", "find_files", "search_text", "read_file",
             "extract_attachments", "write_file", "append_file", "edit_file", "make_dir", "copy_path", "move_path", "download_url", "run_command", "list_stray_files", "cleanup_stray_files",
-            "open_in_explorer", "read_skill", "save_rule", "pdfcontrol_read_page", "pdfcontrol_compare_import", "pdfcontrol_drawing_import", "pdfcontrol_prepare_fast_import", "pdfcontrol_fix_missing_pairs", "pdfcontrol_compare_server_revisions", ToolRelevance.ENABLE);
+            "open_in_explorer", "read_skill", "save_rule", "pdfcontrol_read_page", "pdfcontrol_compare_import", "pdfcontrol_drawing_import", "pdfcontrol_prepare_fast_import", "pdfcontrol_fix_missing_pairs", "pdfcontrol_compare_server_revisions", SelfDevelopment.TOOL, ToolRelevance.ENABLE);
 
     enum Access { READ, WRITE, RUN }
 
@@ -112,6 +112,8 @@ final class Tools {
     private record Text(String text, Charset charset) {
     }
 
+    private Path developmentSource;
+    Tools development(Path source,boolean enabled){developmentSource=enabled?source.toAbsolutePath().normalize():null;return this;}
     private final Context ctx;
     private final List<Skills.Skill> skills;
     private final Map<String, McpRef> mcpTools = new LinkedHashMap<>();
@@ -165,6 +167,7 @@ final class Tools {
 
     private List<ChatClient.ToolSpec> allSpecs() {
         List<ChatClient.ToolSpec> out = new ArrayList<>();
+        if(developmentSource!=null&&!readOnly&&!analysisOnly)out.add(SelfDevelopment.spec());
         out.add(spec("list_dir", "List a folder: subfolders and files with size and modified time. Long folders continue with offset.", List.of(),
                 "path", "string", "Folder (default: working folder).",
                 "sort", "string", "'name' (default) or 'modified'.",
@@ -255,7 +258,7 @@ final class Tools {
                     "factory",Json.obj("type","string","enum",List.of("soest","alphen","veenoord","lelystad")),
                     "drawings",Json.obj("type","array","items",Json.obj("type","string"),"minItems",1,"maxItems",30),
                     "catalogue",Json.obj("type","string"),"template",Json.obj("type","string"),"output",Json.obj("type","string"),
-                    "reviewed_rows",Json.obj("type","array","maxItems",500,"description","Bulk values read from actual drawings/project decisions: {merk,pos?(accessory),fields:{Aantal/Lengte/Breedte/Hoogte/Dikte/Inhoud/Hoofdregel/Mengsel/Fase/Netto m2/Bruto m2/Netto m3/Bruto m3/Gewicht(kg)/Instortvoorziening/Instortvoorziening Merk:string},evidence:source/page/detail}. Dimensions mm, volume m3. Never guess.","items",Json.obj("type","object")),
+                    "reviewed_rows",Json.obj("type","array","maxItems",500,"description","Source-reviewed rows: {merk,pos?,fields:{column:string},evidence,create?:true,source?:{path,page},articles_complete?:boolean}. create adds a source-linked omitted article; primary descriptions/Mengsel are supported. Use template columns, mm/m3. Never guess or double V/W quantities.","items",Json.obj("type","object")),
                     "column_map",Json.obj("type","object","description","Explicit printed Inhoud destination from known project convention: {Inhoud:Netto m3} or {Inhoud:Bruto m3}. Never copy it blindly to both."),
                     "geometry",Json.obj("type","array","maxItems",100,"description","Volume per element from reviewed decomposition: {merk,evidence,column?:Inhoud/Netto m3/Bruto m3/Netto m2/Bruto m2,components:[{shape,dimensions_mm:[strings],count?:integer,subtract?:boolean}]}. Volumes: box/triangular_prism L,B,H; cylinder diameter,length. Areas: rectangle/triangle L,B; circle diameter. Shapes/dimensions must come from source; local arithmetic does not prove geometry.","items",Json.obj("type","object")),
                     "hoofdregel",Json.obj("type","string","description","Confirmed project code, never inferred."),
@@ -367,6 +370,7 @@ final class Tools {
                 case "pdfcontrol_fix_missing_pairs" -> fixMissingPairs(a);
                 case "pdfcontrol_compare_server_revisions" -> compareServerRevisions(a);
                 case "read_skill" -> Result.ok(Skills.read(skills, required(a, "name"), ctx.paths()::text));
+                case SelfDevelopment.TOOL -> develop(a);
                 case "save_rule" -> Result.ok(saveRule(required(a, "rule"),str(a,"scope","global"),str(a,"project",memoryProject)));
                 default -> Result.error("Tool necunoscut: " + call.name);
             };
@@ -1346,6 +1350,18 @@ final class Tools {
     }
 
     // ---- rules and MCP ----
+
+    private Result develop(Map<String,Object> args)throws IOException,ToolError{
+        if(developmentSource==null||readOnly||analysisOnly)throw new ToolError(I18n.text("Dezvoltarea automata nu este activa pentru acest agent."));
+        SelfDevelopment.arguments(args);
+        if(guard.server(developmentSource))throw new ToolError(I18n.text("Selecteaza un repository local pentru dezvoltare."));
+        Path home=ctx.secretFile().toAbsolutePath().getParent(),service=home.resolve("self-development/service.py");String python=ctx.pdfPython();
+        if(python==null||!Files.isRegularFile(Path.of(python))||!Files.isRegularFile(service))throw new ToolError(I18n.text("Serviciul local de dezvoltare nu este disponibil."));
+        String action=String.valueOf(args.get("action"));
+        if(!Set.of("status","list","read").contains(action))allow(Access.RUN,I18n.text("Dezvoltare LocalChat: {0}",action),Json.write(args));
+        ensureActive();Path request=Files.createTempFile("localchat-development-",".json");
+        try{Files.writeString(request,Json.write(args),StandardCharsets.UTF_8);Output out=exec(List.of(python,"-I",service.toString(),"--home",home.toString(),"--source",developmentSource.toString(),"--origin",SelfDevelopment.ORIGIN,"--owner",memoryChat.isBlank()?ctx.workDir().toString():memoryChat,"--request",request.toString()),home,Map.of(),action.equals("validate")?3600:180);ensureActive();return new Result(cap(out.text(),MCP_OUTPUT),!out.finished()||out.exitCode()!=0);}finally{Files.deleteIfExists(request);}
+    }
 
     private String saveRule(String rule,String scope,String project) throws IOException, ToolError {
         if(readOnly)throw new ToolError(I18n.text("Mod doar citire: modificarile si comenzile sunt blocate."));

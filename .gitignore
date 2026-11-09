@@ -57,3 +57,6 @@
 
 # Private transient native Codex sessions
 **/codex-sessions/
+
+# Private automatic development worktrees, goals, logs and build artifacts
+**/self-development/

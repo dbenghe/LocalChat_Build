@@ -214,32 +214,60 @@ def make_records(pages, catalogue, hoofdregel=None):
     return records,issues
 
 
-def apply_reviewed(records, issues, reviewed, geometry, catalogue):
+def apply_reviewed(records, issues, reviewed, geometry, catalogue, pages=None):
     """Bulk model-reviewed evidence and deterministic geometric arithmetic, no inferred shape."""
     allowed={'Aantal','Lengte','Breedte','Hoogte','Dikte','Dikte plaat','Totaal dikte','Inhoud','Hoofdregel','Mengsel','Fase','Instortvoorziening','Instortvoorziening Merk','Netto m2','Bruto m2','Netto m3','Bruto m3','Gewicht(kg)','Totaal lengte','Totaal breedte','Top Ja/Nee','MZ/SZ'}
     numeric={'Aantal','Lengte','Breedte','Hoogte','Dikte','Dikte plaat','Totaal dikte','Inhoud','Hoofdregel','Netto m2','Bruto m2','Netto m3','Bruto m3','Gewicht(kg)','Totaal lengte','Totaal breedte'}
     if not isinstance(reviewed,list) or len(reviewed)>500 or not isinstance(geometry,list) or len(geometry)>100:raise ValueError('Reviewed data batch exceeds limits')
     for item in reviewed:
-        if not isinstance(item,dict) or set(item)-{'merk','pos','fields','evidence'} or not isinstance(item.get('fields'),dict) or not isinstance(item.get('evidence'),str) or not 8<=len(item['evidence'])<=2000:raise ValueError('Reviewed rows require merk, fields and concrete source evidence')
+        if not isinstance(item,dict):raise ValueError('Reviewed row must be an object')
+        if 'create' in item and type(item['create']) is not bool:raise ValueError('create must be boolean')
+        if not isinstance(item,dict) or set(item)-{'merk','pos','fields','evidence','create','source','articles_complete'} or not isinstance(item.get('fields'),dict) or not isinstance(item.get('evidence'),str) or not 8<=len(item['evidence'])<=2000:raise ValueError('Reviewed rows require merk, fields and concrete source evidence')
         candidates=[r for r in records if r['source']['merk']==item.get('merk') and (r['kind']=='article' and r['source'].get('pos')==item.get('pos') if 'pos' in item else r['kind']=='element')]
-        if len(candidates)!=1:raise ValueError('Reviewed row must identify exactly one existing mark/position')
+        if item.get('create'):
+            if candidates or not isinstance(item.get('pos'),str) or not 1<=len(item['pos'])<=40:raise ValueError('New reviewed article requires a unique position')
+            if not isinstance(item.get('source'),dict) or set(item['source'])!={'path','page'}:raise ValueError('New article requires an existing drawing source/page')
+            source=item['source']
+            if not isinstance(source['path'],str) or type(source['page']) is not int:raise ValueError('Source path/page must match a real drawing page')
+            matches=[p for p in (pages or []) if p['merk']==item.get('merk') and p['path']==source['path'] and p['page']==source['page']]
+            if len(matches)!=1 or not any(r['kind']=='element' and r['source']['merk']==item.get('merk') for r in records):raise ValueError('New article source must belong to the current element and drawing batch')
+            if not {'Instortvoorziening','Aantal'}<=set(item['fields']):raise ValueError('New article requires description and quantity')
+            if not isinstance(item['fields']['Instortvoorziening'],str) or not isinstance(item['fields']['Aantal'],str):raise ValueError('Reviewed article fields must be text')
+            location=dict(path=source['path'],page=source['page'],merk=item['merk'],pos=item['pos'],original_description=item['fields']['Instortvoorziening'],method='source_reviewed_article')
+            row={'kind':'article','source':location,'fields':{'Tekenbureau':'14337'}}
+            insert_at=max(i for i,r in enumerate(records) if r['source']['merk']==item['merk'])+1
+            records.insert(insert_at,row);candidates=[row]
+            issues.append(dict(location,code='reviewed_article_source_verification_required',evidence=item['evidence']))
+        if len(candidates)!=1:raise ValueError('Reviewed row must identify one existing mark/position, or create a source-linked omitted article')
         row=candidates[0];changes=[]
-        for field,value in item['fields'].items():
-            if field not in allowed or (row['kind']=='article' and field in {'Hoofdregel','Mengsel','Fase','Inhoud'}) or (row['kind']=='element' and field.startswith('Instortvoorziening')):raise ValueError('Reviewed field is not applicable to this row: '+field)
+        for field,value in sorted(item['fields'].items(),key=lambda pair:pair[0]!='Instortvoorziening'):
+            if field not in allowed or (row['kind']=='article' and field in {'Hoofdregel','Mengsel','Fase','Inhoud'}):raise ValueError('Reviewed field is not applicable to this row: '+field)
             if not isinstance(value,str) or not 1<=len(value)<=300:raise ValueError('Reviewed values must be bounded text')
             if field in numeric:
                 if not re.fullmatch(NUM,value) or decimal(value)<=0:raise ValueError('Reviewed numeric fields must be positive numeric values')
                 if (field=='Hoofdregel' or field=='Aantal' and (row['kind']=='element' or row['fields'].get('Eenheid')=='st')) and decimal(value)!=int(decimal(value)):raise ValueError('Element/piece quantities and Hoofdregel require integers')
                 value=text_number(decimal(value))
-            if field=='Instortvoorziening':
+            if field=='Instortvoorziening' and row['kind']=='article':
                 found,codes=audit.canonical(value,catalogue)
-                if len(codes)!=1 or found['status']!='catalogus_uniek':raise ValueError('Reviewed import article must be one exact unambiguous factory catalogue name')
+                if len(codes)!=1 or found['status']!='catalogus_uniek':
+                    if not item.get('create'):raise ValueError('Reviewed import article must be one exact unambiguous factory catalogue name')
+                    row['fields'][field]=value;issues.append(dict(row['source'],code='reviewed_article_catalogue_unresolved',description=value));continue
                 row['source']['catalogue_codes']=codes
                 units={audit.unit(r['fields'].get('eenheid') or r['fields'].get('verkoopeenheid')) for r in found['matches']}-{''}
                 if len(units)==1:row['fields']['Eenheid']=next(iter(units))
             changes.append({'field':field,'old':row['fields'].get(field,''),'new':value});row['fields'][field]=value
+        if 'articles_complete' in item:
+            if row['kind']!='element' or type(item['articles_complete']) is not bool:raise ValueError('Article completeness belongs to an element review')
+            row['articles_reviewed']=dict(complete=item['articles_complete'],evidence=item['evidence'],method='model_review_not_independent_validation')
         row.setdefault('reviewed_changes',[]).append({'evidence':item['evidence'],'changes':changes,'method':'model_review_not_independent_validation'})
         issues.append(dict(row['source'],code='reviewed_source_verification_required',evidence=item['evidence']))
+    def still_missing(issue):
+        if issue.get('code') not in ('element_field_unresolved','hoofdregel_required'):return True
+        row=next((r for r in records if r['kind']=='element' and r['source']['merk']==issue.get('merk')),None)
+        if row is None:return True
+        field=issue.get('field','Hoofdregel')
+        return not (any(row['fields'].get(k) for k in ('Inhoud','Netto m3','Bruto m3')) if field=='Inhoud' else row['fields'].get(field))
+    issues[:]=[i for i in issues if still_missing(i)]
     for item in geometry:
         if not isinstance(item,dict) or set(item)-{'merk','components','evidence','column'} or not {'merk','components','evidence'}<=set(item) or not isinstance(item['evidence'],str) or not 8<=len(item['evidence'])<=2000 or not isinstance(item['components'],list) or not 1<=len(item['components'])<=200:raise ValueError('Geometry requires merk, bounded components and source evidence')
         targets=[r for r in records if r['kind']=='element' and r['source']['merk']==item['merk']]
@@ -340,6 +368,23 @@ def build_xlsx(template, output, records):
     return written,names
 
 
+def completeness(records):
+    missing=[];elements=[r for r in records if r['kind']=='element']
+    for row in elements:
+        mark=row['source']['merk'];fields=row['fields']
+        for name in ('Aantal','Lengte','Breedte','Dikte','Mengsel','Hoofdregel'):
+            if not fields.get(name):missing.append({'merk':mark,'field':name})
+        if not any(fields.get(k) for k in ('Inhoud','Netto m3','Bruto m3')):missing.append({'merk':mark,'field':'volume_m3'})
+        if not any(r['kind']=='article' and r['source']['merk']==mark for r in records) and not row.get('articles_reviewed',{}).get('complete'):missing.append({'merk':mark,'field':'articles_or_explicit_no_articles_review'})
+    for row in records:
+        if row['kind']!='article':continue
+        mark=row['source']['merk'];pos=row['source'].get('pos','');fields=row['fields']
+        for name in ('Instortvoorziening','Aantal'):
+            if not fields.get(name):missing.append({'merk':mark,'pos':pos,'field':name})
+        if not row['source'].get('catalogue_codes'):missing.append({'merk':mark,'pos':pos,'field':'factory_article_match'})
+        if fields.get('Eenheid') not in ('','st',None) and not fields.get('Lengte'):missing.append({'merk':mark,'pos':pos,'field':'factory_quantity_conversion'})
+    return {'required_values_present':bool(elements) and not missing,'missing':missing,'meaning':'Presence check only; verify source evidence, factory article mapping and technical findings separately. Never production approval.'}
+
 def run(request, reports, package=None):
     started=time.monotonic();package=Path(package or Path(__file__).parent).resolve()
     if str(package) not in sys.path:sys.path.insert(0,str(package))
@@ -383,7 +428,7 @@ def run(request, reports, package=None):
     pages,issues=read_pages(paths,project,request.get('ocr',True),bindings)
     if set(bindings)-{(item['path'],item['page']) for item in pages}:raise ValueError('Binding page does not exist')
     records,ri=make_records(pages,catalogue,str(hoofdregel) if hoofdregel is not None else None);issues+=ri
-    apply_reviewed(records,issues,request.get('reviewed_rows',[]),request.get('geometry',[]),catalogue)
+    apply_reviewed(records,issues,request.get('reviewed_rows',[]),request.get('geometry',[]),catalogue,pages)
     column_map=request.get('column_map',{})
     if not isinstance(column_map,dict) or set(column_map)-{'Inhoud'} or any(value not in {'Netto m3','Bruto m3'} for value in column_map.values()):raise ValueError('Only an explicit Inhoud -> Netto m3 or Bruto m3 mapping is supported')
     for row in records:
@@ -392,7 +437,8 @@ def run(request, reports, package=None):
                 if row['fields'].get(target) and decimal(row['fields'][target])!=decimal(row['fields'][source]):issues.append(dict(row['source'],code='volume_column_mapping_conflict',field=target))
                 else:row['fields'][target]=row['fields'][source];row['column_mapping']=column_map
 
-    report={'version':VERSION,'project':project,'factory':factory,'status':'review_required','pages':pages,'records':records,'issues':issues,'sources_sha256':sources,
+    presence=completeness(records)
+    report={'version':VERSION,'project':project,'factory':factory,'status':'review_required','completeness':presence,'pages':pages,'records':records,'issues':issues,'sources_sha256':sources,
        'api_requests':0,'production_sources_changed':False,'server_copy_performed':False,'ready_for_isah':False,
        'limitations':['Draft only. Verify source role/revision, geometry, OCR, quantities per element versus totals, factory units and project decisions.',
           'Automatic extraction uses explicit labelled dimensions. Reviewed field values and component geometry are model-supplied evidence, not independently proved geometry. Hoogte is not Dikte; irregular shapes are not cuboids.',
@@ -410,8 +456,8 @@ def run(request, reports, package=None):
     counts=dict(collections.Counter(i['code'] for i in issues))
     summary={'tool':'pdfcontrol_drawing_import','cached':False,'project':project,'factory':factory,'status':'review_required','report_json':str(path),'output':report.get('output'),
         'pages':len(pages),'elements':sum(r['kind']=='element' for r in records),'articles':sum(r['kind']=='article' for r in records),'extracted_table_rows':sum(len(p['articles']) for p in pages),
-        'template_columns':report.get('template_columns',[]),'issue_counts':counts,'examples':issues[:6],'elapsed_seconds':round(time.monotonic()-started,3),'api_requests':0,'source_unchanged':True,'ready_for_isah':False,
-        'next_step':'Read only the required report fragments. Resolve the exact missing evidence, compare the XLSX with pdfcontrol_compare_import, then apply confirmed FAST rules. Do not rerun unchanged batches or claim production approval.'}
+        'completeness':presence,'template_columns':report.get('template_columns',[]),'issue_counts':counts,'examples':issues[:6],'elapsed_seconds':round(time.monotonic()-started,3),'api_requests':0,'source_unchanged':True,'ready_for_isah':False,
+        'next_step':'Read only the required report fragments. Do not stop at a blank draft. Complete the listed fields and omitted articles using source-reviewed data or bounded local readers; ask only for genuinely unavailable decisions. Compare the XLSX with pdfcontrol_compare_import, then apply confirmed FAST rules. Do not rerun unchanged batches or claim production approval.'}
     report['summary']=summary;path.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
     return summary
 
