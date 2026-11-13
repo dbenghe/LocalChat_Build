@@ -28,6 +28,10 @@ def main():
     import importlib.util
     spec=importlib.util.spec_from_file_location('owned_extraction_hooks',integration/'apply_extraction_layout.py')
     hooks=importlib.util.module_from_spec(spec);spec.loader.exec_module(hooks);hooks.apply(package)
+    alias_path=package/'mbs_controles_extra.py'
+    if alias_path.is_file():
+        spec=importlib.util.spec_from_file_location('kozijn_alias_hooks',integration/'apply_kozijn_alias.py')
+        alias_hooks=importlib.util.module_from_spec(spec);spec.loader.exec_module(alias_hooks);alias_hooks.apply(alias_path)
     shutil.copy2(integration/'pdfcontrol_bridge.py',package/'octop_mcp.py')
     shutil.copy2(integration/'catalogue_update.py',package/'catalogue_update.py')
     shutil.copy2(integration/'import_audit.py',package/'import_audit.py')
@@ -38,6 +42,7 @@ def main():
     shutil.copy2(integration/'compare_server_revisions.py',package/'compare_server_revisions.py')
     shutil.copy2(integration/'mbs_localchat_layout.py',package/'mbs_localchat_layout.py')
     registered=json.loads(manifest.read_text(encoding='utf-8'));
+    if alias_path.is_file():registered['sha256']['mbs_controles_extra.py']=hashlib.sha256(alias_path.read_bytes()).hexdigest()
     if (package/'mbs_webapp.py').is_file():registered['sha256']['mbs_webapp.py']=hashlib.sha256((package/'mbs_webapp.py').read_bytes()).hexdigest()
     registered['sha256']['mbs_localchat_layout.py']=hashlib.sha256((package/'mbs_localchat_layout.py').read_bytes()).hexdigest();registered['sha256']['catalogue_update.py']=hashlib.sha256((package/'catalogue_update.py').read_bytes()).hexdigest()
     registered['sha256']['drawing_page.py']=hashlib.sha256((package/'drawing_page.py').read_bytes()).hexdigest()

@@ -26,6 +26,8 @@ if (!(Test-Path -LiteralPath $taskPdfPython)) { throw 'PDFCONTROL runtime missin
 if ($LASTEXITCODE) { throw 'Native Codex app-server contract tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_sync_engine.py"
 if ($LASTEXITCODE) { throw 'Owned engine build isolation tests failed' }
+& $taskPdfPython -I "$PSScriptRoot/integration/test_kozijn_alias.py"
+if ($LASTEXITCODE) { throw 'Window-mark aliases and missing-dimension safeguards failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_fast_import.py"
 if ($LASTEXITCODE) { throw "FAST conversion tests failed" }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_drawing_page.py"

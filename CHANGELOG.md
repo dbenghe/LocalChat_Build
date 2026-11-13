@@ -1,3 +1,8 @@
+## 1.33.1
+- Recunoaste marcajul explicit Kozijnmerk= cod din tabel atunci cand pe desen apare numai codul scurt, inclusiv pe lanturi de cote rotite.
+- Foloseste cuvantul intreg, exclude tabelul/reviziile si refuza coduri ambigue ori dimensiuni contradictorii. Recunoasterea unui cod nu aproba automat lipsa cotelor.
+- Patchul restrans este inclus in sincronizarea motorului propriu; nu importa sau rescrie implicit instalatia PDFCONTROL separata.
+
 ## 1.33.0
 - Rationamentul general completeaza procedurile MBS cand lipseste o functie sau extractorul nu recunoaste layoutul; regulile tehnice si permisiunile raman aplicabile.
 - Import: adaugare justificata a articolelor omise, descrierea elementului principal si verificare explicita a campurilor obligatorii, fara falsa aprobare ISAH.
