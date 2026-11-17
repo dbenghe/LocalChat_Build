@@ -32,6 +32,8 @@ def main():
     if alias_path.is_file():
         spec=importlib.util.spec_from_file_location('kozijn_alias_hooks',integration/'apply_kozijn_alias.py')
         alias_hooks=importlib.util.module_from_spec(spec);spec.loader.exec_module(alias_hooks);alias_hooks.apply(alias_path)
+        spec=importlib.util.spec_from_file_location("dimension_ink_hooks",integration/"apply_dimension_ink.py")
+        ink_hooks=importlib.util.module_from_spec(spec);spec.loader.exec_module(ink_hooks);ink_hooks.apply(alias_path)
     shutil.copy2(integration/'pdfcontrol_bridge.py',package/'octop_mcp.py')
     shutil.copy2(integration/'catalogue_update.py',package/'catalogue_update.py')
     shutil.copy2(integration/'import_audit.py',package/'import_audit.py')

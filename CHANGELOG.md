@@ -1,3 +1,8 @@
+## 1.33.2 — 2026-11-17
+- Dimension overlap checks compare numeric glyph outlines after a metric-box collision; genuine overlap and unsupported outlines retain the existing warning.
+- Window anchors recognize explicit `Kozijnmerk = CODE` parents, still requiring a parent label on the drawing.
+- Missing or ambiguous handrail-plug positioning remains subject to manual review.
+
 ## 1.33.1
 - Recunoaste marcajul explicit Kozijnmerk= cod din tabel atunci cand pe desen apare numai codul scurt, inclusiv pe lanturi de cote rotite.
 - Foloseste cuvantul intreg, exclude tabelul/reviziile si refuza coduri ambigue ori dimensiuni contradictorii. Recunoasterea unui cod nu aproba automat lipsa cotelor.

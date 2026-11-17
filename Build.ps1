@@ -28,6 +28,8 @@ if ($LASTEXITCODE) { throw 'Native Codex app-server contract tests failed' }
 if ($LASTEXITCODE) { throw 'Owned engine build isolation tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_kozijn_alias.py"
 if ($LASTEXITCODE) { throw 'Window-mark aliases and missing-dimension safeguards failed' }
+& $taskPdfPython -I "$PSScriptRoot/integration/test_dimension_ink.py"
+if ($LASTEXITCODE -ne 0) { throw "Dimension ink tests failed" }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_fast_import.py"
 if ($LASTEXITCODE) { throw "FAST conversion tests failed" }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_drawing_page.py"
