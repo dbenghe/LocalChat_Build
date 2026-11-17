@@ -1,3 +1,9 @@
+## 1.33.5 — 2026-11-17
+- Associate rectangular profiles across aligned orthographic contours using native vectors, endpoint ticks, independent wall calibration and X-position ordinates.
+- Handle dimension text on an unticked leader extension without borrowing values from adjacent measurement cells.
+- Require complete quantity coverage and unique profile ownership; keep competing codes, partial associations and unlabelled articles for manual review.
+- Preserve distinct position codes, including 3000 versus 3001(rd), and real table/drawing dimension conflicts.
+
 ## 1.33.4 — 2026-11-17
 - Retain qualified position codes such as parentheses-marked sides, matching whitespace variants without mixing distinct positions or accepting colour alone.
 - Recognize complete slash-separated window marks and prove their dimensions through the matching contour and drawn dimension ticks.

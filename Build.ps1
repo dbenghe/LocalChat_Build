@@ -34,6 +34,8 @@ if ($LASTEXITCODE -ne 0) { throw "Dimension ink tests failed" }
 if ($LASTEXITCODE -ne 0) { throw "Bundle page coverage tests failed" }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_article_identity.py"
 if ($LASTEXITCODE -ne 0) { throw "Article identity and size-conflict tests failed" }
+& $taskPdfPython -I "$PSScriptRoot/integration/test_profile_projection.py"
+if ($LASTEXITCODE -ne 0) { throw "Orthographic profile recognition safeguards failed" }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_fast_import.py"
 if ($LASTEXITCODE) { throw "FAST conversion tests failed" }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_drawing_page.py"
