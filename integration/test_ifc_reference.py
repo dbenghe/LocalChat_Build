@@ -114,4 +114,12 @@ class Companion(unittest.TestCase):
   with patch.dict(sys.modules,{'mbs_ifc_reference':module}):self.assertEqual(namespace['_reference_component_evidence'](None,[],None,None),{})
   self.assertTrue(messages)
 
+class AxisDisplayTests(unittest.TestCase):
+ def test_missing_false_and_inapplicable_none_are_distinct(self):
+  from apply_ifc_reference import patch_checker
+  source='HEADINGS = {\n    "ARTIKEL_NIET_OP_TEKENING": "NIET AUTOMATISCH HERKEND",\n}\ndef check_pdf(doc):\n    page = doc[0]\n    return page\ndef axis(r):\n    return "OK" if r.y_dim else "ONTBREEKT"\n'
+  fixed=patch_checker(source);self.assertEqual(patch_checker(fixed),fixed)
+  namespace={};exec(fixed,namespace)
+  for value,expected in [(True,'OK'),(False,'ONTBREEKT'),(None,'-')]:self.assertEqual(namespace['axis'](SimpleNamespace(y_dim=value)),expected)
+
 if __name__=='__main__':unittest.main(verbosity=2)

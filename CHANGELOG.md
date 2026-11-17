@@ -4,6 +4,8 @@
 - Preserve placement warnings for geometrically identified beams; model coordinates never replace drawn dimensions.
 - Capture original drawing provenance before the checker's own annotations. Missing, stale or unsupported references retain ordinary review.
 
+- Render inapplicable/unconfirmed second axes neutrally instead of falsely showing a red missing dimension.
+
 ## 1.33.6 — 2026-11-17
 - Calibrate small orthographic profiles from independently dimensioned wall geometry, avoiding scale errors caused by rounding tiny vector contours.
 - Trace complete dimension-cell paths from wall boundaries, including staggered text, without borrowing neighbouring cells or unrelated article codes.

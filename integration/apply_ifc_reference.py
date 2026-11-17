@@ -60,6 +60,9 @@ def patch_checker(text):
         stil.meld('IFC source provenance capture', reference_error)
 """
         old=old.replace(anchor,anchor+block,1);lines[node.lineno-1:node.end_lineno]=[old.replace('\n',newline)];text=''.join(lines)
+    # None means unconfirmed or inapplicable, never a demonstrated missing axis.
+    if '"-" if r.y_dim is None else (' not in text:
+        text=text.replace('\"OK\" if r.y_dim else \"ONTBREEKT\"', '\"-\" if r.y_dim is None else (\"OK\" if r.y_dim else \"ONTBREEKT\")')
     ast.parse(text);return text
 
 
