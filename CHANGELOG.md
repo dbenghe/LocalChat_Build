@@ -1,3 +1,9 @@
+## 1.33.6 — 2026-11-17
+- Calibrate small orthographic profiles from independently dimensioned wall geometry, avoiding scale errors caused by rounding tiny vector contours.
+- Trace complete dimension-cell paths from wall boundaries, including staggered text, without borrowing neighbouring cells or unrelated article codes.
+- Distinguish recognized profiles with unconfirmed placement from identical profiles with unresolved position-code assignment; preserve both as CONTROLEREN.
+- Retain unresolved identities and demonstrated table/drawing dimension conflicts instead of declaring uncertain items correct or absent. Report unknown axes as unknown, and include geometrically recognized items in recognition counts.
+
 ## 1.33.5 — 2026-11-17
 - Associate rectangular profiles across aligned orthographic contours using native vectors, endpoint ticks, independent wall calibration and X-position ordinates.
 - Handle dimension text on an unticked leader extension without borrowing values from adjacent measurement cells.
