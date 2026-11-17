@@ -32,6 +32,8 @@ if ($LASTEXITCODE) { throw 'Window-mark aliases and missing-dimension safeguards
 if ($LASTEXITCODE -ne 0) { throw "Dimension ink tests failed" }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_bundle_coverage.py"
 if ($LASTEXITCODE -ne 0) { throw "Bundle page coverage tests failed" }
+& $taskPdfPython -I "$PSScriptRoot/integration/test_article_identity.py"
+if ($LASTEXITCODE -ne 0) { throw "Article identity and size-conflict tests failed" }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_fast_import.py"
 if ($LASTEXITCODE) { throw "FAST conversion tests failed" }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_drawing_page.py"

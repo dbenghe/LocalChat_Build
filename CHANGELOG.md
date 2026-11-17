@@ -1,3 +1,10 @@
+## 1.33.4 — 2026-11-17
+- Retain qualified position codes such as parentheses-marked sides, matching whitespace variants without mixing distinct positions or accepting colour alone.
+- Recognize complete slash-separated window marks and prove their dimensions through the matching contour and drawn dimension ticks.
+- Report conflicting table/drawing window sizes explicitly instead of hiding them as missing labels.
+- Support uniquely owned placement-suffix captions and declared lifting-anchor load notation.
+- Unresolved text recognition is labelled as such, without asserting that the physical article is absent.
+
 ## 1.33.3 — 2026-11-17
 - Mixed PDF bundles evaluate every page independently; unknown notation is retained for control instead of discarded by a bundle-wide suffix convention.
 - Explicit information pages remain excluded unless technical drawing content is present.

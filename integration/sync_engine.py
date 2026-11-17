@@ -36,6 +36,8 @@ def main():
         ink_hooks=importlib.util.module_from_spec(spec);spec.loader.exec_module(ink_hooks);ink_hooks.apply(alias_path)
         spec=importlib.util.spec_from_file_location("bundle_coverage_hooks",integration/"apply_bundle_coverage.py")
         bundle_hooks=importlib.util.module_from_spec(spec);spec.loader.exec_module(bundle_hooks);bundle_hooks.apply(package)
+        spec=importlib.util.spec_from_file_location("article_identity_hooks",integration/"apply_article_identity.py")
+        identity_hooks=importlib.util.module_from_spec(spec);spec.loader.exec_module(identity_hooks);identity_hooks.apply(package)
     shutil.copy2(integration/'pdfcontrol_bridge.py',package/'octop_mcp.py')
     shutil.copy2(integration/'catalogue_update.py',package/'catalogue_update.py')
     shutil.copy2(integration/'import_audit.py',package/'import_audit.py')
