@@ -36,6 +36,8 @@ if ($LASTEXITCODE -ne 0) { throw "Bundle page coverage tests failed" }
 if ($LASTEXITCODE -ne 0) { throw "Article identity and size-conflict tests failed" }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_profile_projection.py"
 if ($LASTEXITCODE -ne 0) { throw "Orthographic profile recognition safeguards failed" }
+& $taskPdfPython -I "$PSScriptRoot/integration/test_ifc_reference.py"
+if ($LASTEXITCODE -ne 0) { throw "IFC companion recognition safeguards failed" }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_fast_import.py"
 if ($LASTEXITCODE) { throw "FAST conversion tests failed" }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_drawing_page.py"

@@ -40,6 +40,8 @@ def main():
         identity_hooks=importlib.util.module_from_spec(spec);spec.loader.exec_module(identity_hooks);identity_hooks.apply(package)
         spec=importlib.util.spec_from_file_location("profile_projection_hooks",integration/"apply_profile_projection.py")
         profile_hooks=importlib.util.module_from_spec(spec);spec.loader.exec_module(profile_hooks);profile_hooks.apply(package)
+        spec=importlib.util.spec_from_file_location("ifc_reference_hooks",integration/"apply_ifc_reference.py")
+        ref_hooks=importlib.util.module_from_spec(spec);spec.loader.exec_module(ref_hooks);ref_hooks.apply(package)
     shutil.copy2(integration/'pdfcontrol_bridge.py',package/'octop_mcp.py')
     shutil.copy2(integration/'catalogue_update.py',package/'catalogue_update.py')
     shutil.copy2(integration/'import_audit.py',package/'import_audit.py')
@@ -48,6 +50,7 @@ def main():
     shutil.copy2(integration/'fast_import.py',package/'fast_import.py')
     shutil.copy2(integration/'fix_missing_pairs.py',package/'fix_missing_pairs.py')
     shutil.copy2(integration/'compare_server_revisions.py',package/'compare_server_revisions.py')
+    shutil.copy2(integration/'ifc_reference.py',package/'mbs_ifc_reference.py')
     shutil.copy2(integration/'mbs_localchat_layout.py',package/'mbs_localchat_layout.py')
     registered=json.loads(manifest.read_text(encoding='utf-8'));
     if alias_path.is_file():registered['sha256']['mbs_controles_extra.py']=hashlib.sha256(alias_path.read_bytes()).hexdigest()
@@ -60,6 +63,7 @@ def main():
     registered['sha256']['fast_import.py']=hashlib.sha256((package/'fast_import.py').read_bytes()).hexdigest()
     registered['sha256']['fix_missing_pairs.py']=hashlib.sha256((package/'fix_missing_pairs.py').read_bytes()).hexdigest()
     registered['sha256']['compare_server_revisions.py']=hashlib.sha256((package/'compare_server_revisions.py').read_bytes()).hexdigest()
+    registered['sha256']['mbs_ifc_reference.py']=hashlib.sha256((package/'mbs_ifc_reference.py').read_bytes()).hexdigest()
     manifest.write_text(json.dumps(registered,indent=2)+'\n',encoding='utf-8')
     print('PASS: LocalChat owned engine manifest verified; bridge staged. Legacy installation was not read or changed.')
 
