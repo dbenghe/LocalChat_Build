@@ -172,3 +172,6 @@ Repository-ul utilizatorului este https://github.com/dbenghe/LocalChat_Build (co
 
 - Din 1.33.0, skillurile sunt surse de procedura, nu limita rationamentului. Cand lipseste o functie, investigheaza sursele, foloseste calcul/cititoare locale limitate si documenteaza dovezile. Nu inventa Mengsel, cote, articole sau confirmari. O lista fara campurile obligatorii nu este utilizabila doar fiindca XLSX-ul se deschide.
 - Dezvoltarea automata este optionala si separata de datele de productie. Foloseste localchat_develop, worktree propriu, versiune/documentatie/regresie, QA verificat de gazda si publicarea unei ramuri distincte. Nu modifica main sau instalarea activa din sesiunea de dezvoltare; nu prezenta copia Git drept sandbox de sistem. Pastreaza modelul selectat si permisiunile existente.
+
+## Shared PDFCONTROL corrections
+User instruction, 17 November 2026: for common recognition, extraction and control defects, apply and verify the relevant correction in both the separate PDFCONTROL application and the owned engine shipped with LocalChat. Preserve unrelated changes and backups; report explicitly if either installation is pending. Unknown drawing layouts must not be silently discarded from a mixed bundle.

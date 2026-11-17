@@ -30,6 +30,8 @@ if ($LASTEXITCODE) { throw 'Owned engine build isolation tests failed' }
 if ($LASTEXITCODE) { throw 'Window-mark aliases and missing-dimension safeguards failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_dimension_ink.py"
 if ($LASTEXITCODE -ne 0) { throw "Dimension ink tests failed" }
+& $taskPdfPython -I "$PSScriptRoot/integration/test_bundle_coverage.py"
+if ($LASTEXITCODE -ne 0) { throw "Bundle page coverage tests failed" }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_fast_import.py"
 if ($LASTEXITCODE) { throw "FAST conversion tests failed" }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_drawing_page.py"

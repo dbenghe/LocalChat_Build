@@ -1,3 +1,9 @@
+## 1.33.3 — 2026-11-17
+- Mixed PDF bundles evaluate every page independently; unknown notation is retained for control instead of discarded by a bundle-wide suffix convention.
+- Explicit information pages remain excluded unless technical drawing content is present.
+- Generic project-title labels use bounded geometric matching after explicit MBS labels; ambiguous values remain unresolved.
+- Duplicate sheet names receive page identities; inventory errors cannot report first-page-only success. Logs report full page coverage.
+
 ## 1.33.2 — 2026-11-17
 - Dimension overlap checks compare numeric glyph outlines after a metric-box collision; genuine overlap and unsupported outlines retain the existing warning.
 - Window anchors recognize explicit `Kozijnmerk = CODE` parents, still requiring a parent label on the drawing.

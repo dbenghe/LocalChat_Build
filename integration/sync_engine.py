@@ -34,6 +34,8 @@ def main():
         alias_hooks=importlib.util.module_from_spec(spec);spec.loader.exec_module(alias_hooks);alias_hooks.apply(alias_path)
         spec=importlib.util.spec_from_file_location("dimension_ink_hooks",integration/"apply_dimension_ink.py")
         ink_hooks=importlib.util.module_from_spec(spec);spec.loader.exec_module(ink_hooks);ink_hooks.apply(alias_path)
+        spec=importlib.util.spec_from_file_location("bundle_coverage_hooks",integration/"apply_bundle_coverage.py")
+        bundle_hooks=importlib.util.module_from_spec(spec);spec.loader.exec_module(bundle_hooks);bundle_hooks.apply(package)
     shutil.copy2(integration/'pdfcontrol_bridge.py',package/'octop_mcp.py')
     shutil.copy2(integration/'catalogue_update.py',package/'catalogue_update.py')
     shutil.copy2(integration/'import_audit.py',package/'import_audit.py')
@@ -45,6 +47,7 @@ def main():
     shutil.copy2(integration/'mbs_localchat_layout.py',package/'mbs_localchat_layout.py')
     registered=json.loads(manifest.read_text(encoding='utf-8'));
     if alias_path.is_file():registered['sha256']['mbs_controles_extra.py']=hashlib.sha256(alias_path.read_bytes()).hexdigest()
+    if (package/'mbs_pdf_checker_pdfcontrol.py').is_file():registered['sha256']['mbs_pdf_checker_pdfcontrol.py']=hashlib.sha256((package/'mbs_pdf_checker_pdfcontrol.py').read_bytes()).hexdigest()
     if (package/'mbs_webapp.py').is_file():registered['sha256']['mbs_webapp.py']=hashlib.sha256((package/'mbs_webapp.py').read_bytes()).hexdigest()
     registered['sha256']['mbs_localchat_layout.py']=hashlib.sha256((package/'mbs_localchat_layout.py').read_bytes()).hexdigest();registered['sha256']['catalogue_update.py']=hashlib.sha256((package/'catalogue_update.py').read_bytes()).hexdigest()
     registered['sha256']['drawing_page.py']=hashlib.sha256((package/'drawing_page.py').read_bytes()).hexdigest()
