@@ -28,6 +28,6 @@ Een algemene herkenningscorrectie vereist een reproduceerbare oorzaak, positieve
 
 Werk alle onafhankelijke controles af. Stel alleen noodzakelijke vragen over concrete ontbrekende feiten; bundel die na de beoordeling en herhaal geen al beantwoorde keuze zonder nieuwe tegenstrijdigheid. Laat iedere onbevestigde waarschuwing met bewijs in het eindoverzicht staan, ook als de gebruiker geen aanvullende bron heeft.
 
-Schrijf uitleg, uitsnedebijschriften, galerijen en beoordelingsrapporten in het Nederlands. Toon op verzoek uitsneden direct in de chat met bronpagina en artikelregel. Markeer geen willekeurig symbool als het betrokken onderdeel nog niet geïdentificeerd is. Lever een gecombineerd overzicht met aantallen en bronverwijzingen; vraag niet om toestemming om telkens de volgende pagina te bekijken.
+Schrijf gegenereerde documenten, uitsnedebijschriften, galerijen en beoordelingsrapporten in het Nederlands. Chatberichten volgen de expliciet gekozen antwoordtaal. Toon op verzoek uitsneden direct in de chat met bronpagina en artikelregel. Markeer geen willekeurig symbool als het betrokken onderdeel nog niet geïdentificeerd is. Lever een gecombineerd overzicht met aantallen en bronverwijzingen; vraag niet om toestemming om telkens de volgende pagina te bekijken.
 
 Deze werkwijze kan toekomstige beoordelingen sturen wanneer de skill wordt gelezen. Zij vervangt geen programmeercorrectie in de herkenningsmotor en garandeert geen volledige herkenning van iedere tekenindeling.

@@ -1,3 +1,17 @@
+## 1.33.9 - automatische voortzetting van lange opdrachten
+
+Oorzaak: Agent.runImpl stopte onvoorwaardelijk na 80 modelstappen, ook als de laatste stap het rapport succesvol had opgeslagen. Een volgende aanvraag voor het eindantwoord kwam daardoor nooit tot stand.
+
+De standaardagent gebruikt 80 stappen nu als voortgangscontrole. Unieke succesvolle handelingen en bronlezingen maken automatische voortzetting mogelijk zonder een nieuw gebruikersbericht. Inventarissen, statuspolling, fouten en identieke handelingen gelden niet als nieuwe voortgang. Eerder uitgevoerde handelingen en hun resultaten blijven in dezelfde beurt; er is geen herstart van de procedure. De bestaande bewakers voor herhaalde lezingen, protocolfouten, PDF-fouten, rechten en Stop blijven actief.
+
+Bij een interval zonder voortgang, of een expliciete child-agentlimiet, volgt een begrensde afsluiting zonder operationele tools. Ongewenste toolverzoeken worden gekoppeld aan een niet-uitgevoerd resultaat. Een lege of geweigerde afsluiting krijgt een lokale melding; dit blijft gedeeltelijk werk en wordt niet als technische voltooiing gepresenteerd. De child-status houdt ook rekening met deze onvolledigheid.
+
+Uitgevoerde gerichte regressie: 148 controles. De oude Agent reproduceert de fout exact na de rapportopslag op stap 80. Nieuwe JSON/SSE-beurten van 80 en 161 stappen eindigen automatisch. Een native Codex-RPC-fixture behoudt het laatste resultaat bij compactie op de grens; de echte UI-worker slaat het eindantwoord op met slechts één gebruikersbericht. Stop, fout/lege afsluiting, ongewenste toolaanroep tijdens afsluiting, expliciete child-limieten en gewijzigde stdout van een herhaalde opdracht zijn gecontroleerd. Er is geen externe modelinference of fysieke muis-/toetsenbordtest voor deze versie uitgevoerd.
+
+De algemene buildcontroles zijn in delen afgerond: een tijdelijke Windows-vervangingsfout in een synthetisch catalogusregister verdween bij de afzonderlijke herhaling en de volledige herstart. Daarna blokkeerde de bestaande skill-lengtegrens de build; die overschrijding kwam uit 1.33.8. De dubbele tekst is verkort tot 9388 tekens, zonder de testgrens van 9500 te verruimen. Alle 46 geregistreerde regels blijven gedekt (88 controles). Alleen documentatie wijzigde na de volledige Java-compilatie; de resterende oorspronkelijke buildstappen zijn vervolgens hervat. De afzonderlijke logs en de bron-/pakkethashes blijven lokaal in de QA-map.
+
+Geen wijzigingen aan de PDFCONTROL-herkenningsmotor of technische acceptatieregels; geen productiegegevens in Git. De build schrijft niet over de actieve installatie. De installatie-/publicatiestatus staat in het lokale leveringsbewijs.
+
 ## 1.33.8 — batch drawing-review skills
 The production and PDFCONTROL skills now route batch reviews to integration/DRAWING_REVIEW.md. Build.ps1 distributes the reference to both skills. The procedure requires complete selection/findings coverage, preserved progress, independent identity/quantity/dimension/placement evidence, Dutch review output and consolidated necessary questions. Examples explicitly forbid deriving aliases from colour or counts. It does not introduce runtime recognition rules or promise universal drawing recognition.
 

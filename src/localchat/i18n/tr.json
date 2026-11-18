@@ -861,5 +861,9 @@
   "Selecteaza un repository local pentru dezvoltare.": "Yerel bir gelistirme deposu secin.",
   "Serviciul local de dezvoltare nu este disponibil.": "Yerel gelistirme hizmeti kullanilamiyor.",
   "Dezvoltare LocalChat: {0}": "LocalChat gelistirme: {0}",
-  "Nu pot configura dezvoltarea: {0}": "Gelistirme yapilandirilamiyor: {0}"
+  "Nu pot configura dezvoltarea: {0}": "Gelistirme yapilandirilamiyor: {0}",
+  "Pregatesc raspunsul final din rezultatele pastrate.": "Korunan sonuçlardan son yanıt hazırlanıyor.",
+  "Continui automat: exista progres verificat; operatiile confirmate nu se repeta.": "Otomatik devam ediliyor: ilerleme doğrulandı; tamamlanan işlemler tekrarlanmaz.",
+  "Finalizare fara unelte: apelul nu a fost executat.": "Araçsız sonlandırma: çağrı yürütülmedi.",
+  "LocalChat: modelul nu a furnizat un raspuns final utilizabil. Rezultatele si istoricul sunt pastrate; lucrarea ramane partiala. Nicio operatie suplimentara nu a fost executata.": "LocalChat: model kullanılabilir bir son yanıt vermedi. Sonuçlar ve geçmiş korundu; çalışma kısmi kaldı. Ek işlem yürütülmedi."
 }

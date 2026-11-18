@@ -925,3 +925,10 @@ In MBS, modelul poate completa procedurile prin rationament general, citire vizu
 Unelte > Dezvoltare automata LocalChat activeaza localchat_develop si selecteaza folderul surselor Git. Sursa trebuie sa fie curata si sa aiba origin-ul personal configurat. Modelul poate incepe o copie Git separata, inspecta si modifica surse (inclusiv editarea unui fragment exact, fara retrimiterea fisierului mare), adauga regresii, actualiza versiunea si documentatia, apoi cere validate si publish. Gazda executa buildul si testele, reciteste versiunea JAR si permite publicarea doar pentru rezultatul exact verificat, pe o ramura proprie. status ofera jurnalul erorilor; un push esuat poate fi reluat pe acelasi commit.
 
 Functia este implicit oprita. Testele executa cod local cu drepturile utilizatorului, nu intr-un sandbox de sistem. Normal, modul doar citire si agentii de analiza nu primesc aceasta unealta. Setarile, cataloagele si proiectele raman in afara surselor editabile. Instalarea buildului pregatit se face separat, cu backup si aplicatia inchisa; nu este o inlocuire automata a programului care ruleaza. Calitatea rezultatului depinde si de modelul ales.
+
+
+## Lange controles afronden - 1.33.9
+
+Een lange hoofdopdracht stopt niet meer uitsluitend omdat 80 modelstappen zijn bereikt. Dit is nu een voortgangscontrole: nieuwe succesvolle bronlezingen of handelingen laten dezelfde beurt automatisch doorgaan, met behoud van uitgevoerde operaties en resultaten. Een nieuw bericht met "continua" is daarvoor niet nodig. Inventarissen, polling, fouten en identieke handelingen verlengen de beurt niet.
+
+Zonder nieuwe voortgang volgt een eindantwoord zonder operationele tools. Expliciet begrensde hulpagents houden hun limiet en reserveren de laatste aanvraag voor de afsluiting. Een onbruikbaar antwoord krijgt een zichtbare lokale melding en blijft gedeeltelijk werk; onbekende maten of niet-uitgevoerde handelingen worden geen goedkeuringen. Stop en de bestaande machtigingen blijven actief.

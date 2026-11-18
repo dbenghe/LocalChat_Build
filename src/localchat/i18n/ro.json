@@ -861,5 +861,9 @@
   "Selecteaza un repository local pentru dezvoltare.": "Selecteaza un repository local pentru dezvoltare.",
   "Serviciul local de dezvoltare nu este disponibil.": "Serviciul local de dezvoltare nu este disponibil.",
   "Dezvoltare LocalChat: {0}": "Dezvoltare LocalChat: {0}",
-  "Nu pot configura dezvoltarea: {0}": "Nu pot configura dezvoltarea: {0}"
+  "Nu pot configura dezvoltarea: {0}": "Nu pot configura dezvoltarea: {0}",
+  "Pregatesc raspunsul final din rezultatele pastrate.": "Pregatesc raspunsul final din rezultatele pastrate.",
+  "Continui automat: exista progres verificat; operatiile confirmate nu se repeta.": "Continui automat: exista progres verificat; operatiile confirmate nu se repeta.",
+  "Finalizare fara unelte: apelul nu a fost executat.": "Finalizare fara unelte: apelul nu a fost executat.",
+  "LocalChat: modelul nu a furnizat un raspuns final utilizabil. Rezultatele si istoricul sunt pastrate; lucrarea ramane partiala. Nicio operatie suplimentara nu a fost executata.": "LocalChat: modelul nu a furnizat un raspuns final utilizabil. Rezultatele si istoricul sunt pastrate; lucrarea ramane partiala. Nicio operatie suplimentara nu a fost executata."
 }

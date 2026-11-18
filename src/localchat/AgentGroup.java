@@ -118,8 +118,9 @@ final class AgentGroup {
         boolean hasActions=outcomes.stream().anyMatch(o->Boolean.TRUE.equals(Json.get(o,"success")));
         boolean toolErrors=state.failedPdf||state.incompletePdf||outcomes.stream().anyMatch(o->Boolean.FALSE.equals(Json.get(o,"success")));
         boolean pendingJobs=!state.pendingJobs.isEmpty();
-        String status=cancelled||stopped||!state.stop.isEmpty()?"cancelled":error.isEmpty()&&!answer.isBlank()&&!toolErrors&&!pendingJobs?"done":hasActions||!answer.isBlank()?"partial":"failed";
-        if(!state.stop.isEmpty())error=state.stop;else if(error.isEmpty()&&answer.isBlank())error="no_visible_final_answer";else if(error.isEmpty()&&toolErrors)error="tool_errors";else if(error.isEmpty()&&pendingJobs)error="pending_jobs";
+        boolean limited=child!=null&&child.recoveryIncomplete();
+        String status=cancelled||stopped||!state.stop.isEmpty()?"cancelled":error.isEmpty()&&!answer.isBlank()&&!toolErrors&&!pendingJobs&&!limited?"done":hasActions||!answer.isBlank()?"partial":"failed";
+        if(!state.stop.isEmpty())error=state.stop;else if(error.isEmpty()&&answer.isBlank())error="no_visible_final_answer";else if(error.isEmpty()&&toolErrors)error="tool_errors";else if(error.isEmpty()&&pendingJobs)error="pending_jobs";else if(error.isEmpty()&&limited)error="bounded_work_incomplete";
         result=Json.obj("title",task.title,"task",clip(task.text,1000),"task_truncated",task.text.length()>1000,"status",status,"answer",clip(answer,4000),"answer_truncated",answer.length()>4000,"completed_tool_count",outcomes.size(),"completed_tools",toolSummary(outcomes),"tools_truncated",outcomes.size()>8,"deliveries",deliverySummary(state.deliveries),"verified_delivery_count",state.deliveries.size(),"deliveries_truncated",deliveryTruncated(state.deliveries),"pending_jobs",pendingSummary(state.pendingJobs),"pending_job_count",state.pendingJobs.size(),"pending_jobs_truncated",state.pendingJobs.size()>16);
         if(!error.isBlank())result.put("error",error);if(!errorDetail.isBlank())result.put("error_detail",errorDetail);
         try{

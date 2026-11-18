@@ -1,3 +1,9 @@
+## 1.33.9 - 2026-11-18
+- Lange opdrachten gaan na iedere 80 modelstappen automatisch verder zolang nieuwe succesvolle handelingen of bronlezingen voortgang aantonen; een voltooid rapport kan direct worden gevolgd door het eindantwoord.
+- Inventarissen, polling, fouten en herhaalde handelingen verlengen het werk niet. Expliciet begrensde agents reserveren hun laatste aanvraag voor een antwoord zonder extra handelingen.
+- Behoud Stop, machtigingen, opgeslagen resultaten en gedeeltelijke uitkomsten; een lege, geweigerde of ongeldige afsluiting krijgt een zichtbaar lokaal bericht zonder technische goedkeuring.
+- Verkort herhaalde skilltekst onder de bestaande contextgrens, met behoud van alle gecontroleerde regels; rapporten blijven Nederlands en chat volgt de gekozen antwoordtaal.
+
 ## 1.33.8 — 2026-11-18
 - Add a reusable batch drawing-review reference to both LocalChat skills and future distributions.
 - Review all selected warnings without a confirmation loop per page; separate article identity, presence, quantity, dimensions and placement evidence.

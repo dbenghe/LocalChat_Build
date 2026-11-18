@@ -41,6 +41,7 @@ final class Agent {
     /** 1.28.9: the final text followed an unexecuted text tool call and no real tool ran afterwards. */
     default void unverifiedReply(){}
         default void discoveryRecovery(boolean finalResponse){}
+        default void stepBoundary(boolean finalResponse){}
         default void usage(TokenUsage usage) {}
         default void agentProgress(String title,String state) {}
         default void agentTask(String id,String title,String task,String model) {}
@@ -50,7 +51,9 @@ final class Agent {
     }
 
     private int maximumSteps=MAX_STEPS;
-    Agent maxSteps(int count){maximumSteps=Math.max(1,Math.min(MAX_STEPS,count));return this;}
+    private boolean boundedSteps;
+    private final AgentProgress progress=new AgentProgress();
+    Agent maxSteps(int count){maximumSteps=Math.max(1,Math.min(MAX_STEPS,count));boundedSteps=true;return this;}
     private boolean interactive;
     private volatile boolean recoveryIncomplete;
     boolean recoveryIncomplete(){return recoveryIncomplete;}
@@ -121,7 +124,13 @@ final class Agent {
         }
         int protocolRepairs=0;boolean toolRanSinceMalformed=false;
         int interactionFailures=0,discoveryRepairs=0,discoveryStarted=-1;boolean discoveryFinal=false;String discoveryHint="",lastRepeated="";
-        for (int step = 0; step < maximumSteps; step++) {
+        for (int step = 0; ; step++) {
+            boolean limitFinal=boundedSteps&&step>=maximumSteps-1;
+            if(!boundedSteps&&step>0&&step%maximumSteps==0){
+                limitFinal=!progress.advance();
+                if(!cancelled)ui.stepBoundary(limitFinal);
+            }
+            if(limitFinal){recoveryIncomplete=true;if(boundedSteps&&!cancelled)ui.stepBoundary(true);}
             if (cancelled) return;
             if (step > 0) ui.step();
             if(discoveryStarted>=0&&!discoveryFinal&&step-discoveryStarted>6){discoveryFinal=true;recoveryIncomplete=true;ui.discoveryRecovery(true);}
@@ -131,12 +140,13 @@ final class Agent {
                 replyPending = true;
             }
             final List<ChatClient.ToolSpec> specs=specs(); // recomputed per step: localchat_enable_tools takes effect on the next request
-            final List<ChatClient.ToolSpec> requestSpecs=discoveryFinal?List.of():interactionFailures==0?specs:interactionFailures==1?List.of(ComposerAssist.spec()):List.of();
-            String effectiveSystem=system+(protocolRepairs>0?ToolProtocol.REPAIR:"")+(interactionFailures>0?INTERACTION_REPAIR:"")+(interactionFailures>1?INTERACTION_TEXT:"")+(discoveryRepairs>0?DISCOVERY_REPAIR+discoveryHint:"")+(discoveryFinal?DISCOVERY_TEXT:"");
+            final List<ChatClient.ToolSpec> requestSpecs=limitFinal||discoveryFinal?List.of():interactionFailures==0?specs:interactionFailures==1?List.of(ComposerAssist.spec()):List.of();
+            String effectiveSystem=system+(protocolRepairs>0?ToolProtocol.REPAIR:"")+(interactionFailures>0?INTERACTION_REPAIR:"")+(interactionFailures>1?INTERACTION_TEXT:"")+(discoveryRepairs>0?DISCOVERY_REPAIR+discoveryHint:"")+(discoveryFinal?DISCOVERY_TEXT:"")+(limitFinal?STEP_LIMIT_TEXT:"");
             client.retainToolResult(conversation); // Native RPC result must survive the request-only view below.
             if(guard!=null){conversation=guard.prepare(p,url,key,model,effectiveSystem,conversation,requestSpecs,step,ui);client.outputLimit(guard.outputLimit());if(guard.compactions!=seenCompactions){seenCompactions=guard.compactions;loopGuard.afterCompaction();}}
             if(cancelled)return;
-            ChatClient.Reply reply=InferenceRetry.chat(client,p,url,key,model,effectiveSystem,conversation,requestSpecs,stream,new ChatClient.Listener(){
+            ChatClient.Reply reply;
+            try{reply=InferenceRetry.chat(client,p,url,key,model,effectiveSystem,conversation,requestSpecs,stream,new ChatClient.Listener(){
                 public void onText(String delta){ui.text(delta);}
                 public void onReasoning(String delta){ui.reasoning(delta);}
             },new InferenceRetry.Hooks(){
@@ -144,7 +154,7 @@ final class Agent {
                 public void usage(TokenUsage usage){if(guard!=null)guard.observe(usage,ui);ui.usage(usage);}
                 public boolean cancelled(){return cancelled;}
                 public void retry(int next,int total,int status){ui.retry(false,next,total,status);}
-            });
+            });}catch(IOException failed){if(!limitFinal)throw failed;if(!cancelled)stepLimitFallback(base,ui);return;}
             if (cancelled) return;
             synchronized (added) {
                 if (!reply.text.isEmpty() || !reply.calls.isEmpty()) {
@@ -153,6 +163,14 @@ final class Agent {
                 replyPending = false;
             }
             publishContext(base, ui);
+            if(limitFinal){
+                // This request is presentation-only. Even a provider ignoring the empty schema cannot run an operation.
+                if(!reply.calls.isEmpty()){
+                    synchronized(added){for(var call:reply.calls)added.add(ChatClient.Message.toolResult(call.id,I18n.text("Finalizare fara unelte: apelul nu a fost executat."),true));}
+                    stepLimitFallback(base,ui);
+                }else if(reply.truncated()||ReasoningDisplay.answer(reply.text).isBlank()||ToolProtocol.malformed(reply.text))stepLimitFallback(base,ui);
+                return;
+            }
             if(reply.truncated())throw new IOException(truncationMessage(reply,client.usage()));
             if(reply.calls.isEmpty()&&tools!=null&&ToolProtocol.malformed(reply.text)){toolRanSinceMalformed=false;synchronized(added){if(!added.isEmpty()&&added.get(added.size()-1).role.equals("assistant"))added.set(added.size()-1,ChatClient.Message.assistant(ToolProtocol.markMalformed(reply.text),List.of(),label));}ui.malformedNotice(protocolRepairs+1);if(protocolRepairs>=2)throw new IOException(I18n.text("Modelul a trimis apeluri de unelte ca text de trei ori. Niciun apel XML nu a fost executat; actiunile confirmate sunt pastrate."));ui.protocolRepair(++protocolRepairs);continue;}
             if (reply.calls.isEmpty()&&protocolRepairs>0&&!toolRanSinceMalformed&&!reply.text.isBlank()){synchronized(added){if(!added.isEmpty()&&added.get(added.size()-1).role.equals("assistant"))added.set(added.size()-1,ChatClient.Message.assistant(ToolProtocol.markUnverified(reply.text),List.of(),label));}ui.unverifiedReply();}
@@ -188,7 +206,7 @@ final class Agent {
                     else if(isMutation(call.name)){synchronized(MUTATION_LOCK){if(cancelled)return;result=tools.execute(call);}}
                     else result=batch.execute(tools::execute,call);
                 }
-                loopGuard.completed(call,result);
+                loopGuard.completed(call,result);progress.completed(call,result);
                 if(pdfStart&&!result.isError)startedPdfJobs.put(signature,result);
                 if(pdfStart&&result.isError)failedPdfCalls.merge(signature,1,Integer::sum);
                 synchronized (added) {
@@ -217,7 +235,14 @@ final class Agent {
                 publishContext(base,ui);
             }
         }
-        throw new IOException("Oprit dupa " + maximumSteps + " pasi fara un raspuns final.");
+    }
+
+    private static final String STEP_LIMIT_TEXT="\nThe application is ending this bounded work interval without further tools. Produce a visible final answer in the selected response language from confirmed tool results already in the conversation: findings, exact saved deliverables, and any unfinished work or missing evidence. Do not repeat work, request tools, invent results or claim an incomplete task is complete. Previous user scope and permissions remain unchanged.\n";
+    private void stepLimitFallback(List<ChatClient.Message> base,Ui ui){
+        if(cancelled)return;recoveryIncomplete=true;
+        String text=I18n.text("LocalChat: modelul nu a furnizat un raspuns final utilizabil. Rezultatele si istoricul sunt pastrate; lucrarea ramane partiala. Nicio operatie suplimentara nu a fost executata.");
+        synchronized(added){replyPending=false;added.add(ChatClient.Message.assistant(text,List.of(),"LocalChat"));}
+        ui.text(text);publishContext(base,ui);
     }
 
     private void recoveryFallback(String repeated,List<ChatClient.Message> base,Ui ui){

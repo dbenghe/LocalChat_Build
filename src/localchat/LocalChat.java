@@ -1836,6 +1836,7 @@ public final class LocalChat extends JFrame {
             @Override public void context(List<ChatClient.Message> conversation) {
                 later(turn,()->{requestMetrics(conversation);turn.contextIncludesStep=true;refreshDashboard();});
             }
+            @Override public void stepBoundary(boolean finalResponse){later(turn,()->setStatus(finalResponse?"Pregatesc raspunsul final din rezultatele pastrate.":"Continui automat: exista progres verificat; operatiile confirmate nu se repeta.",false));}
             @Override public void discoveryRecovery(boolean finalResponse){later(turn,()->setStatus(finalResponse?"Pregatesc rezultatul partial; limita de recuperare a fost atinsa.":"Recuperez dupa citiri repetitive; operatiile confirmate raman pastrate.",false));}
             @Override public void malformedNotice(int attempt){later(turn,()->{ensureNewline();append("\u26a0 "+t("Atentie: modelul a scris apeluri de unelte ca text. NICIUN apel nu a fost executat, iar orice rezultat, stare sau parola descrise dupa ele de model NU sunt reale.")+"\n",toolErrorStyle);});}
             @Override public void unverifiedReply(){later(turn,()->{ensureNewline();append("\u26a0 "+t("Raspuns neverificat: urmeaza unui apel de unealta scris ca text si neexecutat, iar dupa aceea nicio unealta nu a rulat.")+"\n",toolErrorStyle);});}
