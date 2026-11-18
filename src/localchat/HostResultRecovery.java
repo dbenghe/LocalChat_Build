@@ -10,7 +10,8 @@ final class HostResultRecovery {
     static boolean needed(String answer,List<ChatClient.Message> turn){
         String s=fold(answer);
         boolean claim=s.matches("(?s).*(?:conector(?:ul)?|connector|localchat|tool(?:s| calls?)?).{0,140}(?:nu (?:a |mai )*(?:return|raspuns)|did not return|didn't return|no (?:longer )?(?:return|respond)|niet.{0,25}(?:antwoord|resultaat)|keine.{0,25}(?:antwort|ergebnis)).*")
-            ||s.matches("(?s).*(?:citirile|apelurile|asteptarile|reads|tool calls).{0,90}(?:nu au returnat|blocat|did not return|timed out).*");
+            ||s.matches("(?s).*(?:citirile|apelurile|asteptarile|reads|tool calls).{0,90}(?:nu au returnat|blocat|did not return|timed out).*")
+            ||s.matches("(?s).*(?:in asteptare|pending|awaiting).{0,120}(?:fara rezultat returnat|no (?:returned )?result|not returned).*");
         if(!claim)return false;
         int successes=0;
         for(int i=turn.size()-1;i>=0;i--){var m=turn.get(i);if(!m.role.equals("tool"))continue;

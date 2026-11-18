@@ -869,5 +869,9 @@
   "Descarcare WeTransfer in browser izolat": "Descarcare WeTransfer in browser izolat",
   "Descarcare prin comenzile publice ale paginii, cu verificarea fisierului. In folderul: {0}": "Descarcare prin comenzile publice ale paginii, cu verificarea fisierului. In folderul: {0}",
   "Acceptarea termenilor WeTransfer": "Acceptarea termenilor WeTransfer",
-  "Pagina WeTransfer cere acceptarea Terms of Service si confirmarea Privacy Policy in browserul izolat. Citeste pagina deschisa. Aprobi pentru aceasta descarcare? Alegerea nu se memoreaza.": "Pagina WeTransfer cere acceptarea Terms of Service si confirmarea Privacy Policy in browserul izolat. Citeste pagina deschisa. Aprobi pentru aceasta descarcare? Alegerea nu se memoreaza."
+  "Pagina WeTransfer cere acceptarea Terms of Service si confirmarea Privacy Policy in browserul izolat. Citeste pagina deschisa. Aprobi pentru aceasta descarcare? Alegerea nu se memoreaza.": "Pagina WeTransfer cere acceptarea Terms of Service si confirmarea Privacy Policy in browserul izolat. Citeste pagina deschisa. Aprobi pentru aceasta descarcare? Alegerea nu se memoreaza.",
+  "Cititorul local de documente necesita Python-ul inclus in aplicatie.": "Cititorul local de documente necesita Python-ul inclus in aplicatie.",
+  "Conversia locala a documentului a esuat: {0}": "Conversia locala a documentului a esuat: {0}",
+  "(Markdown; sursa nemodificata)": "(Markdown; sursa nemodificata)",
+  "Continua cu offset={0}": "Continua cu offset={0}"
 }

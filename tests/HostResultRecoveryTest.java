@@ -11,21 +11,21 @@ public final class HostResultRecoveryTest {
     public static void main(String[] args)throws Exception{
         Path root=Files.createTempDirectory("host-result-recovery-");InteractionRecoveryTest.streaming=false;
         Files.writeString(root.resolve("source.txt"),"ACTUAL_SOURCE");
-        for(String mode:List.of("recover","real-error","bounded","stop","normal")){
+        for(String mode:List.of("recover","pending","real-error","bounded","stop","normal")){
             Path home=Files.createDirectory(root.resolve(mode));Files.writeString(home.resolve("source.txt"),"ACTUAL_SOURCE");
             var replies=new ArrayList<FeatureTest.Response>();
             replies.add(AgentStepLimitTest.call(1,"read_file",Json.obj("path",mode.equals("real-error")?"missing.txt":"source.txt")));
-            replies.add(answer(mode.equals("normal")?"Checked, no missing technical dimensions can be confirmed.":CLAIM));
-            if(mode.equals("recover")){replies.add(AgentStepLimitTest.call(2,"write_file",Json.obj("path","proof.txt","content","VERIFIED_OUTPUT")));replies.add(answer("Done; output verified."));}
+            replies.add(answer(mode.equals("normal")?"Checked, no missing technical dimensions can be confirmed.":mode.equals("pending")?"Cautarea detaliata in catalog este in asteptare, fara rezultat returnat.":CLAIM));
+            if(mode.equals("recover")||mode.equals("pending")){replies.add(AgentStepLimitTest.call(2,"write_file",Json.obj("path","proof.txt","content","VERIFIED_OUTPUT")));replies.add(answer("Done; output verified."));}
             if(mode.equals("bounded"))replies.add(answer(CLAIM));
             try(var server=new FeatureTest.Server(replies.toArray(FeatureTest.Response[]::new))){
                 Agent agent=new Agent(AgentStepLimitTest.tools(home));
                 var ui=new AgentStepLimitTest.Ui(){public void discoveryRecovery(boolean last){continuations++;if(mode.equals("stop"))agent.cancel();}};
                 AgentStepLimitTest.run(agent,server,ui,false);
-                check(server.requests.size()==(mode.equals("recover")?4:mode.equals("bounded")?3:2),"bounded request count: "+mode);
+                check(server.requests.size()==((mode.equals("recover")||mode.equals("pending"))?4:mode.equals("bounded")?3:2),"bounded request count: "+mode);
                 check(ui.continuations==((mode.equals("normal")||mode.equals("real-error"))?0:1),"exactly one correction or none: "+mode);
                 if(mode.equals("bounded"))check(agent.recoveryIncomplete(),"repeated unsupported final is partial, never reported as completed");
-                if(mode.equals("recover")){
+                if(mode.equals("recover")||mode.equals("pending")){
                     check(Files.readString(home.resolve("proof.txt")).equals("VERIFIED_OUTPUT"),"actual authorized work resumes after unsupported failure claim");
                     check(Json.write(server.requests.get(2)).contains("No missing-result"),"wire correction cites successful host delivery");
                     check(ui.operations==2,"read and write each execute once, no replay");

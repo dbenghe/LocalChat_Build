@@ -69,6 +69,15 @@ class Workflows(unittest.TestCase):
         for row in record['artifacts']:
             path=Path(row['path']);self.assertTrue(path.is_relative_to(PROJECT/'Controle'))
             with pymupdf.open(path) as doc:self.assertGreater(len(doc),0)
+    def test_00_document_markdown_real_mcp(self):
+        path=PROJECT/'markdown-mail.eml';path.write_text('From: fixture@example.invalid\nSubject: BRIDGE_EMAIL\nContent-Type: text/plain; charset=utf-8\n\nhttps://we.tl/t-synthetic-only\n',encoding='utf8')
+        result=self.client.call('pdfcontrol_read_document',{'project':'123456','path':path.name})
+        self.assertIn('https://we.tl/t-synthetic-only',result['text']);self.assertEqual(result['format'],'markdown');self.assertEqual(result['api_requests'],0);self.assertTrue(result['source_unchanged'])
+        result=self.client.call('pdfcontrol_read_document',{'project':'123456','path':'bundle.pdf'})
+        self.assertEqual(result['page_count'],3);self.assertIn('WA224_W',result['text']);self.assertIsNone(result['next_offset'])
+        path=PROJECT/'markdown-unknown.bin';path.write_bytes(b'\x00\xff')
+        message=self.client.call('pdfcontrol_read_document',{'project':'123456','path':path.name},error=True)
+        self.assertIn('binaire formaat',message)
     def test_01_discovery_and_confinement(self):
         tools=self.client.request('tools/list',{})['tools'];names={t['name'] for t in tools}
         self.assertTrue({'pdfcontrol_start_extract','pdfcontrol_start_pairs','pdfcontrol_start_compare','pdfcontrol_regenerate_report','pdfcontrol_start_workflow','pdfcontrol_cancel_job'}<=names)

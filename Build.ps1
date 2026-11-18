@@ -60,6 +60,10 @@ if ($LASTEXITCODE) { throw 'Catalogue import/rollback/upgrade preservation tests
 if ($LASTEXITCODE) { throw 'Factory catalogue update tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/sync_engine.py" --package "$PSScriptRoot/pdfcontrol"
 if ($LASTEXITCODE) { throw 'PDFCONTROL engine synchronization failed' }
+& $taskPdfPython -I "$PSScriptRoot/integration/prepare_markdown.py" --package "$PSScriptRoot/pdfcontrol"
+if ($LASTEXITCODE) { throw 'Markdown runtime verification failed' }
+& $taskPdfPython -I "$PSScriptRoot/integration/test_document_markdown.py" --package "$PSScriptRoot/pdfcontrol"
+if ($LASTEXITCODE) { throw 'Local Markdown fidelity/offline/cache tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_stamp_identity.py" --package "$PSScriptRoot/pdfcontrol"
 if ($LASTEXITCODE) { throw 'Stamped element identity and uncertain-role tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_report_layout.py" --package "$PSScriptRoot/pdfcontrol"
@@ -81,6 +85,8 @@ Copy-Item -LiteralPath "$PSScriptRoot/VERSION" -Destination $taskClasses
 $taskTests = (Get-ChildItem -LiteralPath "$PSScriptRoot/tests" -Filter '*.java').FullName
 & "$taskJdk/bin/javac.exe" -encoding UTF-8 --release 17 -cp "$taskClasses;$taskLibrary" -d "$taskBuild/tests" $taskTests
 if ($LASTEXITCODE) { throw 'Test compilation failed' }
+& "$taskJdk/bin/java.exe" "-Dmarkdown.package=$PSScriptRoot/pdfcontrol" "-Dmarkdown.python=$taskPdfPython" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.DocumentMarkdownTest
+if ($LASTEXITCODE) { throw 'Java Markdown reader integration failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/selfdev-home" "-Dselfdev.python=$taskPdfPython" "-Dselfdev.script=$PSScriptRoot/integration/self_development.py" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.SelfDevelopmentTest
 if ($LASTEXITCODE) { throw 'Development host and reasoning policy tests failed' }
 & "$taskJdk/bin/java.exe" '-Dlocalchat.test=true' "-Dlocalchat.home=$taskBuild/stability-home" -cp "$taskClasses;$taskBuild/tests;$taskLibrary" localchat.RuntimeStabilityTest
@@ -315,6 +321,8 @@ foreach ($taskEngineName in $taskEngineFiles) {
 # User-imported runtime snapshots/registry/archives are authoritative. Seed missing catalogues only.
 & $taskPdfPython -I "$PSScriptRoot/integration/seed_catalogues.py" --source "$PSScriptRoot/pdfcontrol/data_lokaal" --target "$DistributionPath/pdfcontrol/data_lokaal"
 if ($LASTEXITCODE) { throw 'Factory catalogue initialization failed' }
+& $taskPdfPython -I "$PSScriptRoot/integration/prepare_markdown.py" --package $DistributionPath/pdfcontrol
+if ($LASTEXITCODE) { throw 'Installed document runtime checksum mismatch' }
 if (!(Test-Path -LiteralPath "$DistributionPath/runtime/bin/javaw.exe")) {
     if (Test-Path -LiteralPath "$DistributionPath/runtime") { throw 'Incomplete runtime; restore it before building' }
     & "$taskJdk/bin/jlink.exe" --add-modules java.base,java.desktop,jdk.crypto.ec --strip-debug --no-header-files --no-man-pages --compress=2 --output "$DistributionPath/runtime"

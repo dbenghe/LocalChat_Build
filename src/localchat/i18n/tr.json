@@ -869,5 +869,9 @@
   "Descarcare WeTransfer in browser izolat": "Yalitilmis tarayicida WeTransfer indirme",
   "Descarcare prin comenzile publice ale paginii, cu verificarea fisierului. In folderul: {0}": "Genel sayfa dugmeleri ile indirme ve dosya dogrulama. Klasor: {0}",
   "Acceptarea termenilor WeTransfer": "WeTransfer koşullarını kabul et",
-  "Pagina WeTransfer cere acceptarea Terms of Service si confirmarea Privacy Policy in browserul izolat. Citeste pagina deschisa. Aprobi pentru aceasta descarcare? Alegerea nu se memoreaza.": "WeTransfer, yalıtılmış tarayıcıda Terms of Service kabulünü ve Privacy Policy onayını istiyor. Açık sayfayı okuyun. Bu indirme için onaylıyor musunuz? Bu seçim kaydedilmez."
+  "Pagina WeTransfer cere acceptarea Terms of Service si confirmarea Privacy Policy in browserul izolat. Citeste pagina deschisa. Aprobi pentru aceasta descarcare? Alegerea nu se memoreaza.": "WeTransfer, yalıtılmış tarayıcıda Terms of Service kabulünü ve Privacy Policy onayını istiyor. Açık sayfayı okuyun. Bu indirme için onaylıyor musunuz? Bu seçim kaydedilmez.",
+  "Cititorul local de documente necesita Python-ul inclus in aplicatie.": "Yerel belge okuyucu, uygulamayla gelen Python ortamını gerektirir.",
+  "Conversia locala a documentului a esuat: {0}": "Yerel belge dönüştürme başarısız: {0}",
+  "(Markdown; sursa nemodificata)": "(Markdown; kaynak değişmedi)",
+  "Continua cu offset={0}": "offset={0} ile devam et"
 }

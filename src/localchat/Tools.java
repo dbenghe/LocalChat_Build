@@ -184,7 +184,7 @@ final class Tools {
                 "regex", "boolean", "Query is a regular expression.",
                 "case_sensitive", "boolean", "Default false.",
                 "offset", "integer", "First hit (default 1)."));
-        out.add(spec("read_file", "Read a file as numbered text: text files, .msg (sender, recipients, date, text, attachment list), PDF text layer (no OCR), .docx, .xlsx. Continue long files with offset.", List.of("path"),
+        out.add(spec("read_file", "Read text or locally cached Markdown from PDF/OCR, MSG/EML, Word and Excel. Original files unchanged. Offset: PDF pages, otherwise lines; continue until complete.", List.of("path"),
                 "path", "string", "File to read.",
                 "offset", "integer", "First line (PDF: first page). Default 1.",
                 "limit", "integer", "Lines (default 400) or PDF pages (default 20)."));
@@ -702,6 +702,10 @@ final class Tools {
         if (Files.isDirectory(p)) throw new ToolError("E un folder: " + p + " — foloseste list_dir.");
         if (!Files.exists(p)) throw new ToolError(I18n.text("Nu exista: {0}",p));
         String name = p.getFileName().toString().toLowerCase(Locale.ROOT);
+        if (name.matches(".*\\.(pdf|eml|doc|docx|docm|xls|xlsx|xlsm|pptx|html|htm|rtf)$")) {
+            Path script=ctx.secretFile().toAbsolutePath().getParent().resolve("pdfcontrol/mbs_document_markdown.py");
+            if(Files.isRegularFile(script)) return readMarkdown(p,script,offset,limit);
+        }
         if (name.endsWith(".pdf")) return readPdf(p, offset, limit == null ? 20 : limit);
         String text;
         if (name.endsWith(".msg")) {
@@ -736,6 +740,25 @@ final class Tools {
         }
         if (to < lines.length) b.append("… mai sunt ").append(lines.length - to).append(" randuri; continua cu offset=").append(to + 1).append('\n');
         return b.toString();
+    }
+
+    private String readMarkdown(Path source,Path script,int offset,Integer limit)throws IOException,ToolError {
+        String python=ctx.pdfPython();
+        if(python==null||python.isBlank()||!Files.isRegularFile(Path.of(python)))throw new ToolError(I18n.text("Cititorul local de documente necesita Python-ul inclus in aplicatie."));
+        boolean pdf=source.toString().toLowerCase(Locale.ROOT).endsWith(".pdf");
+        Path cache=ctx.secretFile().toAbsolutePath().getParent().resolve("cache/document-markdown");Files.createDirectories(cache);
+        Path request=Files.createTempFile(cache,"read-",".json");
+        try {
+            Files.writeString(request,Json.write(Json.obj("path",source.toString(),"unit",pdf?"pages":"lines","offset",Math.max(1,offset),"limit",limit==null?(pdf?20:400):Math.max(1,limit))),StandardCharsets.UTF_8);
+            Output out=exec(List.of(python,"-I",script.toString(),"--request",request.toString(),"--cache",cache.toString()),ctx.workDir(),ctx.commandEnv(),180);ensureActive();
+            if(!out.finished()||out.exitCode()!=0)throw new ToolError(I18n.text("Conversia locala a documentului a esuat: {0}",clip(out.text(),1500)));
+            Object result=Json.parse(out.text());String text=Json.str(result,"text");
+            StringBuilder content=new StringBuilder((pdf?"PDF: ":"Fisier: ")+source+" "+I18n.text("(Markdown; sursa nemodificata)")+"\n");
+            if(pdf)content.append(text);else{int number=Math.max(1,offset);for(String line:text.split("\\n",-1))content.append(number++).append("| ").append(line).append('\n');}
+            content.append("\nProvenance: ").append(Json.write(Json.obj("source_sha256",Json.get(result,"source_sha256"),"cache_hits",Json.get(result,"cache_hits"),"backend",Json.get(result,"backend"),"pages_returned",Json.get(result,"pages_returned"),"warnings",Json.get(result,"warnings"),"api_requests",0)));
+            Object next=Json.get(result,"next_offset");if(next!=null)content.append("\n").append(I18n.text("Continua cu offset={0}",next));
+            return content.toString();
+        } finally {Files.deleteIfExists(request);}
     }
 
     /** Whole pages only: a long PDF read ends at a page boundary with the offset of the next page. */

@@ -63,6 +63,21 @@ final class BrowserDownload {
         throw new IOException("Automatic browser download requires Microsoft Edge or Google Chrome installed on this computer. Nothing downloaded.");
     }
 
+    /** Chromium creates its endpoint file before closing the exclusive Windows writer. */
+    static List<String> endpoint(Path file,BooleanSupplier alive,BooleanSupplier stop,long deadline)throws IOException {
+        while(true) {
+            active(stop);
+            if(System.nanoTime()>deadline||!alive.getAsBoolean())throw new IOException("The isolated browser could not start; check browser policy. Nothing downloaded.");
+            try {
+                List<String> rows=Files.readAllLines(file);
+                if(rows.size()>=2&&rows.get(1).matches("/devtools/browser/[A-Za-z0-9-]+")) {
+                    int port=Integer.parseInt(rows.get(0));if(port>0&&port<=65535)return rows;
+                }
+            }catch(IOException|NumberFormatException retryable){/* Missing, partially written or exclusively locked: bounded startup retry. */}
+            pause(100);
+        }
+    }
+
     static UrlDownload.Outcome fetch(String raw, Path directory, long max, BooleanSupplier stop, Commit commit) throws IOException {
         active(stop);
         URI source=UrlDownload.parse(UrlDownload.unwrapSafelink(raw));
@@ -78,8 +93,8 @@ final class BrowserDownload {
             process=new ProcessBuilder(command).redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectError(ProcessBuilder.Redirect.DISCARD).start();
             long startup=System.nanoTime()+TimeUnit.SECONDS.toNanos(25);
             Path portFile=profile.resolve("DevToolsActivePort");
-            while(!Files.isRegularFile(portFile)){ active(stop);if(System.nanoTime()>startup||!process.isAlive())throw new IOException("The isolated browser could not start; check browser policy. Nothing downloaded.");pause(100); }
-            List<String> port=Files.readAllLines(portFile);if(port.size()<2)throw new IOException("Browser control endpoint unavailable");
+            Process launched=process;
+            List<String> port=endpoint(portFile,launched::isAlive,stop,startup);
             try(Cdp cdp=new Cdp(Integer.parseInt(port.get(0)),port.get(1))) {
                 cdp.call("Browser.setDownloadBehavior",Json.obj("behavior","allowAndName","downloadPath",incoming.toString(),"eventsEnabled",true),null);
                 String target=Json.str(cdp.call("Target.createTarget",Json.obj("url","about:blank"),null),"targetId");

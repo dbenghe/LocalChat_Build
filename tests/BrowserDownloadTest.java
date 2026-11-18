@@ -31,6 +31,12 @@ public final class BrowserDownloadTest {
             });
             System.out.println(Json.write(Json.obj("file",result.file().toString(),"size",result.size(),"sha256",result.sha256(),"verification",result.detail())));return;
         }
+        Path endpoint=Files.createTempFile("browser-endpoint-",".txt");
+        Thread writer=new Thread(()->{try{Thread.sleep(250);Files.writeString(endpoint,"not-yet-complete");Thread.sleep(250);Files.writeString(endpoint,"12345\n/devtools/browser/synthetic-1\n");}catch(Exception error){throw new RuntimeException(error);}});writer.start();
+        var ready=BrowserDownload.endpoint(endpoint,()->true,()->false,System.nanoTime()+java.util.concurrent.TimeUnit.SECONDS.toNanos(4));writer.join();
+        check(ready.get(0).equals("12345"),"endpoint waits for a complete valid record");
+        try{BrowserDownload.endpoint(endpoint,()->true,()->true,System.nanoTime()+1000000);throw new AssertionError("Stop ignored");}catch(java.io.IOException expected){check(expected.getMessage().contains("Stopped"),"startup Stop retained");}
+        Files.delete(endpoint);
         System.setProperty("localchat.test","true");System.setProperty("localchat.browser.headless","true");System.setProperty("localchat.browser.timeout","12");
         Path root=Files.createTempDirectory("browser-download-test-");
         HttpServer server=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);byte[] archive=zip();AtomicInteger downloads=new AtomicInteger();
