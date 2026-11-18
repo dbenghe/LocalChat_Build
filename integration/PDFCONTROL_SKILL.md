@@ -28,7 +28,7 @@ Pentru anularea lucrarii foloseste pdfcontrol_cancel_job; oprirea generarii mode
 
 Livreaza RAPOARTE PDF REALE si desenele marcate/separate existente din artifacts. Nu inlocui raportul
 cu TXT, Markdown ori o descriere in chat. JSON-urile sunt doar date/provenienta. Citeste rezultatele
-si semnaleaza lipsurile; un rezumat scurt in limba utilizatorului insoteste caile PDF-urilor existente.
+si semnaleaza lipsurile; een korte Nederlandse beoordeling begeleidt de paden naar de bestaande PDF-bestanden.
 
 Partial inseamna lipsuri sau ambiguitati care cer verificare manuala. Failed/cancelled nu sunt done.
 Un done inseamna executie terminata, nu aprobare tehnica sau de productie. Nu transfera automat pe server.
@@ -78,3 +78,7 @@ Dupa un job done/partial foloseste uneltele de citire, nu resultaten.json sau PD
 Import: pdfcontrol_drawing_import; detalii in references/localchat-import-din-desene.md.
 
 Citire: pdfcontrol_read_page (pagina/crop/text/OCR); imagini numai cu acord si vision confirmat, altfel text/OCR. Executare si dovezi: references/localchat-workflow.md.
+
+## Partijgewijze beoordeling van tekenwaarschuwingen
+
+Bij controle van een pakket of resterende waarschuwingen: lees [de partijgewijze beoordelingsprocedure](references/localchat-tekeningcontrole.md). Beoordeel de hele gevraagde selectie zonder per pagina opnieuw toestemming te vragen. Behoud echte afwijkingen en onbevestigde koppelingen; leer alleen bewezen herkenningscorrecties. Uitleg en beoordelingsrapporten zijn in het Nederlands.

@@ -268,6 +268,7 @@ foreach ($taskSkillName in @('pdfcontrol-octop','productie-projecten')) {
     New-Item -ItemType Directory -Path $taskDrawingReference -Force | Out-Null
     Copy-Item -LiteralPath "$PSScriptRoot/integration/DRAWING_IMPORT.md" -Destination (Join-Path $taskDrawingReference 'localchat-import-din-desene.md') -Force
     Copy-Item -LiteralPath "$PSScriptRoot/integration/LOCALCHAT_WORKFLOW.md" -Destination (Join-Path $taskDrawingReference 'localchat-workflow.md') -Force
+    Copy-Item -LiteralPath "$PSScriptRoot/integration/DRAWING_REVIEW.md" -Destination (Join-Path $taskDrawingReference 'localchat-tekeningcontrole.md') -Force
 }
 if (!(Test-Path -LiteralPath (Join-Path $DistributionPath 'unelte.json'))) {
     Copy-Item -LiteralPath "$PSScriptRoot/packaging/unelte.json" -Destination $DistributionPath
@@ -275,6 +276,15 @@ if (!(Test-Path -LiteralPath (Join-Path $DistributionPath 'unelte.json'))) {
 if (Test-Path -LiteralPath "$PSScriptRoot/packaging/skills") {
     & robocopy.exe "$PSScriptRoot/packaging/skills" "$DistributionPath/skills" /E /XO /NFL /NDL /NJH /NJS /NP | Out-Null
     if ($LASTEXITCODE -ge 8) { throw 'Skill copy failed' }
+}
+# Keep the batch-review entrypoint in user-maintained production skills without replacing them.
+$taskProductionSkill = Join-Path $DistributionPath 'skills/productie-projecten/SKILL.md'
+if (Test-Path -LiteralPath $taskProductionSkill) {
+    $taskProductionText = [IO.File]::ReadAllText($taskProductionSkill, [Text.Encoding]::UTF8)
+    if (!$taskProductionText.Contains('references/localchat-tekeningcontrole.md')) {
+        $taskReviewRoute = "`r`n`r`n## Partijgewijze beoordeling van tekenwaarschuwingen`r`n`r`nLees [de partijgewijze beoordelingsprocedure](references/localchat-tekeningcontrole.md) voor volledige pakketten en resterende waarschuwingen. Beoordeel de hele selectie zonder per pagina bevestiging te vragen. Behoud echte afwijkingen en onbevestigde koppelingen. Schrijf beoordelingen in het Nederlands.`r`n"
+        [IO.File]::AppendAllText($taskProductionSkill, $taskReviewRoute, [Text.UTF8Encoding]::new($false))
+    }
 }
 if (Test-Path -LiteralPath "$PSScriptRoot/pdfcontrol/octop_mcp.py") {
     & robocopy.exe "$PSScriptRoot/pdfcontrol" "$DistributionPath/pdfcontrol" /E /XO /NFL /NDL /NJH /NJS /NP /XD data_lokaal .git .github __pycache__ test-tmp checked PDF_NOU OUD NIEUW pdfcompare _meetscripts Octop-PDFCONTROL pdfcontrol-octop /XF test_*.py *.backup-* octop_mcp_trace.jsonl installatie.log .gitignore skill-octop.zip | Out-Null

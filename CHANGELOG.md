@@ -1,3 +1,8 @@
+## 1.33.8 — 2026-11-18
+- Add a reusable batch drawing-review reference to both LocalChat skills and future distributions.
+- Review all selected warnings without a confirmation loop per page; separate article identity, presence, quantity, dimensions and placement evidence.
+- Preserve real and unconfirmed findings; document Dutch review output and proof requirements for shared engine corrections. Recognition code and technical acceptance rules are unchanged.
+
 ## 1.33.7 — 2026-11-17
 - Recognize supported unlabelled components using verified local IFC companions and their original drawings, with project/revision/source-hash checks.
 - Verify complete quantities, wall-local/mirrored projections, contour strokes, declared anchor length and actual drawn ordinates; reuse the existing unbent-anchor one-axis rule.
