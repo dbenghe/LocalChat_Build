@@ -438,6 +438,22 @@ class Workflows(unittest.TestCase):
         provenance=json.loads(Path(record['provenance']).read_text(encoding='utf8'));self.assertTrue(any(s['soort']=='onbevestigd' and s['pagina']==0 for s in provenance['unresolved']))
         self.assertFalse(list((Path(record['run_folder'])/'engine').rglob('*G9999_W.pdf')));self.assertEqual(digest(source),before)
 
+    def test_28_inventory_excludes_generated_engine_but_keeps_unknown_sources(self):
+        original=PROJECT/'Unknown_layout/123456_NEW_V.pdf'
+        pdf(original,['Projectnummer: 123456\nVormtekening\nNEW_V\nDefinitief'])
+        before=digest(original)
+        generated=PROJECT/'Controle/Octop-PDFCONTROL/inventory-fixture/engine'
+        generated.mkdir(parents=True,exist_ok=True)
+        for i in range(250):(generated/f'mbs_{i:03d}.py').write_text('# synthetic engine copy',encoding='utf8')
+        inventory=self.client.start('pdfcontrol_project_files')
+        self.assertFalse(inventory['include_generated']);self.assertGreater(inventory['excluded_generated_folders'],0)
+        self.assertFalse(any('Octop-PDFCONTROL/' in r['path'] for r in inventory['files']))
+        self.assertTrue(any(r['path']=='Unknown_layout/123456_NEW_V.pdf' and r['pdf_source'] for r in inventory['files']))
+        full=self.client.start('pdfcontrol_project_files',include_generated=True)
+        self.assertGreaterEqual(full['total'],inventory['total']+250)
+        self.assertEqual(digest(original),before)
+        self.client.call('pdfcontrol_project_files',{'project':'123456','include_generated':'false'},error=True)
+
 if __name__=='__main__':
     result=unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(Workflows))
     raise SystemExit(0 if result.wasSuccessful() else 1)

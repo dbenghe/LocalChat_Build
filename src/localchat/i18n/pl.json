@@ -865,5 +865,9 @@
   "Pregatesc raspunsul final din rezultatele pastrate.": "Przygotowuję odpowiedź końcową na podstawie zachowanych wyników.",
   "Continui automat: exista progres verificat; operatiile confirmate nu se repeta.": "Kontynuuję automatycznie: potwierdzono postęp; wykonane operacje nie są powtarzane.",
   "Finalizare fara unelte: apelul nu a fost executat.": "Zakończenie bez narzędzi: wywołanie nie zostało wykonane.",
-  "LocalChat: modelul nu a furnizat un raspuns final utilizabil. Rezultatele si istoricul sunt pastrate; lucrarea ramane partiala. Nicio operatie suplimentara nu a fost executata.": "LocalChat: model nie podał użytecznej odpowiedzi końcowej. Wyniki i historia są zachowane; praca pozostaje częściowa. Nie wykonano dodatkowych operacji."
+  "LocalChat: modelul nu a furnizat un raspuns final utilizabil. Rezultatele si istoricul sunt pastrate; lucrarea ramane partiala. Nicio operatie suplimentara nu a fost executata.": "LocalChat: model nie podał użytecznej odpowiedzi końcowej. Wyniki i historia są zachowane; praca pozostaje częściowa. Nie wykonano dodatkowych operacji.",
+  "Descarcare WeTransfer in browser izolat": "Pobieranie WeTransfer w odizolowanej przegladarce",
+  "Descarcare prin comenzile publice ale paginii, cu verificarea fisierului. In folderul: {0}": "Pobieranie przez publiczne przyciski strony z weryfikacja pliku. Do folderu: {0}",
+  "Acceptarea termenilor WeTransfer": "Akceptacja warunków WeTransfer",
+  "Pagina WeTransfer cere acceptarea Terms of Service si confirmarea Privacy Policy in browserul izolat. Citeste pagina deschisa. Aprobi pentru aceasta descarcare? Alegerea nu se memoreaza.": "WeTransfer wymaga akceptacji Terms of Service i potwierdzenia Privacy Policy w odizolowanej przeglądarce. Przeczytaj otwartą stronę. Czy zatwierdzasz dla tego pobrania? Wybór nie jest zapamiętywany."
 }

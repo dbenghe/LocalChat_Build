@@ -865,5 +865,9 @@
   "Pregatesc raspunsul final din rezultatele pastrate.": "Preparing the final answer from preserved results.",
   "Continui automat: exista progres verificat; operatiile confirmate nu se repeta.": "Continuing automatically: progress is confirmed; completed operations are not repeated.",
   "Finalizare fara unelte: apelul nu a fost executat.": "Finalization without tools: the call was not executed.",
-  "LocalChat: modelul nu a furnizat un raspuns final utilizabil. Rezultatele si istoricul sunt pastrate; lucrarea ramane partiala. Nicio operatie suplimentara nu a fost executata.": "LocalChat: the model did not provide a usable final answer. Results and history are preserved; the work remains partial. No additional operations were executed."
+  "LocalChat: modelul nu a furnizat un raspuns final utilizabil. Rezultatele si istoricul sunt pastrate; lucrarea ramane partiala. Nicio operatie suplimentara nu a fost executata.": "LocalChat: the model did not provide a usable final answer. Results and history are preserved; the work remains partial. No additional operations were executed.",
+  "Descarcare WeTransfer in browser izolat": "WeTransfer download in an isolated browser",
+  "Descarcare prin comenzile publice ale paginii, cu verificarea fisierului. In folderul: {0}": "Download through public page controls, with file verification. Into folder: {0}",
+  "Acceptarea termenilor WeTransfer": "Accept WeTransfer terms",
+  "Pagina WeTransfer cere acceptarea Terms of Service si confirmarea Privacy Policy in browserul izolat. Citeste pagina deschisa. Aprobi pentru aceasta descarcare? Alegerea nu se memoreaza.": "WeTransfer requires agreement to its Terms of Service and acknowledgement of its Privacy Policy in the isolated browser. Read the open page. Approve for this download? This choice is not remembered."
 }

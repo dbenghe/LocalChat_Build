@@ -865,5 +865,9 @@
   "Pregatesc raspunsul final din rezultatele pastrate.": "Ik stel het eindantwoord samen uit de bewaarde resultaten.",
   "Continui automat: exista progres verificat; operatiile confirmate nu se repeta.": "Ik ga automatisch verder: er is bevestigde voortgang; uitgevoerde handelingen worden niet herhaald.",
   "Finalizare fara unelte: apelul nu a fost executat.": "Afronding zonder hulpmiddelen: de aanroep is niet uitgevoerd.",
-  "LocalChat: modelul nu a furnizat un raspuns final utilizabil. Rezultatele si istoricul sunt pastrate; lucrarea ramane partiala. Nicio operatie suplimentara nu a fost executata.": "LocalChat: het model gaf geen bruikbaar eindantwoord. Resultaten en geschiedenis zijn bewaard; het werk blijft gedeeltelijk. Er zijn geen aanvullende handelingen uitgevoerd."
+  "LocalChat: modelul nu a furnizat un raspuns final utilizabil. Rezultatele si istoricul sunt pastrate; lucrarea ramane partiala. Nicio operatie suplimentara nu a fost executata.": "LocalChat: het model gaf geen bruikbaar eindantwoord. Resultaten en geschiedenis zijn bewaard; het werk blijft gedeeltelijk. Er zijn geen aanvullende handelingen uitgevoerd.",
+  "Descarcare WeTransfer in browser izolat": "WeTransfer downloaden in een geisoleerde browser",
+  "Descarcare prin comenzile publice ale paginii, cu verificarea fisierului. In folderul: {0}": "Downloaden via openbare paginaknoppen, met bestandscontrole. In map: {0}",
+  "Acceptarea termenilor WeTransfer": "WeTransfer-voorwaarden accepteren",
+  "Pagina WeTransfer cere acceptarea Terms of Service si confirmarea Privacy Policy in browserul izolat. Citeste pagina deschisa. Aprobi pentru aceasta descarcare? Alegerea nu se memoreaza.": "WeTransfer vraagt in de geïsoleerde browser om instemming met de Terms of Service en bevestiging van de Privacy Policy. Lees de geopende pagina. Geef je toestemming voor deze download? Deze keuze wordt niet onthouden."
 }

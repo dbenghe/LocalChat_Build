@@ -29,8 +29,8 @@ def tool(name, description, properties, required, readonly=True):
 
 TOOLS = [
     tool('pdfcontrol_status','Disponibilitate pachet, OCR si radacina proiectelor.',{},[]),
-    tool('pdfcontrol_project_files','Inventar fisiere proiect (paginat cu offset); cai relative, pdf_source=true pentru PDF-uri sursa.',
-         {'project':SCHEMA_PROJECT,'offset':{'type':'integer','minimum':0}},['project']),
+    tool('pdfcontrol_project_files','Inventar surse proiect, paginat; implicit exclude copiile din joburi generate. pdf_source=true pentru PDF-uri sursa.',
+         {'project':SCHEMA_PROJECT,'offset':{'type':'integer','minimum':0},'include_generated':{'type':'boolean','default':False}},['project']),
     tool('pdfcontrol_read_document','Citeste un text/EML sau un PDF cu text din proiect. Scanarile necesita OCR.',
          {'project':SCHEMA_PROJECT,'path':{'type':'string'},'offset':{'type':'integer','minimum':0}},['project','path']),
     tool('pdfcontrol_start_check','Control PDFCONTROL cu OCR pe PDF-uri selectate, in copie izolata.',
@@ -185,15 +185,22 @@ def run_tool(name,args):
     if name=='pdfcontrol_project_files':
         offset=args.get('offset',0)
         if type(offset) is not int or offset<0:raise ValueError('Offset invalid.')
-        files=[]
+        include_generated=args.get('include_generated',False)
+        if type(include_generated) is not bool:raise ValueError('include_generated trebuie sa fie boolean.')
+        files=[];excluded=0
         for parent,dirs,names in os.walk(project,followlinks=False):
             dirs[:]=sorted(d for d in dirs if d!='.git' and not (Path(parent)/d).is_symlink())
+            if not include_generated:
+                omitted=[d for d in dirs if d.casefold() in {'octop-pdfcontrol','checked','_checked','pdfcompare','rapoarte','reports'}]
+                excluded+=len(omitted);dirs[:]=[d for d in dirs if d not in omitted]
             for filename in sorted(names):
                 path=Path(parent)/filename
                 if path.is_file() and path.resolve().is_relative_to(project):
                     files.append({'path':path.relative_to(project).as_posix(),'bytes':path.stat().st_size,'pdf_source':path.suffix.lower()=='.pdf' and source_rejection(project,path) is None})
         return {'project':args['project'],'files':files[offset:offset+100],'total':len(files),
-                'next_offset':offset+100 if offset+100<len(files) else None}
+                'next_offset':offset+100 if offset+100<len(files) else None,
+                'include_generated':include_generated,'excluded_generated_folders':excluded,
+                'note':'Inventarul pastreaza folderele sursa necunoscute. Pentru auditul complet al joburilor foloseste include_generated=true.'}
     if name=='pdfcontrol_read_document':
         path=within(project,args['path']);offset=args.get('offset',0)
         if type(offset) is not int or offset<0:raise ValueError('Offset invalid.')

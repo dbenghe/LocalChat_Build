@@ -1,3 +1,9 @@
+## 1.33.12 — WeTransfer via openbare browserbediening
+
+`download_url` opent WeTransfer automatisch in een eigen tijdelijk Edge/Chrome-profiel en bedient uitsluitend de zichtbare downloadknoppen. Outlook-safelinks en publieke redirects blijven ondersteund. De download wordt pas geleverd na voltooiing door de browser, groottecontrole, SHA-256-readback en voor ZIP-bestanden een inhoudelijke CRC-controle. Bestaande bronnen worden nooit overschreven door de browserroute; een gelijknamig bestand krijgt een volgnummer. Geen automatische uitvoering of extractie van het pakket.
+
+Lokale projectpaden, alleen-lezen, schrijf-/browsertoestemming en Stop blijven actief. Het bestaande browserprofiel, wachtwoorden en cookies worden niet gelezen. Geen gereconstrueerde transfer-API, CAPTCHA-omzeiling of verzonnen verval-/wachtwoordstatus. Een zichtbaar wachtwoord-, login- of verificatiescherm vereist gebruikersactie. Edge of Chrome moet aanwezig zijn; er zijn geen extra npm/Python-pakketten nodig. Een niet-herkende downloadpagina blijft een eerlijke fout en kan handmatig worden geopend.
+
 # LocalChat — chat cu ChatGPT, Claude sau un API propriu, cu acces la fișiere și PDFCONTROL
 
 Aplicație desktop portabilă (Java). Nu se instalează nimic: folderul `LocalChat` conține și Java
@@ -936,3 +942,11 @@ Zonder nieuwe voortgang volgt een eindantwoord zonder operationele tools. Explic
 ## Volledige tekenbladen in rapporten
 
 Controle- en vergelijkingsrapporten behouden het volledige bronblad, inclusief renvooi en titelblok. Kleine bijschriften staan buiten het tekengebied; volledige bevindingen blijven in het rapport. Voor een beoordeling vanuit de chat gebruikt de PDFCONTROL-skill `pdfcontrol_review_report(project, files, findings)`, met projectrelatieve bronbestanden en Nederlandstalige bevindingen. Dit maakt een nieuw lokaal rapport zonder technische goedkeuring. Historische rapporten worden niet automatisch herschreven.
+
+WeTransfer-downloadvoorwaarden: toon altijd een afzonderlijke bevestiging, ook bij automatisch toegestane bestandsacties. Zonder expliciete instemming wordt niets geaccepteerd. De keuze geldt alleen voor de huidige download en heeft geen permanente toelating.
+
+### Onterechte connectorblokkade en broninventaris
+
+De aangeleverde conversatie bevat succesvolle lokale toolresultaten, gevolgd door de modelclaim dat niets terugkwam. Een echte Codex-proef met hetzelfde model bevestigde drie onafhankelijke bewijswaarden, inclusief een hostbewerking van 16 seconden; daarmee is geen permanente verbindingsstoring bewezen. De agent corrigeert zo'n ongefundeerde eindmelding maximaal eenmaal op basis van de recent werkelijk geleverde resultaten. Hij herhaalt geen bestandenhandeling, omzeilt geen fout/toestemming/Stop en markeert een herhaalde onbruikbare eindmelding als gedeeltelijk. De volledige oorspronkelijke antwoorden en resultaten blijven in de chat bewaard.
+
+pdfcontrol_project_files slaat standaard de bekende gegenereerde engine-/controle-/rapportmappen over. Echte bronnen in onbekende mappen blijven zichtbaar, evenals bijlagen onder Controle. include_generated=true geeft het complete auditinventaris terug; de omvang en uitsluitingen staan expliciet in de uitvoer. Dit is een inventariswijziging in de LocalChat-MCP-adapter, geen nieuwe technische acceptatieregel in de afzonderlijke PDFCONTROL-engine.

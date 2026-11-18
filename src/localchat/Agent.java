@@ -123,7 +123,7 @@ final class Agent {
             ui.toolFinished(call,result);publishContext(base,ui);if(cancelled)return;
         }
         int protocolRepairs=0;boolean toolRanSinceMalformed=false;
-        int interactionFailures=0,discoveryRepairs=0,discoveryStarted=-1;boolean discoveryFinal=false;String discoveryHint="",lastRepeated="";
+        int interactionFailures=0,discoveryRepairs=0,discoveryStarted=-1,hostResultRepairs=0;boolean discoveryFinal=false;String discoveryHint="",lastRepeated="";
         for (int step = 0; ; step++) {
             boolean limitFinal=boundedSteps&&step>=maximumSteps-1;
             if(!boundedSteps&&step>0&&step%maximumSteps==0){
@@ -141,7 +141,7 @@ final class Agent {
             }
             final List<ChatClient.ToolSpec> specs=specs(); // recomputed per step: localchat_enable_tools takes effect on the next request
             final List<ChatClient.ToolSpec> requestSpecs=limitFinal||discoveryFinal?List.of():interactionFailures==0?specs:interactionFailures==1?List.of(ComposerAssist.spec()):List.of();
-            String effectiveSystem=system+(protocolRepairs>0?ToolProtocol.REPAIR:"")+(interactionFailures>0?INTERACTION_REPAIR:"")+(interactionFailures>1?INTERACTION_TEXT:"")+(discoveryRepairs>0?DISCOVERY_REPAIR+discoveryHint:"")+(discoveryFinal?DISCOVERY_TEXT:"")+(limitFinal?STEP_LIMIT_TEXT:"");
+            String effectiveSystem=system+(protocolRepairs>0?ToolProtocol.REPAIR:"")+(interactionFailures>0?INTERACTION_REPAIR:"")+(interactionFailures>1?INTERACTION_TEXT:"")+(discoveryRepairs>0?DISCOVERY_REPAIR+discoveryHint:"")+(hostResultRepairs>0?HostResultRecovery.INSTRUCTION:"")+(discoveryFinal?DISCOVERY_TEXT:"")+(limitFinal?STEP_LIMIT_TEXT:"");
             client.retainToolResult(conversation); // Native RPC result must survive the request-only view below.
             if(guard!=null){conversation=guard.prepare(p,url,key,model,effectiveSystem,conversation,requestSpecs,step,ui);client.outputLimit(guard.outputLimit());if(guard.compactions!=seenCompactions){seenCompactions=guard.compactions;loopGuard.afterCompaction();}}
             if(cancelled)return;
@@ -174,7 +174,13 @@ final class Agent {
             if(reply.truncated())throw new IOException(truncationMessage(reply,client.usage()));
             if(reply.calls.isEmpty()&&tools!=null&&ToolProtocol.malformed(reply.text)){toolRanSinceMalformed=false;synchronized(added){if(!added.isEmpty()&&added.get(added.size()-1).role.equals("assistant"))added.set(added.size()-1,ChatClient.Message.assistant(ToolProtocol.markMalformed(reply.text),List.of(),label));}ui.malformedNotice(protocolRepairs+1);if(protocolRepairs>=2)throw new IOException(I18n.text("Modelul a trimis apeluri de unelte ca text de trei ori. Niciun apel XML nu a fost executat; actiunile confirmate sunt pastrate."));ui.protocolRepair(++protocolRepairs);continue;}
             if (reply.calls.isEmpty()&&protocolRepairs>0&&!toolRanSinceMalformed&&!reply.text.isBlank()){synchronized(added){if(!added.isEmpty()&&added.get(added.size()-1).role.equals("assistant"))added.set(added.size()-1,ChatClient.Message.assistant(ToolProtocol.markUnverified(reply.text),List.of(),label));}ui.unverifiedReply();}
-            if (reply.calls.isEmpty()){if(discoveryRepairs>0&&reply.text.isBlank())recoveryFallback(lastRepeated,base,ui);return;}
+            if (reply.calls.isEmpty()){
+                boolean recover;
+                synchronized(added){recover=tools!=null&&!discoveryFinal&&interactionFailures==0&&hostResultRepairs==0&&HostResultRecovery.needed(reply.text,added);}
+                if(recover){hostResultRepairs++;ui.discoveryRecovery(false);continue;}
+                if(hostResultRepairs>0&&HostResultRecovery.needed(reply.text,added)){stepLimitFallback(base,ui);return;}
+                if(discoveryRepairs>0&&reply.text.isBlank())recoveryFallback(lastRepeated,base,ui);return;
+            }
             // Recovery is presentation-only: never run operational calls after a rejected card.
             if(interactionFailures>1||discoveryFinal){
                 synchronized(added){for(var call:reply.calls)added.add(ChatClient.Message.toolResult(call.id,I18n.text(discoveryFinal?"Citire repetata fara progres. Foloseste rezultatele existente; recuperarea este limitata.":"Propunere invalida. Continua in text."),true));}

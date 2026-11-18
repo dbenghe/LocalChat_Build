@@ -1,3 +1,19 @@
+## 1.33.12 — WeTransfer via openbare browserbediening
+
+`download_url` opent WeTransfer automatisch in een eigen tijdelijk Edge/Chrome-profiel en bedient uitsluitend de zichtbare downloadknoppen. Outlook-safelinks en publieke redirects blijven ondersteund. De download wordt pas geleverd na voltooiing door de browser, groottecontrole, SHA-256-readback en voor ZIP-bestanden een inhoudelijke CRC-controle. Bestaande bronnen worden nooit overschreven door de browserroute; een gelijknamig bestand krijgt een volgnummer. Geen automatische uitvoering of extractie van het pakket.
+
+Lokale projectpaden, alleen-lezen, schrijf-/browsertoestemming en Stop blijven actief. Het bestaande browserprofiel, wachtwoorden en cookies worden niet gelezen. Geen gereconstrueerde transfer-API, CAPTCHA-omzeiling of verzonnen verval-/wachtwoordstatus. Een zichtbaar wachtwoord-, login- of verificatiescherm vereist gebruikersactie. Edge of Chrome moet aanwezig zijn; er zijn geen extra npm/Python-pakketten nodig. Een niet-herkende downloadpagina blijft een eerlijke fout en kan handmatig worden geopend.
+
+
+### Onterechte connectorblokkade en broninventaris
+
+De aangeleverde conversatie bevat succesvolle lokale toolresultaten, gevolgd door de modelclaim dat niets terugkwam. Een echte Codex-proef met hetzelfde model bevestigde drie onafhankelijke bewijswaarden, inclusief een hostbewerking van 16 seconden; daarmee is geen permanente verbindingsstoring bewezen. De agent corrigeert zo'n ongefundeerde eindmelding maximaal eenmaal op basis van de recent werkelijk geleverde resultaten. Hij herhaalt geen bestandenhandeling, omzeilt geen fout/toestemming/Stop en markeert een herhaalde onbruikbare eindmelding als gedeeltelijk. De volledige oorspronkelijke antwoorden en resultaten blijven in de chat bewaard.
+
+pdfcontrol_project_files slaat standaard de bekende gegenereerde engine-/controle-/rapportmappen over. Echte bronnen in onbekende mappen blijven zichtbaar, evenals bijlagen onder Controle. include_generated=true geeft het complete auditinventaris terug; de omvang en uitsluitingen staan expliciet in de uitvoer. Dit is een inventariswijziging in de LocalChat-MCP-adapter, geen nieuwe technische acceptatieregel in de afzonderlijke PDFCONTROL-engine.
+
+
+Validatie 1.33.12: alle oorspronkelijke buildstappen zijn in delen uitgevoerd; de tijdelijke Windows-toegangsfout in RuntimeStabilityTest verdween bij de afzonderlijke herhaling (47 controles). Het vervolg compileerde alle Java-bronnen en tests opnieuw en produceerde de geteste JAR. Nieuwe regressies: 30 browsercontroles op een echte geisoleerde Edge met synthetische pagina's, 19 agent-/HTTP-/bestandscontroles voor de ongefundeerde blokkade en 27 echte MCP-workflows inclusief broninventaris. De bestaande 237 download-/veiligheidsregressies, contextplafonds, settings-, gespreks-, PDFCONTROL-, agent- en launchercontroles zijn geslaagd. De nieuwe browserroute werkt ook met het geinstalleerde portable Java-runtime, zonder extra modules of pakketten. Een echte door de gebruiker goedgekeurde WeTransfer-download is voltooid met grootte, SHA-256-readback en ZIP-CRC; er is geen technisch tekenoordeel uit afgeleid. Een echte Codex-proef gaf alle drie hostresultaten terug, inclusief 16 seconden wachttijd. Fysieke muis-/toetsenbordtests zijn niet uitgevoerd. Privélogs, link, bronbestanden, pakket en cache staan niet in Git.
+
 ## 1.33.11 — tekeningidentiteit zonder IFC
 
 Bij de hercontrole van twintig waarschuwingen is een apart identiteitsdefect gereproduceerd: een plotcode uit de voettekst kon een andere expliciete ELEMENTNR-cel verdringen en een onterecht W-blad opleveren. De gedeelde integratie staat in integration/stamp_identity.py en apply_stamp_identity.py. Onbekende rollen worden niet geraden en blijven expliciet in de extractieprovenance, ook na de losse V/W-fase. Alle wijzigingen blijven gescheiden van technische acceptatieregels en IFC-referenties.
@@ -360,3 +376,5 @@ Aceste trei versiuni sunt instalate in `C:\LocalChat` si publicate pe `main` in 
 - 1.26.4: `AgentPanelTest` a trecut 69 de verificari, fata de 67 inaintea curatarii. Instalarea a folosit `SkipNativeQA` din acelasi motiv.
 
 Tastele reale si masurarea de mouse nu fac parte din aceste instalari. Testele locale nu confirma finalizarea proiectului de productie 506556. HTTP 429 ramane limita furnizorului.
+
+WeTransfer-downloadvoorwaarden: toon altijd een afzonderlijke bevestiging, ook bij automatisch toegestane bestandsacties. Zonder expliciete instemming wordt niets geaccepteerd. De keuze geldt alleen voor de huidige download en heeft geen permanente toelating.

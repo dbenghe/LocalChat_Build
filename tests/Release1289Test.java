@@ -176,14 +176,14 @@ public final class Release1289Test {
    var denied=call(tools(work2,prompts,Tools.Decision.NO,false),"url",base+"/file.bin");check(denied.isError&&prompts.get()==1&&!Files.exists(work2.resolve("downloads").resolve("report.bin")),"permission refused: nothing downloaded, one prompt");
    var yes=call(tools(work2,prompts,Tools.Decision.YES,false),"url",base+"/file.bin");check(!yes.isError&&prompts.get()==2&&Files.exists(work2.resolve("downloads").resolve("report.bin")),"permission granted: downloaded");
    var ro=tools(work2,new AtomicInteger(),Tools.Decision.YES,true).readOnly(true);var blocked=call(ro,"url",base+"/file.bin","overwrite",true);check(blocked.isError,"read-only mode blocks the download: "+blocked.text);
-   // WeTransfer: neutral, before any network call or prompt
-   for(String wt:List.of("https://we.tl/t-abc123","https://wetransfer.com/downloads/abc/def","https://eur01.safelinks.protection.outlook.com/?url=https%3A%2F%2Fwe.tl%2Ft-abc123&data=x")){
+   // 1.33.12 replaces the former hard block with the approved browser route.
+   var oldBrowser=BrowserDownload.runner;AtomicInteger browserCalls=new AtomicInteger();
+   BrowserDownload.runner=(u,d,m,c,k)->{browserCalls.incrementAndGet();check(u.startsWith("https://we.tl/")||u.startsWith("https://wetransfer.com/"),"safelink unwrapped before browser");return new UrlDownload.Outcome(UrlDownload.Kind.FAILED,"https://we.tl/[transfer]",null,0,null,null,"Synthetic browser page has no verified file");};
+   try{for(String wt:List.of("https://we.tl/t-abc123","https://wetransfer.com/downloads/abc/def","https://eur01.safelinks.protection.outlook.com/?url=https%3A%2F%2Fwe.tl%2Ft-abc123&data=x")){
     AtomicInteger p=new AtomicInteger();var r=call(tools(Files.createDirectories(home.resolve("work3")),p,Tools.Decision.YES,false),"url",wt);String low=r.text.toLowerCase(Locale.ROOT);
-    check(r.isError&&low.contains("needs a browser")&&p.get()==0,"WeTransfer: neutral browser message, no prompt: "+wt);
-    check(!low.contains("password is required")&&!low.contains("has expired")&&!low.contains("is processing")&&!low.contains("requires a password")&&!low.contains("link expired"),"WeTransfer: never claims password/expiry/processing as facts: "+r.text);
-    check(low.contains("open_in_browser")&&low.contains("no private api"),"WeTransfer: offers the browser and states no private API was used");
-   }
-   check(!Files.exists(home.resolve("work3").resolve("downloads")),"WeTransfer: nothing created");
+    check(r.isError&&p.get()==2&&low.contains("no verified file"),"WeTransfer browser/write approval, no false success");
+    check(!low.contains("has expired")&&!low.contains("requires a password"),"No unobserved transfer state invented");
+   }check(browserCalls.get()==3,"all WeTransfer URLs use the browser route");}finally{BrowserDownload.runner=oldBrowser;}
    // open_in_browser through the test hook
    List<String> opened=Collections.synchronizedList(new ArrayList<>());var oldOpener=UrlDownload.opener;UrlDownload.opener=u->opened.add(u.toString());
    try{

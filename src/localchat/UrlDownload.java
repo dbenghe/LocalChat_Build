@@ -13,9 +13,8 @@ import java.util.regex.*;
 /**
  * download_url (1.28.9): plain public HTTP(S) downloads and nothing else. Outlook safelinks are unwrapped, public redirects are
  * followed by hand (every hop is checked), and only a direct file response (Content-Disposition or a non-HTML content type) is written.
- * HTML landing pages are never scraped and no private API is called: WeTransfer and similar sites are reported as "needs a browser",
- * with an optional, approved opening in the default browser. The result never claims a password, an expiry or a processing state:
- * the page is not read, so nothing about it is known.
+ * This class never scrapes HTML or calls private APIs. Tools routes WeTransfer outcomes to BrowserDownload,
+ * which uses public controls in a fresh isolated browser. Other HTML stays a manual-browser result.
  */
 final class UrlDownload {
     static final long DEFAULT_MAX = 200L << 20, HARD_MAX = 2048L << 20;
@@ -113,7 +112,7 @@ final class UrlDownload {
         String current = unwrapSafelink(rawUrl);
         for (int hop = 0; hop <= MAX_REDIRECTS; hop++) {
             URI uri = parse(current);
-            if (browserOnly(uri.getHost())) return new Outcome(Kind.BROWSER, describe(uri), null, 0, null, null, "browser");
+            if (browserOnly(uri.getHost())) return new Outcome(Kind.BROWSER, current, null, 0, null, null, "browser");
             requirePublic(uri.getHost());
             HttpURLConnection c = (HttpURLConnection) uri.toURL().openConnection();
             c.setInstanceFollowRedirects(false);
@@ -202,7 +201,7 @@ final class UrlDownload {
         return name;
     }
 
-    private static Path target(Path dir, String name, boolean overwrite) throws IOException {
+    static Path target(Path dir, String name, boolean overwrite) throws IOException {
         Path first = dir.resolve(name).normalize();
         if (!first.startsWith(dir)) throw new IOException("Invalid file name");
         if (overwrite || !Files.exists(first)) return first;

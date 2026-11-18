@@ -175,3 +175,8 @@ Repository-ul utilizatorului este https://github.com/dbenghe/LocalChat_Build (co
 
 ## Shared PDFCONTROL corrections
 User instruction, 17 November 2026: for common recognition, extraction and control defects, apply and verify the relevant correction in both the separate PDFCONTROL application and the owned engine shipped with LocalChat. Preserve unrelated changes and backups; report explicitly if either installation is pending. Unknown drawing layouts must not be silently discarded from a mixed bundle.
+
+## 1.33.12 — expliciete browserdownload-opdracht
+De gebruikersopdracht vervangt de WeTransfer-browserblokkade uit 1.28.9: download_url mag de openbare pagina in een nieuw eigen browserprofiel bedienen en geverifieerd naar het lokale project opslaan. Geen private transfer-API, bestaande browsercredentials of CAPTCHA-omzeiling. Andere HTML wordt niet gescrapet. Bewaar toestemming, Stop, projectgrenzen, originele bestanden en eerlijke onvolledige resultaten.
+
+WeTransfer-downloadvoorwaarden: toon altijd een afzonderlijke bevestiging, ook bij automatisch toegestane bestandsacties. Zonder expliciete instemming wordt niets geaccepteerd. De keuze geldt alleen voor de huidige download en heeft geen permanente toelating.

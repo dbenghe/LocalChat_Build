@@ -213,7 +213,7 @@ final class Tools {
                 "source", "string", "File or folder.",
                 "destination", "string", "New path or existing folder.",
                 "overwrite", "boolean", "Replace an existing target."));
-        out.add(spec("download_url", "Download a file from a public http(s) URL into a folder inside the working folder (default: downloads). Outlook safelinks are unwrapped and public redirects followed. Only a direct file response is saved (size limit, SHA-256 returned). HTML landing pages are NOT scraped. WeTransfer (we.tl, wetransfer.com) and other sites that need a browser are reported as 'needs a browser': set open_in_browser=true to open the link in the user's default browser after approval, the user then downloads it there. RULES: never script, reverse-engineer or call WeTransfer or any other private download API; never guess tokens, cookies or passwords; if a download needs a browser, a login or a password, say so and ask the user. Report only what this tool returned: never claim a password, an expiry or a processing state unless the tool output says so.", List.of("url"),
+        out.add(spec("download_url", "Download an email's public http(s) link into its project folder: set directory to the identified project's source/package folder inside the working folder (default: downloads). Outlook safelinks unwrap automatically. WeTransfer uses an isolated Edge/Chrome browser and its public Download button automatically; no private API, guessed tokens, cookies or passwords. Direct files use HTTP. Success requires completed download, size and SHA-256; browser ZIPs also require CRC/readback. Browser files never overwrite existing sources; numbered names are used. Login/password/CAPTCHA or unavailable transfers stop with observed evidence; never invent a cause or claim success. Other HTML pages are not scraped. open_in_browser=true is manual opening only, not a completed download.", List.of("url"),
                 "url", "string", "Public http(s) address (a safelink is unwrapped).",
                 "directory", "string", "Target folder inside the working folder (default: downloads).",
                 "max_mb", "integer", "Size limit in MB (default 200, max 2048).",
@@ -1126,27 +1126,35 @@ final class Tools {
 
     private Path outputRegistry(){return ctx.secretFile().toAbsolutePath().getParent().resolve("hotfolder-generated.json");}
 
-    /** 1.28.9: see {@link UrlDownload}. Nothing here reads a landing page or calls a private API. */
+    /** Direct HTTP or the public WeTransfer browser UI; neither route calls a private API. */
     private Result downloadUrl(Map<String, Object> a) throws IOException, ToolError {
         String url = UrlDownload.unwrapSafelink(required(a, "url"));
         java.net.URI uri;
         try {uri = UrlDownload.parse(url);} catch (IOException e) {throw new ToolError(e.getMessage());}
-        String shown = UrlDownload.describe(uri);
+        String shown = UrlDownload.browserOnly(uri.getHost()) ? uri.getScheme()+"://"+uri.getHost()+"/[transfer]" : UrlDownload.describe(uri);
         boolean unwrapped = !url.equals(required(a, "url").trim());
         if (bool(a, "open_in_browser")) {
             allow(Access.RUN, "Deschidere in browserul implicit", shown + "\n\n" + I18n.text("Fisierul nu este descarcat de LocalChat; il descarci tu in browser."));
             try {UrlDownload.open(url);} catch (RuntimeException e) {throw new ToolError("Nu pot deschide browserul: " + e.getMessage());}
             return Result.ok("Opened in the default browser: " + shown + ". LocalChat did not download anything; the user downloads the file in the browser.");
         }
-        Path directory = path(str(a, "directory", "downloads"));
+        Path directory = guarded(str(a, "directory", "downloads"));
         if (!directory.startsWith(ctx.workDir())) throw new ToolError(I18n.text("Folderul tinta trebuie sa fie in folderul de lucru: {0}", ctx.workDir()));
         if (Files.exists(directory) && !Files.isDirectory(directory)) throw new ToolError("Nu este folder: " + directory);
         long max = Math.min(UrlDownload.HARD_MAX, Math.max(1, integer(a, "max_mb", 200)) * 1024L * 1024L);
-        if (UrlDownload.browserOnly(uri.getHost())) return browserNeeded(shown);
+        // Resolve existing ancestors too: a junction/symlink must not escape the approved work folder.
+        Path ancestor=directory;while(!Files.exists(ancestor)&&ancestor.getParent()!=null)ancestor=ancestor.getParent();
+        if(!ancestor.toRealPath().startsWith(ctx.workDir().toRealPath()))throw new ToolError("Download directory resolves outside the working folder");
+        if(guard.server(directory))throw new ToolError("Download into the local project first; use copy_path for a verified server transfer.");
         allow(Access.WRITE, "Descarcare din URL", shown + (unwrapped ? "\n(" + I18n.text("link Outlook dezambalat") + ")" : "") + "\n\n" + I18n.text("In folderul: {0}", directory));
         UrlDownload.Outcome out;
         try {
-            out = UrlDownload.fetch(url, directory, max, bool(a, "overwrite"), () -> cancelled);
+            if(UrlDownload.browserOnly(uri.getHost())) {
+                out=browserDownload(url,directory,max);
+            }else {
+                out = UrlDownload.fetch(url, directory, max, bool(a, "overwrite"), () -> cancelled);
+                if(out.kind()==UrlDownload.Kind.BROWSER)out=browserDownload(out.url(),directory,max);
+            }
         } catch (IOException e) {
             if (cancelled) throw new ToolError("Oprit de utilizator.");
             return Result.error("Download failed: " + (e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()) + ". Source: " + shown);
@@ -1157,9 +1165,31 @@ final class Tools {
             case FAILED -> Result.error("Not downloaded: " + out.detail() + ". Source: " + out.url());
             case DOWNLOADED -> {
                 try {GeneratedFiles.mark(outputRegistry(), List.of(out.file()));} catch (IOException error) {notes.get().add(inventoryNote(error));}
-                yield Result.ok("Downloaded: " + out.file() + "\nSize: " + out.size() + " bytes\nSHA-256: " + out.sha256() + "\nContent-Type: " + (out.contentType() == null || out.contentType().isBlank() ? "unknown" : out.contentType()) + "\nSource: " + out.url() + (unwrapped ? " (Outlook safelink unwrapped)" : ""));
+                yield Result.ok("Downloaded: " + out.file() + "\nSize: " + out.size() + " bytes\nSHA-256: " + out.sha256() + "\nContent-Type: " + (out.contentType() == null || out.contentType().isBlank() ? "unknown" : out.contentType()) + "\nVerification: "+out.detail()+"\nSource: " + out.url() + (unwrapped ? " (Outlook safelink unwrapped)" : ""));
             }
         };
+    }
+
+    private UrlDownload.Outcome browserDownload(String url,Path directory,long max)throws IOException,ToolError {
+        allow(Access.RUN,I18n.text("Descarcare WeTransfer in browser izolat"),I18n.text("Descarcare prin comenzile publice ale paginii, cu verificarea fisierului. In folderul: {0}",directory));
+        Files.createDirectories(directory);
+        return BrowserDownload.runner.fetch(url,directory,max,()->cancelled,new BrowserDownload.Commit(){
+            public Path target(String filename)throws IOException{
+                if(!directory.toRealPath().startsWith(ctx.workDir().toRealPath()))throw new IOException("Download directory changed outside the working folder");
+                Path target=UrlDownload.target(directory.toRealPath(),filename,false);
+                try{guarded(target.toString());refuseHelper(target,false);ensureActive();}
+                catch(ToolError error){throw new IOException(error.getMessage());}
+                return target;
+            }
+            public boolean acceptTerms()throws IOException{
+                synchronized(ASK){
+                    try{ensureActive();if(readOnly)return false;
+                        Decision d=ctx.permission()==null?Decision.NO:ctx.permission().ask(I18n.text(BrowserDownload.TERMS_TITLE),I18n.text("Pagina WeTransfer cere acceptarea Terms of Service si confirmarea Privacy Policy in browserul izolat. Citeste pagina deschisa. Aprobi pentru aceasta descarcare? Alegerea nu se memoreaza."));
+                        ensureActive();return d!=Decision.NO;
+                    }catch(ToolError error){throw new IOException(error.getMessage());}
+                }
+            }
+        });
     }
 
     private static Result browserNeeded(String shown) {
