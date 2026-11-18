@@ -1,3 +1,9 @@
+## 1.33.11 — tekeningidentiteit zonder IFC
+
+Bij de hercontrole van twintig waarschuwingen is een apart identiteitsdefect gereproduceerd: een plotcode uit de voettekst kon een andere expliciete ELEMENTNR-cel verdringen en een onterecht W-blad opleveren. De gedeelde integratie staat in integration/stamp_identity.py en apply_stamp_identity.py. Onbekende rollen worden niet geraden en blijven expliciet in de extractieprovenance, ook na de losse V/W-fase. Alle wijzigingen blijven gescheiden van technische acceptatieregels en IFC-referenties.
+
+Synthetische regressie omvat 17 tests voor veldgeometrie, vier paginarotaties, gedraaide tekst, positieve V/W-koppen, conflicterende overdruk/rollen, vreemde codes, idempotentie en volledige handmatige melding. De twintig technische waarschuwingen blijven zonder IFC in beide geïnstalleerde motoren onbevestigd; de bestaande echte conflicten op bronpagina 18, 23 en 29 zijn onafhankelijk behouden. De lokale hercontrole bevat een bewijsregel per waarschuwing. De relevante Python-regressies voor sync, extractie, bestaande layouts, bundeldekking en rapportopmaak zijn uitgevoerd. Alle 26 echte MCP-workflowtests zijn geslaagd, inclusief de nieuwe onzekere-stempelproef. Java-bronnen zijn ongewijzigd; de nieuwe JAR wordt uit de geteste vorige JAR gemaakt met alleen een nieuwe VERSION-resource. De volledige Java-/desktopregressie is niet herhaald. Netwerkstations waren niet toegankelijk in deze sessie; lokale bronkopieën zijn afzonderlijk herkenbaar als kopieën.
+
 ## 1.33.10 — gedeelde rapportopmaak
 
 De generieke renderer en smalle, idempotente integratiehooks staan in integration/report_layout.py en integration/apply_report_layout.py. De normale build synchroniseert alleen de eigen engine en controleert de nieuwe renderer. De aparte installatie krijgt dezelfde gerichte hooks met backup; overige lokale wijzigingen blijven behouden.

@@ -1,3 +1,9 @@
+## 1.33.11 — expliciete elementcel boven plotcode
+
+Een native ELEMENTNR-cel met een eenduidige gestippelde elementcode wordt geometrisch gelezen, onafhankelijk van tekstvolgorde en paginarotatie. Een plotcode in de voettekst wordt niet meer als eigen W-blad gebruikt wanneer die gestempelde identiteit een andere waarde toont. Een bladrol wordt alleen uit expliciete V/W- of wapeningstabelkoppen overgenomen; zonder bewijs blijft de rol onbevestigd.
+
+Onzekere gestempelde pagina’s blijven als afzonderlijke handmatige controle in het extractieplan en de MCP-provenance staan. Ook na de losse V/W-fase blijven die onopgeloste posten behouden; er wordt geen armatuurkopie verzonnen. Andere titelblokformaten en oorspronkelijke bestanden blijven behouden. Deze correctie keurt geen artikelidentiteit of maatvoering goed.
+
 ## 1.33.10 — volledige bronbladen met compacte rapportetiketten
 
 - Gedeelde rapportopmaak voor native controles, OUD/NIEUW-vergelijkingen en de nieuwe lokale MCP-tool `pdfcontrol_review_report`. Bronbladen blijven volledig en vectorieel; artikelrenvooi, titelblok en merkgegevens worden niet uitgesneden. Kleine bijschriften staan in gereserveerde marges. Alleen dunne kaders en aanklikbare bevindingen blijven op de tekening.

@@ -42,6 +42,8 @@ def main():
         profile_hooks=importlib.util.module_from_spec(spec);spec.loader.exec_module(profile_hooks);profile_hooks.apply(package)
         spec=importlib.util.spec_from_file_location("ifc_reference_hooks",integration/"apply_ifc_reference.py")
         ref_hooks=importlib.util.module_from_spec(spec);spec.loader.exec_module(ref_hooks);ref_hooks.apply(package)
+    spec=importlib.util.spec_from_file_location('stamp_identity_hooks',integration/'apply_stamp_identity.py')
+    stamp_hooks=importlib.util.module_from_spec(spec);spec.loader.exec_module(stamp_hooks);stamp_hooks.apply(package)
     spec=importlib.util.spec_from_file_location('report_layout_hooks',integration/'apply_report_layout.py')
     layout_hooks=importlib.util.module_from_spec(spec);spec.loader.exec_module(layout_hooks);layout_hooks.apply(package)
     shutil.copy2(integration/'pdfcontrol_bridge.py',package/'octop_mcp.py')
@@ -66,7 +68,7 @@ def main():
     registered['sha256']['fix_missing_pairs.py']=hashlib.sha256((package/'fix_missing_pairs.py').read_bytes()).hexdigest()
     registered['sha256']['compare_server_revisions.py']=hashlib.sha256((package/'compare_server_revisions.py').read_bytes()).hexdigest()
     registered['sha256']['mbs_ifc_reference.py']=hashlib.sha256((package/'mbs_ifc_reference.py').read_bytes()).hexdigest()
-    for name in ['mbs_vergelijk_pdf.py','mbs_report_layout.py']:
+    for name in ['mbs_vergelijk_pdf.py','mbs_report_layout.py','mbs_webapp.py','mbs_stamp_identity.py']:
         if (package/name).is_file():registered['sha256'][name]=hashlib.sha256((package/name).read_bytes()).hexdigest()
     manifest.write_text(json.dumps(registered,indent=2)+'\n',encoding='utf-8')
     print('PASS: LocalChat owned engine manifest verified; bridge staged. Legacy installation was not read or changed.')

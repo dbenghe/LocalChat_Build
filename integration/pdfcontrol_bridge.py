@@ -386,7 +386,7 @@ def process_alive(pid):
     except PermissionError:return True
 
 # ---- 1.28.0: compact read-only tools over the job's real engine outputs -------------------------------------------
-BRIDGE_VERSION='2.3.0'
+BRIDGE_VERSION='2.3.1'
 FACTORIES=('soest','alphen','veenoord','lelystad')
 JOB_ID={'type':'string','pattern':'^[a-f0-9]{32}$'}
 OFFSET={'type':'integer','minimum':0}
@@ -780,7 +780,7 @@ def worker(number,identifier):
         operation=record['operation'];partial=False
         if operation in {'extract','pairs','workflow'}:
             import mbs_webapp as legacy
-            actions=[];unresolved=[]
+            actions=[];unresolved=[];stamped_unknown=[]
             for phase in (['bundel','los'] if operation in {'extract','workflow'} else ['los']):
                 progress('extract' if phase=='bundel' else 'pairs')
                 plan=legacy.plan_wapening(str(inp),stop=cancel,fase=phase,prefix='')
@@ -793,7 +793,9 @@ def worker(number,identifier):
                         created=legacy.schrijf_pagina(str(source),step['pagina'],str(target)) if kind=='extract' else legacy.kopieer_als_nieuw(str(source),str(target))
                         entry.update(created=created,output=str(target),source_sha256=sha(source))
                     actions.append(entry)
+                    if kind=='onbevestigd':stamped_unknown.append(entry)
                 if phase=='los':unresolved=[s for s in plan if s['soort'] not in {'aanwezig','kopie','extract'}]
+            unresolved.extend(stamped_unknown)
             if not actions:unresolved=[{'vorm':'(lot)','soort':'nerecunoscut','reden':'Motorul nu a identificat planse/perechi. Verificare manuala necesara.'}]
             record['pair_summary']={'created':sum(bool(s.get('created')) for s in actions),'unresolved':len(unresolved)}
             atomic(run/'PROVENIENTA.json',{'actions':actions,'unresolved':unresolved,'engine_sha256':manifest})

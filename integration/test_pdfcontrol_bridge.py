@@ -427,6 +427,17 @@ class Workflows(unittest.TestCase):
         self.client.call('pdfcontrol_review_report',dict(request,files=['../bundle.pdf']),error=True)
         self.client.call('pdfcontrol_review_report',dict(request,output='outside.pdf'),error=True)
 
+    def test_26_ambiguous_stamp_is_explicit_without_fake_W(self):
+        source=PROJECT/'ambiguous-stamp.pdf'
+        with pymupdf.open() as d:
+            p=d.new_page(width=800,height=600);p.insert_text((430,500),'ELEMENTNR.:',fontsize=8);p.insert_text((510,500),'01.1234',fontsize=8);p.insert_text((30,580),'G9999',fontsize=8)
+            p.insert_text((30,30),'INSTORTVOORZIENINGEN\nPos Omschrijving Aantal\nConcrete element with dimensions and unknown drawing role',fontsize=8)
+            d.new_page().insert_text((30,30),'Voorblad\nProjectgegevens');d.save(source)
+        before=digest(source);record=self.client.wait(self.client.start('pdfcontrol_start_extract',files=['ambiguous-stamp.pdf']))
+        self.assertEqual(record['status'],'partial');self.assertGreaterEqual(record['pair_summary']['unresolved'],1)
+        provenance=json.loads(Path(record['provenance']).read_text(encoding='utf8'));self.assertTrue(any(s['soort']=='onbevestigd' and s['pagina']==0 for s in provenance['unresolved']))
+        self.assertFalse(list((Path(record['run_folder'])/'engine').rglob('*G9999_W.pdf')));self.assertEqual(digest(source),before)
+
 if __name__=='__main__':
     result=unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(Workflows))
     raise SystemExit(0 if result.wasSuccessful() else 1)
