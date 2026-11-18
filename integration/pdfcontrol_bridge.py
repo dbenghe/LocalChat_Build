@@ -164,6 +164,11 @@ def load_portable(require_ocr=False):
 
 def run_tool(name,args):
     if name=='pdfcontrol_live_status':name='pdfcontrol_status'
+    if name=='pdfcontrol_review_report':
+        check_arguments(name,args)
+        project=project_path(args['project']);selected_sources(project,args['files'])
+        from mbs_report_layout import review_report
+        return review_report(project,args['files'],args['findings'])
     definition=next((t for t in TOOLS if t['name']==name),None)
     if definition is None:raise ValueError('Unealta necunoscuta.')
     if not isinstance(args,dict) or set(args)-set(definition['inputSchema']['properties']):
@@ -381,7 +386,7 @@ def process_alive(pid):
     except PermissionError:return True
 
 # ---- 1.28.0: compact read-only tools over the job's real engine outputs -------------------------------------------
-BRIDGE_VERSION='2.2.0'
+BRIDGE_VERSION='2.3.0'
 FACTORIES=('soest','alphen','veenoord','lelystad')
 JOB_ID={'type':'string','pattern':'^[a-f0-9]{32}$'}
 OFFSET={'type':'integer','minimum':0}
@@ -394,6 +399,14 @@ TOOLS.extend([
     tool('pdfcontrol_list_projects','Proiectele din radacina (cele noi primele), paginat.',{'offset':OFFSET},[]),
     tool('pdfcontrol_catalogue_status','Catalog confirmat si reguli FAST ale unei fabrici (doar citire); optional project, article.',
          {'factory':{'type':'string','enum':list(FACTORIES)},'project':SCHEMA_PROJECT,'article':{'type':'string','maxLength':120}},['factory'])])
+TOOLS.append(tool('pdfcontrol_review_report','Maak een lokaal beoordelings-PDF: volledige bronbladen, kleine marge-etiketten. Geen nieuwe controle of goedkeuring.',
+    {'project':SCHEMA_PROJECT,'files':{'type':'array','items':{'type':'string'},'minItems':1,'maxItems':100},
+     'findings':{'type':'array','maxItems':1000,'items':{'type':'object','additionalProperties':False,
+       'properties':{'file':{'type':'string'},'page':{'type':'integer','minimum':1},'article':{'type':'string'},
+        'message':{'type':'string'},'severity':{'type':'string','enum':['FOUT','CONTROLEREN','WAARSCHUWING','OK']},
+        'bbox':{'type':'array','items':{'type':'number'},'minItems':4,'maxItems':4,'description':'Ongeroteerde PDF-coordinaten; niet raden.'}},
+       'required':['file','page','message']}}},['project','files','findings'],False))
+
 NEW_READ_TOOLS={'pdfcontrol_job_summary','pdfcontrol_job_findings','pdfcontrol_list_projects','pdfcontrol_catalogue_status'}
 FINDINGS_DEFAULT_CHARS=6000
 

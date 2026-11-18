@@ -1,3 +1,13 @@
+## 1.33.10 — gedeelde rapportopmaak
+
+De generieke renderer en smalle, idempotente integratiehooks staan in integration/report_layout.py en integration/apply_report_layout.py. De normale build synchroniseert alleen de eigen engine en controleert de nieuwe renderer. De aparte installatie krijgt dezelfde gerichte hooks met backup; overige lokale wijzigingen blijven behouden.
+
+Op tekenbladen: volledige oorspronkelijke inhoud, compacte margekoppen en dunne markeerkaders met aanklikbare bevindingstekst. Volledige bevindingen staan op aparte rapportpagina’s. Zowel native controle, OUD/NIEUW als chatbeoordelingen gebruiken dezelfde bronkopieerder. Een nieuw chatrapport is geen hercontrole en geen technische goedkeuring. Historische rapporten blijven ongewijzigd; oude jobregeneratie behoudt de toen opgeslagen bijlagen.
+
+Validatie: synthetische formaten/rotaties, cropbox, scans, zichtbare annotaties, alle 45 onbekende bronpagina’s, lange bevindingen, padgrenzen, native rapportassemblage en echte MCP-aanroep. De controle op bestaande MCP-schemagrootte blijft 9000 tekens; de nieuwe rapporttool heeft afzonderlijk maximaal 1100 tekens. Uitgevoerde build- en installatiebewijzen blijven lokaal. Fysieke muis/toetsenbordtests zijn niet uitgevoerd. Op drie echte bronpagina’s zijn status, alle artikelregels en alle bevindingen voor/na per engine gelijk; alle oorspronkelijke bronwoorden blijven aanwezig. De legacy-engine bevatte al extra tekeningstatusregels; die zijn behouden en niet naar de eigen engine gekopieerd.
+
+Uitgevoerde verificatie: 11 generieke layouttests per engine; drie echte bronbladen voor/na per engine; 24 bestaande MCP-workflows plus de nieuwe echte stdio-rapporttest; 95 PDFCONTROL UI/MCP-controles en 18 agentcontroles. De algemene build is in delen uitgevoerd. De nieuwe rapporttool is na de context-preflight achter de bestandsgroep geplaatst; Java is opnieuw gecompileerd en relevante prompt-/rechten-/Normal-/agentregressies zijn herhaald. Bestaande toolplafonds blijven behouden, met een aparte grens voor de nieuwe reportschema. De launcherproef overschreed met de geinjecteerde hostoptie tweemaal de wachttijd; dezelfde ongewijzigde proef slaagde geisoleerd, zonder die hostoptie. Er is geen testgrens verruimd. Buildlogs en de gerichte vergelijkingsbewijzen staan lokaal.
+
 ## 1.33.9 - automatische voortzetting van lange opdrachten
 
 Oorzaak: Agent.runImpl stopte onvoorwaardelijk na 80 modelstappen, ook als de laatste stap het rapport succesvol had opgeslagen. Een volgende aanvraag voor het eindantwoord kwam daardoor nooit tot stand.

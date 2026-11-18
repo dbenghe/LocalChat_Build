@@ -1,3 +1,10 @@
+## 1.33.10 — volledige bronbladen met compacte rapportetiketten
+
+- Gedeelde rapportopmaak voor native controles, OUD/NIEUW-vergelijkingen en de nieuwe lokale MCP-tool `pdfcontrol_review_report`. Bronbladen blijven volledig en vectorieel; artikelrenvooi, titelblok en merkgegevens worden niet uitgesneden. Kleine bijschriften staan in gereserveerde marges. Alleen dunne kaders en aanklikbare bevindingen blijven op de tekening.
+- Volledige waarschuwingsteksten blijven in de bevindingenpagina’s; kleine kopregels mogen worden ingekort zonder bevindingen te verwijderen. Rotaties, zichtbare bronannotaties, scans en afwijkende papierformaten worden op een kopie verwerkt. Originele bestanden en technische statusregels blijven behouden.
+- De review-tool maakt een nieuwe lokale uitvoermap en controleert bronnen, alle geselecteerde pagina’s, PDF-readback en hashes. Geen nieuwe technische controle of automatische goedkeuring. Skills verwijzen naar deze tool in plaats van een eigen uitsnedenlayout.
+- Bestaande gearchiveerde rapporten worden niet herschreven. Regeneratie van een oud job neemt diens opgeslagen bijlagen over; nieuwe controles en nieuwe bronbeoordelingen gebruiken de nieuwe opmaak.
+
 ## 1.33.9 - 2026-11-18
 - Lange opdrachten gaan na iedere 80 modelstappen automatisch verder zolang nieuwe succesvolle handelingen of bronlezingen voortgang aantonen; een voltooid rapport kan direct worden gevolgd door het eindantwoord.
 - Inventarissen, polling, fouten en herhaalde handelingen verlengen het werk niet. Expliciet begrensde agents reserveren hun laatste aanvraag voor een antwoord zonder extra handelingen.

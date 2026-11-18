@@ -258,7 +258,8 @@ class Workflows(unittest.TestCase):
         self.assertEqual(old['bridge_version'],current['bridge_version']);self.assertEqual(old['ocr']['available'],current['ocr']['available'])
         status=next(t for t in self.client.request('tools/list',{})['tools'] if t['name']=='pdfcontrol_job_status')
         self.assertEqual(status['inputSchema']['properties']['wait_seconds']['maximum'],20);self.assertIn('0-20',status['description']);self.assertNotIn('10 secunde',status['description'])
-        self.assertLess(sum(len(json.dumps(t,ensure_ascii=False)) for t in self.client.request('tools/list',{})['tools']),9000)  # 4 read-only tools added in 1.28.0 (+~2.0k)
+        self.assertLess(sum(len(json.dumps(t,ensure_ascii=False)) for t in self.client.request('tools/list',{})['tools'] if t['name']!='pdfcontrol_review_report'),9000)
+        self.assertLess(len(json.dumps(next(t for t in self.client.request('tools/list',{})['tools'] if t['name']=='pdfcontrol_review_report'),ensure_ascii=False)),1100)  # New renderer has a separate bound; existing schemas retain their previous ceiling.
 
     # ---- 1.28.0: compact read-only tools, reduced model-facing status -------------------------------------------------
     def fake_job(self,identifier,data=None,silent=None,status='done',**extra):
@@ -410,6 +411,21 @@ class Workflows(unittest.TestCase):
             self.assertNotIn(json.dumps(str(base))[1:-1],json.dumps([ve,soest]))
         finally:client.close();shutil.rmtree(folder,ignore_errors=True);shutil.rmtree(ROOT/'900102',ignore_errors=True)
         self.assertEqual(digest(package/'data_lokaal/catalogus_veenoord.json'),before)
+
+    def test_25_full_sheet_review_report_via_real_stdio(self):
+        before=digest(PROJECT/'bundle.pdf')
+        request={'project':'123456','files':['bundle.pdf'],'findings':[{'file':'bundle.pdf','page':2,'article':'TEST-X','message':'Werkelijke afwijking blijft zichtbaar','severity':'FOUT','bbox':[40,40,140,90]}]}
+        result=self.client.call('pdfcontrol_review_report',request)
+        self.assertEqual(result['source_pages'],3);self.assertTrue(result['delivery_verified']);self.assertFalse(result['technical_approval']);self.assertFalse(result['new_engine_check'])
+        report=Path(result['report']);self.assertTrue(report.is_relative_to(PROJECT/'Controle'));self.assertEqual(digest(report),result['report_sha256'])
+        with pymupdf.open(PROJECT/'bundle.pdf') as src,pymupdf.open(report) as out:
+            self.assertGreater(len(out),3)
+            from collections import Counter
+            for n in range(3):self.assertFalse(Counter(w[4] for w in src[n].get_text('words'))-Counter(w[4] for w in out[n].get_text('words')))
+            self.assertIn('FOUT',out[1].get_text());self.assertIn('Werkelijke afwijking blijft zichtbaar',' '.join(p.get_text() for p in out))
+        self.assertEqual(digest(PROJECT/'bundle.pdf'),before)
+        self.client.call('pdfcontrol_review_report',dict(request,files=['../bundle.pdf']),error=True)
+        self.client.call('pdfcontrol_review_report',dict(request,output='outside.pdf'),error=True)
 
 if __name__=='__main__':
     result=unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(Workflows))

@@ -60,6 +60,8 @@ if ($LASTEXITCODE) { throw 'Catalogue import/rollback/upgrade preservation tests
 if ($LASTEXITCODE) { throw 'Factory catalogue update tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/sync_engine.py" --package "$PSScriptRoot/pdfcontrol"
 if ($LASTEXITCODE) { throw 'PDFCONTROL engine synchronization failed' }
+& $taskPdfPython -I "$PSScriptRoot/integration/test_report_layout.py" --package "$PSScriptRoot/pdfcontrol"
+if ($LASTEXITCODE) { throw 'Full-sheet report layout tests failed' }
 $taskBuild = Join-Path $PSScriptRoot 'build'
 # Resolve and verify before removing generated build output.
 $taskResolved = [IO.Path]::GetFullPath($taskBuild)

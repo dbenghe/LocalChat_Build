@@ -932,3 +932,7 @@ Functia este implicit oprita. Testele executa cod local cu drepturile utilizator
 Een lange hoofdopdracht stopt niet meer uitsluitend omdat 80 modelstappen zijn bereikt. Dit is nu een voortgangscontrole: nieuwe succesvolle bronlezingen of handelingen laten dezelfde beurt automatisch doorgaan, met behoud van uitgevoerde operaties en resultaten. Een nieuw bericht met "continua" is daarvoor niet nodig. Inventarissen, polling, fouten en identieke handelingen verlengen de beurt niet.
 
 Zonder nieuwe voortgang volgt een eindantwoord zonder operationele tools. Expliciet begrensde hulpagents houden hun limiet en reserveren de laatste aanvraag voor de afsluiting. Een onbruikbaar antwoord krijgt een zichtbare lokale melding en blijft gedeeltelijk werk; onbekende maten of niet-uitgevoerde handelingen worden geen goedkeuringen. Stop en de bestaande machtigingen blijven actief.
+
+## Volledige tekenbladen in rapporten
+
+Controle- en vergelijkingsrapporten behouden het volledige bronblad, inclusief renvooi en titelblok. Kleine bijschriften staan buiten het tekengebied; volledige bevindingen blijven in het rapport. Voor een beoordeling vanuit de chat gebruikt de PDFCONTROL-skill `pdfcontrol_review_report(project, files, findings)`, met projectrelatieve bronbestanden en Nederlandstalige bevindingen. Dit maakt een nieuw lokaal rapport zonder technische goedkeuring. Historische rapporten worden niet automatisch herschreven.

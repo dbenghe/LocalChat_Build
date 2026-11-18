@@ -40,7 +40,7 @@ Sursele originale se pastreaza; outputurile si provenienta sunt in Controle/Octo
 Comparatia produce PDF vizual OUD/NIEUW, PDF cu diferente T/B si PDF-uri individuale per pereche,
 cu chenarele originale. Nu deduce dimensiuni tehnice din pixeli.
 
-Operatii directe fara model: butonul PDFCONTROL.
+Fara model: butonul PDFCONTROL.
 
 Rapoartele verificate se livreaza automat in Controle/PDFCONTROL/Rapoarte/<operatie>_<job_id>/;
 fiecare rulare pastreaza separat rezultatele si MANIFEST.json cu sursele si hashurile. Partial are sufix PARTIAL.
@@ -61,7 +61,7 @@ LocalChat poate recupera doar typo-ul `checked/resultaten.json` (fara `engine`),
 
 ## Compararea locala import/catalog/desen — 1.24.0
 Pentru compararea listelor XLSX/CSV cu catalogul fabricii si cu articolele din tabelele PDF foloseste `pdfcontrol_compare_import`, oferit direct de LocalChat in MBS. Parametri: `project` (sase cifre), `factory` (soest/alphen/veenoord/lelystad confirmat), `imports` (cai exacte XLSX/CSV), optional `drawings` (cai PDF) si `catalogue` (XLSX/JSON explicit; altfel snapshotul privat al acelei fabrici). La mai multe fabrici ruleaza separat; nu amesteca sursele sau cataloagele si nu ghici fabrica din disc.
-Calculul este local, fara API, nu modifica surse sau liste si nu copiaza pe server. Rezultatul are numaratori si exemple limitate plus `report_json`/`report_html`; citeste numai detaliile necesare, nu cataloage intregi in chat. Nu repeta auditul neschimbat, care se reutilizeaza dupa hash. Unitati/cote/formule ambigue raman verificari necesare; numele recunoscut nu aproba varianta fizica. Tabelele scanate/nerecunoscute necesita PDFCONTROL OCR/verificare. Nu pretinde ca s-au corectat XLSX sau masurat cote geometrice automat. Acces direct fara model: Unelte > Compara local listele de import.
+Calculul este local, fara API, nu modifica surse sau liste si nu copiaza pe server. Rezultatul are numaratori si exemple limitate plus `report_json`/`report_html`; citeste numai detaliile necesare, nu cataloage intregi in chat. Nu repeta auditul neschimbat, care se reutilizeaza dupa hash. Unitati/cote/formule ambigue raman verificari necesare; numele recunoscut nu aproba varianta fizica. Tabele scanate/nerecunoscute: PDFCONTROL OCR/verificare. Nu pretinde ca s-au corectat XLSX sau masurat cote geometrice automat. Acces direct fara model: Unelte > Compara local listele de import.
 
 Actualizarea permanenta a listei unei fabrici: Unelte > Cataloage fabrici (XLSX, comparatie, confirmarea fabricii, Importa si activeaza; include Lelystad). Catalogul runtime din pdfcontrol/data_lokaal este autoritar; nu copia snapshoturi mai vechi peste el. Sursa XLSX si versiunea precedenta se arhiveaza in catalogue_sources/FABRICA. Un catalog ales in comparatia temporara nu devine activ. Codurile absente necesita confirmarea listei complete; schimbarile dupa previzualizare cer o comparatie noua.
 
@@ -78,4 +78,6 @@ Citire: pdfcontrol_read_page (pagina/crop/text/OCR); imagini numai cu acord si v
 
 ## Pakketbeoordeling
 
-Lees [de batchprocedure](references/localchat-tekeningcontrole.md). Beoordeel alle gevallen; behoud echte en onbevestigde afwijkingen. Rapporten: Nederlands; chat: gekozen antwoordtaal.
+Lees [de batchprocedure](references/localchat-tekeningcontrole.md): alle gevallen; echte/onbevestigde afwijkingen behouden. Rapporten Nederlands; chat gekozen taal.
+
+Chatrapport (files): pdfcontrol_review_report(project, files, findings); volledige bronbladen en kleine marge-etiketten. Geen eigen uitsnedenlayout.
