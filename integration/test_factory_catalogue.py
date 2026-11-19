@@ -10,6 +10,35 @@ from apply_factory_catalogue import patch
 def record(code,name,unit='st'):return {'code':code,'description':name,'category':'import','fields':{'eenheid':unit}}
 class FactoryCatalogueTests(unittest.TestCase):
  def setUp(self):self.cat=reader.Catalogus({'factory':'alphen','records':[record('A','Stekanker M24x705 (Ø20) EV'),record('B','T-FIXX M12x70 EV'),record('C','Boutanker M16x140 EV')]})
+ def test_project_approval_requires_exact_revision_page_factory_and_code(self):
+  import hashlib, json, os
+  from tempfile import TemporaryDirectory
+  from unittest.mock import patch as mockpatch
+  from mbs_factory_catalogue import drawing_approvals
+  with TemporaryDirectory() as directory:
+   root=Path(directory)
+   pdf=root/'123456_A1_V.pdf'
+   pdf.write_bytes(b'fixture')
+   config=root/'123456/Controle/PDFCONTROL/catalogue-approvals.json'
+   config.parent.mkdir(parents=True)
+   item=dict(pdf=pdf.name, page=1, pos='S001', original='Stekanker M24x715 (Ø20) EV',
+             approved='Stekanker M24x705 (Ø20) EV', code='A', evidence='Goedgekeurde testlijst',
+             sha256=hashlib.sha256(pdf.read_bytes()).hexdigest())
+   data=dict(project='123456', factory='alphen', entries=[item])
+   def save():
+    config.write_text(json.dumps(data), encoding='utf8')
+   save()
+   with mockpatch.dict(os.environ, {'PDFCONTROL_PRODUCTIE_ROOT':directory}):
+    self.assertEqual(drawing_approvals(pdf, 1, self.cat), {('S001', item['original']):item})
+    self.assertEqual(drawing_approvals(pdf, 2, self.cat), {})
+    data['factory']='soest';save()
+    self.assertEqual(drawing_approvals(pdf, 1, self.cat), {})
+    data['factory']='alphen';item['code']='incorrect';save()
+    self.assertEqual(drawing_approvals(pdf, 1, self.cat), {})
+    item['code']='';save()
+    self.assertTrue(drawing_approvals(pdf, 1, self.cat))
+    pdf.write_bytes(b'new revision')
+    self.assertEqual(drawing_approvals(pdf, 1, self.cat), {})
  def test_changed_length_is_missing_not_a_spelling_correction(self):
   finding=article_finding({'omschrijving':'Stekanker M24x715 (Ø20) EV'},self.cat);self.assertEqual(finding['code'],'ARTIKEL_NIET_IN_FABRIEKSCATALOGUS');self.assertIn('715',finding['tekst']);self.assertNotIn('705',finding['tekst'])
  def test_different_coating_stays_missing(self):self.assertIsNotNone(article_finding({'omschrijving':'T-FIXX M12x70 GV'},self.cat))

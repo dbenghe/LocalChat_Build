@@ -1,3 +1,7 @@
+## 1.33.15 — bevestigde projectgebonden artikelequivalenties
+
+De tekencontrole toont vastgelegde projecteigen gelijkwaardigheden als informatieve bevinding. Alleen een combinatie van project, fabriek, bronhash, blad, positie en oorspronkelijke omschrijving kan een goedkeuring activeren. Een opgegeven cataloguscode moet bij de actuele fabriekscatalogus passen. Een uitzondering zonder code blijft herkenbaar als projectacceptatie. De geometrische controle en overige artikelmeldingen blijven afzonderlijk van kracht. De MCP-job neemt een gehashte momentopname van de lokale projectgoedkeuringen op.
+
 ## 1.33.14 — ontbrekende fabrieksartikelen zichtbaar in tekenrapporten
 
 De fabriekscataloguscontrole is onafhankelijk van spelling en geometrische maatketens. Een artikel met een andere lengte of afwerking, zoals M24×715 tegenover M24×705 of GV tegenover EV, blijft zonder bevestiging een expliciete CONTROLEREN-melding. Ontbreekt een eenduidig bevestigde fabriek of geldig actueel catalogusbestand, dan vermeldt het tekenrapport dat de cataloguscontrole niet is uitgevoerd. Geen stilzwijgende volledige goedkeuring.

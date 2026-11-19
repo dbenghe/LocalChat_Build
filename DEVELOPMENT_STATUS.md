@@ -1,3 +1,9 @@
+## 1.33.15 — projectgebonden artikelequivalenties
+
+De tekencontrole toont vastgelegde projecteigen gelijkwaardigheden als informatieve bevinding. Alleen een combinatie van project, fabriek, bronhash, blad, positie en oorspronkelijke omschrijving kan een goedkeuring activeren. Een opgegeven cataloguscode moet bij de actuele fabriekscatalogus passen. Een uitzondering zonder code blijft herkenbaar als projectacceptatie. De geometrische controle en overige artikelmeldingen blijven afzonderlijk van kracht. De MCP-job neemt een gehashte momentopname van de lokale projectgoedkeuringen op.
+
+Verificatie: 12 catalogustests in elk van de drie motorinstallaties, 28 MCP-integratietests en een volledige controle van 64 vormbladen in elk van beide geïnstalleerde motoren. Java-klassen en resources zijn byte-identiek aan 1.33.14. Alleen de versieresource in de JAR wijzigt.
+
 ## 1.33.14 — gecontroleerde fabriekscataloguswaarschuwingen
 
 Oorzaak: bij de directe native controle van 900153 ontbrak de persistente expliciete fabriekkeuze; de bestaande spellingcontrole accepteerde bewust geen andere cijfers/afwerkingen als typefout en meldde ontbrekende fabrieksartikelen niet afzonderlijk. De nieuwe cataloguscontrole is onafhankelijk van vroeg terugkerende geometrische controles. Bij ontbrekende fabriek of ongeldige catalogus staat expliciet dat de controle niet uitgevoerd is.

@@ -757,6 +757,17 @@ def worker(number,identifier):
         if record.get('factory'):
             context=run/'catalog_context';context_state=context/number/'Controle/PDFCONTROL/project-state.json'
             context_state.parent.mkdir(parents=True);atomic(context_state,{'project':number,'factory':record['factory']})
+            approval_relative = 'Controle/PDFCONTROL/catalogue-approvals.json'
+            approvals = project / approval_relative
+            if approvals.is_file():
+                approvals = within(project, approval_relative)
+                if approvals.stat().st_size > 1024 * 1024:
+                    raise ValueError('Bestand met projectgoedkeuringen is te groot.')
+                snapshot = context_state.with_name(approvals.name)
+                shutil.copy2(approvals, snapshot)
+                if sha(approvals) != sha(snapshot):
+                    raise ValueError('Projectgoedkeuringen gewijzigd tijdens kopiëren.')
+                manifest['catalog_context/catalogue-approvals.json'] = sha(snapshot)
             os.environ['PDFCONTROL_PRODUCTIE_ROOT']=str(context)
         record['engine_sha256']=manifest;atomic(run/'ENGINE.json',manifest);record['engine_manifest']=str(run/'ENGINE.json');record['engine_fingerprint']=hashlib.sha256(json.dumps(manifest,sort_keys=True).encode()).hexdigest();sys.path.insert(0,str(engine))
         inp=engine/'PDF_NOU';inp.mkdir()

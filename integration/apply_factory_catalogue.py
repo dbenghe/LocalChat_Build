@@ -21,6 +21,9 @@ def patch(text):
             from mbs_factory_catalogue import UNAVAILABLE_TEXT
             bevindingen.append(Bevinding('FABRIEKSCATALOGUS_NIET_GECONTROLEERD', 'CONTROLEREN', '', UNAVAILABLE_TEXT, bron='A'))
 '''+anchor)
+    text = text.replace(
+        'gevonden, overzicht = controle_maatketens(page, regels, tabelgebied, woorden, catalogus=catalogus)',
+        'gevonden, overzicht = controle_maatketens(page, regels, tabelgebied, woorden, catalogus=catalogus, pdf_path=pdf_pad)')
     ast.parse(text);return text
 
 def patch_lookup(text):
