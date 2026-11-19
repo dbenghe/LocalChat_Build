@@ -46,6 +46,8 @@ def main():
     stamp_hooks=importlib.util.module_from_spec(spec);spec.loader.exec_module(stamp_hooks);stamp_hooks.apply(package)
     spec=importlib.util.spec_from_file_location('report_layout_hooks',integration/'apply_report_layout.py')
     layout_hooks=importlib.util.module_from_spec(spec);spec.loader.exec_module(layout_hooks);layout_hooks.apply(package)
+    spec=importlib.util.spec_from_file_location('factory_catalogue_hooks',integration/'apply_factory_catalogue.py')
+    factory_hooks=importlib.util.module_from_spec(spec);spec.loader.exec_module(factory_hooks);factory_hooks.apply(package)
     shutil.copy2(integration/'document_markdown.py',package/'mbs_document_markdown.py')
     shutil.copy2(integration/'legacy_doc_to_docx.ps1',package/'legacy_doc_to_docx.ps1')
     shutil.copy2(integration/'pdfcontrol_bridge.py',package/'octop_mcp.py')
@@ -61,6 +63,9 @@ def main():
     registered=json.loads(manifest.read_text(encoding='utf-8'));
     for name in ['mbs_document_markdown.py','legacy_doc_to_docx.ps1']:
         registered['sha256'][name]=hashlib.sha256((package/name).read_bytes()).hexdigest()
+    for name in ['mbs_artikelcatalogus.py','mbs_catalogue_notation.py']:
+        if (package/name).is_file():registered['sha256'][name]=hashlib.sha256((package/name).read_bytes()).hexdigest()
+    if (package/'mbs_factory_catalogue.py').is_file():registered['sha256']['mbs_factory_catalogue.py']=hashlib.sha256((package/'mbs_factory_catalogue.py').read_bytes()).hexdigest()
     if alias_path.is_file():registered['sha256']['mbs_controles_extra.py']=hashlib.sha256(alias_path.read_bytes()).hexdigest()
     if (package/'mbs_pdf_checker_pdfcontrol.py').is_file():registered['sha256']['mbs_pdf_checker_pdfcontrol.py']=hashlib.sha256((package/'mbs_pdf_checker_pdfcontrol.py').read_bytes()).hexdigest()
     if (package/'mbs_webapp.py').is_file():registered['sha256']['mbs_webapp.py']=hashlib.sha256((package/'mbs_webapp.py').read_bytes()).hexdigest()

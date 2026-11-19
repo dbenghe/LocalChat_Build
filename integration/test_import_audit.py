@@ -95,4 +95,24 @@ class AuditTests(unittest.TestCase):
     def test_html_escapes_input(self):
         self.csv([['TR01','<script>alert(1)</script>','1','st','','14337','20']]);result,_=self.run_audit();page=Path(result['report_html']).read_text(encoding='utf-8');self.assertNotIn('<script>',page);self.assertIn('&lt;script&gt;',page)
 
+    def test_unknown_catalogue_article_can_still_be_present_in_drawing(self):
+        name='Stekanker M24x715 (Ø20) EV'
+        records=[{'path':'fixture.xlsx','sheet':'Import','row':2,'merk':'WA001','description':name,'fields':{'aantal':'2'},'catalogue':{'codes':[]}}]
+        evidence=[{'path':'WA001.pdf','page':1,'merk':'WA001','description':name,'quantity':'2'}]
+        compared,issues=audit.compare_drawings(records,evidence,reader.Catalogus(self.data))
+        self.assertEqual(compared[0]['status'],'literal_name_present_catalogue_unconfirmed')
+        self.assertNotIn('drawing_article_not_found_in_table',{i['code'] for i in issues})
+        self.assertIn('drawing_article_unresolved',{i['code'] for i in issues})
+    def test_unknown_complete_base_with_drawing_detail_is_still_present(self):
+        name='Stekanker M24x715 (Ø20) EV'
+        records=[{'path':'fixture.xlsx','sheet':'Import','row':2,'merk':'WA001','description':name,'fields':{'aantal':'2'},'catalogue':{'codes':[]}}]
+        evidence=[{'path':'WA001.pdf','page':1,'merk':'WA001','description':name+' gebogen lr=275','quantity':'2'}]
+        compared,issues=audit.compare_drawings(records,evidence,reader.Catalogus(self.data))
+        self.assertEqual(compared[0]['status'],'literal_name_present_catalogue_unconfirmed');self.assertFalse(compared[0]['physical_equivalence_verified'])
+    def test_unknown_different_length_is_not_literal_drawing_evidence(self):
+        records=[{'path':'fixture.xlsx','sheet':'Import','row':2,'merk':'WA001','description':'Stekanker M24x715 (Ø20) EV','fields':{'aantal':'2'},'catalogue':{'codes':[]}}]
+        evidence=[{'path':'WA001.pdf','page':1,'merk':'WA001','description':'Stekanker M24x705 (Ø20) EV','quantity':'2'}]
+        compared,issues=audit.compare_drawings(records,evidence,reader.Catalogus(self.data))
+        self.assertEqual(compared[0]['status'],'not_found_in_extracted_table')
+
 if __name__=='__main__':unittest.main(verbosity=2)

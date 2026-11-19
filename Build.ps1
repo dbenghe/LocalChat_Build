@@ -26,6 +26,10 @@ if (!(Test-Path -LiteralPath $taskPdfPython)) { throw 'PDFCONTROL runtime missin
 if ($LASTEXITCODE) { throw 'Native Codex app-server contract tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_sync_engine.py"
 if ($LASTEXITCODE) { throw 'Owned engine build isolation tests failed' }
+& $taskPdfPython -I "$PSScriptRoot/integration/sync_engine.py" --package "$PSScriptRoot/pdfcontrol"
+if ($LASTEXITCODE) { throw 'PDFCONTROL engine synchronization failed' }
+& $taskPdfPython -I "$PSScriptRoot/integration/test_factory_catalogue.py" --package "$PSScriptRoot/pdfcontrol"
+if ($LASTEXITCODE) { throw 'Factory catalogue warnings and safe notation tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_kozijn_alias.py"
 if ($LASTEXITCODE) { throw 'Window-mark aliases and missing-dimension safeguards failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_dimension_ink.py"
@@ -58,8 +62,7 @@ if ($LASTEXITCODE) { throw 'Server revision comparison tests failed' }
 if ($LASTEXITCODE) { throw 'Catalogue import/rollback/upgrade preservation tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_catalogue_update.py"
 if ($LASTEXITCODE) { throw 'Factory catalogue update tests failed' }
-& $taskPdfPython -I "$PSScriptRoot/integration/sync_engine.py" --package "$PSScriptRoot/pdfcontrol"
-if ($LASTEXITCODE) { throw 'PDFCONTROL engine synchronization failed' }
+
 & $taskPdfPython -I "$PSScriptRoot/integration/prepare_markdown.py" --package "$PSScriptRoot/pdfcontrol"
 if ($LASTEXITCODE) { throw 'Markdown runtime verification failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_document_markdown.py" --package "$PSScriptRoot/pdfcontrol"
@@ -80,7 +83,10 @@ New-Item -ItemType Directory -Path $taskClasses -Force | Out-Null
 $taskSources = (Get-ChildItem -LiteralPath "$PSScriptRoot/src/localchat" -Filter '*.java').FullName
 & "$taskJdk/bin/javac.exe" -encoding UTF-8 --release 17 -cp $taskLibrary -d $taskClasses $taskSources
 if ($LASTEXITCODE) { throw 'Compilation failed' }
-Copy-Item -LiteralPath "$PSScriptRoot/src/localchat/i18n" -Destination "$taskClasses/localchat/i18n" -Recurse
+New-Item -ItemType Directory -Path "$taskClasses/localchat/i18n" -Force | Out-Null
+foreach ($taskLocale in Get-ChildItem -LiteralPath "$PSScriptRoot/src/localchat/i18n" -Filter '*.json' -File) {
+    Copy-Item -LiteralPath $taskLocale.FullName -Destination (Join-Path "$taskClasses/localchat/i18n" $taskLocale.Name) -Force
+}
 Copy-Item -LiteralPath "$PSScriptRoot/VERSION" -Destination $taskClasses
 $taskTests = (Get-ChildItem -LiteralPath "$PSScriptRoot/tests" -Filter '*.java').FullName
 & "$taskJdk/bin/javac.exe" -encoding UTF-8 --release 17 -cp "$taskClasses;$taskLibrary" -d "$taskBuild/tests" $taskTests

@@ -1,3 +1,15 @@
+## 1.33.14 — gecontroleerde fabriekscataloguswaarschuwingen
+
+Oorzaak: bij de directe native controle van 900153 ontbrak de persistente expliciete fabriekkeuze; de bestaande spellingcontrole accepteerde bewust geen andere cijfers/afwerkingen als typefout en meldde ontbrekende fabrieksartikelen niet afzonderlijk. De nieuwe cataloguscontrole is onafhankelijk van vroeg terugkerende geometrische controles. Bij ontbrekende fabriek of ongeldige catalogus staat expliciet dat de controle niet uitgevoerd is.
+
+Gedeelde bronnen: apply_factory_catalogue.py, factory_catalogue_findings.py en catalogue_notation.py. Behoud van alleen-spatieverschillen, expliciete Gain-/sparingnotaties, afzonderlijke technische details en conflicterende codes. Geen 715→705, GV→EV of samenvoeging van losse getallen. De ED001-correctie en niet-gerelateerde functies zijn behouden. In de importaudit zijn letterlijke aanwezigheid, catalogusacceptatie en onbevestigde technische koppelingen onderscheiden; de HTML is Nederlands.
+
+Werkelijke verificatie: 64 bronbladen per motor (C:/PDFCONTROL en C:/LocalChat/pdfcontrol), identieke resultaten: 91 ontbrekende cataloguskoppelingen (77 M24×715, 14 T-FIXX GV), 61 CONTROLEREN/3 OK. Alle 64 bron-PDFs bleven hash-identiek; overige niet-naamgebonden constateringen zijn behouden. 636 primaire importregels gecontroleerd, 545 herkende catalogusnamen; alternatieve groepen niet dubbel geteld. De 9 serverlijsten stonden reeds identiek en zijn opnieuw onafhankelijk SHA-256 gecontroleerd; geen product- of bronwaarden veranderd. Rapporten en bewijzen staan alleen in het lokale project onder Controle/Catalogus_Alphen_20261119 en zijn niet opgenomen in Git.
+
+Relevante regressies: factory-catalogue 11 tests, importaudit 17, buildisolatie 2, artikelidentiteit 24, dimension ink 12, profielprojectie 33; 28 echte MCP-workflowtests geslaagd. De controle van de native pagina zonder catalogus is expliciet getest. Eerste rapportblad visueel gerenderd: volledige tekening, artikeltabel en cartouche zichtbaar. De zelfstandige webserver is gecontroleerd inactief herstart; invoermap behouden, geen actieve taak onderbroken.
+
+Nieuwe JAR vers gecompileerd: alle Java-klassen byte-identiek aan de vorige geteste versie, VERSION 1.33.14 en de zes correcte bronvertaalkatalogi op het laadpad. Een overtollige geneste i18n-map uit een hervatte build is verwijderd. 17.060 UI-/persistentiecontroles geslaagd; fysieke muis-/toetsenbordproeven niet uitgevoerd. Publicatie en gecontroleerde installatie krijgen een afzonderlijk lokaal bewijs in C:/LocalChat/qa/13314-catalogue.
+
 ## 1.33.13 — getest, klaar voor publicatie en gecontroleerde installatie
 
 De volledige verplichte buildcontroles zijn uitgevoerd. Een Windows-race bij het lezen van DevToolsActivePort is in BrowserDownload.endpoint verholpen; daarna zijn de resterende buildcontroles met vers gecompileerde bronnen voltooid. De aanvullende herhaling van FeatureTest gebruikte eerst een bestaande testmap en faalde op opgeslagen modelstaat; in een nieuwe geïsoleerde testmap slaagde dezelfde test. Geen productiechat of instelling is voor de tests gewijzigd.

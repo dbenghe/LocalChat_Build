@@ -1,3 +1,13 @@
+## 1.33.14 — ontbrekende fabrieksartikelen zichtbaar in tekenrapporten
+
+De fabriekscataloguscontrole is onafhankelijk van spelling en geometrische maatketens. Een artikel met een andere lengte of afwerking, zoals M24×715 tegenover M24×705 of GV tegenover EV, blijft zonder bevestiging een expliciete CONTROLEREN-melding. Ontbreekt een eenduidig bevestigde fabriek of geldig actueel catalogusbestand, dan vermeldt het tekenrapport dat de cataloguscontrole niet is uitgevoerd. Geen stilzwijgende volledige goedkeuring.
+
+Letterlijk identieke namen met andere spaties, een generieke Gain-naam met afzonderlijke maatnotatie en een expliciet rond/rechthoekig sparingprofiel worden conservatief als naamnotatie herkend. Alle cijfers en technische details blijven behouden; losse numerieke velden worden niet samengevoegd. Conflicterende cataloguscodes blijven onbevestigd. Deze naamherkenning bewijst geen fysieke gelijkwaardigheid of juistheid van afmetingen.
+
+De importaudit onderscheidt aanwezigheid in het tekenrenvooi van catalogusacceptatie. Een onbekend maar letterlijk aanwezig artikel wordt niet meer onterecht als afwezig op de tekening aangemerkt. Het Nederlandstalige rapport toont de ontbrekende cataloguskoppelingen bovenaan. De oorspronkelijke bronbestanden blijven ongewijzigd; geen automatische productvervanging of ISAH-import.
+
+De JAR bevat de zes bronvertaalkatalogi op hun exacte laadpad. Een overtollige geneste i18n/i18n-map is verwijderd; de documentlezerberichten gebruiken daardoor de bedoelde bestaande vertalingen. De Java-klassen zijn byte-identiek aan 1.33.13.
+
 ## 1.33.13 — lokale Markdown-documentlezer en betrouwbare tooluitvoer
 
 De tekstlezers in LocalChat en de PDFCONTROL-conector gebruiken lokale, geïsoleerde conversie naar Markdown voor PDF, Word, Excel en email. MarkItDown 0.1.9 en de Windows/Python 3.13-afhankelijkheden zijn vastgezet met wielchecksums; geen globale Python-upgrade, cloudconversie of extra modelaanroep. Oorspronkelijke bestanden blijven intact. De cache wordt inhoudelijk gehasht en bij bronwijziging of beschadiging vernieuwd. Lezen blijft gepagineerd: PDF-pagina’s in read_file, tekenoffset in pdfcontrol_read_document. Onvolledige lange pagina’s en ontbrekende formule-uitkomsten worden expliciet vermeld.

@@ -3,7 +3,7 @@ import argparse, collections, csv, hashlib, html, io, json, re, sys, time
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
-VERSION = 2
+VERSION = 3
 FACTORIES = {'soest', 'veenoord', 'alphen', 'lelystad'}
 MAX_BYTES = 100 * 1024 * 1024
 
@@ -207,6 +207,10 @@ def compare_drawings(records, evidence, catalogue):
                 for row in rows:
                     result, codes = canonical(row['description'], catalogue)
                     if codes == code and result['status'] != 'catalogus_conflict': matched.append(row)
+            else:
+                # An unknown catalogue article can still literally occur in the drawing.
+                # Exact text presence is separate from catalogue acceptance/physical equivalence.
+                matched=[row for row in rows if norm(row['description'])==norm(record['description']) or norm(row['description']).startswith(norm(record['description'])+' ')]
             location = {k: record[k] for k in ('path', 'sheet', 'row', 'merk', 'description')}
             comparison = dict(location, drawing=path, page=page, table_matches=matched,
                               status='name_evidence_only', physical_equivalence_verified=False)
@@ -214,11 +218,12 @@ def compare_drawings(records, evidence, catalogue):
                 comparison['status'] = 'not_found_in_extracted_table'
                 issues.append(dict(location, code='drawing_article_not_found_in_table', drawing=path, page=page,
                                    note='Candidate discrepancy, not proof of missing physical article.'))
-            elif len(matched) != 1 or sum(r['catalogue']['codes'] == code and r['path'] == record['path'] for r in expected) != 1:
+            elif len(matched) != 1 or sum((r['catalogue']['codes']==code if len(code)==1 else norm(r['description'])==norm(record['description'])) and r['path']==record['path'] for r in expected)!=1:
                 comparison['status'] = 'ambiguous_rows'
                 issues.append(dict(location, code='drawing_rows_ambiguous', drawing=path, page=page))
             else:
                 row = matched[0]
+                if len(code)!=1:comparison['status']='literal_name_present_catalogue_unconfirmed'
                 quantity = re.fullmatch(r'\s*(\d+(?:[.,]\d+)?)\s*(st|stk|stuks|pcs|m|mm|cm)?\s*', row['quantity'], re.I)
                 actual_unit = unit(record['fields'].get('eenheid')) if 'eenheid' in record['fields'] else record['catalogue'].get('effective_unit','')
                 if quantity and unit(quantity.group(2)) == actual_unit == 'st':
@@ -239,23 +244,24 @@ def compare_drawings(records, evidence, catalogue):
             if len(codes) != 1 or result['status'] == 'catalogus_conflict':
                 issues.append(dict(row, code='drawing_article_unresolved', catalogue_status=result['status']))
             elif not any(r['catalogue']['codes'] == codes for r in expected):
-                issues.append(dict(row, code='drawing_article_not_in_import', catalogue_codes=codes))
+                issues.append(dict(row, code='drawing_article_not_in_import', catalogue_codes=codes,
+                    conclusion='catalogue_identity_mapping_unconfirmed',note='Catalogusidentiteit uit de tekennotatie wijkt af van de importvariant; dit bewijst niet dat het fysieke artikel ontbreekt. Controleer variant en technische toelichting afzonderlijk.'))
     for mark in sorted(set(by_mark) - covered):
         issues.append({'merk': mark, 'code': 'no_readable_drawing_table_for_merk'})
     return comparisons, issues
 
 
 def report_html(report):
-    e = lambda value: html.escape(str(value), quote=True)
-    summary = report['summary']
-    rows = ''.join('<tr><td>' + '</td><td>'.join(e(item.get(k, '')) for k in ('code', 'merk', 'description', 'path', 'sheet', 'row', 'drawing', 'page')) + '</td></tr>' for item in report['issues'])
-    return ('<!doctype html><meta charset="utf-8"><title>Local import audit</title><style>'
-            'body{font:14px system-ui;margin:24px;color:#202124;background:#fff}table{border-collapse:collapse;width:100%}'
-            'td,th{border:1px solid #bbb;padding:6px;text-align:left;overflow-wrap:anywhere}th{background:#eee}'
-            '</style><h1>Local import audit</h1><p>Project ' + e(report['project']) + ' / ' + e(report['factory']) + '</p>'
-            '<p>Read-only audit. No production, drawing or server file was changed. No API inference.</p>'
-            '<pre>' + e(json.dumps(summary, ensure_ascii=False, indent=2)) + '</pre><p>Names are evidence, not physical equivalence or transfer approval. See JSON for page/row evidence and limits.</p>'
-            '<table><tr>' + ''.join('<th>'+e(k)+'</th>' for k in ('Issue', 'Merk', 'Article', 'Import', 'Sheet', 'Row', 'Drawing', 'Page')) + '</tr>' + rows + '</table>')
+    e=lambda value:html.escape(str(value),quote=True)
+    labels={'article_unresolved':'Artikel niet bevestigd in fabriekscatalogus','drawing_article_unresolved':'Tekenartikel niet bevestigd in fabriekscatalogus','length_required':'Lengte vereist','drawings_not_selected':'Tekeningen niet geselecteerd; alleen cataloguscontrole','catalogue_row_excluded':'Catalogusregel uitgesloten','unit_mismatch':'Eenheid wijkt af','catalogue_unit_unconfirmed':'Cataloguseenheid onbevestigd','no_readable_drawing_table_for_merk':'Geen leesbaar tekenrenvooi voor merk','quantity_mismatch':'Aantal wijkt af','drawing_article_not_found_in_table':'Geen eenduidige automatische renvooikoppeling; ontbreken niet bewezen','drawing_rows_ambiguous':'Meerdere mogelijke renvooiregels; koppeling onbevestigd','drawing_article_not_in_import':'Catalogusidentiteit wijkt af; importkoppeling onbevestigd','length_dimension_review':'Lengtemaat afzonderlijk te bevestigen'}
+    unknown=[item for item in report['issues'] if item['code']=='article_unresolved']
+    rows=''.join('<tr><td>'+e(labels.get(item['code'],item['code']))+'</td>'+''.join('<td>'+e(item.get(k,''))+'</td>' for k in ('merk','description','path','sheet','row','drawing','page'))+'</tr>' for item in report['issues'])
+    return ('<!doctype html><html lang="nl"><meta charset="utf-8"><title>Fabriekscatalogus en importcontrole</title><style>'
+      'body{font:14px system-ui;margin:24px;color:#202124;background:#fff}table{border-collapse:collapse;width:100%}td,th{border:1px solid #bbb;padding:6px;text-align:left;overflow-wrap:anywhere}th{background:#eee}.waarschuwing{border:2px solid #c87600;padding:12px}</style>'
+      '<h1>Fabriekscatalogus en importcontrole</h1><p>Project '+e(report['project'])+' / MBS '+e(report['factory'].title())+'</p>'
+      '<p class="waarschuwing"><strong>'+str(len(unknown))+' importregels zonder bevestigde cataloguskoppeling.</strong> Dit is geen goedgekeurde import. Geen automatische vervanging van andere lengtes of afwerkingen.</p>'
+      '<p>Alleen-lezen controle; productiebronnen blijven ongewijzigd. Geen modelaanroep. Namen bewijzen geen fysieke gelijkwaardigheid. Bronbestanden en SHA-256 staan in het JSON-bewijs.</p>'
+      '<table><tr>'+''.join('<th>'+e(k)+'</th>' for k in ('Waarschuwing','Merk','Artikel','Importbestand','Werkblad','Rij','Tekening','Pagina'))+'</tr>'+rows+'</table></html>')
 
 
 def run(request, output, package=None):
