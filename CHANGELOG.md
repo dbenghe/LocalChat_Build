@@ -1,3 +1,7 @@
+## 1.33.16 — Actuele Codex-app gebruiken
+
+LocalChat zoekt eerst het officiële, bij Windows geregistreerde Codex-pakket. De pakketlocatie volgt Store-updates en is ook beschikbaar als het desktopvenster gesloten is. Als het pakket ontbreekt of niet leesbaar is, blijft de bestaande zoekvolgorde in LocalAppData en PATH beschikbaar. De modelkiezer gebruikt de actuele lijst van het aangemelde Codex App Server-account.
+
 ## 1.33.15 — bevestigde projectgebonden artikelequivalenties
 
 De tekencontrole toont vastgelegde projecteigen gelijkwaardigheden als informatieve bevinding. Alleen een combinatie van project, fabriek, bronhash, blad, positie en oorspronkelijke omschrijving kan een goedkeuring activeren. Een opgegeven cataloguscode moet bij de actuele fabriekscatalogus passen. Een uitzondering zonder code blijft herkenbaar als projectacceptatie. De geometrische controle en overige artikelmeldingen blijven afzonderlijk van kracht. De MCP-job neemt een gehashte momentopname van de lokale projectgoedkeuringen op.

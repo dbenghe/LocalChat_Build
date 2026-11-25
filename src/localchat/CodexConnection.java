@@ -54,11 +54,50 @@ final class CodexConnection implements AutoCloseable {
     }
     static void sanitize(Map<String,String> environment){environment.keySet().removeIf(k->(k.toUpperCase(Locale.ROOT).startsWith("CODEX_")&&!Set.of("CODEX_HOME","CODEX_PERMISSION_PROFILE","CODEX_SANDBOX_NETWORK_DISABLED","CODEX_WINDOWS_SANDBOX_PACKAGE_FAMILY").contains(k.toUpperCase(Locale.ROOT)))||Set.of("OPENAI_API_KEY","OPENAI_BASE_URL","OPENAI_ORG_ID","OPENAI_PROJECT_ID").contains(k.toUpperCase(Locale.ROOT)));}
     static List<String> command() throws IOException {
+        Path packaged = windowsCodex();
+        if (packaged != null) return List.of(packaged.toString());
         String local=System.getenv("LOCALAPPDATA");
         if(local!=null){Path executable=Path.of(local,"Programs","OpenAI","Codex","bin","codex.exe");if(Files.isRegularFile(executable))return List.of(executable.toString());}
         for(String part:Objects.toString(System.getenv("PATH"),"").split(java.io.File.pathSeparator))try{Path executable=Path.of(part,"codex.exe");if(Files.isRegularFile(executable))return List.of(executable.toAbsolutePath().toString());}catch(InvalidPathException ignored){}
         throw new IOException(I18n.text("Codex nu este disponibil. Instaleaza sau deschide Codex si autentifica-te cu ChatGPT."));
     }
+    /** The registered desktop package follows Store updates and works even when Codex is closed. */
+    private static Path windowsCodex() throws IOException {
+        String windows = System.getenv("SystemRoot");
+        if (windows == null || !System.getProperty("os.name", "").startsWith("Windows")) return null;
+        Path powershell = Path.of(windows, "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
+        if (!Files.isRegularFile(powershell)) return null;
+        String query = """
+                [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+                Get-AppxPackage -Name OpenAI.Codex | Where-Object {
+                    $_.PackageFamilyName -eq 'OpenAI.Codex_2p2nqsd0c76g0'
+                } | Sort-Object Version -Descending | Select-Object -First 1 -ExpandProperty InstallLocation
+                """;
+        Process process = null;
+        try {
+            process = new ProcessBuilder(powershell.toString(), "-NoLogo", "-NoProfile",
+                    "-NonInteractive", "-Command", query)
+                    .redirectError(ProcessBuilder.Redirect.DISCARD).start();
+            if (!process.waitFor(8, TimeUnit.SECONDS) || process.exitValue() != 0) return null;
+            String location = new String(process.getInputStream().readNBytes(4096), StandardCharsets.UTF_8).strip();
+            if (location.isEmpty()) return null;
+            Path root = Path.of(location);
+            if (!root.isAbsolute()) return null;
+            Path executable = root.resolve("app/resources/codex.exe");
+            return Files.isRegularFile(executable) ? executable : null;
+        } catch (InterruptedException error) {
+            Thread.currentThread().interrupt();
+            throw new InterruptedIOException("Codex discovery interrupted");
+        } catch (IOException | InvalidPathException error) {
+            return null;
+        } finally {
+            if (process != null) {
+                if (process.isAlive()) process.destroyForcibly();
+                try { process.getInputStream().close(); } catch (IOException ignored) {}
+            }
+        }
+    }
+
     private synchronized void send(Object value)throws IOException{if(closed)throw new IOException("Codex closed");writer.write(Json.write(value));writer.newLine();writer.flush();}
     private Object next(long deadline)throws IOException{
         if(!deferred.isEmpty())return deferred.removeFirst();return receive(deadline);
