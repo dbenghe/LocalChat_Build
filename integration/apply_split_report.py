@@ -37,7 +37,7 @@ def apply(package):
         source = replace_once(source, "    from mbs_split_report import generate\n    info = generate(",
             '''    import mbs_report_layout as layout
     import mbs_split_report as split
-    if not hasattr(layout, "ARCHIVE_NOTICE") or not hasattr(split, "ARCHIVE_NOTICE"):
+    if not hasattr(layout, "clip_preframed_sheets") or not hasattr(split, "ARCHIVE_NOTICE"):
         from importlib import reload
         reload(layout)
         reload(split)
@@ -110,6 +110,13 @@ def apply(package):
         blad.regel(ARCHIVE_NOTICE)
 ''')
 
+    source = source.replace('if not hasattr(layout, "ARCHIVE_NOTICE") or not hasattr(split, "ARCHIVE_NOTICE"):',
+                            'if not hasattr(layout, "clip_preframed_sheets") or not hasattr(split, "ARCHIVE_NOTICE"):')
+    if "clip_preframed_sheets(bron)" not in source:
+        source = replace_once(source, "                        doc.insert_pdf(bron)\n",
+            "                        from mbs_report_layout import clip_preframed_sheets\n"
+            "                        clip_preframed_sheets(bron)\n"
+            "                        doc.insert_pdf(bron)\n")
     ast.parse(source)
     shutil.copy2(Path(__file__).with_name("split_report.py"), package / "mbs_split_report.py")
     data = (source.replace("\n", "\r\n") if b"\r\n" in raw else source).encode("utf-8")

@@ -1,3 +1,7 @@
+## 1.33.20 — Kadermarkeringen binnen het artikelrenvooi
+
+Rapportmarkeringen volgen de gedrukte artikelrij en stoppen voor het titelblok. Markeringen in de tekeningaanzichten behouden hun eigen positie. Bij onzekere tabelgrenzen blijft de bevinding beschikbaar in het tekstrapport.
+
 ## 1.33.19 — Leesbare labels in PDF-rapporten
 
 Vergelijkingslabels krijgen voorrang in vrije ruimte, ook op gescande bladen. Als er geen vrije plek is, blijft het label doorschijnend. Kaders en verbindingslijnen op tekeningen blijven transparant. De archiefmelding staat op het voorblad van elk rapport.

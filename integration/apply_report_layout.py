@@ -18,7 +18,7 @@ def patch_checker(text):
         newline='\r\n' if '\r\n' in text else '\n'
         old='    from mbs_report_layout import frame_checked_document\n    doc = frame_checked_document(doc, page, base + ".pdf", bepaal_status(bevindingen, results), bevindingen, paginanr + 1)\n'
         body="""    import mbs_report_layout as layout
-    if not hasattr(layout, 'OVERLAY_OPACITY'):
+    if not hasattr(layout, '_table_mark_rect'):
         from importlib import reload
         reload(layout)
     doc = layout.frame_checked_document(doc, page, base + ".pdf", bepaal_status(bevindingen, results), bevindingen, paginanr + 1)
@@ -30,6 +30,7 @@ def patch_checker(text):
         else:
             assert text.count(anchor)==1,'Unsupported report assembly'
             text=text.replace(anchor,body+anchor)
+    text=text.replace("if not hasattr(layout, 'OVERLAY_OPACITY'):", "if not hasattr(layout, '_table_mark_rect'):")
     ast.parse(text);return text
 
 def patch_comparison(text):

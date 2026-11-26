@@ -110,6 +110,88 @@ class LayoutTests(unittest.TestCase):
             self.assertTrue(all(shape['fill'] is None for shape in page.get_drawings()))
             self.assertTrue(all(shape['stroke_opacity'] <= .46 for shape in page.get_drawings()))
 
+    def ruled_table(self, doc):
+        page=doc.new_page(width=640,height=440)
+        for y in (255,275,295,315):
+            page.draw_line((40,y),(280,y),width=.5)
+            page.draw_line((280,y),(440,y),width=.5)
+        for x in (40,96,238,280,440):
+            page.draw_line((x,255),(x,315),width=.5)
+        for xy,value in [((44,270),'Pos.'),((100,270),'Omschrijving'),((243,270),'Aantal'),
+                         ((44,290),'S031'),((100,290),'Stekanker'),((248,290),'2'),
+                         ((286,290),'Uitgewerkt door'),((44,310),'S032'),
+                         ((100,310),'Boutanker'),((248,310),'4')]:
+            page.insert_text(xy,value,fontsize=8)
+        return page
+
+    def test_table_marks_clip_to_row_with_rotation_and_keep_view_mark(self):
+        with pdf.open() as src,pdf.open() as out:
+            page=self.ruled_table(src)
+            page.set_rotation(90)
+            row=pdf.Rect(40,275,280,295)
+            view=pdf.Rect(355,95,390,110)
+            marks=[dict(bbox=[44,277,368,300],table=True,article='S031 - Stekanker'),
+                   dict(bbox=list(view),table=False,article='S031 - Stekanker')]
+            p=layout.append_sheet(out,src,0,marks=marks)
+            frames=list(p.annots())
+            self.assertEqual(len(frames),2)
+            target=pdf.Rect(p._mbs_report_layout['drawing_rect'])
+            scale=target.width/page.rect.width
+            transform=page.rotation_matrix * pdf.Matrix(scale,scale) * pdf.Matrix(1,0,0,1,target.x0,target.y0)
+            self.assertTrue((row*transform).contains(frames[0].rect))
+            expected=view*transform
+            self.assertAlmostEqual(frames[1].rect.x0,expected.x0-1,places=2)
+            self.assertIn('Uitgewerkt door',p.get_text())
+
+    def test_saved_table_overflow_is_clipped_in_copy(self):
+        original=self.root/'saved-checked.pdf'
+        with pdf.open() as src,pdf.open() as old:
+            self.ruled_table(src)
+            marks=[dict(bbox=[44,277,368,300],table=False,article='S031 - Stekanker',message=message)
+                   for message in ('Controle maat', 'Controle artikel')]
+            layout.append_sheet(old,src,0,marks=marks)
+            old.save(original,garbage=3)
+        before=original.read_bytes()
+        with pdf.open(original) as doc:
+            page=doc[0]
+            old=list(page.annots())[0].rect
+            layout.clip_preframed_sheets(doc)
+            page=doc.reload_page(page)
+            corrected=[a.rect for a in page.annots()]
+            self.assertEqual(len(corrected),2)
+            self.assertEqual(corrected[0],corrected[1])
+            new=corrected[0]
+            self.assertLess(new.x1,old.x1-40)
+            self.assertLess(new.y1,old.y1)
+            self.assertIn('Uitgewerkt door',page.get_text())
+            self.assertTrue(any(box['rect'].x1 < old.x1-40 and abs(box.get('stroke_opacity',1)-layout.OVERLAY_OPACITY)<.01
+                                for box in page.get_drawings()))
+        self.assertEqual(original.read_bytes(),before)
+
+    def test_ruled_renvooi_without_position_column_clips_to_row(self):
+        with pdf.open() as src,pdf.open() as out:
+            page=src.new_page(width=640,height=440)
+            for y in (255,275,295,315):
+                page.draw_line((40,y),(280,y),width=.5)
+            page.insert_text((44,252),'Instortvoorzieningen',fontsize=8)
+            page.insert_text((44,270),'Omschrijving',fontsize=8)
+            page.insert_text((242,270),'Aantal',fontsize=8)
+            page.insert_text((44,290),'Boutanker',fontsize=8)
+            page.insert_text((242,290),'2',fontsize=8)
+            mark=dict(bbox=[44,281,360,292],table=True,article='Boutanker')
+            rendered=layout.append_sheet(out, src, 0, marks=[mark])
+            contour=list(rendered.annots())[0].rect
+            target=pdf.Rect(rendered._mbs_report_layout['drawing_rect'])
+            self.assertLess(contour.x1,target.x0+280*target.width/page.rect.width)
+
+    def test_unconfirmed_table_bounds_keep_report_note(self):
+        with pdf.open() as src,pdf.open() as out:
+            src.new_page(width=640,height=440)
+            mark=dict(bbox=[44,277,368,300],table=True,article='S031 - Stekanker')
+            page=layout.append_sheet(out,src,0,notes=['Controleer S031'],marks=[mark])
+            self.assertFalse(list(page.annots() or ()))
+            self.assertIn('Controleer S031',page.get_text())
+
     def test_native_checked_report_and_comparison(self):
         if not args.package:self.skipTest('engine required')
         sys.path.insert(0,str(Path(args.package)))
