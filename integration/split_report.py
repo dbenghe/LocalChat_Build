@@ -70,7 +70,7 @@ def save(doc, path):
     return doc.page_count
 
 
-def generate(layout, data, output, include_drawings=False, progress=None):
+def generate(layout, data, output, include_drawings=True, progress=None):
     drawings = data.get("tekeningen", [])
     if not drawings:
         raise ValueError("Geen gecontroleerde tekeningen gevonden.")
@@ -91,6 +91,17 @@ def generate(layout, data, output, include_drawings=False, progress=None):
         path = output.with_name(f"{output.stem}_{status}.pdf")
         if progress:
             progress(f"rapport {label}", 0, len(selected))
+        if selected and include_drawings:
+            detail = layout.genereer_uitgebreid(
+                str(path), tekeningen_bijvoegen=True, alleen_problemen=False,
+                voortgang=progress, rapportstatus=label,
+                data=dict(data, tekeningen=[dict(t, status=status,
+                    bureau=t.get("bureau") or "ONBEKEND BUREAU",
+                    project=str(t.get("project") or "?")) for t in selected]),
+            )
+            reports[status] = {key: detail[key] for key in (
+                "pad", "paginas", "tekeningen", "bijgevoegde_tekeningen", "ontbrekende_bijlagen")}
+            continue
         with fitz.open() as doc:
             sheet = layout.Blad(doc, f"PDFCONTROL | {label}")
             sheet.titel(label)
@@ -109,11 +120,6 @@ def generate(layout, data, output, include_drawings=False, progress=None):
                 sheet.regel(f"Geen tekeningen met status {label}.")
             pages = save(doc, path)
         reports[status] = {"pad": str(path), "paginas": pages, "tekeningen": len(selected)}
-
-    annex = None
-    if include_drawings and any(buckets.values()):
-        path = output.with_name(f"{output.stem}_BIJLAGEN.pdf")
-        annex = layout.genereer_uitgebreid(str(path), tekeningen_bijvoegen=True, voortgang=progress)
 
     with fitz.open() as doc:
         sheet = layout.Blad(doc, "PDFCONTROL")
@@ -142,12 +148,8 @@ def generate(layout, data, output, include_drawings=False, progress=None):
             sheet.regel(f"{approvals} bevestigde projecteigen artikelequivalenties.")
         if notes:
             sheet.regel(f"{sum(notes.values())} informatieve meldingen zijn opgenomen in het resultatenbestand.")
-        if annex:
-            sheet.regel(f"Bijlagen met tekeningen: {Path(annex['pad']).name}")
         pages = save(doc, output)
     info = {"pad": str(output), "paginas": pages, "tekeningen": len(drawings),
             "met_bevinding": sum(len(group) for group in buckets.values()),
             "zonder_bevinding": counts["OK"], "reports_by_status": reports}
-    if annex:
-        info["annex"] = annex["pad"]
     return info

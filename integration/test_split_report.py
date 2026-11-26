@@ -41,7 +41,7 @@ with tempfile.TemporaryDirectory() as tmp:
     before = hashlib.sha256(data.read_bytes()).hexdigest()
     mbs_rapport.GEGEVENS = str(data)
     main = root / "RAPPORT.pdf"
-    info = mbs_rapport.genereer(main, alleen_problemen=False)
+    info = mbs_rapport.genereer(main, tekeningen_bijvoegen=False, alleen_problemen=False)
     assert info["scope"] == "all" and info["paginas"] == 1
     reports = info["reports_by_status"]
     assert (info["met_bevinding"], info["zonder_bevinding"]) == (3, 1)
@@ -57,6 +57,27 @@ with tempfile.TemporaryDirectory() as tmp:
     assert "annex" not in info and hashlib.sha256(data.read_bytes()).hexdigest() == before
     with fitz.open(main) as doc:
         assert {link["file"] for link in doc[0].get_links()} == {"RAPPORT_NIET_OK.pdf", "RAPPORT_CONTROLEREN.pdf"}
+    for row in records[:2]:
+        marker = "ATTACHMENT_" + Path(row["bestand"]).stem
+        attachment = root / (marker + ".pdf")
+        with fitz.open() as document:
+            document.new_page().insert_text((30, 40), marker)
+            document.save(attachment)
+        row["uitvoer"] = str(attachment)
+    data.write_text(json.dumps({"tekeningen": records}), encoding="utf-8")
+    detailed = mbs_rapport.genereer(root / "DETAILED.pdf")
+    reports = detailed["reports_by_status"]
+    rejected = pdf_text(reports["NIET_OK"]["pad"])
+    pending = pdf_text(reports["CONTROLEREN"]["pad"])
+    assert "Controlerapport tekeningen - NIET OK" in rejected
+    assert "Controlerapport tekeningen - CONTROLEREN" in pending
+    assert "ATTACHMENT_DRAW_FAILED" in rejected and "ATTACHMENT_DRAW_REVIEW" not in rejected
+    assert "ATTACHMENT_DRAW_REVIEW" in pending and "ATTACHMENT_DRAW_FAILED" not in pending
+    assert reports["NIET_OK"]["bijgevoegde_tekeningen"] == reports["CONTROLEREN"]["bijgevoegde_tekeningen"] == 1
+    assert reports["NIET_OK"]["ontbrekende_bijlagen"] == ["DRAW_ROWS_ONLY.pdf"]
+    assert "Ontbrekende of onleesbare tekeningen" in rejected
+    assert "annex" not in detailed
+
     data.write_text(json.dumps({"tekeningen": records[-1:]}), encoding="utf-8")
     empty = mbs_rapport.genereer(root / "RAPPORT_EMPTY.pdf")
     for status, report in empty["reports_by_status"].items():

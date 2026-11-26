@@ -150,9 +150,22 @@ class Workflows(unittest.TestCase):
                 self.assertIn(status.replace('_',' '),doc[0].get_text())
         with pymupdf.open(record['report']) as doc:
             self.assertIn('Controleoverzicht','\n'.join(page.get_text() for page in doc))
-        self.assertIn(info['annex'],delivered)
-        with pymupdf.open(info['annex']) as doc:
-            self.assertIn('controlerapport','\n'.join(page.get_text() for page in doc).lower())
+        self.assertTrue(any(report.get('bijgevoegde_tekeningen') for report in info['reports_by_status'].values()))
+        self.assertFalse(any(Path(path).name.endswith('_BIJLAGEN.pdf') for path in delivered))
+
+    def test_08_report_with_missing_marked_drawing_is_partial(self):
+        identifier='d'*32
+        data=self.drawings(2)
+        parent=self.fake_job(identifier,data,sources_sha256={})
+        source=parent/'engine/checked/resultaten.json'
+        fingerprint=digest(source)
+        record=self.client.wait(self.client.start('pdfcontrol_regenerate_report',job_id=identifier))
+        self.assertEqual(record['status'],'partial')
+        self.assertIn('report_drawings_missing',record['limitation_codes'])
+        rejected=record['report_info']['reports_by_status']['NIET_OK']
+        self.assertEqual(rejected['ontbrekende_bijlagen'],['123456_X1_W.pdf'])
+        self.assertEqual(digest(source),fingerprint)
+        self.artifacts(record)
 
     def test_10_sources_in_controle_and_verified_delivery(self):
         relative='Controle/Atasamente_nou/123456_TRK300_V.pdf'

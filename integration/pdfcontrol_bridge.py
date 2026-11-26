@@ -219,8 +219,8 @@ FILES_SCHEMA={'type':'array','description':'Cai relative exact ca in pdfcontrol_
 for definition in TOOLS:
     if definition['name']=='pdfcontrol_start_check':
         definition['inputSchema']['properties']['files']=FILES_SCHEMA
-        definition['inputSchema']['properties']['include_drawings']={'type':'boolean','default':False}
-        definition['description']='Control OCR: sumar, PDF-uri NIET OK/CONTROLEREN, anexa optionala. Intoarce job_id dupa control.'
+        definition['inputSchema']['properties']['include_drawings']={'type':'boolean','default':True}
+        definition['description']='Control OCR: sumar si PDF-uri NIET OK/CONTROLEREN cu planse. Intoarce job_id dupa control.'
     if definition['name']=='pdfcontrol_job_status':
         definition['inputSchema']['properties'].update(wait_seconds={'type':'integer','minimum':0,'maximum':20},artifact_offset={'type':'integer','minimum':0})
         definition['description']='Starea unui job existent (wait_seconds 0-20, implicit 10; artifact_offset pentru pagina urmatoare). Pornirea asteapta deja starea finala: apeleaza numai pentru un job_id cunoscut.'
@@ -228,11 +228,11 @@ for name,description in [
     ('pdfcontrol_start_extract','Extrage planse din brosuri si completeaza perechi V/W (reguli originale). PDF-uri separate, provenienta, raport PDF.'),
     ('pdfcontrol_start_pairs','Perechi V/W individuale: copiaza numai armarea confirmata. Pastreaza cartusul. PDF cu lipsuri/provenienta.'),
     ('pdfcontrol_start_workflow','Flux complet: extragere, perechi confirmate, control OCR si raport PDF cu planse marcate.')]:
-    TOOLS.append(tool(name,description,{'project':SCHEMA_PROJECT,'files':FILES_SCHEMA,'include_drawings':{'type':'boolean','default':False}},['project','files'],False))
+    TOOLS.append(tool(name,description,{'project':SCHEMA_PROJECT,'files':FILES_SCHEMA,'include_drawings':{'type':'boolean','default':True}},['project','files'],False))
 TOOLS.append(tool('pdfcontrol_start_compare','Compara OUD/NIEUW (motor original): Vergelijking_OUD_NIEUW.pdf, PDF diferente T/B, PDF per pereche. Nu modifica sursele.',
                   {'project':SCHEMA_PROJECT,'old_files':FILES_SCHEMA,'new_files':FILES_SCHEMA},['project','old_files','new_files'],False))
 TOOLS.append(tool('pdfcontrol_regenerate_report','Raport PDF nou dintr-un job de control existent; fara reluarea controlului.',
-                  {'project':SCHEMA_PROJECT,'job_id':{'type':'string'},'include_drawings':{'type':'boolean','default':False}},['project','job_id'],False))
+                  {'project':SCHEMA_PROJECT,'job_id':{'type':'string'},'include_drawings':{'type':'boolean','default':True}},['project','job_id'],False))
 TOOLS.append(tool('pdfcontrol_cancel_job','Anuleaza un job PDFCONTROL; rezultatele partiale raman cancelled, nu done.',
                   {'project':SCHEMA_PROJECT,'job_id':{'type':'string'}},['project','job_id'],False))
 
@@ -348,7 +348,6 @@ def deliver_outputs(project,run,record,artifacts,state,cancel):
         info=record['report_info']
         for report in info.get('reports_by_status',{}).values():
             report['pad']=mapping.get(str(Path(report['pad']).resolve()),report['pad'])
-        if info.get('annex'):info['annex']=mapping.get(str(Path(info['annex']).resolve()),info['annex'])
     if record.get('differences_report'):record['differences_report']=mapping.get(str(Path(record['differences_report']).resolve()),record['differences_report'])
     record.update(delivery_folder=str(folder),delivery_manifest=str(folder/'MANIFEST.json'),delivery_verified=True,
                   source_count=len(source_manifest),source_files=list(source_manifest))
@@ -693,7 +692,7 @@ def run_tool(name,args):
     operation=OPERATIONS[name]
     factory=args.get('factory')
     if factory is not None and factory not in {'soest','alphen','veenoord','lelystad'}:raise ValueError('Fabrica invalida.')
-    include=args.get('include_drawings',False)
+    include=args.get('include_drawings',True)
     if type(include) is not bool:raise ValueError('include_drawings trebuie boolean.')
     if operation=='report':
         previous=job_file(project,args['job_id']);parent=read_record(previous)
@@ -876,6 +875,12 @@ def worker(number,identifier):
             for key in ('catalogue','limitations','limitation_codes','pair_summary','source_files'):
                 if key in parent:record[key]=parent[key]
             record['parent_engine_fingerprint']=parent.get('engine_fingerprint')
+        status_reports=record.get('report_info',{}).get('reports_by_status',{})
+        missing_drawings=sum(len(entry.get('ontbrekende_bijlagen',[])) for entry in status_reports.values())
+        if missing_drawings:
+            partial=True
+            record.setdefault('limitation_codes',[]).append('report_drawings_missing')
+            record.setdefault('limitations',[]).append(f'{missing_drawings} gemarkeerde tekeningen konden niet worden bijgevoegd. Zie de afzonderlijke rapporten.')
         progress('validate_outputs')
         if not verify_sources():raise ValueError('O sursa originala s-a schimbat; reverifica lucrarea.')
         artifacts=pdf_artifacts()

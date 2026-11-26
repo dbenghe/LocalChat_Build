@@ -1,3 +1,7 @@
+## 1.33.18 — Uitgebreid tekenrapport per controlestatus
+
+De afzonderlijke rapporten NIET OK en CONTROLEREN gebruiken standaard het volledige controlerapport met toelichtingen en gemarkeerde tekeningen uit de eigen groep. Het korte controleoverzicht verwijst naar beide rapporten. Ontbrekende bijlagen worden expliciet gemeld.
+
 ## 1.33.17 — Korte rapporten per controlestatus
 
 PDFCONTROL levert een kort overzicht en afzonderlijke rapporten voor NIET OK en CONTROLEREN. Maatvoering, artikelherkenning in beide richtingen en cataloguscontrole krijgen eigen rubrieken. Tekeningbijlagen zijn optioneel. De controle-uitkomsten blijven ongewijzigd.
