@@ -2,6 +2,7 @@ from collections import Counter
 from pathlib import Path
 
 import fitz
+from mbs_report_layout import ARCHIVE_NOTICE
 
 
 STATUS = ("NIET_OK", "CONTROLEREN")
@@ -105,6 +106,8 @@ def generate(layout, data, output, include_drawings=True, progress=None):
         with fitz.open() as doc:
             sheet = layout.Blad(doc, f"PDFCONTROL | {label}")
             sheet.titel(label)
+            if data.get("archief") is True:
+                sheet.regel(ARCHIVE_NOTICE)
             sheet.regel(f"{len(selected)} tekeningen in deze groep")
             sheet.wit()
             entries = []
@@ -124,6 +127,8 @@ def generate(layout, data, output, include_drawings=True, progress=None):
     with fitz.open() as doc:
         sheet = layout.Blad(doc, "PDFCONTROL")
         sheet.titel("Controleoverzicht")
+        if data.get("archief") is True:
+            sheet.regel(ARCHIVE_NOTICE)
         sheet.regel(f"{len(drawings)} tekeningen gecontroleerd | {counts['OK']} OK", size=11, hoogte=20)
         unknown = len(drawings) - sum(counts[status] for status in (*STATUS, "OK"))
         if unknown:

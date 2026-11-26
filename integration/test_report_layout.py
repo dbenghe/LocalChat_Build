@@ -80,6 +80,36 @@ class LayoutTests(unittest.TestCase):
             text=(Path(args.package)/name).read_bytes().decode('utf8');self.assertEqual(text,patch(text));self.assertEqual(patch(text),patch(patch(text)))
             import ast
             plain=text.replace('\r\n','\n')+'\n\ndef unrelated_layout_fixture():\n    return "UNCHANGED"\n';changed=patch(plain.replace('\n','\r\n'));self.assertIn('return "UNCHANGED"\r\n',changed);ast.parse(changed)
+    def test_comparison_label_prefers_blank_margin(self):
+        sys.path.insert(0,str(Path(args.package)))
+        import mbs_vergelijk_pdf as comparison
+        with pdf.open() as doc:
+            page=doc.new_page(width=340,height=220)
+            area=pdf.Rect(20,113,320,205)
+            page.insert_text((30,140),'MAAT 150 310',fontsize=10)
+            rect=comparison._mark(page,area,(1,5,40,28),'T1',(1,0,0))
+            self.assertFalse(rect.intersects(area))
+            label=page.get_texttrace()[-1]
+            self.assertAlmostEqual(label['opacity'],1)
+            self.assertIn('MAAT 150 310',page.get_text())
+
+    def test_dense_scan_uses_transparent_label_without_a_background(self):
+        sys.path.insert(0,str(Path(args.package)))
+        import mbs_vergelijk_pdf as comparison
+        with pdf.open() as doc:
+            page=doc.new_page(width=340,height=220)
+            area=pdf.Rect(20,103,320,205)
+            scan=pdf.Pixmap(pdf.csRGB,24,24,bytes([180,180,180])*24*24,False)
+            page.insert_image(page.rect,pixmap=scan)
+            page.insert_text((30,140),'MAAT 150 310',fontsize=10)
+            text_rects=[pdf.Rect(word[:4]) for word in page.get_text('words')]
+            label=comparison._mark(page,area,(1,12,40,31),'T1',(1,0,0),text_rects=text_rects)
+            self.assertTrue(area.contains(label))
+            self.assertAlmostEqual(page.get_texttrace()[-1]['opacity'],layout.OVERLAY_OPACITY,places=2)
+            self.assertIn('MAAT 150 310',page.get_text())
+            self.assertTrue(all(shape['fill'] is None for shape in page.get_drawings()))
+            self.assertTrue(all(shape['stroke_opacity'] <= .46 for shape in page.get_drawings()))
+
     def test_native_checked_report_and_comparison(self):
         if not args.package:self.skipTest('engine required')
         sys.path.insert(0,str(Path(args.package)))

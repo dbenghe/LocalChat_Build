@@ -18,7 +18,7 @@ def apply(package):
     raw = target.read_bytes()
     source = raw.decode("utf-8").replace("\r\n", "\n")
     original = "def genereer(uit_pad=None, tekeningen_bijvoegen=True, alleen_problemen=True,"
-    if "from mbs_split_report import generate" not in source:
+    if "from mbs_split_report import generate" not in source and "import mbs_split_report as split" not in source:
         wrapper = """def genereer(uit_pad=None, tekeningen_bijvoegen=True, alleen_problemen=True,
              voortgang=None):
     import sys
@@ -32,6 +32,16 @@ def apply(package):
         source = replace_once(source, original, wrapper + original.replace("genereer(", "genereer_uitgebreid("))
     else:
         source = source.replace("def genereer(uit_pad=None, tekeningen_bijvoegen=False,", "def genereer(uit_pad=None, tekeningen_bijvoegen=True,")
+
+    if "import mbs_split_report as split" not in source:
+        source = replace_once(source, "    from mbs_split_report import generate\n    info = generate(",
+            '''    import mbs_report_layout as layout
+    import mbs_split_report as split
+    if not hasattr(layout, "ARCHIVE_NOTICE") or not hasattr(split, "ARCHIVE_NOTICE"):
+        from importlib import reload
+        reload(layout)
+        reload(split)
+    info = split.generate(''')
 
     if 'rapportstatus=""' not in source:
         signature = "def genereer_uitgebreid(uit_pad=None, tekeningen_bijvoegen=True, alleen_problemen=True,"
@@ -91,6 +101,14 @@ def apply(package):
                     blad.tabel([("Tekening",145),("Controle / artikel",200),("Resultaat",75),("Toelichting",350)], volledig)
 
         # ---- 2c. de gecontroleerde tekeningen eronder""")
+
+    if 'if data.get("archief") is True:' not in source:
+        source = replace_once(source, "    blad.titel(titel, size=20, ruimte_na=4)\n",
+            '''    blad.titel(titel, size=20, ruimte_na=4)
+    if data.get("archief") is True:
+        from mbs_report_layout import ARCHIVE_NOTICE
+        blad.regel(ARCHIVE_NOTICE)
+''')
 
     ast.parse(source)
     shutil.copy2(Path(__file__).with_name("split_report.py"), package / "mbs_split_report.py")

@@ -64,7 +64,7 @@ with tempfile.TemporaryDirectory() as tmp:
             document.new_page().insert_text((30, 40), marker)
             document.save(attachment)
         row["uitvoer"] = str(attachment)
-    data.write_text(json.dumps({"tekeningen": records}), encoding="utf-8")
+    data.write_text(json.dumps({"tekeningen": records, "archief": True}), encoding="utf-8")
     detailed = mbs_rapport.genereer(root / "DETAILED.pdf")
     reports = detailed["reports_by_status"]
     rejected = pdf_text(reports["NIET_OK"]["pad"])
@@ -76,6 +76,10 @@ with tempfile.TemporaryDirectory() as tmp:
     assert reports["NIET_OK"]["bijgevoegde_tekeningen"] == reports["CONTROLEREN"]["bijgevoegde_tekeningen"] == 1
     assert reports["NIET_OK"]["ontbrekende_bijlagen"] == ["DRAW_ROWS_ONLY.pdf"]
     assert "Ontbrekende of onleesbare tekeningen" in rejected
+    for report in (detailed["pad"], *(entry["pad"] for entry in reports.values())):
+        with fitz.open(report) as doc:
+            assert "ARCHIEFRESULTAAT" in doc[0].get_text()
+            assert all("ARCHIEFRESULTAAT" not in page.get_text() for page in list(doc)[1:])
     assert "annex" not in detailed
 
     data.write_text(json.dumps({"tekeningen": records[-1:]}), encoding="utf-8")

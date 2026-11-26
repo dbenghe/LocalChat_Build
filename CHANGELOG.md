@@ -1,3 +1,7 @@
+## 1.33.19 — Leesbare labels in PDF-rapporten
+
+Vergelijkingslabels krijgen voorrang in vrije ruimte, ook op gescande bladen. Als er geen vrije plek is, blijft het label doorschijnend. Kaders en verbindingslijnen op tekeningen blijven transparant. De archiefmelding staat op het voorblad van elk rapport.
+
 ## 1.33.18 — Uitgebreid tekenrapport per controlestatus
 
 De afzonderlijke rapporten NIET OK en CONTROLEREN gebruiken standaard het volledige controlerapport met toelichtingen en gemarkeerde tekeningen uit de eigen groep. Het korte controleoverzicht verwijst naar beide rapporten. Ontbrekende bijlagen worden expliciet gemeld.

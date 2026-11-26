@@ -1,9 +1,82 @@
 """Shared drawing-report layout: full vector sheets, compact captions outside source content."""
 from pathlib import Path
-import hashlib,json,math,os,uuid
+import hashlib,itertools,json,math,os,uuid
 import pymupdf as pdf
 
 POLICY='full-sheet-compact-v1'
+OVERLAY_OPACITY = .45
+ARCHIVE_NOTICE = "ARCHIEFRESULTAAT | Controle afkomstig uit een eerdere uitvoering."
+_LABEL_RASTER_SCALE = .75
+
+
+def label_background(page):
+    return page.get_pixmap(matrix=pdf.Matrix(_LABEL_RASTER_SCALE, _LABEL_RASTER_SCALE),
+                           colorspace=pdf.csGRAY, alpha=False)
+
+
+def _blank(bitmap, rect):
+    box = (rect * pdf.Matrix(_LABEL_RASTER_SCALE, _LABEL_RASTER_SCALE)).irect & bitmap.irect
+    samples = bitmap.samples_mv
+    return not box.is_empty and all(
+        min(samples[(y - bitmap.y) * bitmap.stride + box.x0 - bitmap.x:
+                    (y - bitmap.y) * bitmap.stride + box.x1 - bitmap.x]) >= 247
+        for y in range(box.y0, box.y1)
+    )
+
+
+def mark_comparison(page, area, region, number, color, placed, text_rects, markers,
+                    draw_box, size, line_width, background=None):
+    """Place a comparison key in blank space, or use ink with no opaque backing."""
+    placed = [] if placed is None else placed
+    width = pdf.get_text_length(number, fontname="helv", fontsize=size) + 2
+    height = size * 1.4
+    if draw_box:
+        page.draw_rect(region, color=color, width=line_width, stroke_opacity=OVERLAY_OPACITY)
+    if background is None:
+        background = label_background(page)
+
+    def box(x, y):
+        return pdf.Rect(x, y, x + width, y + height)
+
+    def grid(area):
+        for y in range(math.ceil(area.y0), math.floor(area.y1 - height) + 1, math.ceil(height) + 2):
+            for x in range(math.ceil(area.x0), math.floor(area.x1 - width) + 1, math.ceil(width) + 2):
+                yield box(x, y)
+
+    obstacles = (*text_rects, *placed, *markers, region)
+    candidates = [box(x, y)
+                  for gap in (2, 8, 16, 24, 40, 64, 100, 160)
+                  for x in (region.x0, region.x1 - width, region.x1 + gap, region.x0 - width - gap)
+                  for y in (region.y0 - height - gap, region.y1 + gap)]
+    nearby = [rect for rect in candidates if area.contains(rect)]
+    margin = pdf.Rect(area.x0, max(80, area.y0 - 2 * height - 6), area.x1, area.y0 - 2)
+    allowed = page.rect
+    label = next((rect for rect in itertools.chain(grid(margin), nearby, grid(area))
+                  if allowed.contains(rect) and _blank(background, rect)
+                  and not any(rect.intersects(o) for o in obstacles)), None)
+    opacity = 1
+    if label is None:
+        opacity = OVERLAY_OPACITY
+        label = min(nearby, default=None, key=lambda rect: (
+            sum((rect & other).get_area() for other in placed),
+            sum((rect & other).get_area() for other in text_rects),
+            abs(rect.x0 - region.x0) + abs(rect.y0 - region.y0),
+        ))
+        if label is None:
+            # Very small panels can use the nearest page-space position.
+            x = min(max(region.x0, allowed.x0), allowed.x1 - width)
+            y = min(max(region.y0, allowed.y0), allowed.y1 - height)
+            label = box(x, y)
+
+    placed.append(label)
+    page.insert_text((label.x0 + 1, label.y1 - 1.3), number, fontsize=size, color=color,
+                     fill_opacity=opacity)
+    start = (label.tl + label.br) * .5
+    end = pdf.Point(min(max(start.x, region.x0), region.x1), min(max(start.y, region.y0), region.y1))
+    if abs(start.x - end.x) + abs(start.y - end.y) > 8:
+        page.draw_line(start, end, color=color, width=line_width, stroke_opacity=OVERLAY_OPACITY)
+    return label
+
 
 def _fit(area, visible):
     scale=min(area.width/visible.width,area.height/visible.height)
@@ -68,8 +141,9 @@ def append_sheet(doc,source,number,title='',status='',notes=(),marks=(),source_p
         rect=native*original.rotation_matrix
         rect=pdf.Rect(target.x0+rect.x0*scale,target.y0+rect.y0*scale,target.x0+rect.x1*scale,target.y0+rect.y1*scale)&target
         if rect.is_empty:raise ValueError('Finding rectangle lies outside the source sheet')
-        page.draw_rect(rect,color=mark.get('color',(.9,.45,0)),width=.55)
+        page.draw_rect(rect,color=mark.get('color',(.9,.45,0)),width=.55,stroke_opacity=OVERLAY_OPACITY)
         annotation=page.add_rect_annot(rect);annotation.set_border(width=.3);annotation.set_colors(stroke=mark.get('color',(.9,.45,0)))
+        annotation.set_opacity(OVERLAY_OPACITY)
         annotation.set_info(title='Bevinding '+str(i),subject=mark.get('code',''),content=mark.get('article','')+'\n'+mark.get('message',''));annotation.update()
     page._mbs_report_layout={'policy':POLICY,'source_rect':list(visible),'drawing_rect':list(target),'caption_rects':[[9,2,visible.width-9,29],[9,visible.height-12,visible.width-9,visible.height-1]]}
     return page

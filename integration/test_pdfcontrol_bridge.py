@@ -1,5 +1,5 @@
 """Real stdio MCP, real legacy engine and synthetic PDFs; no model, production data or network service."""
-import argparse,hashlib,json,os,shutil,subprocess,sys,time,unittest
+import argparse,hashlib,json,os,shutil,subprocess,sys,time,unittest,uuid
 from pathlib import Path
 import pymupdf
 
@@ -154,7 +154,7 @@ class Workflows(unittest.TestCase):
         self.assertFalse(any(Path(path).name.endswith('_BIJLAGEN.pdf') for path in delivered))
 
     def test_08_report_with_missing_marked_drawing_is_partial(self):
-        identifier='d'*32
+        identifier=uuid.uuid4().hex
         data=self.drawings(2)
         parent=self.fake_job(identifier,data,sources_sha256={})
         source=parent/'engine/checked/resultaten.json'
