@@ -137,11 +137,22 @@ class Workflows(unittest.TestCase):
         record=self.client.start('pdfcontrol_job_status',job_id='f'*32,wait_seconds=0)
         self.assertEqual(record['status'],'failed');self.assertNotIn('engine_sha256',record)
 
-    def test_08_direct_check_with_annotations_in_report(self):
+    def test_08_direct_check_with_split_reports_and_optional_annotations(self):
         record=self.client.wait(self.client.start('pdfcontrol_start_check',files=['loose/123456_WA224_V.pdf','loose/123456_WA133_W.pdf'],include_drawings=True))
         self.artifacts(record);self.assertTrue(record['include_drawings']);self.assertTrue(record['engine_fingerprint'])
+        info=record['report_info']
+        delivered={row['path'] for row in record['artifacts']}
+        for status in ('NIET_OK','CONTROLEREN'):
+            category=info['reports_by_status'][status]
+            self.assertIn(category['pad'],delivered)
+            self.assertEqual(Path(category['pad']).parent,Path(record['report']).parent)
+            with pymupdf.open(category['pad']) as doc:
+                self.assertIn(status.replace('_',' '),doc[0].get_text())
         with pymupdf.open(record['report']) as doc:
-            text='\n'.join(page.get_text() for page in doc);self.assertIn('controlerapport',text.lower())
+            self.assertIn('Controleoverzicht','\n'.join(page.get_text() for page in doc))
+        self.assertIn(info['annex'],delivered)
+        with pymupdf.open(info['annex']) as doc:
+            self.assertIn('controlerapport','\n'.join(page.get_text() for page in doc).lower())
 
     def test_10_sources_in_controle_and_verified_delivery(self):
         relative='Controle/Atasamente_nou/123456_TRK300_V.pdf'

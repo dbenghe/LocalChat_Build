@@ -1,3 +1,7 @@
+## 1.33.17 — Korte rapporten per controlestatus
+
+PDFCONTROL levert een kort overzicht en afzonderlijke rapporten voor NIET OK en CONTROLEREN. Maatvoering, artikelherkenning in beide richtingen en cataloguscontrole krijgen eigen rubrieken. Tekeningbijlagen zijn optioneel. De controle-uitkomsten blijven ongewijzigd.
+
 ## 1.33.16 — Actuele Codex-app gebruiken
 
 LocalChat zoekt eerst het officiële, bij Windows geregistreerde Codex-pakket. De pakketlocatie volgt Store-updates en is ook beschikbaar als het desktopvenster gesloten is. Als het pakket ontbreekt of niet leesbaar is, blijft de bestaande zoekvolgorde in LocalAppData en PATH beschikbaar. De modelkiezer gebruikt de actuele lijst van het aangemelde Codex App Server-account.

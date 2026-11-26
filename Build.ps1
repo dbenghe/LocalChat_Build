@@ -28,6 +28,8 @@ if ($LASTEXITCODE) { throw 'Native Codex app-server contract tests failed' }
 if ($LASTEXITCODE) { throw 'Owned engine build isolation tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/sync_engine.py" --package "$PSScriptRoot/pdfcontrol"
 if ($LASTEXITCODE) { throw 'PDFCONTROL engine synchronization failed' }
+& $taskPdfPython -I "$PSScriptRoot/integration/test_split_report.py" "$PSScriptRoot/pdfcontrol"
+if ($LASTEXITCODE) { throw 'Split PDFCONTROL report tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_factory_catalogue.py" --package "$PSScriptRoot/pdfcontrol"
 if ($LASTEXITCODE) { throw 'Factory catalogue warnings and safe notation tests failed' }
 & $taskPdfPython -I "$PSScriptRoot/integration/test_kozijn_alias.py"

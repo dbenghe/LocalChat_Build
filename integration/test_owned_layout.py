@@ -47,14 +47,14 @@ class OwnedLayout(unittest.TestCase):
             old=(mbs_rapport.CHECKED,mbs_rapport.GEGEVENS)
             try:
                 mbs_rapport.CHECKED=str(root);mbs_rapport.GEGEVENS=str(data)
-                full=mbs_rapport.genereer(str(root/'full.pdf'),tekeningen_bijvoegen=True,alleen_problemen=False)
+                full=mbs_rapport.genereer_uitgebreid(str(root/'full.pdf'),tekeningen_bijvoegen=True,alleen_problemen=False)
                 self.assertEqual((full['tekeningen'],full['met_bevinding'],full['zonder_bevinding'],full['scope']),(3,1,2,'all'))
                 with pymupdf.open(full['pad']) as doc:
                     text='\n'.join(page.get_text() for page in doc)
                     self.assertIn('1 met een bevinding',text);self.assertIn('2 zonder bevinding',text)
                     self.assertIn('Uitgevoerde controles per tekening',text)
                     for i in range(3):self.assertIn(f'ATTACHMENT_{i}',text)
-                problems=mbs_rapport.genereer(str(root/'findings.pdf'),tekeningen_bijvoegen=True)
+                problems=mbs_rapport.genereer_uitgebreid(str(root/'findings.pdf'),tekeningen_bijvoegen=True)
                 self.assertEqual((problems['tekeningen'],problems['met_bevinding'],problems['zonder_bevinding']),(1,1,2))
                 with pymupdf.open(problems['pad']) as doc:
                     text='\n'.join(page.get_text() for page in doc)
